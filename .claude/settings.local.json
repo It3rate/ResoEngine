@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "WebFetch(domain:docs.google.com)",
+      "WebFetch(domain:doc-08-30-docstext.googleusercontent.com)",
+      "Bash(dotnet build)"
+    ]
+  }
+}
