@@ -44,7 +44,7 @@ namespace ResoEngine
         public AlgebraEntry[] Algebra { get; }
 
         /// <summary>
-        /// IAlgebraic&lt;Proportion&gt;: get Left (0) or Right (1) as Proportion elements.
+        /// IAlgebraic<Proportion> get Left (0) or Right (1) as Proportion elements.
         /// </summary>
         public Proportion GetElement(int index) => index switch
         {
