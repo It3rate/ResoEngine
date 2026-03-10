@@ -1,0 +1,83 @@
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  font-family: Arial, sans-serif;
+  background: #f4f4f8;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+}
+
+#app {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+}
+
+#display {
+  width: min(90vw, 600px);
+  aspect-ratio: 1.1;
+  background: #ffffff;
+  border-radius: 12px;
+  box-shadow: 0 2px 16px rgba(0,0,0,0.10);
+  overflow: hidden;
+}
+
+#canvas {
+  width: 100%;
+  height: 100%;
+  display: block;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+/* Navigation */
+#nav {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+#nav button {
+  width: 36px;
+  height: 36px;
+  border: none;
+  border-radius: 50%;
+  background: #e0e0e6;
+  color: #333;
+  font-size: 18px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s;
+}
+#nav button:hover { background: #ccc; }
+#nav button:disabled { opacity: 0.3; cursor: default; }
+
+#dots {
+  display: flex;
+  gap: 8px;
+}
+
+.dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #ccc;
+  cursor: pointer;
+  transition: background 0.15s, transform 0.15s;
+}
+.dot:hover { background: #999; }
+.dot.active {
+  background: #555;
+  transform: scale(1.25);
+}
+
+/* Drag cursors */
+.drag-handle { cursor: grab; }
+.drag-handle:active { cursor: grabbing; }
+.drag-handle-ew { cursor: ew-resize; }
+.drag-handle-ns { cursor: ns-resize; }

@@ -1,0 +1,19 @@
+using SkiaSharp;
+
+namespace ResoEngine.Visualizer.Core;
+
+/// <summary>Color configuration for a segment and its grid lines.</summary>
+public record SegmentColorSet(SKColor Solid, SKColor Grid, SKColor Label);
+
+public static class SegmentColors
+{
+    public static readonly SegmentColorSet Red = new(
+        SKColor.Parse("#C00000"),
+        SKColor.Parse("#FFB3B3"),
+        SKColor.Parse("#C00000"));
+
+    public static readonly SegmentColorSet Blue = new(
+        SKColor.Parse("#0020C0"),
+        SKColor.Parse("#A6C8FF"),
+        SKColor.Parse("#0020C0"));
+}
