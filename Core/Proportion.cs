@@ -51,12 +51,14 @@ public sealed class Proportion : IProportion, IAlgebraic<long>, ISpace, IValue /
     public IValue[] ChildValues => [new Scalar(GetNumerator()), new Scalar(GetDenominator())];
 
     /// <summary>
-    /// Collapse 2D (num/den) to 1D scalar. Integer division - lossy for non-unit denominators.
+    /// Collapse 2D (num/den) to Grade 0 scalar. Executes the deferred division.
+    /// Returns double: an approximation that is "more precise than the information you had" -
+    /// the honest cost of losing resolution information.
     /// </summary>
-    public long Fold()
+    public double Fold()
     {
         long den = GetDenominator();
-        return den != 0 ? GetNumerator() / den : 0;
+        return den != 0 ? GetNumerator() / (double)den : 0.0;
     }
 
     public void ForceChirality(Chirality newChirality)
