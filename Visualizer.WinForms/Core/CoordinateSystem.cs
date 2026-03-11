@@ -4,7 +4,6 @@ namespace ResoEngine.Visualizer.Core;
 
 /// <summary>
 /// Math ↔ pixel coordinate system. Y-axis is flipped (math up = pixel down).
-/// Replaces the coordinate-system half of the JS SvgCanvas.
 /// </summary>
 public class CoordinateSystem
 {
@@ -15,9 +14,9 @@ public class CoordinateSystem
     public float Scale { get; }
 
     public CoordinateSystem(
-        float width = 560f, float height = 500f,
-        float originX = 280f, float originY = 310f,
-        float scale = 36f)
+        float width = 720f, float height = 620f,
+        float originX = 360f, float originY = 350f,
+        float scale = 30f)
     {
         Width = width;
         Height = height;

@@ -11,13 +11,16 @@ namespace ResoEngine.Visualizer.Pages;
 public interface IVisualizerPage : IDisposable
 {
     string Title { get; }
-
-    /// <summary>Initialize the page — create renderers, register hit targets.</summary>
     void Init(CoordinateSystem coords, HitTestEngine hitTest);
-
-    /// <summary>Render the page onto the SkiaSharp canvas.</summary>
     void Render(SKCanvas canvas);
-
-    /// <summary>Tear down — dispose renderers.</summary>
     void Destroy();
+
+    /// <summary>Check if a pixel point hits the origin dot. Used for center drag.</summary>
+    bool IsOriginHit(SKPoint pixelPoint) => false;
+
+    /// <summary>Get all segments on this page (for origin drag: move all at once).</summary>
+    IReadOnlyList<DirectedSegment>? GetDraggableSegments() => null;
+
+    /// <summary>Get the origin's pixel position (for cursor changes).</summary>
+    SKPoint? GetOriginPixel() => null;
 }

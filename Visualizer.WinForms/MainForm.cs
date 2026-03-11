@@ -1,4 +1,6 @@
+using SkiaSharp;
 using ResoEngine.Visualizer.Controls;
+using ResoEngine.Visualizer.Core;
 using ResoEngine.Visualizer.Input;
 using ResoEngine.Visualizer.Pages;
 
@@ -11,20 +13,24 @@ public class MainForm : Form
     private readonly PageManager _pageManager;
     private readonly DragController _dragController;
 
+    // Origin drag state (handled separately from DragController)
+    private bool _originDragging;
+    private SKPoint _originDragStart;
+    private float[] _originStartImag = [];
+    private float[] _originStartReal = [];
+
     private void InitializeComponent()
     {
-
     }
 
     public MainForm()
     {
         Text = "ResoEngine Visualizer";
-        Size = new Size(640, 620);
-        MinimumSize = new Size(400, 400);
+        Size = new Size(780, 720);
+        MinimumSize = new Size(500, 500);
         StartPosition = FormStartPosition.CenterScreen;
         BackColor = Color.FromArgb(240, 240, 240);
 
-        // Layout: canvas fills top, nav bar at bottom (fixed 50px)
         var layout = new TableLayoutPanel
         {
             Dock = DockStyle.Fill,
@@ -43,34 +49,13 @@ public class MainForm : Form
         layout.Controls.Add(_navBar, 0, 1);
         Controls.Add(layout);
 
-        // Wire up input → drag controller → repaint
+        // Wire up drag controller (unchanged per user request)
         var hitTest = new HitTestEngine();
         _dragController = new DragController(_canvas.Coords, hitTest);
 
-        _canvas.OnPointerDown += pt =>
-        {
-            if (_dragController.BeginDrag(pt))
-                _canvas.InvalidateCanvas();
-        };
-
-        _canvas.OnPointerMove += pt =>
-        {
-            if (_dragController.IsDragging)
-            {
-                if (_dragController.UpdateDrag(pt))
-                    _canvas.InvalidateCanvas();
-            }
-            else
-            {
-                _canvas.Cursor = _dragController.GetCursor(pt);
-            }
-        };
-
-        _canvas.OnPointerUp += _ =>
-        {
-            _dragController.EndDrag();
-            _canvas.Cursor = Cursors.Default;
-        };
+        _canvas.OnPointerDown += OnPointerDown;
+        _canvas.OnPointerMove += OnPointerMove;
+        _canvas.OnPointerUp += OnPointerUp;
 
         _dragController.Changed += () => _canvas.InvalidateCanvas();
 
@@ -78,4 +63,86 @@ public class MainForm : Form
         _pageManager = new PageManager(_canvas, _navBar, hitTest);
         _pageManager.AddPage(new OrthogonalAxesPage());
     }
+
+    private void OnPointerDown(SKPoint pt)
+    {
+        var page = _pageManager.CurrentPage;
+
+        // Check origin hit first (priority over segment hits)
+        if (page != null && page.IsOriginHit(pt))
+        {
+            var segs = page.GetDraggableSegments();
+            if (segs != null && segs.Count > 0)
+            {
+                _originDragging = true;
+                _originDragStart = pt;
+                _originStartImag = new float[segs.Count];
+                _originStartReal = new float[segs.Count];
+                for (int i = 0; i < segs.Count; i++)
+                {
+                    _originStartImag[i] = segs[i].Imaginary;
+                    _originStartReal[i] = segs[i].Real;
+                }
+                return;
+            }
+        }
+
+        // Fall through to regular drag
+        if (_dragController.BeginDrag(pt))
+            _canvas.InvalidateCanvas();
+    }
+
+    private void OnPointerMove(SKPoint pt)
+    {
+        if (_originDragging)
+        {
+            var page = _pageManager.CurrentPage;
+            var segs = page?.GetDraggableSegments();
+            if (segs == null) return;
+
+            float dx = (pt.X - _originDragStart.X) / _canvas.Coords.Scale;
+            float dy = -(pt.Y - _originDragStart.Y) / _canvas.Coords.Scale;
+
+            // Move H-segments by dx, V-segments by dy
+            for (int i = 0; i < segs.Count; i++)
+            {
+                float delta = (i == 0) ? dx : dy; // first = horizontal, second = vertical
+                segs[i].Imaginary = Snap(_originStartImag[i] + delta);
+                segs[i].Real = Snap(_originStartReal[i] + delta);
+            }
+            _canvas.InvalidateCanvas();
+            return;
+        }
+
+        if (_dragController.IsDragging)
+        {
+            if (_dragController.UpdateDrag(pt))
+                _canvas.InvalidateCanvas();
+        }
+        else
+        {
+            // Update cursor based on hover
+            var page = _pageManager.CurrentPage;
+            if (page != null && page.IsOriginHit(pt))
+                _canvas.Cursor = Cursors.SizeAll;
+            else
+                _canvas.Cursor = _dragController.GetCursor(pt);
+        }
+    }
+
+    private void OnPointerUp(SKPoint pt)
+    {
+        if (_originDragging)
+        {
+            _originDragging = false;
+            _canvas.Cursor = Cursors.Default;
+            return;
+        }
+
+        _dragController.EndDrag();
+        _canvas.Cursor = Cursors.Default;
+    }
+
+    private static float Snap(float val) =>
+        MathF.Round(val / VisualStyle.SnapIncrement) * VisualStyle.SnapIncrement;
 }
