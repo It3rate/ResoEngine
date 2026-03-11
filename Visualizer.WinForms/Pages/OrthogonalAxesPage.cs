@@ -190,7 +190,7 @@ public class OrthogonalAxesPage : IVisualizerPage
                 BorderStyle = BorderStyle.None,
                 ReadOnly = true,
                 BackColor = Color.White,
-                Font = new Font("Segoe UI", 11f, FontStyle.Bold),
+                Font = new Font("Consolas", 11f, FontStyle.Regular),
                 TextAlign = HorizontalAlignment.Center,
                 TabStop = true,
                 ShortcutsEnabled = true,
@@ -228,7 +228,7 @@ public class OrthogonalAxesPage : IVisualizerPage
 
     private void UpdateFormulaOverlay()
     {
-        if (_coords == null || _canvasHost == null || _formulaPanel == null)
+        if (_canvasHost == null || _formulaPanel == null)
             return;
 
         string[] lines = BuildFormulaLines();
@@ -245,55 +245,37 @@ public class OrthogonalAxesPage : IVisualizerPage
             maxWidth = Math.Max(maxWidth, rowWidth);
         }
 
-        int rowHeight = 32;
-        int rowGap = 6;
+        int rowHeight = 34;
+        int rowGap = 10;
         int innerWidth = Math.Max(220, maxWidth);
         for (int i = 0; i < _formulaRows.Count; i++)
         {
             var row = _formulaRows[i];
             int top = i * (rowHeight + rowGap);
             row.RowPanel.SetBounds(0, top, innerWidth, rowHeight);
-            row.CopyButton.SetBounds(innerWidth - row.CopyButton.Width - 4, 3, row.CopyButton.Width, row.CopyButton.Height);
-            row.TextBox.SetBounds(8, 8, innerWidth - row.CopyButton.Width - 18, 18);
+            row.CopyButton.SetBounds(innerWidth - row.CopyButton.Width - 4, 4, row.CopyButton.Width, row.CopyButton.Height);
+            row.TextBox.SetBounds(8, 9, innerWidth - row.CopyButton.Width - 18, 18);
         }
 
         _formulaPanel.Size = new Size(innerWidth, _formulaRows.Count * rowHeight + (_formulaRows.Count - 1) * rowGap);
-        PositionFormulaOverlay(ComputeGridBounds());
+        PositionFormulaOverlay();
         _formulaPanel.BringToFront();
     }
 
-    private void PositionFormulaOverlay(SKRect gridBounds)
+    private void PositionFormulaOverlay()
     {
-        if (_coords == null || _canvasHost == null || _formulaPanel == null)
+        if (_canvasHost == null || _formulaPanel == null)
             return;
 
-        float scaleX = _canvasHost.ClientSize.Width / _coords.Width;
-        float scaleY = _canvasHost.ClientSize.Height / _coords.Height;
         int panelWidth = _formulaPanel.Width;
         int panelHeight = _formulaPanel.Height;
+        int x = (_canvasHost.ClientSize.Width - panelWidth) / 2;
+        int y = _canvasHost.ClientSize.Height - panelHeight - 18;
 
-        int x = (int)MathF.Round(gridBounds.MidX * scaleX - panelWidth / 2f);
-        int y = (int)MathF.Round(gridBounds.Bottom * scaleY + 16f);
-
-        x = Math.Clamp(x, 8, Math.Max(8, _canvasHost.ClientSize.Width - panelWidth - 8));
-        y = Math.Clamp(y, 8, Math.Max(8, _canvasHost.ClientSize.Height - panelHeight - 8));
+        x = Math.Max(8, x);
+        y = Math.Max(8, y);
 
         _formulaPanel.Location = new Point(x, y);
-    }
-
-    private SKRect ComputeGridBounds()
-    {
-        if (_coords == null)
-            return SKRect.Empty;
-
-        float minX = MathF.Min(0f, MathF.Min(_segA.Imaginary, _segA.Real));
-        float maxX = MathF.Max(0f, MathF.Max(_segA.Imaginary, _segA.Real));
-        float minY = MathF.Min(0f, MathF.Min(_segB.Imaginary, _segB.Real));
-        float maxY = MathF.Max(0f, MathF.Max(_segB.Imaginary, _segB.Real));
-
-        var topLeft = _coords.MathToPixel(minX, maxY);
-        var botRight = _coords.MathToPixel(maxX, minY);
-        return new SKRect(topLeft.X, topLeft.Y, botRight.X, botRight.Y);
     }
 
     private string[] BuildFormulaLines()
@@ -333,13 +315,7 @@ public class OrthogonalAxesPage : IVisualizerPage
         return bitmap;
     }
 
-    private static string N(float v)
-    {
-        float rounded = MathF.Round(v * 10f) / 10f;
-        return MathF.Abs(rounded - MathF.Round(rounded)) < 0.05f
-            ? ((int)MathF.Round(rounded)).ToString()
-            : rounded.ToString("F1");
-    }
+    private static string N(float v) => (MathF.Round(v * 10f) / 10f).ToString("F1");
 
     private static string A(float v) => N(MathF.Abs(v));
     private static string Pm(float v) => v >= 0 ? "+" : "-";

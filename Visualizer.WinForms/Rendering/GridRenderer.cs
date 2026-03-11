@@ -34,8 +34,6 @@ public class GridRenderer : IDisposable
     public void Render(SKCanvas canvas, DirectedSegment hSeg, DirectedSegment vSeg,
                        SegmentColorSet hColors, SegmentColorSet vColors)
     {
-        float ext = VisualStyle.GridExtension;
-
         float hImagMin = MathF.Min(0f, hSeg.Imaginary);
         float hImagMax = MathF.Max(0f, hSeg.Imaginary);
         float hRealMin = MathF.Min(0f, hSeg.Real);
@@ -46,10 +44,10 @@ public class GridRenderer : IDisposable
         float vRealMin = MathF.Min(0f, vSeg.Real);
         float vRealMax = MathF.Max(0f, vSeg.Real);
 
-        float xMin = MathF.Min(hImagMin, hRealMin) - ext;
-        float xMax = MathF.Max(hImagMax, hRealMax) + ext;
-        float yMin = MathF.Min(vImagMin, vRealMin) - ext;
-        float yMax = MathF.Max(vImagMax, vRealMax) + ext;
+        float xMin = MathF.Min(hImagMin, hRealMin);
+        float xMax = MathF.Max(hImagMax, hRealMax);
+        float yMin = MathF.Min(vImagMin, vRealMin);
+        float yMax = MathF.Max(vImagMax, vRealMax);
 
         if (hImagMax > hImagMin && vImagMax > vImagMin)
         {
