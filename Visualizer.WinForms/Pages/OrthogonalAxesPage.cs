@@ -52,6 +52,11 @@ public class OrthogonalAxesPage : IVisualizerPage
     public void Init(CoordinateSystem coords, HitTestEngine hitTest)
     {
         _coords = coords;
+
+        // Reset origin to center (other pages may have moved it)
+        coords.OriginX = coords.Width / 2;
+        coords.OriginY = coords.Height / 2;
+
         _gridRenderer = new GridRenderer(coords);
 
         _rendererA = new SegmentRenderer(coords, SegmentOrientation.Horizontal,

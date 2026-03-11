@@ -14,8 +14,8 @@ public class CoordinateSystem
     public float Scale { get; }
 
     public CoordinateSystem(
-        float width = 720f, float height = 620f,
-        float originX = 360f, float originY = 350f,
+        float width = 900f, float height = 800f,
+        float originX = 450f, float originY = 400f,
         float scale = 30f)
     {
         Width = width;

@@ -26,8 +26,8 @@ public class MainForm : Form
     public MainForm()
     {
         Text = "ResoEngine Visualizer";
-        Size = new Size(780, 720);
-        MinimumSize = new Size(500, 500);
+        Size = new Size(1000, 900);
+        MinimumSize = new Size(600, 500);
         StartPosition = FormStartPosition.CenterScreen;
         BackColor = Color.FromArgb(240, 240, 240);
 
@@ -59,9 +59,10 @@ public class MainForm : Form
 
         _dragController.Changed += () => _canvas.InvalidateCanvas();
 
-        // Page manager + first page
+        // Page manager + pages
         _pageManager = new PageManager(_canvas, _navBar, hitTest);
         _pageManager.AddPage(new OrthogonalAxesPage());
+        _pageManager.AddPage(new BooleanOpsPage());
     }
 
     private void OnPointerDown(SKPoint pt)

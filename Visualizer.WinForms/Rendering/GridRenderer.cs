@@ -47,11 +47,18 @@ public class GridRenderer : IDisposable
         float vRealMin = MathF.Min(0, vSeg.Real);
         float vRealMax = MathF.Max(0, vSeg.Real);
 
-        // --- Yellow fill where both imaginary regions overlap ---
+        // --- Yellow fill where both imaginary regions overlap (drawn first as background) ---
         float yFillXMin = hImagMin;
         float yFillXMax = hImagMax;
         float yFillYMin = vImagMin;
         float yFillYMax = vImagMax;
+
+        if (yFillXMax > yFillXMin && yFillYMax > yFillYMin)
+        {
+            var topLeft = _coords.MathToPixel(yFillXMin, yFillYMax);
+            var botRight = _coords.MathToPixel(yFillXMax, yFillYMin);
+            canvas.DrawRect(topLeft.X, topLeft.Y, botRight.X - topLeft.X, botRight.Y - topLeft.Y, _fillPaint);
+        }
 
         // --- Vertical grid lines from H-segment's real region ---
         // At integer X in [hRealMin, hRealMax], extending through full V range + ext.
@@ -115,12 +122,6 @@ public class GridRenderer : IDisposable
             }
         }
 
-        if (yFillXMax > yFillXMin && yFillYMax > yFillYMin)
-        {
-            var topLeft = _coords.MathToPixel(yFillXMin, yFillYMax);
-            var botRight = _coords.MathToPixel(yFillXMax, yFillYMin);
-            canvas.DrawRect(topLeft.X, topLeft.Y, botRight.X - topLeft.X, botRight.Y - topLeft.Y, _fillPaint);
-        }
     }
 
     private static SKPaint MakeGridPaint(SKColor color) => new()
