@@ -1,4 +1,7 @@
+using System.Drawing;
+using System.Drawing.Drawing2D;
 using SkiaSharp;
+using ResoEngine.Visualizer.Controls;
 using ResoEngine.Visualizer.Core;
 using ResoEngine.Visualizer.Input;
 using ResoEngine.Visualizer.Rendering;
@@ -19,21 +22,15 @@ public class OrthogonalAxesPage : IVisualizerPage
     private readonly List<DirectedSegment> _allSegments;
 
     private CoordinateSystem? _coords;
+    private SkiaCanvas? _canvasHost;
     private SegmentRenderer? _rendererA;
     private SegmentRenderer? _rendererB;
     private GridRenderer? _gridRenderer;
 
-    // Formula paint (3-line multiplication display at bottom)
-    private readonly SKPaint _formulaPaint = new()
-    {
-        Color = new SKColor(50, 50, 50),
-        TextSize = 17f,
-        Typeface = SKTypeface.FromFamilyName(VisualStyle.FontFamily, SKFontStyle.Normal),
-        TextAlign = SKTextAlign.Center,
-        IsAntialias = true,
-    };
+    private Panel? _formulaPanel;
+    private readonly List<FormulaRowUi> _formulaRows = [];
+    private Bitmap? _copyIcon;
 
-    // Origin dot paints
     private readonly SKPaint _originFillPaint = new()
     {
         Style = SKPaintStyle.Fill,
@@ -53,17 +50,38 @@ public class OrthogonalAxesPage : IVisualizerPage
         Color = new SKColor(80, 80, 80),
         IsAntialias = true,
     };
+    private readonly SKPaint _quadrantTextPaint = new()
+    {
+        Color = new SKColor(50, 50, 50),
+        TextSize = 15f,
+        Typeface = SKTypeface.FromFamilyName(VisualStyle.FontFamily, SKFontStyle.Bold),
+        TextAlign = SKTextAlign.Center,
+        IsAntialias = true,
+    };
+    private readonly SKPaint _quadrantBgPaint = new()
+    {
+        Style = SKPaintStyle.Fill,
+        Color = new SKColor(255, 255, 255, 235),
+        IsAntialias = true,
+    };
+    private readonly SKPaint _quadrantBorderPaint = new()
+    {
+        Style = SKPaintStyle.Stroke,
+        StrokeWidth = 1f,
+        Color = new SKColor(205, 205, 205, 230),
+        IsAntialias = true,
+    };
 
     public OrthogonalAxesPage()
     {
         _allSegments = [_segA, _segB];
     }
 
-    public void Init(CoordinateSystem coords, HitTestEngine hitTest)
+    public void Init(CoordinateSystem coords, HitTestEngine hitTest, SkiaCanvas canvas)
     {
         _coords = coords;
+        _canvasHost = canvas;
 
-        // Reset origin to center (other pages may have moved it)
         coords.OriginX = coords.Width / 2;
         coords.OriginY = coords.Height / 2;
 
@@ -76,91 +94,255 @@ public class OrthogonalAxesPage : IVisualizerPage
 
         hitTest.Register(_rendererA, _segA);
         hitTest.Register(_rendererB, _segB);
+
+        EnsureFormulaOverlay();
+        UpdateFormulaOverlay();
     }
 
     public void Render(SKCanvas canvas)
     {
         if (_coords == null) return;
 
-        // 1. Grid (behind everything)
         _gridRenderer?.Render(canvas, _segA, _segB, SegmentColors.Red, SegmentColors.Blue);
-
-        // 2. Segments
+        DrawQuadrantValues(canvas);
         _rendererA?.Render(canvas, _segA);
         _rendererB?.Render(canvas, _segB);
 
-        // 3. Origin dot (ON TOP of everything)
         var originPx = _coords.MathToPixel(0, 0);
         float r = VisualStyle.OriginDotRadius;
         canvas.DrawCircle(originPx, r, _originFillPaint);
         canvas.DrawCircle(originPx, r, _originStrokePaint);
         canvas.DrawCircle(originPx, 3f, _originDotPaint);
 
-        // 4. Multiplication formula at bottom of canvas
-        DrawFormula(canvas);
+        UpdateFormulaOverlay();
     }
 
-    private void DrawFormula(SKCanvas canvas)
+    private void DrawQuadrantValues(SKCanvas canvas)
     {
         if (_coords == null) return;
 
-        // Display values: imaginary is positive-left (negate stored value)
         float ai = -_segA.Imaginary;
         float ar = _segA.Real;
         float bi = -_segB.Imaginary;
         float br = _segB.Real;
 
-        // FOIL the two factors (ai + ar)(bi + br):
-        //   ai·bi → real contribution = -(ai*bi)  [i²=-1]
-        //   ai·br → imaginary cross-term 1
-        //   ar·bi → imaginary cross-term 2
-        //   ar·br → real contribution
-        float cross1   = ai * br;           // ai × br → cross1·i
-        float cross2   = ar * bi;           // ar × bi → cross2·i
-        float realProd = ar * br;           // ar × br → real
-        float imagSq   = ai * bi;           // ai × bi → −imagSq real (i²=−1)
+        var hImag = CreateZeroRange(_segA.Imaginary);
+        var hReal = CreateZeroRange(_segA.Real);
+        var vImag = CreateZeroRange(_segB.Imaginary);
+        var vReal = CreateZeroRange(_segB.Real);
+
+        DrawQuadrantValue(canvas, hImag, vImag, $"i*i = {N(ai * bi)}");
+        DrawQuadrantValue(canvas, hImag, vReal, $"i*r = {N(ai * br)}i");
+        DrawQuadrantValue(canvas, hReal, vImag, $"r*i = {N(ar * bi)}i");
+        DrawQuadrantValue(canvas, hReal, vReal, $"r*r = {N(ar * br)}");
+    }
+
+    private void DrawQuadrantValue(SKCanvas canvas, AxisRange xRange, AxisRange yRange, string text)
+    {
+        if (_coords == null || !xRange.HasSpan || !yRange.HasSpan)
+            return;
+
+        float centerX = (xRange.Min + xRange.Max) * 0.5f;
+        float centerY = (yRange.Min + yRange.Max) * 0.5f;
+        var center = _coords.MathToPixel(centerX, centerY);
+
+        var bounds = new SKRect();
+        _quadrantTextPaint.MeasureText(text, ref bounds);
+
+        const float padX = 10f;
+        const float padY = 6f;
+        var rect = new SKRect(
+            center.X - bounds.Width * 0.5f - padX,
+            center.Y - bounds.Height * 0.5f - padY,
+            center.X + bounds.Width * 0.5f + padX,
+            center.Y + bounds.Height * 0.5f + padY);
+
+        canvas.DrawRoundRect(rect, 8f, 8f, _quadrantBgPaint);
+        canvas.DrawRoundRect(rect, 8f, 8f, _quadrantBorderPaint);
+        canvas.DrawText(text, center.X, center.Y + bounds.Height * 0.35f, _quadrantTextPaint);
+    }
+
+    private void EnsureFormulaOverlay()
+    {
+        if (_canvasHost == null || _formulaPanel != null)
+            return;
+
+        _copyIcon ??= CreateCopyIcon();
+
+        _formulaPanel = new Panel
+        {
+            BackColor = Color.Transparent,
+            Visible = true,
+            TabStop = false,
+        };
+
+        for (int i = 0; i < 3; i++)
+        {
+            var rowPanel = new Panel
+            {
+                BackColor = Color.White,
+                Height = 32,
+                Padding = new Padding(6, 6, 4, 4),
+            };
+
+            var textBox = new TextBox
+            {
+                BorderStyle = BorderStyle.None,
+                ReadOnly = true,
+                BackColor = Color.White,
+                Font = new Font("Segoe UI", 11f, FontStyle.Bold),
+                TextAlign = HorizontalAlignment.Center,
+                TabStop = true,
+                ShortcutsEnabled = true,
+            };
+
+            var button = new Button
+            {
+                Width = 26,
+                Height = 26,
+                FlatStyle = FlatStyle.Flat,
+                BackColor = Color.White,
+                Image = _copyIcon,
+                TabStop = false,
+                Cursor = Cursors.Hand,
+            };
+            button.FlatAppearance.BorderSize = 0;
+            button.FlatAppearance.MouseDownBackColor = Color.FromArgb(235, 235, 235);
+            button.FlatAppearance.MouseOverBackColor = Color.FromArgb(245, 245, 245);
+
+            button.Click += (_, _) =>
+            {
+                if (!string.IsNullOrWhiteSpace(textBox.Text))
+                    Clipboard.SetText(textBox.Text);
+            };
+
+            rowPanel.Controls.Add(textBox);
+            rowPanel.Controls.Add(button);
+            _formulaPanel.Controls.Add(rowPanel);
+            _formulaRows.Add(new FormulaRowUi(rowPanel, textBox, button));
+        }
+
+        _canvasHost.Controls.Add(_formulaPanel);
+        _formulaPanel.BringToFront();
+    }
+
+    private void UpdateFormulaOverlay()
+    {
+        if (_coords == null || _canvasHost == null || _formulaPanel == null)
+            return;
+
+        string[] lines = BuildFormulaLines();
+        using var textMeasureGraphics = _formulaPanel.CreateGraphics();
+
+        int maxWidth = 0;
+        for (int i = 0; i < _formulaRows.Count; i++)
+        {
+            var row = _formulaRows[i];
+            row.TextBox.Text = lines[i];
+            var textSize = TextRenderer.MeasureText(textMeasureGraphics, lines[i], row.TextBox.Font,
+                new Size(int.MaxValue, int.MaxValue), TextFormatFlags.NoPadding);
+            int rowWidth = textSize.Width + row.CopyButton.Width + 28;
+            maxWidth = Math.Max(maxWidth, rowWidth);
+        }
+
+        int rowHeight = 32;
+        int rowGap = 6;
+        int innerWidth = Math.Max(220, maxWidth);
+        for (int i = 0; i < _formulaRows.Count; i++)
+        {
+            var row = _formulaRows[i];
+            int top = i * (rowHeight + rowGap);
+            row.RowPanel.SetBounds(0, top, innerWidth, rowHeight);
+            row.CopyButton.SetBounds(innerWidth - row.CopyButton.Width - 4, 3, row.CopyButton.Width, row.CopyButton.Height);
+            row.TextBox.SetBounds(8, 8, innerWidth - row.CopyButton.Width - 18, 18);
+        }
+
+        _formulaPanel.Size = new Size(innerWidth, _formulaRows.Count * rowHeight + (_formulaRows.Count - 1) * rowGap);
+        PositionFormulaOverlay(ComputeGridBounds());
+        _formulaPanel.BringToFront();
+    }
+
+    private void PositionFormulaOverlay(SKRect gridBounds)
+    {
+        if (_coords == null || _canvasHost == null || _formulaPanel == null)
+            return;
+
+        float scaleX = _canvasHost.ClientSize.Width / _coords.Width;
+        float scaleY = _canvasHost.ClientSize.Height / _coords.Height;
+        int panelWidth = _formulaPanel.Width;
+        int panelHeight = _formulaPanel.Height;
+
+        int x = (int)MathF.Round(gridBounds.MidX * scaleX - panelWidth / 2f);
+        int y = (int)MathF.Round(gridBounds.Bottom * scaleY + 16f);
+
+        x = Math.Clamp(x, 8, Math.Max(8, _canvasHost.ClientSize.Width - panelWidth - 8));
+        y = Math.Clamp(y, 8, Math.Max(8, _canvasHost.ClientSize.Height - panelHeight - 8));
+
+        _formulaPanel.Location = new Point(x, y);
+    }
+
+    private SKRect ComputeGridBounds()
+    {
+        if (_coords == null)
+            return SKRect.Empty;
+
+        float minX = MathF.Min(0f, MathF.Min(_segA.Imaginary, _segA.Real));
+        float maxX = MathF.Max(0f, MathF.Max(_segA.Imaginary, _segA.Real));
+        float minY = MathF.Min(0f, MathF.Min(_segB.Imaginary, _segB.Real));
+        float maxY = MathF.Max(0f, MathF.Max(_segB.Imaginary, _segB.Real));
+
+        var topLeft = _coords.MathToPixel(minX, maxY);
+        var botRight = _coords.MathToPixel(maxX, minY);
+        return new SKRect(topLeft.X, topLeft.Y, botRight.X, botRight.Y);
+    }
+
+    private string[] BuildFormulaLines()
+    {
+        float ai = -_segA.Imaginary;
+        float ar = _segA.Real;
+        float bi = -_segB.Imaginary;
+        float br = _segB.Real;
+
+        float cross1 = ai * br;
+        float cross2 = ar * bi;
+        float realProd = ar * br;
+        float imagSq = ai * bi;
         float resultImag = cross1 + cross2;
         float resultReal = realProd - imagSq;
 
-        // Line 1: (ai + ar)(bi + br)
         string line1 = $"({N(ai)}i {Pm(ar)} {A(ar)})({N(bi)}i {Pm(br)} {A(br)})";
-
-        // Line 2: = (cross1·i ± cross2·i)(realProd ∓ imagSq)
-        //   Second group: realProd + (−imagSq), so sign is opposite to imagSq
-        string line2 = $"= ({N(cross1)}i {Pm(cross2)} {A(cross2)}i)" +
-                       $"({N(realProd)} {PmNeg(imagSq)} {A(imagSq)})";
-
-        // Line 3: = (resultImag·i ± resultReal)
+        string line2 = $"= ({N(cross1)}i {Pm(cross2)} {A(cross2)}i)({N(realProd)} {PmNeg(imagSq)} {A(imagSq)})";
         string line3 = $"= ({N(resultImag)}i {Pm(resultReal)} {A(resultReal)})";
-
-        // Draw at fixed bottom of viewbox, unaffected by panning
-        float cx = _coords.Width / 2;
-        float lineH = 27f;
-        float baseY = _coords.Height - 74;
-
-        canvas.DrawText(line1, cx, baseY,           _formulaPaint);
-        canvas.DrawText(line2, cx, baseY + lineH,   _formulaPaint);
-        canvas.DrawText(line3, cx, baseY + lineH*2, _formulaPaint);
+        return [line1, line2, line3];
     }
 
-    // --- Number formatting helpers ---
+    private static AxisRange CreateZeroRange(float value) => new(MathF.Min(0f, value), MathF.Max(0f, value));
 
-    /// Format float: integer if whole, 1 decimal otherwise. Includes sign if negative.
+    private static Bitmap CreateCopyIcon()
+    {
+        var bitmap = new Bitmap(16, 16);
+        using var graphics = Graphics.FromImage(bitmap);
+        graphics.SmoothingMode = SmoothingMode.AntiAlias;
+        graphics.Clear(Color.Transparent);
+
+        using var shadowPen = new Pen(Color.FromArgb(140, 140, 140), 1.4f);
+        using var frontPen = new Pen(Color.FromArgb(70, 70, 70), 1.4f);
+
+        graphics.DrawRectangle(shadowPen, 5, 2, 7, 9);
+        graphics.DrawRectangle(frontPen, 3, 5, 7, 9);
+        return bitmap;
+    }
+
     private static string N(float v)
     {
-        float r = MathF.Round(v * 10) / 10;
-        return MathF.Abs(r - MathF.Round(r)) < 0.05f
-            ? ((int)MathF.Round(r)).ToString()
-            : r.ToString("F1");
+        float rounded = MathF.Round(v * 10f) / 10f;
+        return MathF.Abs(rounded - MathF.Round(rounded)) < 0.05f
+            ? ((int)MathF.Round(rounded)).ToString()
+            : rounded.ToString("F1");
     }
 
-    /// Absolute value, formatted with N.
     private static string A(float v) => N(MathF.Abs(v));
-
-    /// "+" or "−" based on sign of v (for the operator between terms).
     private static string Pm(float v) => v >= 0 ? "+" : "-";
-
-    /// Negated: "−" when v > 0, "+" when v ≤ 0 (used for the i² real contribution).
     private static string PmNeg(float v) => v > 0 ? "-" : "+";
 
     public bool IsOriginHit(SKPoint pixelPoint)
@@ -179,15 +361,35 @@ public class OrthogonalAxesPage : IVisualizerPage
         _rendererA?.Dispose(); _rendererA = null;
         _rendererB?.Dispose(); _rendererB = null;
         _gridRenderer?.Dispose(); _gridRenderer = null;
+
+        if (_formulaPanel != null)
+        {
+            if (_canvasHost != null)
+                _canvasHost.Controls.Remove(_formulaPanel);
+            _formulaPanel.Dispose();
+            _formulaPanel = null;
+        }
+        _formulaRows.Clear();
+        _canvasHost = null;
         _coords = null;
     }
 
     public void Dispose()
     {
         Destroy();
-        _formulaPaint.Dispose();
+        _copyIcon?.Dispose();
+        _quadrantTextPaint.Dispose();
+        _quadrantBgPaint.Dispose();
+        _quadrantBorderPaint.Dispose();
         _originFillPaint.Dispose();
         _originStrokePaint.Dispose();
         _originDotPaint.Dispose();
     }
+
+    private readonly record struct AxisRange(float Min, float Max)
+    {
+        public bool HasSpan => Max - Min > 0.01f;
+    }
+
+    private sealed record FormulaRowUi(Panel RowPanel, TextBox TextBox, Button CopyButton);
 }

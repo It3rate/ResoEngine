@@ -1,4 +1,5 @@
 using SkiaSharp;
+using ResoEngine.Visualizer.Controls;
 using ResoEngine.Visualizer.Core;
 using ResoEngine.Visualizer.Input;
 
@@ -11,7 +12,7 @@ namespace ResoEngine.Visualizer.Pages;
 public interface IVisualizerPage : IDisposable
 {
     string Title { get; }
-    void Init(CoordinateSystem coords, HitTestEngine hitTest);
+    void Init(CoordinateSystem coords, HitTestEngine hitTest, SkiaCanvas canvas);
     void Render(SKCanvas canvas);
     void Destroy();
 
@@ -23,4 +24,10 @@ public interface IVisualizerPage : IDisposable
 
     /// <summary>Get the origin's pixel position (for cursor changes).</summary>
     SKPoint? GetOriginPixel() => null;
+
+    /// <summary>
+    /// Handle a pointer-down at a viewBox pixel point.
+    /// Return true if the event was consumed (suppresses origin drag and segment drag).
+    /// </summary>
+    bool OnPointerDown(SKPoint pixelPoint) => false;
 }

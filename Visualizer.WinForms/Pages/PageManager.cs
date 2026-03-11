@@ -56,7 +56,7 @@ public class PageManager
         _currentIndex = index;
 
         // Init new page
-        _pages[_currentIndex].Init(_canvas.Coords, _hitTest);
+        _pages[_currentIndex].Init(_canvas.Coords, _hitTest, _canvas);
         UpdateNavBar();
         _canvas.InvalidateCanvas();
     }

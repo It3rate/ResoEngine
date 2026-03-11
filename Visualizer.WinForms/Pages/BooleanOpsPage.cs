@@ -1,4 +1,5 @@
 using SkiaSharp;
+using ResoEngine.Visualizer.Controls;
 using ResoEngine.Visualizer.Core;
 using ResoEngine.Visualizer.Input;
 using ResoEngine.Visualizer.Rendering;
@@ -79,7 +80,7 @@ public class BooleanOpsPage : IVisualizerPage
         Style = SKPaintStyle.Fill, Color = new SKColor(80, 80, 80), IsAntialias = true
     };
 
-    public void Init(CoordinateSystem coords, HitTestEngine hitTest)
+    public void Init(CoordinateSystem coords, HitTestEngine hitTest, SkiaCanvas canvas)
     {
         _coords = coords;
 
@@ -269,3 +270,6 @@ public class BooleanOpsPage : IVisualizerPage
         _originDotPaint.Dispose();
     }
 }
+
+
+
