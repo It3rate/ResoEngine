@@ -1,5 +1,7 @@
-using SkiaSharp;
+using OpenTK.Graphics;
 using ResoEngine.Visualizer.Core;
+using SkiaSharp;
+using static System.Windows.Forms.AxHost;
 
 namespace ResoEngine.Visualizer.Rendering;
 
@@ -26,70 +28,82 @@ public class GridRenderer : IDisposable
         };
     }
 
+    float _xMin;
+    float _xMax;
+    float _yMin;
+    float _yMax;
     public void Render(SKCanvas canvas, DirectedSegment hSeg, DirectedSegment vSeg,
                        SegmentColorSet hColors, SegmentColorSet vColors)
     {
-        float xMin = hSeg.Imaginary;
-        float xMax = hSeg.Real;
-        float yMin = vSeg.Imaginary;
-        float yMax = vSeg.Real;
+        _xMin = hSeg.Imaginary;
+        _xMax = hSeg.Real;
+        _yMin = vSeg.Imaginary;
+        _yMax = vSeg.Real;
 
-        // --- Yellow fill: quadrant where both are imaginary (x < 0 AND y < 0) ---
-        if (xMin < 0 && yMin < 0)
-        {
-            var origin = _coords.MathToPixel(0, 0);
-            var imagCorner = _coords.MathToPixel(xMin, yMin);
+        var origin = _coords.MathToPixel(0, 0);
+        var imagCorner = _coords.MathToPixel(_xMin, _yMin);
 
-            float fillX = imagCorner.X;
-            float fillY = origin.Y;
-            float fillW = origin.X - imagCorner.X;
-            float fillH = imagCorner.Y - origin.Y;
+        float fillX = imagCorner.X;
+        float fillY = origin.Y;
+        float fillW = origin.X - imagCorner.X;
+        float fillH = imagCorner.Y - origin.Y;
 
-            if (fillW > 0 && fillH > 0)
-                canvas.DrawRect(fillX, fillY, fillW, fillH, _fillPaint);
-        }
+        canvas.DrawRect(fillX, fillY, fillW, fillH, _fillPaint);
 
         // --- Horizontal grid lines (V-segment's color, in V's real region) ---
-        using (var hPaint = new SKPaint
+        using (var bluePaint = GetPen(vColors.Grid))
         {
-            Style = SKPaintStyle.Stroke,
-            StrokeWidth = VisualStyle.GridStrokeWidth,
-            Color = vColors.Grid,
-            IsAntialias = true,
-        })
-        {
-            int startY = Math.Max((int)MathF.Ceiling(0), (int)MathF.Ceiling(yMin));
-            int endY = (int)MathF.Floor(yMax);
-            for (int my = startY; my <= endY; my++)
+            var minVal = MathF.Min(_yMin, _yMax);
+            var maxVal = MathF.Max(_yMin, _yMax);
+            int start = (int)Math.Ceiling(minVal);
+            int end = (int)Math.Floor(maxVal);
+            for (int my = start; my <= end; my++)
             {
-                if (my == 0) continue;
-                var left = _coords.MathToPixel(xMin, my);
-                var right = _coords.MathToPixel(xMax, my);
-                canvas.DrawLine(left, right, hPaint);
+                DrawVLine(my, hSeg, bluePaint, canvas);
             }
         }
 
         // --- Vertical grid lines (H-segment's color, in H's real region) ---
-        using (var vPaint = new SKPaint
+        using (var redPaint = GetPen(hColors.Grid))
         {
-            Style = SKPaintStyle.Stroke,
-            StrokeWidth = VisualStyle.GridStrokeWidth,
-            Color = hColors.Grid,
-            IsAntialias = true,
-        })
-        {
-            int startX = Math.Max((int)MathF.Ceiling(0), (int)MathF.Ceiling(xMin));
-            int endX = (int)MathF.Floor(xMax);
-            for (int mx = startX; mx <= endX; mx++)
+            var minVal = MathF.Min(_xMin, _xMax);
+            var maxVal = MathF.Max(_xMin, _xMax);
+            int start = (int)Math.Ceiling(minVal);
+            int end = (int)Math.Floor(maxVal);
+            for (int mx = start; mx <= end; mx++)
             {
-                if (mx == 0) continue;
-                var top = _coords.MathToPixel(mx, yMax);
-                var bot = _coords.MathToPixel(mx, yMin);
-                canvas.DrawLine(top, bot, vPaint);
+                DrawHLine(mx, vSeg, redPaint, canvas);
             }
         }
     }
 
+
+    private void DrawVLine(float my, DirectedSegment seg, SKPaint bluePaint, SKCanvas canvas)
+    {
+        if (my == 0) return;
+        var hMin = my > 0 ? MathF.Min(_xMin, 0) : MathF.Max(_xMin, 0);
+        var start = _coords.MathToPixel(hMin, my);
+        var end = _coords.MathToPixel(_xMax, my);
+        canvas.DrawLine(start, end, bluePaint);
+    }
+    private void DrawHLine(float mx, DirectedSegment seg, SKPaint redPaint, SKCanvas canvas)
+    {
+        if (mx == 0) return;
+        var vMin = mx > 0 ? MathF.Min(_yMin, 0) : MathF.Max(_yMin, 0);
+        var start = _coords.MathToPixel(mx, vMin);
+        var end = _coords.MathToPixel(mx, _yMax);
+        canvas.DrawLine(start, end, redPaint);
+    }
+    private SKPaint GetPen(SKColor color)
+    {
+        return new SKPaint
+        {
+            Style = SKPaintStyle.Stroke,
+            StrokeWidth = VisualStyle.GridStrokeWidth,
+            Color = color,
+            IsAntialias = true,
+        };
+    }
     public void Dispose()
     {
         _fillPaint.Dispose();

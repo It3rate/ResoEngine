@@ -11,6 +11,11 @@ public class MainForm : Form
     private readonly PageManager _pageManager;
     private readonly DragController _dragController;
 
+    private void InitializeComponent()
+    {
+
+    }
+
     public MainForm()
     {
         Text = "ResoEngine Visualizer";

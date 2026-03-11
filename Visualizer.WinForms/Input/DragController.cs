@@ -40,9 +40,12 @@ public class DragController
     public bool BeginDrag(SKPoint pixelPos)
     {
         _active = _hitTest.HitTest(pixelPos);
-        _lastSegPosReal = _active.Segment.Real;
-        _lastSegPosImaginary = _active.Segment.Imaginary;
-        _lastPixelPos = pixelPos;
+        if(_active != null)
+        {
+            _lastSegPosReal = _active.Segment.Real;
+            _lastSegPosImaginary = _active.Segment.Imaginary;
+            _lastPixelPos = pixelPos;
+        }
         return _active != null;
     }
 
@@ -74,7 +77,6 @@ public class DragController
                 seg.Real = Snap(_lastSegPosReal + delta);
                 break;
         }
-        Debug.WriteLine(seg.Real + ":" + delta);
 
         Changed?.Invoke();
         return true;
