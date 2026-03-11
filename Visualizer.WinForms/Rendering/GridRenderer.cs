@@ -6,13 +6,17 @@ namespace ResoEngine.Visualizer.Rendering;
 /// <summary>
 /// Renders the orthogonal grid for two directed segments.
 ///
-/// Grid rules:
-///   - Grid lines only extrude from the REAL part of each segment (imaginary→real)
-///   - Both real regions overlap → crossed (both sets of lines)
-///   - One real + one imaginary → only the real segment's lines
-///   - Both imaginary regions overlap → yellow fill
-///   - Grid lines extend slightly past segment endpoints
-///   - Same color as the segment but thinner
+/// Each segment has three axis points: 0 (origin), imaginary, real.
+/// This creates two sections:
+///   Dashed section:  0 → imaginary
+///   Solid section:   imaginary → real
+///
+/// Grid rules (two regions per axis, three rendering zones):
+///   Stripe region = [real, clamp(0, solidMin, solidMax)]
+///                  (from real toward 0, clipped to the solid section)
+///   Imaginary region = [0, imaginary]  (the dashed section)
+///   Yellow fill = where both axes' imaginary regions overlap
+///   Grid lines = from each axis' stripe region, extending across the other axis
 /// </summary>
 public class GridRenderer : IDisposable
 {
@@ -35,17 +39,28 @@ public class GridRenderer : IDisposable
     {
         float ext = 0;// VisualStyle.GridExtension;
 
-        // The "imaginary region" on each axis is from 0 to the imaginary value.
-        // The "real region" is from 0 to the real value (stripes only extrude from the real part).
+        // Imaginary region (dashed section): [0, imaginary]
         float hImagMin = MathF.Min(0, hSeg.Imaginary);
         float hImagMax = MathF.Max(0, hSeg.Imaginary);
         float vImagMin = MathF.Min(0, vSeg.Imaginary);
         float vImagMax = MathF.Max(0, vSeg.Imaginary);
 
-        float hRealMin = MathF.Min(0, hSeg.Real);
-        float hRealMax = MathF.Max(0, hSeg.Real);
-        float vRealMin = MathF.Min(0, vSeg.Real);
-        float vRealMax = MathF.Max(0, vSeg.Real);
+        // Stripe region: from real toward 0, clipped to the solid section [imag..real].
+        // Formula: [real, clamp(0, solidMin, solidMax)]
+        float hRealMin, hRealMax, vRealMin, vRealMax;
+        {
+            float hSolidMin = MathF.Min(hSeg.Imaginary, hSeg.Real);
+            float hSolidMax = MathF.Max(hSeg.Imaginary, hSeg.Real);
+            float hZero = Math.Clamp(0f, hSolidMin, hSolidMax);
+            hRealMin = MathF.Min(hSeg.Real, hZero);
+            hRealMax = MathF.Max(hSeg.Real, hZero);
+
+            float vSolidMin = MathF.Min(vSeg.Imaginary, vSeg.Real);
+            float vSolidMax = MathF.Max(vSeg.Imaginary, vSeg.Real);
+            float vZero = Math.Clamp(0f, vSolidMin, vSolidMax);
+            vRealMin = MathF.Min(vSeg.Real, vZero);
+            vRealMax = MathF.Max(vSeg.Real, vZero);
+        }
 
         // --- Yellow fill where both imaginary regions overlap (drawn first as background) ---
         float yFillXMin = hImagMin;
