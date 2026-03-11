@@ -9,8 +9,8 @@ public class CoordinateSystem
 {
     public float Width { get; }
     public float Height { get; }
-    public float OriginX { get; }
-    public float OriginY { get; }
+    public float OriginX { get; set; }
+    public float OriginY { get; set; }
     public float Scale { get; }
 
     public CoordinateSystem(

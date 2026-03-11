@@ -16,8 +16,8 @@ public class MainForm : Form
     // Origin drag state (handled separately from DragController)
     private bool _originDragging;
     private SKPoint _originDragStart;
-    private float[] _originStartImag = [];
-    private float[] _originStartReal = [];
+    private float _originStartX;
+    private float _originStartY;
 
     private void InitializeComponent()
     {
@@ -69,22 +69,14 @@ public class MainForm : Form
         var page = _pageManager.CurrentPage;
 
         // Check origin hit first (priority over segment hits)
+        // Dragging the origin pans the entire viewport without changing segment values
         if (page != null && page.IsOriginHit(pt))
         {
-            var segs = page.GetDraggableSegments();
-            if (segs != null && segs.Count > 0)
-            {
-                _originDragging = true;
-                _originDragStart = pt;
-                _originStartImag = new float[segs.Count];
-                _originStartReal = new float[segs.Count];
-                for (int i = 0; i < segs.Count; i++)
-                {
-                    _originStartImag[i] = segs[i].Imaginary;
-                    _originStartReal[i] = segs[i].Real;
-                }
-                return;
-            }
+            _originDragging = true;
+            _originDragStart = pt;
+            _originStartX = _canvas.Coords.OriginX;
+            _originStartY = _canvas.Coords.OriginY;
+            return;
         }
 
         // Fall through to regular drag
@@ -96,20 +88,11 @@ public class MainForm : Form
     {
         if (_originDragging)
         {
-            var page = _pageManager.CurrentPage;
-            var segs = page?.GetDraggableSegments();
-            if (segs == null) return;
-
-            float dx = (pt.X - _originDragStart.X) / _canvas.Coords.Scale;
-            float dy = -(pt.Y - _originDragStart.Y) / _canvas.Coords.Scale;
-
-            // Move H-segments by dx, V-segments by dy
-            for (int i = 0; i < segs.Count; i++)
-            {
-                float delta = (i == 0) ? dx : dy; // first = horizontal, second = vertical
-                segs[i].Imaginary = Snap(_originStartImag[i] + delta);
-                segs[i].Real = Snap(_originStartReal[i] + delta);
-            }
+            // Pan the entire viewport by moving the coordinate system origin
+            float dx = pt.X - _originDragStart.X;
+            float dy = pt.Y - _originDragStart.Y;
+            _canvas.Coords.OriginX = _originStartX + dx;
+            _canvas.Coords.OriginY = _originStartY + dy;
             _canvas.InvalidateCanvas();
             return;
         }

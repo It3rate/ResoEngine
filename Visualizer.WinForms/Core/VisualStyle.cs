@@ -7,6 +7,7 @@ public static class VisualStyle
 {
     public const float StrokeWidth = 4f;
     public const float GridStrokeWidth = 0.8f;
+    public const float HalfTickStrokeWidth = 0.4f;
     public static readonly float[] DashPattern = [8f, 6f];
     public const float CircleRadius = 7f;
     public const float DotRadius = 5f;

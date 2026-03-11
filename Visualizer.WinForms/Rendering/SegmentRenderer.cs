@@ -199,8 +199,18 @@ public class SegmentRenderer : IDisposable
     private static string FormatValue(float val, bool isImaginary)
     {
         float rounded = MathF.Round(val * 10) / 10;
-        string sign = rounded >= 0 ? "+" : "";
-        return isImaginary ? $"{sign}{rounded}i" : $"{sign}{rounded}";
+        if (isImaginary)
+        {
+            // Imaginary axis is positive-left, so negate for display
+            float display = -rounded;
+            string sign = display >= 0 ? "+" : "";
+            return $"{sign}{display}i";
+        }
+        else
+        {
+            string sign = rounded >= 0 ? "+" : "";
+            return $"{sign}{rounded}";
+        }
     }
 
     public void Dispose()
