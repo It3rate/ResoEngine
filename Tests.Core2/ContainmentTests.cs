@@ -46,7 +46,7 @@ public class ContainmentTests
     }
 
     [Fact]
-    public void AxisContainment_AnalyzesRecessiveAndDominantSlotsRecursively()
+    public void AxisContainment_UsesWholeAxisEnvelope_AndSupportTensions()
     {
         var parent = new Axis(new Proportion(4, 2), new Proportion(6, 2)).AsNode();
         var child = new Axis(new Proportion(7, 3), new Proportion(3, 2));
@@ -55,10 +55,10 @@ public class ContainmentTests
 
         Assert.Equal(child, Assert.IsType<Axis>(relation.ChildInParentContext));
         Assert.Contains(relation.Tensions, tension =>
-            tension.Kind == ContainmentTensionKind.ResolutionMismatch && tension.Path == "recessive");
+            tension.Kind == ContainmentTensionKind.ResolutionMismatch && tension.Path == "recessive.support");
         Assert.Contains(relation.Tensions, tension =>
-            tension.Kind == ContainmentTensionKind.OutsideExpectedRange && tension.Path == "recessive");
-        Assert.DoesNotContain(relation.Tensions, tension => tension.Path == "dominant");
+            tension.Kind == ContainmentTensionKind.OutsideExpectedRange && tension.Path == "recessive.boundary");
+        Assert.DoesNotContain(relation.Tensions, tension => tension.Path.StartsWith("dominant"));
     }
 
     [Fact]
@@ -87,9 +87,40 @@ public class ContainmentTests
         var relation = parent.AddChild(child);
 
         Assert.Contains(relation.Tensions, tension =>
-            tension.Kind == ContainmentTensionKind.ResolutionMismatch && tension.Path == "recessive.recessive");
+            tension.Kind == ContainmentTensionKind.ResolutionMismatch && tension.Path == "recessive-axis.recessive.support");
         Assert.Contains(relation.Tensions, tension =>
-            tension.Kind == ContainmentTensionKind.OutsideExpectedRange && tension.Path == "recessive.recessive");
-        Assert.DoesNotContain(relation.Tensions, tension => tension.Path.StartsWith("dominant"));
+            tension.Kind == ContainmentTensionKind.OutsideExpectedRange && tension.Path == "recessive-axis.recessive.boundary");
+        Assert.DoesNotContain(relation.Tensions, tension => tension.Path.StartsWith("dominant-axis"));
+    }
+
+    [Fact]
+    public void AreaParent_CanHostAxisChild_WithPlacementUncertaintyInsteadOfUnsupported()
+    {
+        var parent = new Area(
+            new Axis(new Proportion(4, 2), new Proportion(6, 2)),
+            new Axis(new Proportion(5, 2), new Proportion(8, 2)))
+            .AsNode();
+        var child = new Axis(new Proportion(1, 2), new Proportion(2, 2));
+
+        var relation = parent.AddChild(child);
+
+        Assert.Equal(child, Assert.IsType<Axis>(relation.ChildInParentContext));
+        Assert.Contains(relation.Tensions, tension => tension.Kind == ContainmentTensionKind.PlacementUnderspecified);
+        Assert.DoesNotContain(relation.Tensions, tension => tension.Kind == ContainmentTensionKind.UnsupportedInterpretation);
+    }
+
+    [Fact]
+    public void AxisParent_CanHostAreaChild_WithPlacementUncertaintyInsteadOfUnsupported()
+    {
+        var parent = new Axis(new Proportion(4, 2), new Proportion(6, 2)).AsNode();
+        var child = new Area(
+            new Axis(new Proportion(1, 2), new Proportion(2, 2)),
+            new Axis(new Proportion(1, 2), new Proportion(3, 2)));
+
+        var relation = parent.AddChild(child);
+
+        Assert.Equal(child, Assert.IsType<Area>(relation.ChildInParentContext));
+        Assert.Contains(relation.Tensions, tension => tension.Kind == ContainmentTensionKind.PlacementUnderspecified);
+        Assert.DoesNotContain(relation.Tensions, tension => tension.Kind == ContainmentTensionKind.UnsupportedInterpretation);
     }
 }

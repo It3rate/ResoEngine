@@ -100,7 +100,8 @@ internal static class ContainmentAnalysis
     {
         if (child is not Scalar and not Proportion)
         {
-            return Unsupported(child, tensions, parent, child);
+            return CrossGrade(child, tensions, parent, child,
+                "A proportion can host higher-degree children, but it cannot fully place their orientation or expansion without an additional rule.");
         }
 
         var normalized = child switch
@@ -119,14 +120,15 @@ internal static class ContainmentAnalysis
         IElement child,
         List<ContainmentTension> tensions)
     {
-        if (child is not Axis axisChild)
+        if (child is Axis axisChild)
         {
-            return Unsupported(child, tensions, parent, child);
+            AnalyzeAxisEnvelope(parent, axisChild, tensions, string.Empty);
+            AnalyzeAxisSupport(parent, axisChild, tensions, string.Empty);
+            return new ContainmentAnalysisResult(axisChild, tensions);
         }
 
-        AnalyzeProportionRangeAndResolution(parent.Recessive, axisChild.Recessive, tensions, "recessive");
-        AnalyzeProportionRangeAndResolution(parent.Dominant, axisChild.Dominant, tensions, "dominant");
-        return new ContainmentAnalysisResult(axisChild, tensions);
+        return CrossGrade(child, tensions, parent, child,
+            "An Axis parent can host a child of another degree, but the child's placement along the line is underspecified without additional anchoring information.");
     }
 
     private static ContainmentAnalysisResult AnalyzeAreaParent(
@@ -134,24 +136,64 @@ internal static class ContainmentAnalysis
         IElement child,
         List<ContainmentTension> tensions)
     {
-        if (child is not Area areaChild)
+        if (child is Area areaChild)
         {
-            return Unsupported(child, tensions, parent, child);
+            AnalyzeAreaEnvelope(parent, areaChild, tensions, string.Empty);
+            return new ContainmentAnalysisResult(areaChild, tensions);
         }
 
-        AnalyzeAxisRangeAndResolution(parent.Recessive, areaChild.Recessive, tensions, "recessive");
-        AnalyzeAxisRangeAndResolution(parent.Dominant, areaChild.Dominant, tensions, "dominant");
-        return new ContainmentAnalysisResult(areaChild, tensions);
+        return CrossGrade(child, tensions, parent, child,
+            "An Area parent can host a child of another degree, but its location inside the area is underspecified without an additional embedding rule.");
     }
 
-    private static void AnalyzeAxisRangeAndResolution(
+    private static void AnalyzeAreaEnvelope(
+        Area parent,
+        Area child,
+        List<ContainmentTension> tensions,
+        string pathPrefix)
+    {
+        AnalyzeAxisEnvelope(parent.Recessive, child.Recessive, tensions, AppendPath(pathPrefix, "recessive-axis"));
+        AnalyzeAxisSupport(parent.Recessive, child.Recessive, tensions, AppendPath(pathPrefix, "recessive-axis"));
+        AnalyzeAxisEnvelope(parent.Dominant, child.Dominant, tensions, AppendPath(pathPrefix, "dominant-axis"));
+        AnalyzeAxisSupport(parent.Dominant, child.Dominant, tensions, AppendPath(pathPrefix, "dominant-axis"));
+    }
+
+    private static void AnalyzeAxisEnvelope(
         Axis parent,
         Axis child,
         List<ContainmentTension> tensions,
         string pathPrefix)
     {
-        AnalyzeProportionRangeAndResolution(parent.Recessive, child.Recessive, tensions, AppendPath(pathPrefix, "recessive"));
-        AnalyzeProportionRangeAndResolution(parent.Dominant, child.Dominant, tensions, AppendPath(pathPrefix, "dominant"));
+        decimal parentStart = -parent.Recessive.Fold();
+        decimal parentEnd = parent.Dominant.Fold();
+        decimal childStart = -child.Recessive.Fold();
+        decimal childEnd = child.Dominant.Fold();
+
+        if (childStart < parentStart)
+        {
+            tensions.Add(new ContainmentTension(
+                ContainmentTensionKind.OutsideExpectedRange,
+                AppendPath(pathPrefix, "recessive.boundary"),
+                $"Child start boundary {childStart:0.###} falls outside parent start boundary {parentStart:0.###}."));
+        }
+
+        if (childEnd > parentEnd)
+        {
+            tensions.Add(new ContainmentTension(
+                ContainmentTensionKind.OutsideExpectedRange,
+                AppendPath(pathPrefix, "dominant.boundary"),
+                $"Child end boundary {childEnd:0.###} falls outside parent end boundary {parentEnd:0.###}."));
+        }
+    }
+
+    private static void AnalyzeAxisSupport(
+        Axis parent,
+        Axis child,
+        List<ContainmentTension> tensions,
+        string pathPrefix)
+    {
+        AnalyzeProportionSupport(parent.Recessive, child.Recessive, tensions, AppendPath(pathPrefix, "recessive.support"));
+        AnalyzeProportionSupport(parent.Dominant, child.Dominant, tensions, AppendPath(pathPrefix, "dominant.support"));
     }
 
     private static void AnalyzeProportionRangeAndResolution(
@@ -180,6 +222,36 @@ internal static class ContainmentAnalysis
                 path,
                 $"Child value {childValue:0.###} falls outside expected range [{min:0.###}, {max:0.###}]."));
         }
+    }
+
+    private static void AnalyzeProportionSupport(
+        Proportion parent,
+        Proportion child,
+        List<ContainmentTension> tensions,
+        string path)
+    {
+        if (child.Recessive != parent.Recessive)
+        {
+            tensions.Add(new ContainmentTension(
+                ContainmentTensionKind.ResolutionMismatch,
+                path,
+                $"Child recessive support {child.Recessive} does not match parent recessive support {parent.Recessive}."));
+        }
+    }
+
+    private static ContainmentAnalysisResult CrossGrade(
+        IElement encodedChild,
+        List<ContainmentTension> tensions,
+        IElement parent,
+        IElement child,
+        string message)
+    {
+        tensions.Add(new ContainmentTension(
+            ContainmentTensionKind.PlacementUnderspecified,
+            string.Empty,
+            $"{message} Parent degree {parent.Degree}, child degree {child.Degree}."));
+
+        return new ContainmentAnalysisResult(encodedChild, tensions);
     }
 
     private static ContainmentAnalysisResult Unsupported(

@@ -4,6 +4,7 @@ public enum ContainmentTensionKind
 {
     OutsideExpectedRange,
     ResolutionMismatch,
+    PlacementUnderspecified,
     UnsupportedInterpretation,
 }
 
