@@ -6,7 +6,7 @@ namespace ResoEngine.Core2;
 /// Degree 0: a plain scalar with implicit unit 1.000...
 /// This is the non-resolution value layer that sits below Proportion.
 /// </summary>
-public readonly record struct Scalar(decimal Value)
+public readonly record struct Scalar(decimal Value) : IElement
 {
     public static Scalar Zero => new(0m);
     public static Scalar One => new(1m);
@@ -14,6 +14,7 @@ public readonly record struct Scalar(decimal Value)
     internal static IArithmetic<Scalar> Arithmetic { get; } = new ScalarArithmetic();
 
     public bool IsZero => Value == 0m;
+    public int Degree => 0;
 
     public static implicit operator Scalar(int value) => new(value);
     public static implicit operator Scalar(long value) => new(value);

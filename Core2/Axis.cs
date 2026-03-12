@@ -7,7 +7,7 @@ namespace ResoEngine.Core2;
 /// Recessive and dominant are each Proportions, giving:
 /// recessive value, recessive unit, dominant value, dominant unit.
 /// </summary>
-public sealed record Axis(Proportion Recessive, Proportion Dominant)
+public sealed record Axis(Proportion Recessive, Proportion Dominant) : IElement
 {
     private static readonly AlgebraTable<Proportion> Table = new(Proportion.Arithmetic);
 
@@ -16,6 +16,7 @@ public sealed record Axis(Proportion Recessive, Proportion Dominant)
     public static Axis I => new(Proportion.One, Proportion.Zero);
     public static Axis NegativeOne => new(Proportion.Zero, -Proportion.One);
     public static Axis NegativeI => new(-Proportion.One, Proportion.Zero);
+    public int Degree => 2;
 
     internal static IArithmetic<Axis> Arithmetic { get; } = new AxisArithmetic();
 

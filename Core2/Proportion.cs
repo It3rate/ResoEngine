@@ -6,7 +6,7 @@ namespace ResoEngine.Core2;
 /// Degree 1: an undivided proportion.
 /// Numerator carries the value, denominator carries the resolution/unit.
 /// </summary>
-public sealed record Proportion
+public sealed record Proportion : IElement
 {
     private static readonly AlgebraTable<Scalar> Table = new(
         Scalar.Arithmetic,
@@ -36,6 +36,7 @@ public sealed record Proportion
 
     public Scalar Numerator { get; }
     public Scalar Denominator { get; }
+    public int Degree => 1;
 
     internal static Proportion FromScalars(Scalar numerator, Scalar denominator) =>
         new(numerator, denominator, true);
