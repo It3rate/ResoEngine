@@ -33,4 +33,24 @@ public class ProportionTests
 
         Assert.Equal(new Proportion(5, 6), result);
     }
+
+    [Fact]
+    public void NumeratorIsDominant_AndDenominatorIsRecessive()
+    {
+        var proportion = new Proportion(4, 2);
+
+        Assert.Equal(new Scalar(4m), proportion.Dominant);
+        Assert.Equal(new Scalar(2m), proportion.Recessive);
+    }
+
+    [Fact]
+    public void Mirror_ProducesReciprocalBySwappingRoles()
+    {
+        var proportion = new Proportion(4, 2);
+
+        var mirrored = proportion.Mirror();
+
+        Assert.Equal(new Proportion(2, 4), mirrored);
+        Assert.Equal(mirrored, proportion.Reciprocal());
+    }
 }

@@ -4,11 +4,11 @@ namespace ResoEngine.Core2;
 
 /// <summary>
 /// Degree 1: an undivided proportion.
-/// Numerator carries the value, denominator carries the resolution/unit.
+/// The numerator is the dominant amount and the denominator is the recessive support/resolution.
 /// </summary>
 public sealed record Proportion : IElement
 {
-    private static readonly AlgebraTable<Scalar> Table = new(
+    private static readonly AlgebraTable<Scalar> MultiplicationTable = new(
         Scalar.Arithmetic,
         [
             new AlgebraEntry(0, 0, 0, +1),
@@ -36,28 +36,37 @@ public sealed record Proportion : IElement
 
     public Scalar Numerator { get; }
     public Scalar Denominator { get; }
+    public Scalar Dominant => Numerator;
+    public Scalar Recessive => Denominator;
     public int Degree => 1;
 
     internal static Proportion FromScalars(Scalar numerator, Scalar denominator) =>
-        new(numerator, denominator, true);
+        FromRecessiveDominant(denominator, numerator);
 
-    public Scalar Fold() => Numerator / Denominator;
+    internal static Proportion FromRecessiveDominant(Scalar recessive, Scalar dominant) =>
+        new(dominant, recessive, true);
+
+    public Scalar Fold() => Dominant / Recessive;
+
+    public Proportion Reciprocal() => FromRecessiveDominant(Dominant, Recessive);
+
+    public Proportion Mirror() => Reciprocal();
 
     public static Proportion operator +(Proportion left, Proportion right) =>
-        FromScalars(
-            (left.Numerator * right.Denominator) + (right.Numerator * left.Denominator),
-            left.Denominator * right.Denominator);
+        FromRecessiveDominant(
+            left.Recessive * right.Recessive,
+            (left.Dominant * right.Recessive) + (right.Dominant * left.Recessive));
 
     public static Proportion operator -(Proportion value) =>
-        FromScalars(-value.Numerator, value.Denominator);
+        FromRecessiveDominant(value.Recessive, -value.Dominant);
 
     public static Proportion operator *(Proportion left, Proportion right)
     {
-        var result = Table.Multiply(
-            (left.Numerator, left.Denominator),
-            (right.Numerator, right.Denominator));
+        var result = MultiplicationTable.Multiply(
+            (left.Recessive, left.Dominant),
+            (right.Recessive, right.Dominant));
 
-        return FromScalars(result.Recessive, result.Dominant);
+        return FromRecessiveDominant(result.Recessive, result.Dominant);
     }
 
     public override string ToString() => $"{Numerator}/{Denominator}";

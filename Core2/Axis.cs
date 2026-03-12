@@ -4,8 +4,9 @@ namespace ResoEngine.Core2;
 
 /// <summary>
 /// Degree 2: a 1D directed reading with four scalar degrees of freedom.
-/// Recessive and dominant are each Proportions, giving:
-/// recessive value, recessive unit, dominant value, dominant unit.
+/// Recessive and dominant are each Proportions, where each Proportion is
+/// dominant amount over recessive support. Together that gives four scalar degrees:
+/// recessive amount/support and dominant amount/support.
 /// </summary>
 public sealed record Axis(Proportion Recessive, Proportion Dominant) : IElement
 {

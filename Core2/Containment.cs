@@ -103,7 +103,7 @@ internal static class ContainmentAnalysis
 
         var normalized = child switch
         {
-            Scalar scalar => Proportion.FromScalars(scalar, parent.Denominator),
+            Scalar scalar => Proportion.FromRecessiveDominant(parent.Recessive, scalar),
             Proportion proportion => proportion,
             _ => throw new InvalidOperationException("Unreachable child normalization."),
         };
@@ -158,12 +158,12 @@ internal static class ContainmentAnalysis
         List<ContainmentTension> tensions,
         string path)
     {
-        if (child.Denominator != parent.Denominator)
+        if (child.Recessive != parent.Recessive)
         {
             tensions.Add(new ContainmentTension(
                 ContainmentTensionKind.ResolutionMismatch,
                 path,
-                $"Child resolution {child.Denominator} does not match parent resolution {parent.Denominator}."));
+                $"Child recessive support {child.Recessive} does not match parent recessive support {parent.Recessive}."));
         }
 
         decimal parentValue = parent.Fold();
