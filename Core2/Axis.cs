@@ -3,8 +3,9 @@ using ResoEngine.Core2.Support;
 namespace ResoEngine.Core2;
 
 /// <summary>
-/// Degree 2: a pair of Proportions that obey the same opposition algebra as degree 1.
-/// This preserves the Scalar -> Proportion -> Axis ladder while moving to the new semantics.
+/// Degree 2: a 1D directed reading with four scalar degrees of freedom.
+/// Recessive and dominant are each Proportions, giving:
+/// recessive value, recessive unit, dominant value, dominant unit.
 /// </summary>
 public sealed record Axis(Proportion Recessive, Proportion Dominant)
 {
@@ -18,6 +19,11 @@ public sealed record Axis(Proportion Recessive, Proportion Dominant)
 
     internal static IArithmetic<Axis> Arithmetic { get; } = new AxisArithmetic();
 
+    public Axis(long recessiveValue, long recessiveUnit, long dominantValue, long dominantUnit)
+        : this(new Proportion(recessiveValue, recessiveUnit), new Proportion(dominantValue, dominantUnit))
+    {
+    }
+
     public Axis ApplyOpposition()
     {
         var result = Table.ApplyOpposition(Recessive, Dominant);
@@ -30,6 +36,9 @@ public sealed record Axis(Proportion Recessive, Proportion Dominant)
     public static Axis operator -(Axis value) =>
         new(-value.Recessive, -value.Dominant);
 
+    /// <summary>
+    /// Right action: the left operand is the current line-state, the right operand is transform data.
+    /// </summary>
     public static Axis operator *(Axis state, Axis transform)
     {
         var result = Table.Multiply((state.Recessive, state.Dominant), (transform.Recessive, transform.Dominant));

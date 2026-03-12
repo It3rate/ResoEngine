@@ -3,50 +3,63 @@ using ResoEngine.Core2.Support;
 namespace ResoEngine.Core2;
 
 /// <summary>
-/// Degree 1: a measured interval reading ai + b.
-/// Recessive is the i-slot; Dominant is the identity-slot.
+/// Degree 1: an undivided proportion.
+/// Numerator carries the value, denominator carries the resolution/unit.
 /// </summary>
-public sealed record Proportion(Scalar Recessive, Scalar Dominant)
+public sealed record Proportion
 {
-    private static readonly AlgebraTable<Scalar> Table = new(Scalar.Arithmetic);
+    private static readonly AlgebraTable<Scalar> Table = new(
+        Scalar.Arithmetic,
+        [
+            new AlgebraEntry(0, 0, 0, +1),
+            new AlgebraEntry(1, 1, 1, +1),
+        ]);
 
-    public static Proportion Zero => new(Scalar.Zero, Scalar.Zero);
-    public static Proportion One => new(Scalar.Zero, Scalar.One);
-    public static Proportion I => new(Scalar.One, Scalar.Zero);
-    public static Proportion NegativeOne => new(Scalar.Zero, -Scalar.One);
-    public static Proportion NegativeI => new(-Scalar.One, Scalar.Zero);
+    public static Proportion Zero => FromScalars(Scalar.Zero, Scalar.One);
+    public static Proportion One => FromScalars(Scalar.One, Scalar.One);
 
     internal static IArithmetic<Proportion> Arithmetic { get; } = new ProportionArithmetic();
 
-    public static Proportion FromInterval(DirectedInterval interval, MeasurementFrame frame, Perspective perspective = Perspective.Dominant) =>
-        frame.Read(interval, perspective);
-
-    public Proportion ApplyOpposition()
+    private Proportion(Scalar numerator, Scalar denominator, bool _)
     {
-        var result = Table.ApplyOpposition(Recessive, Dominant);
-        return new Proportion(result.Recessive, result.Dominant);
+        if (denominator.IsZero)
+            throw new DivideByZeroException("Proportion denominator cannot be zero.");
+
+        Numerator = numerator;
+        Denominator = denominator;
     }
 
-    public Proportion InPerspective(Perspective perspective) =>
-        perspective == Perspective.Dominant ? this : -this;
+    public Proportion(long numerator, long denominator = 1)
+        : this(new Scalar(numerator), new Scalar(denominator), true)
+    {
+    }
+
+    public Scalar Numerator { get; }
+    public Scalar Denominator { get; }
+
+    internal static Proportion FromScalars(Scalar numerator, Scalar denominator) =>
+        new(numerator, denominator, true);
+
+    public Scalar Fold() => Numerator / Denominator;
 
     public static Proportion operator +(Proportion left, Proportion right) =>
-        new(left.Recessive + right.Recessive, left.Dominant + right.Dominant);
+        FromScalars(
+            (left.Numerator * right.Denominator) + (right.Numerator * left.Denominator),
+            left.Denominator * right.Denominator);
 
     public static Proportion operator -(Proportion value) =>
-        new(-value.Recessive, -value.Dominant);
+        FromScalars(-value.Numerator, value.Denominator);
 
-    /// <summary>
-    /// Right action: left is the current state, right is transform data.
-    /// Using a Proportion in transform position is the encoded form of applying opposition/scaling.
-    /// </summary>
-    public static Proportion operator *(Proportion state, Proportion transform)
+    public static Proportion operator *(Proportion left, Proportion right)
     {
-        var result = Table.Multiply((state.Recessive, state.Dominant), (transform.Recessive, transform.Dominant));
-        return new Proportion(result.Recessive, result.Dominant);
+        var result = Table.Multiply(
+            (left.Numerator, left.Denominator),
+            (right.Numerator, right.Denominator));
+
+        return FromScalars(result.Recessive, result.Dominant);
     }
 
-    public override string ToString() => $"{Recessive}i + {Dominant}";
+    public override string ToString() => $"{Numerator}/{Denominator}";
 
     private sealed class ProportionArithmetic : IArithmetic<Proportion>
     {

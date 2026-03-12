@@ -5,31 +5,32 @@ namespace Tests.Core2;
 public class ProportionTests
 {
     [Fact]
-    public void Multiplication_UsesRightActionOppositionCycle()
+    public void Fold_DividesNumeratorByDenominator()
     {
-        Assert.Equal(Proportion.I, Proportion.One * Proportion.I);
-        Assert.Equal(Proportion.NegativeOne, Proportion.I * Proportion.I);
-        Assert.Equal(Proportion.NegativeI, Proportion.NegativeOne * Proportion.I);
-        Assert.Equal(Proportion.One, Proportion.NegativeI * Proportion.I);
+        var proportion = new Proportion(9, 2);
+
+        Assert.Equal(new Scalar(4.5m), proportion.Fold());
     }
 
     [Fact]
-    public void Multiplication_DerivesComplexStyleProductFromOppositionBasis()
+    public void Multiplication_MultipliesNumeratorsAndDenominators()
     {
-        var state = new Proportion(2, 3);
-        var transform = new Proportion(4, 5);
+        var left = new Proportion(2, 3);
+        var right = new Proportion(5, 7);
 
-        var result = state * transform;
+        var result = left * right;
 
-        Assert.Equal(new Scalar(22), result.Recessive);
-        Assert.Equal(new Scalar(7), result.Dominant);
+        Assert.Equal(new Proportion(10, 21), result);
     }
 
     [Fact]
-    public void ApplyOpposition_MatchesRightMultiplicationByI()
+    public void Addition_PreservesUndividedFractionForm()
     {
-        var value = new Proportion(2, 3);
+        var left = new Proportion(1, 2);
+        var right = new Proportion(1, 3);
 
-        Assert.Equal(value.ApplyOpposition(), value * Proportion.I);
+        var result = left + right;
+
+        Assert.Equal(new Proportion(5, 6), result);
     }
 }

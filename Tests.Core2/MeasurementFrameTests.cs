@@ -12,8 +12,8 @@ public class MeasurementFrameTests
 
         var reading = frame.Read(interval);
 
-        Assert.Equal(new Scalar(3), reading.Recessive);
-        Assert.Equal(new Scalar(2), reading.Dominant);
+        Assert.Equal(new Proportion(6, 2), reading.Recessive);
+        Assert.Equal(new Proportion(8, 4), reading.Dominant);
     }
 
     [Fact]
@@ -24,8 +24,8 @@ public class MeasurementFrameTests
 
         var reading = frame.Read(interval, Perspective.Opposite);
 
-        Assert.Equal(new Scalar(-3), reading.Recessive);
-        Assert.Equal(new Scalar(-2), reading.Dominant);
+        Assert.Equal(new Proportion(-6, 2), reading.Recessive);
+        Assert.Equal(new Proportion(-8, 4), reading.Dominant);
     }
 
     [Fact]

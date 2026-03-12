@@ -1,7 +1,11 @@
 <Solution>
   <Project Path="Core/Core.csproj" />
-  <Project Path="Core2/Core2.csproj" />
-  <Project Path="Tests.Core2/Tests.Core2.csproj" />
+  <Project Path="Core2/Core2.csproj">
+    <Build Solution="Debug|*" Project="false" />
+  </Project>
+  <Project Path="Tests.Core2/Tests.Core2.csproj">
+    <Build Solution="Debug|*" Project="false" />
+  </Project>
   <Project Path="Tests/Tests.csproj" />
   <Project Path="Visualizer.WinForms/Visualizer.WinForms.csproj" />
 </Solution>

@@ -1,53 +1,41 @@
-using System.Numerics;
 using ResoEngine.Core2.Support;
 
 namespace ResoEngine.Core2;
 
 /// <summary>
-/// Degree 0: a rational scalar. This is the atomic measurable element used by the higher degrees.
+/// Degree 0: a plain scalar with implicit unit 1.000...
+/// This is the non-resolution value layer that sits below Proportion.
 /// </summary>
-public readonly record struct Scalar
+public readonly record struct Scalar(decimal Value)
 {
-    public static Scalar Zero => new(0, 1);
-    public static Scalar One => new(1, 1);
+    public static Scalar Zero => new(0m);
+    public static Scalar One => new(1m);
 
     internal static IArithmetic<Scalar> Arithmetic { get; } = new ScalarArithmetic();
 
-    public Scalar(long numerator, long denominator = 1)
+    public bool IsZero => Value == 0m;
+
+    public static implicit operator Scalar(int value) => new(value);
+    public static implicit operator Scalar(long value) => new(value);
+    public static implicit operator Scalar(decimal value) => new(value);
+    public static explicit operator Scalar(double value) => new((decimal)value);
+
+    public static implicit operator decimal(Scalar value) => value.Value;
+    public static explicit operator double(Scalar value) => (double)value.Value;
+
+    public static Scalar operator +(Scalar left, Scalar right) => new(left.Value + right.Value);
+    public static Scalar operator -(Scalar value) => new(-value.Value);
+    public static Scalar operator -(Scalar left, Scalar right) => new(left.Value - right.Value);
+    public static Scalar operator *(Scalar left, Scalar right) => new(left.Value * right.Value);
+
+    public static Scalar operator /(Scalar left, Scalar right)
     {
-        if (denominator == 0)
-            throw new DivideByZeroException("Scalar denominator cannot be zero.");
-
-        if (denominator < 0)
-        {
-            numerator = -numerator;
-            denominator = -denominator;
-        }
-
-        long gcd = (long)BigInteger.GreatestCommonDivisor(BigInteger.Abs(numerator), BigInteger.Abs(denominator));
-        Numerator = gcd == 0 ? 0 : numerator / gcd;
-        Denominator = gcd == 0 ? 1 : denominator / gcd;
+        if (right.IsZero)
+            throw new DivideByZeroException("Scalar divisor cannot be zero.");
+        return new(left.Value / right.Value);
     }
 
-    public long Numerator { get; }
-    public long Denominator { get; }
-    public double Value => Numerator / (double)Denominator;
-    public bool IsZero => Numerator == 0;
-
-    public static implicit operator Scalar(long value) => new(value);
-    public static implicit operator double(Scalar value) => value.Value;
-
-    public static Scalar operator +(Scalar left, Scalar right) =>
-        new(
-            (left.Numerator * right.Denominator) + (right.Numerator * left.Denominator),
-            left.Denominator * right.Denominator);
-
-    public static Scalar operator -(Scalar value) => new(-value.Numerator, value.Denominator);
-
-    public static Scalar operator *(Scalar left, Scalar right) =>
-        new(left.Numerator * right.Numerator, left.Denominator * right.Denominator);
-
-    public override string ToString() => Denominator == 1 ? Numerator.ToString() : $"{Numerator}/{Denominator}";
+    public override string ToString() => Value.ToString("0.###");
 
     private sealed class ScalarArithmetic : IArithmetic<Scalar>
     {

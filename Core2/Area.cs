@@ -3,7 +3,7 @@ using ResoEngine.Core2.Support;
 namespace ResoEngine.Core2;
 
 /// <summary>
-/// Degree 3 stub: an Area is the next recursive space, built from two Axis instances.
+/// Degree 3 stub: an Area is the next recursive space, built from two orthogonal Axis instances.
 /// This is intentionally lightweight for now so the next step can flesh out area-specific semantics.
 /// </summary>
 public sealed record Area(Axis Recessive, Axis Dominant)

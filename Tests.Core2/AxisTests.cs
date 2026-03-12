@@ -18,6 +18,18 @@ public class AxisTests
 
         var folded = axis.Fold();
 
-        Assert.Equal(new Proportion(10, 5), folded);
+        Assert.Equal(new Proportion(3, 8), folded);
+    }
+
+    [Fact]
+    public void Multiplication_DerivesComplexStyleProductFromAxisComponents()
+    {
+        var state = new Axis(new Proportion(2, 1), new Proportion(3, 1));
+        var transform = new Axis(new Proportion(4, 1), new Proportion(5, 1));
+
+        var result = state * transform;
+
+        Assert.Equal(new Proportion(22, 1), result.Recessive);
+        Assert.Equal(new Proportion(7, 1), result.Dominant);
     }
 }
