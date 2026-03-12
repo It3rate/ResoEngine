@@ -24,16 +24,55 @@ namespace ResoEngine
         // --- Injectable algebra ---
 
         /// <summary>
-        /// Complex number algebra: (a+bi)(c+di) = (ac-bd) + (ad+bc)i
-        /// Default algebra for Axis when none is specified.
+        /// Generate algebra entries from chirality assignments.
+        /// Derives ResultIndex and Sign from the Deferred Opposition principle:
+        ///   - nCon = number of source indices with Con chirality
+        ///   - ResultIndex: even nCon → Pro slot, odd nCon → Con slot
+        ///   - Sign: each pair of Con sources contributes -1 (one i² resolution)
+        ///
+        /// For chiralities [Con, Pro] this produces ComplexAlgebra.
+        /// For chiralities [Pro, Pro] this produces split-complex algebra (j²=+1).
+        /// </summary>
+        public static AlgebraEntry[] GenerateAlgebra(params Chirality[] slotChiralities)
+        {
+            int dims = slotChiralities.Length;
+            var entries = new AlgebraEntry[dims * dims];
+            int idx = 0;
+            for (int l = 0; l < dims; l++)
+            {
+                for (int r = 0; r < dims; r++)
+                {
+                    // Structural (dimensional): same-slot products → scalar slot (1),
+                    // mixed-slot products → vector slot (0). This holds for all 2D algebras.
+                    int resultIndex = (l + r) % 2 == 0 ? 1 : 0;
+
+                    // Chirality (deferred opposition): each pair of Con sources
+                    // contributes -1 when resolved. This is what distinguishes
+                    // complex (i²=-1) from split-complex (j²=+1).
+                    int nCon = (slotChiralities[l] == Chirality.Con ? 1 : 0)
+                             + (slotChiralities[r] == Chirality.Con ? 1 : 0);
+                    int sign = (nCon / 2) % 2 == 0 ? +1 : -1;
+
+                    entries[idx++] = new AlgebraEntry(l, r, resultIndex, sign);
+                }
+            }
+            return entries;
+        }
+
+        /// <summary>
+        /// Complex algebra: derived from [Con, Pro] chirality assignments.
+        /// The Deferred Opposition principle produces i²=-1:
+        ///   Con×Con → Pro with sign = -1 (one pair of Con sources resolved).
         /// </summary>
         public static readonly AlgebraEntry[] ComplexAlgebra =
-        [
-            new AlgebraEntry(1, 1, 1, +1), // real*real -> +real   (ac)
-            new AlgebraEntry(0, 0, 1, -1), // imag*imag -> -real   (i²=-1)
-            new AlgebraEntry(1, 0, 0, +1), // real*imag -> +imag   (ad)
-            new AlgebraEntry(0, 1, 0, +1), // imag*real -> +imag   (bc)
-        ];
+            GenerateAlgebra(Chirality.Con, Chirality.Pro);
+
+        /// <summary>
+        /// Split-complex algebra: derived from [Pro, Pro] chirality assignments.
+        /// No Con sources means no opposition debt → j²=+1.
+        /// </summary>
+        public static readonly AlgebraEntry[] SplitComplexAlgebra =
+            GenerateAlgebra(Chirality.Pro, Chirality.Pro);
 
         public AlgebraEntry[] Algebra { get; }
 

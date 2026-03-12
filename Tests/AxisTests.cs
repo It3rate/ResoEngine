@@ -181,4 +181,68 @@ public class AxisTests
         var axis = Axis.Frame(10, 20, 1);
         Assert.Equal(10, axis.GetTicksByPerspective(Chirality.Con));
     }
+
+    // --- Chirality-derived algebra ---
+
+    [Fact]
+    public void GenerateAlgebra_Complex_ContainsExpectedEntries()
+    {
+        // The axiom system predicts: [Con, Pro] chiralities produce the standard
+        // complex algebra, with i²=-1 derived from deferred opposition.
+        var algebra = Axis.ComplexAlgebra;
+        Assert.Equal(4, algebra.Length);
+        Assert.Contains(new AlgebraEntry(0, 0, 1, -1), algebra); // imag*imag → -real  (i²=-1)
+        Assert.Contains(new AlgebraEntry(1, 1, 1, +1), algebra); // real*real → +real
+        Assert.Contains(new AlgebraEntry(1, 0, 0, +1), algebra); // real*imag → +imag
+        Assert.Contains(new AlgebraEntry(0, 1, 0, +1), algebra); // imag*real → +imag
+    }
+
+    [Fact]
+    public void GenerateAlgebra_SplitComplex_JSquaredIsPositive()
+    {
+        // Split-complex: [Pro, Pro] → j²=+1 (no opposition debt).
+        // All signs are +1 because nCon is always 0.
+        var algebra = Axis.SplitComplexAlgebra;
+        Assert.Equal(4, algebra.Length);
+        Assert.Contains(new AlgebraEntry(0, 0, 1, +1), algebra); // j²=+1 (NOT -1)
+        Assert.Contains(new AlgebraEntry(1, 1, 1, +1), algebra);
+        Assert.Contains(new AlgebraEntry(1, 0, 0, +1), algebra);
+        Assert.Contains(new AlgebraEntry(0, 1, 0, +1), algebra);
+    }
+
+    [Fact]
+    public void Multiply_SplitComplex_JSquaredEqualsOne()
+    {
+        // (0 + 1j)(0 + 1j) = 0² + 1² = 1  (j²=+1, the defining property)
+        var algebra = Axis.SplitComplexAlgebra;
+        var a = new Axis(
+            new Proportion(1, 1, Chirality.Con),  // left (vector slot) = 1
+            new Proportion(0, 1, Chirality.Pro),   // right (scalar slot) = 0
+            Chirality.Pro, algebra);
+        var b = new Axis(
+            new Proportion(1, 1, Chirality.Con),
+            new Proportion(0, 1, Chirality.Pro),
+            Chirality.Pro, algebra);
+        var result = a * b;
+        Assert.Equal(1, result.Max);   // scalar part = +1  (j²=+1)
+        Assert.Equal(0, result.Min);   // vector part = 0
+    }
+
+    [Fact]
+    public void Multiply_ComplexNumbers_WithGeneratedAlgebra()
+    {
+        // Verify the generated algebra produces identical results to the old hand-coded one.
+        // (3 + 2i)(1 + 4i) = (3-8) + (12+2)i = -5 + 14i
+        var a = new Axis(
+            new Proportion(1, 2, Chirality.Con),
+            new Proportion(3, 1, Chirality.Pro),
+            Chirality.Pro);
+        var b = new Axis(
+            new Proportion(1, 4, Chirality.Con),
+            new Proportion(1, 1, Chirality.Pro),
+            Chirality.Pro);
+        var result = a * b;
+        Assert.Equal(-5, result.Max);  // real part
+        Assert.Equal(14, result.Min);  // imaginary part
+    }
 }
