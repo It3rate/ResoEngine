@@ -24,11 +24,30 @@ public sealed record Axis(Proportion Recessive, Proportion Dominant)
     {
     }
 
+    private static Axis FromPair((Proportion Recessive, Proportion Dominant) pair) =>
+        new(pair.Recessive, pair.Dominant);
+
     public Axis ApplyOpposition()
     {
         var result = Table.ApplyOpposition(Recessive, Dominant);
-        return new Axis(result.Recessive, result.Dominant);
+        return FromPair(result);
     }
+
+    public Axis Oppose() => ApplyOpposition();
+
+    public Axis Mirror() => FromPair(Table.Mirror(Recessive, Dominant));
+
+    public Axis SwapUnitRoles() => Mirror();
+
+    public Axis ConjugateRecessive() => FromPair(Table.NegateRecessive(Recessive, Dominant));
+
+    public Axis ConjugateDominant() => FromPair(Table.NegateDominant(Recessive, Dominant));
+
+    public Axis ProjectRecessiveIntoDominant() =>
+        FromPair(Table.ProjectRecessiveIntoDominant(Recessive, Dominant));
+
+    public Axis ProjectDominantIntoRecessive() =>
+        FromPair(Table.ProjectDominantIntoRecessive(Recessive, Dominant));
 
     public static Axis operator +(Axis left, Axis right) =>
         new(left.Recessive + right.Recessive, left.Dominant + right.Dominant);
@@ -42,7 +61,7 @@ public sealed record Axis(Proportion Recessive, Proportion Dominant)
     public static Axis operator *(Axis state, Axis transform)
     {
         var result = Table.Multiply((state.Recessive, state.Dominant), (transform.Recessive, transform.Dominant));
-        return new Axis(result.Recessive, result.Dominant);
+        return FromPair(result);
     }
 
     public Proportion Fold() => Recessive * Dominant;

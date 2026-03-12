@@ -28,6 +28,24 @@ public sealed class AlgebraTable<T>
     public (T Recessive, T Dominant) ApplyOpposition(T recessive, T dominant) =>
         (dominant, _arithmetic.Negate(recessive));
 
+    public (T Recessive, T Dominant) Mirror(T recessive, T dominant) =>
+        (dominant, recessive);
+
+    public (T Recessive, T Dominant) NegateRecessive(T recessive, T dominant) =>
+        (_arithmetic.Negate(recessive), dominant);
+
+    public (T Recessive, T Dominant) NegateDominant(T recessive, T dominant) =>
+        (recessive, _arithmetic.Negate(dominant));
+
+    public (T Recessive, T Dominant) NegateBoth(T recessive, T dominant) =>
+        (_arithmetic.Negate(recessive), _arithmetic.Negate(dominant));
+
+    public (T Recessive, T Dominant) ProjectRecessiveIntoDominant(T recessive, T dominant) =>
+        (_arithmetic.Zero, _arithmetic.Add(dominant, _arithmetic.Negate(recessive)));
+
+    public (T Recessive, T Dominant) ProjectDominantIntoRecessive(T recessive, T dominant) =>
+        (_arithmetic.Add(recessive, _arithmetic.Negate(dominant)), _arithmetic.Zero);
+
     public (T Recessive, T Dominant) Multiply(
         (T Recessive, T Dominant) left,
         (T Recessive, T Dominant) right)

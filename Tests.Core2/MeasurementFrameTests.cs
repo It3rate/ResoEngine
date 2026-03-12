@@ -34,4 +34,22 @@ public class MeasurementFrameTests
         Assert.Equal(Perspective.Opposite, Perspective.Dominant.Oppose());
         Assert.Equal(Perspective.Dominant, Perspective.Opposite.Oppose());
     }
+
+    [Fact]
+    public void Read_UsesStoredPerspectiveAndUnitRoleTransforms()
+    {
+        var interval = new DirectedInterval(-6, 8);
+        var frame = new MeasurementFrame(0, 2, 4, Perspective.Opposite);
+
+        var oppositeReading = frame.Read(interval);
+        var swappedUnitsReading = frame
+            .WithPerspective(Perspective.Dominant)
+            .SwapUnitRoles()
+            .Read(interval);
+
+        Assert.Equal(new Proportion(-6, 2), oppositeReading.Recessive);
+        Assert.Equal(new Proportion(-8, 4), oppositeReading.Dominant);
+        Assert.Equal(new Proportion(6, 4), swappedUnitsReading.Recessive);
+        Assert.Equal(new Proportion(8, 2), swappedUnitsReading.Dominant);
+    }
 }

@@ -32,4 +32,17 @@ public class AxisTests
         Assert.Equal(new Proportion(22, 1), result.Recessive);
         Assert.Equal(new Proportion(7, 1), result.Dominant);
     }
+
+    [Fact]
+    public void UnaryTransforms_SupportMirrorConjugatesAndProjection()
+    {
+        var axis = new Axis(new Proportion(3, 1), new Proportion(2, 1));
+
+        Assert.Equal(new Axis(new Proportion(2, 1), new Proportion(3, 1)), axis.Mirror());
+        Assert.Equal(axis.Mirror(), axis.SwapUnitRoles());
+        Assert.Equal(new Axis(new Proportion(-3, 1), new Proportion(2, 1)), axis.ConjugateRecessive());
+        Assert.Equal(new Axis(new Proportion(3, 1), new Proportion(-2, 1)), axis.ConjugateDominant());
+        Assert.Equal(Axis.NegativeOne, axis.ProjectRecessiveIntoDominant());
+        Assert.Equal(Axis.I, axis.ProjectDominantIntoRecessive());
+    }
 }
