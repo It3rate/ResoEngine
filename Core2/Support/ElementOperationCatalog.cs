@@ -1,4 +1,6 @@
-namespace ResoEngine.Core2;
+using Core2.Elements;
+
+namespace Core2.Support;
 
 public enum ElementOperation
 {

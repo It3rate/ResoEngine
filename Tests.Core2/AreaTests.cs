@@ -1,3 +1,4 @@
+using Core2.Elements;
 using ResoEngine.Core2;
 
 namespace Tests.Core2;

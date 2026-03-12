@@ -1,4 +1,5 @@
-using ResoEngine.Core2;
+using Core2.Elements;
+using Core2.Support;
 
 namespace Tests.Core2;
 

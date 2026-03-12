@@ -1,4 +1,4 @@
-namespace ResoEngine.Core2;
+namespace Core2.Support;
 
 public enum ContainmentTensionKind
 {

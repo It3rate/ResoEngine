@@ -1,6 +1,6 @@
 using ResoEngine.Core2.Support;
 
-namespace ResoEngine.Core2;
+namespace Core2.Elements;
 
 /// <summary>
 /// Degree 2: a 1D directed reading with four scalar degrees of freedom.

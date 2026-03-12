@@ -1,6 +1,6 @@
 using ResoEngine.Core2.Support;
 
-namespace ResoEngine.Core2;
+namespace Core2.Elements;
 
 /// <summary>
 /// Degree 3 stub: an Area is the next recursive space, built from two orthogonal Axis instances.

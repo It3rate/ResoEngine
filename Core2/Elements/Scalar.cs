@@ -1,6 +1,6 @@
 using ResoEngine.Core2.Support;
 
-namespace ResoEngine.Core2;
+namespace Core2.Elements;
 
 /// <summary>
 /// Degree 0: a plain scalar with implicit unit 1.000...

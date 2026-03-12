@@ -1,4 +1,4 @@
-namespace ResoEngine.Core2;
+namespace Core2.Elements;
 
 /// <summary>
 /// Neutral element in the recursive degree ladder.
