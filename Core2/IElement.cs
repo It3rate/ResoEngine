@@ -3,6 +3,7 @@ namespace ResoEngine.Core2;
 /// <summary>
 /// Neutral element in the recursive degree ladder.
 /// Elements do not inherently act as values or frames; those roles arise through relation.
+/// Operation activation is described through ElementOperationCatalog and the related extensions.
 /// </summary>
 public interface IElement
 {
