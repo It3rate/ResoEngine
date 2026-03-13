@@ -17,6 +17,7 @@ public sealed record Area(Axis Recessive, Axis Dominant) : IElement
     public AxisBasis Basis => Recessive.Basis;
     public AreaQuadrants Quadrants => Expand();
     public Axis Value => Fold();
+    internal static IArithmetic<Area> Arithmetic { get; } = new AreaArithmetic();
 
     private static Area FromPair((Axis Recessive, Axis Dominant) pair) =>
         new(pair.Recessive, pair.Dominant);
@@ -86,4 +87,12 @@ public sealed record Area(Axis Recessive, Axis Dominant) : IElement
     public Axis Fold() => Expand().Fold();
 
     public override string ToString() => $"<{Recessive}> x <{Dominant}> => {Fold()}";
+
+    private sealed class AreaArithmetic : IArithmetic<Area>
+    {
+        public Area Zero => Area.Zero;
+        public Area Add(Area left, Area right) => left + right;
+        public Area Multiply(Area left, Area right) => left * right;
+        public Area Negate(Area value) => -value;
+    }
 }
