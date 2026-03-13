@@ -21,8 +21,8 @@ public class MainForm : Form
     public MainForm()
     {
         Text = "ResoEngine Visualizer (Core2)";
-        Size = new Size(1000, 900);
-        MinimumSize = new Size(600, 500);
+        Size = new Size(1320, 1120);
+        MinimumSize = new Size(900, 760);
         StartPosition = FormStartPosition.CenterScreen;
         BackColor = Color.FromArgb(240, 240, 240);
 
@@ -56,6 +56,10 @@ public class MainForm : Form
         _pageManager = new PageManager(_canvas, _navBar, hitTest);
         _pageManager.AddPage(new OrthogonalAxesPage());
         _pageManager.AddPage(new BooleanOpsPage());
+        _pageManager.AddPage(new OrthogonalBooleanGalleryPage(0));
+        _pageManager.AddPage(new OrthogonalBooleanGalleryPage(8));
+        _pageManager.AddPage(new ParallelBooleanGalleryPage(0));
+        _pageManager.AddPage(new ParallelBooleanGalleryPage(8));
     }
 
     private void OnPointerDown(SKPoint pt)
