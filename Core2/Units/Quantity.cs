@@ -1,5 +1,6 @@
 using Core2.Elements;
-using ResoEngine.Core2.Support;
+using Core2.Repetition;
+using Core2.Support;
 
 namespace Core2.Units;
 
@@ -40,23 +41,13 @@ public readonly record struct Quantity<T>(T Value, UnitSignature Signature, Unit
 
     public Quantity<T> RepeatAdditive(int count)
     {
-        if (count == 0)
-        {
-            return new Quantity<T>(ElementArithmeticResolver.Zero<T>(), Signature, PreferredUnit);
-        }
-
         if (count < 0)
         {
             return RepeatAdditive(-count).Negate();
         }
 
-        T result = ElementArithmeticResolver.Zero<T>();
-        for (int i = 0; i < count; i++)
-        {
-            result = ElementArithmeticResolver.Add(result, Value);
-        }
-
-        return new Quantity<T>(result, Signature, PreferredUnit);
+        var trace = RepetitionEngine.RepeatAdditive(Value, count);
+        return new Quantity<T>(trace.Result, Signature, PreferredUnit);
     }
 
     public QuantityOperationResult<T> TryPow(int exponent)
@@ -72,14 +63,10 @@ public readonly record struct Quantity<T>(T Value, UnitSignature Signature, Unit
                 ]);
         }
 
-        T result = ElementArithmeticResolver.One<T>();
-        for (int i = 0; i < exponent; i++)
-        {
-            result = ElementArithmeticResolver.Multiply(result, Value);
-        }
+        var trace = RepetitionEngine.RepeatMultiplicative(Value, exponent);
 
         return new QuantityOperationResult<T>(
-            new Quantity<T>(result, Signature.Pow(exponent)),
+            new Quantity<T>(trace.Result, Signature.Pow(exponent)),
             []);
     }
 
@@ -109,44 +96,5 @@ public readonly record struct Quantity<T>(T Value, UnitSignature Signature, Unit
             QuantityTensionKind.PreferredUnitMismatch,
             $"Added quantities share the signature {Signature} but prefer different named units: {PreferredUnit.Symbol} and {other.PreferredUnit.Symbol}."));
         return null;
-    }
-}
-
-internal static class ElementArithmeticResolver
-{
-    public static T Zero<T>() where T : IElement => For<T>().Zero;
-
-    public static T Add<T>(T left, T right) where T : IElement => For<T>().Add(left, right);
-
-    public static T Multiply<T>(T left, T right) where T : IElement => For<T>().Multiply(left, right);
-
-    public static T Negate<T>(T value) where T : IElement => For<T>().Negate(value);
-
-    public static T One<T>() where T : IElement
-    {
-        object result = typeof(T) switch
-        {
-            var type when type == typeof(Scalar) => Scalar.One,
-            var type when type == typeof(Proportion) => Proportion.One,
-            var type when type == typeof(Axis) => Axis.One,
-            var type when type == typeof(Area) => Area.One,
-            _ => throw new NotSupportedException($"No multiplicative identity is registered for element type {typeof(T).Name}."),
-        };
-
-        return (T)result;
-    }
-
-    private static IArithmetic<T> For<T>() where T : IElement
-    {
-        object arithmetic = typeof(T) switch
-        {
-            var type when type == typeof(Scalar) => Scalar.Arithmetic,
-            var type when type == typeof(Proportion) => Proportion.Arithmetic,
-            var type when type == typeof(Axis) => Axis.Arithmetic,
-            var type when type == typeof(Area) => Area.Arithmetic,
-            _ => throw new NotSupportedException($"No arithmetic is registered for element type {typeof(T).Name}."),
-        };
-
-        return (IArithmetic<T>)arithmetic;
     }
 }

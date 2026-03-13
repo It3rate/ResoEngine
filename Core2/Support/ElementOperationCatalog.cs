@@ -6,6 +6,7 @@ public enum ElementOperation
 {
     Pin,
     Compare,
+    Repeat,
     Scale,
     Mirror,
     Conjugate,
@@ -60,6 +61,7 @@ public static class ElementOperationCatalog
     private static int GetMinimumGrade(ElementOperation operation) => operation switch
     {
         ElementOperation.Pin => 0,
+        ElementOperation.Repeat => 0,
         ElementOperation.Scale => 0,
         ElementOperation.Contain => 0,
         ElementOperation.Compare => 1,
@@ -102,6 +104,7 @@ public static class ElementOperationCatalog
     {
         ElementOperation.Pin => "A second selected element to enter a common context.",
         ElementOperation.Compare => "A dominant/recessive relation that can witness greater, less, or equal.",
+        ElementOperation.Repeat => "An index and continuation law that can carry the same rule across steps, space, or recursion.",
         ElementOperation.Scale => "A transform partner or scale code that can change the amount or extent.",
         ElementOperation.Mirror => "Two asymmetric roles that can be swapped without collapsing the structure.",
         ElementOperation.Conjugate => "An oriented object with separately addressable recessive and dominant sides.",
@@ -124,6 +127,10 @@ public static class ElementOperationCatalog
         (ElementOperation.Compare, OperationActivation.Relational) => "Compares dominant amount against recessive support or another normalized relation.",
         (ElementOperation.Compare, OperationActivation.Oriented) => "Compares directed intervals with sign, order, and perspective in play.",
         (ElementOperation.Compare, OperationActivation.Expansive) => "Compares regions, quadrants, and aspect relations across an expanded space.",
+
+        (ElementOperation.Repeat, OperationActivation.Relational) => "Repeats amounts or relations under a continuation law such as additive accumulation or ratio-preserving recurrence.",
+        (ElementOperation.Repeat, OperationActivation.Oriented) => "Repeats directed states or transforms, producing cycles, alternation, and observer-sensitive orbits.",
+        (ElementOperation.Repeat, OperationActivation.Expansive) => "Repeats regions, quadrants, or whole frames as tilings, wave patterns, or higher-dimensional recurrences.",
 
         (ElementOperation.Scale, OperationActivation.Relational) => "Changes amount relative to support, even before orientation exists.",
         (ElementOperation.Scale, OperationActivation.Oriented) => "Stretches directed extent while preserving or inverting its orientation.",

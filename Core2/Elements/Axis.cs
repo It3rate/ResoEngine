@@ -1,3 +1,4 @@
+using Core2.Repetition;
 using Core2.Support;
 using ResoEngine.Core2.Support;
 
@@ -123,6 +124,9 @@ public sealed record Axis(Proportion Recessive, Proportion Dominant, AxisBasis B
 
         return leftOnly.Union(rightOnly);
     }
+
+    public BoundaryContinuationResult Continue(Scalar value, BoundaryContinuationLaw law) =>
+        BoundaryContinuation.Continue(this, value, law);
 
     public static Axis operator +(Axis left, Axis right) =>
         new(left.Recessive + right.Recessive, left.Dominant + right.Dominant, left.Basis);

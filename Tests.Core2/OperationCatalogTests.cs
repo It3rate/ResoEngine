@@ -11,10 +11,13 @@ public class OperationCatalogTests
         IElement scalar = new Scalar(5);
 
         var compare = scalar.DescribeOperation(ElementOperation.Compare);
+        var repeat = scalar.DescribeOperation(ElementOperation.Repeat);
         var scale = scalar.DescribeOperation(ElementOperation.Scale);
 
         Assert.Equal(OperationActivation.Dormant, compare.Activation);
         Assert.Equal(1, compare.MinimumGrade);
+        Assert.Equal(OperationActivation.Relational, repeat.Activation);
+        Assert.False(repeat.RequiresRelation);
         Assert.Equal(OperationActivation.Relational, scale.Activation);
         Assert.True(scale.RequiresRelation);
     }
@@ -61,6 +64,7 @@ public class OperationCatalogTests
 
         Assert.Equal(Enum.GetValues<ElementOperation>().Length, profiles.Count);
         Assert.Equal(ElementOperation.Pin, profiles[0].Operation);
+        Assert.Contains(profiles, profile => profile.Operation == ElementOperation.Repeat);
         Assert.Contains(profiles, profile => profile.Operation == ElementOperation.PerspectiveFlip);
     }
 }
