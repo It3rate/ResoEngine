@@ -8,50 +8,58 @@ namespace Core2.Support;
 /// </summary>
 public sealed class Containment
 {
-    public Containment(ElementNode parent, ElementNode child, Perspective perspective = Perspective.Dominant)
+    public Containment(ElementNode parent, ElementNode child)
     {
         Parent = parent;
         Child = child;
-        Perspective = perspective;
-
-        var analysis = ContainmentAnalysis.Analyze(parent.Element, child.Element, perspective);
-        ChildInParentContext = analysis.ChildInParentContext;
-        Tensions = analysis.Tensions;
     }
 
     public ElementNode Parent { get; }
     public ElementNode Child { get; }
-    public Perspective Perspective { get; }
-    public IElement ChildInParentContext { get; }
-    public IReadOnlyList<ContainmentTension> Tensions { get; }
+    public Perspective Perspective => Parent.Perspective;
+    public IElement ChildInParentContext => Analyze().ChildInParentContext;
+    public IReadOnlyList<ContainmentTension> Tensions => Analyze().Tensions;
+
+    public override string ToString() =>
+        $"{Parent.Element} [{Perspective}] contains {ChildInParentContext}";
+
+    private ContainmentAnalysisResult Analyze() =>
+        ContainmentAnalysis.Analyze(Parent.Element, Child.Element, Perspective);
 }
 
 public sealed class ElementNode
 {
     private readonly List<Containment> _children = [];
 
-    public ElementNode(IElement element)
+    public ElementNode(IElement element, Perspective perspective = Perspective.Dominant)
     {
         Element = element;
+        Perspective = perspective;
     }
 
     public IElement Element { get; }
+    public Perspective Perspective { get; set; }
     public Containment? ParentRelation { get; private set; }
     public IReadOnlyList<Containment> Children => _children;
 
-    public Containment AddChild(IElement child, Perspective perspective = Perspective.Dominant)
+    public Containment AddChild(IElement child, Perspective childPerspective = Perspective.Dominant)
     {
-        var childNode = new ElementNode(child);
-        var relation = new Containment(this, childNode, perspective);
+        var childNode = new ElementNode(child, childPerspective);
+        var relation = new Containment(this, childNode);
         childNode.ParentRelation = relation;
         _children.Add(relation);
         return relation;
     }
+
+    public void OpposePerspective() => Perspective = Perspective.Oppose();
+
+    public override string ToString() => $"{Element} [{Perspective}]";
 }
 
 public static class ElementNodeExtensions
 {
-    public static ElementNode AsNode(this IElement element) => new(element);
+    public static ElementNode AsNode(this IElement element, Perspective perspective = Perspective.Dominant) =>
+        new(element, perspective);
 }
 
 internal readonly record struct ContainmentAnalysisResult(

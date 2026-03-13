@@ -67,10 +67,38 @@ public class ContainmentTests
         var parent = new Axis(new Proportion(4, 2), new Proportion(6, 2)).AsNode();
         var child = new Axis(new Proportion(1, 2), new Proportion(2, 2));
 
-        var relation = parent.AddChild(child, Perspective.Opposite);
+        parent.Perspective = Perspective.Opposite;
+        var relation = parent.AddChild(child);
 
         Assert.Equal(Perspective.Opposite, relation.Perspective);
         Assert.Equal(-child, Assert.IsType<Axis>(relation.ChildInParentContext));
+    }
+
+    [Fact]
+    public void ChangingParentPerspective_ReinterpretsExistingChildLive()
+    {
+        var parent = new Axis(new Proportion(4, 2), new Proportion(6, 2)).AsNode();
+        var child = new Axis(new Proportion(1, 2), new Proportion(2, 2));
+        var relation = parent.AddChild(child);
+
+        Assert.Equal(child, Assert.IsType<Axis>(relation.ChildInParentContext));
+
+        parent.OpposePerspective();
+
+        Assert.Equal(-child, Assert.IsType<Axis>(relation.ChildInParentContext));
+    }
+
+    [Fact]
+    public void ChildContainerPerspective_IsItsOwnAndDoesNotOverrideParentReading()
+    {
+        var parent = new Axis(new Proportion(4, 2), new Proportion(6, 2)).AsNode(Perspective.Dominant);
+        var child = new Axis(new Proportion(1, 2), new Proportion(2, 2));
+
+        var relation = parent.AddChild(child, Perspective.Opposite);
+
+        Assert.Equal(Perspective.Dominant, relation.Perspective);
+        Assert.Equal(Perspective.Opposite, relation.Child.Perspective);
+        Assert.Equal(child, Assert.IsType<Axis>(relation.ChildInParentContext));
     }
 
     [Fact]
