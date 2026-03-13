@@ -1,0 +1,40 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <UseWindowsForms>true</UseWindowsForms>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <RootNamespace>ResoEngine.Visualizer</RootNamespace>
+    <AssemblyName>Visualizer.WinForms.Core2</AssemblyName>
+    <NoWarn>NU1701</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="SkiaSharp" Version="2.88.*" />
+    <PackageReference Include="SkiaSharp.Views.WindowsForms" Version="2.88.*" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Core2\Core2.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="..\Visualizer.WinForms\Controls\PageNavBar.cs" Link="Controls\PageNavBar.cs" />
+    <Compile Include="..\Visualizer.WinForms\Controls\SkiaCanvas.cs" Link="Controls\SkiaCanvas.cs" />
+    <Compile Include="..\Visualizer.WinForms\Core\CoordinateSystem.cs" Link="Core\CoordinateSystem.cs" />
+    <Compile Include="..\Visualizer.WinForms\Core\DirectedSegment.cs" Link="Core\DirectedSegment.cs" />
+    <Compile Include="..\Visualizer.WinForms\Core\SegmentColors.cs" Link="Core\SegmentColors.cs" />
+    <Compile Include="..\Visualizer.WinForms\Core\VisualStyle.cs" Link="Core\VisualStyle.cs" />
+    <Compile Include="..\Visualizer.WinForms\Input\DragController.cs" Link="Input\DragController.cs" />
+    <Compile Include="..\Visualizer.WinForms\Input\DragTarget.cs" Link="Input\DragTarget.cs" />
+    <Compile Include="..\Visualizer.WinForms\Input\DragZone.cs" Link="Input\DragZone.cs" />
+    <Compile Include="..\Visualizer.WinForms\Input\HitTestEngine.cs" Link="Input\HitTestEngine.cs" />
+    <Compile Include="..\Visualizer.WinForms\Rendering\GridRenderer.cs" Link="Rendering\GridRenderer.cs" />
+    <Compile Include="..\Visualizer.WinForms\Rendering\SegmentRenderer.cs" Link="Rendering\SegmentRenderer.cs" />
+    <Compile Include="..\Visualizer.WinForms\Pages\IVisualizerPage.cs" Link="Pages\IVisualizerPage.cs" />
+    <Compile Include="..\Visualizer.WinForms\Pages\PageManager.cs" Link="Pages\PageManager.cs" />
+  </ItemGroup>
+
+</Project>

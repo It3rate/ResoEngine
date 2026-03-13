@@ -46,4 +46,48 @@ public class AxisTests
         Assert.Equal(Axis.NegativeOne, axis.ProjectRecessiveIntoDominant());
         Assert.Equal(Axis.I, axis.ProjectDominantIntoRecessive());
     }
+
+    [Fact]
+    public void Pin_CreatesAnExpandedArea_WhoseFoldMatchesMultiplication()
+    {
+        var left = new Axis(new Proportion(3, 1), new Proportion(5, 1));
+        var right = new Axis(new Proportion(2, 1), new Proportion(4, 1));
+
+        var pinned = left.Pin(right);
+
+        Assert.Equal(left, pinned.Recessive);
+        Assert.Equal(right, pinned.Dominant);
+        Assert.Equal(left * right, pinned.Fold());
+    }
+
+    [Fact]
+    public void IntervalCoordinates_AreExposedDirectly()
+    {
+        var axis = new Axis(new Proportion(3, 2), new Proportion(5, 2));
+
+        Assert.Equal(new Scalar(-1.5m), axis.Start);
+        Assert.Equal(new Scalar(2.5m), axis.End);
+        Assert.Equal(new Scalar(4.0m), axis.Span);
+        Assert.False(axis.IsEmptyInterval);
+    }
+
+    [Fact]
+    public void BooleanOperations_FollowTheCurrentSegmentDisplayRules()
+    {
+        var a = new Axis(new Proportion(3, 1), new Proportion(5, 1));
+        var b = new Axis(new Proportion(1, 1), new Proportion(3, 1));
+
+        Assert.Equal(new Axis(new Proportion(1, 1), new Proportion(3, 1)), a.Intersect(b));
+        Assert.Equal(new Axis(new Proportion(3, 1), new Proportion(5, 1)), a.Union(b));
+        Assert.Equal(new Axis(new Proportion(5, 1), new Proportion(3, 1)), a.BooleanNot());
+        Assert.Equal(a.Intersect(b.BooleanNot()).Union(a.BooleanNot().Intersect(b)), a.Xor(b));
+    }
+
+    [Fact]
+    public void FlipPerspective_IsExplicitAtTheAxisLevel()
+    {
+        var axis = new Axis(new Proportion(3, 1), new Proportion(2, 1));
+
+        Assert.Equal(-axis, axis.FlipPerspective());
+    }
 }

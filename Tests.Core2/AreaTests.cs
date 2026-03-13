@@ -31,4 +31,46 @@ public class AreaTests
         Assert.Equal(Axis.Zero, projected.Recessive);
         Assert.Equal(dominant + (-recessive), projected.Dominant);
     }
+
+    [Fact]
+    public void ExpandTerms_ExposesTheFourQuadrantProductsBeforeFold()
+    {
+        var area = new Area(
+            new Axis(new Proportion(3, 1), new Proportion(5, 1)),
+            new Axis(new Proportion(2, 1), new Proportion(4, 1)));
+
+        var terms = area.ExpandTerms();
+
+        Assert.Equal(new Proportion(6, 1), terms.ii);
+        Assert.Equal(new Proportion(12, 1), terms.ir);
+        Assert.Equal(new Proportion(10, 1), terms.ri);
+        Assert.Equal(new Proportion(20, 1), terms.rr);
+        Assert.Equal(new Axis(new Proportion(22, 1), new Proportion(14, 1)), area.Fold());
+    }
+
+    [Fact]
+    public void Area_BooleanOperations_RecurseAcrossBothAxes()
+    {
+        var left = new Area(
+            new Axis(new Proportion(3, 1), new Proportion(5, 1)),
+            new Axis(new Proportion(2, 1), new Proportion(6, 1)));
+        var right = new Area(
+            new Axis(new Proportion(1, 1), new Proportion(3, 1)),
+            new Axis(new Proportion(4, 1), new Proportion(5, 1)));
+
+        var intersection = left.Intersect(right);
+
+        Assert.Equal(new Axis(new Proportion(1, 1), new Proportion(3, 1)), intersection.Recessive);
+        Assert.Equal(new Axis(new Proportion(2, 1), new Proportion(5, 1)), intersection.Dominant);
+        Assert.Equal(new Area(left.Recessive.Mirror(), left.Dominant.Mirror()), left.BooleanNot());
+        Assert.Equal(left.Recessive.Xor(right.Recessive), left.Xor(right).Recessive);
+    }
+
+    [Fact]
+    public void FlipPerspective_IsExplicitAtTheAreaLevel()
+    {
+        var area = new Area(Axis.One, Axis.I);
+
+        Assert.Equal(-area, area.FlipPerspective());
+    }
 }

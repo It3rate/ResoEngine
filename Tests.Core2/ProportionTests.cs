@@ -54,4 +54,15 @@ public class ProportionTests
         Assert.Equal(new Proportion(2, 4), mirrored);
         Assert.Equal(mirrored, proportion.Reciprocal());
     }
+
+    [Fact]
+    public void Pin_PromotesTwoProportionsIntoAnAxis()
+    {
+        var recessive = new Proportion(3, 2);
+        var dominant = new Proportion(5, 2);
+
+        var pinned = recessive.Pin(dominant);
+
+        Assert.Equal(new Axis(recessive, dominant), pinned);
+    }
 }

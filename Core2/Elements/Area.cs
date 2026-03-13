@@ -28,6 +28,8 @@ public sealed record Area(Axis Recessive, Axis Dominant) : IElement
 
     public Area SwapUnitRoles() => Mirror();
 
+    public Area FlipPerspective() => -this;
+
     public Area ConjugateRecessive() => FromPair(Table.NegateRecessive(Recessive, Dominant));
 
     public Area ConjugateDominant() => FromPair(Table.NegateDominant(Recessive, Dominant));
@@ -37,6 +39,25 @@ public sealed record Area(Axis Recessive, Axis Dominant) : IElement
 
     public Area ProjectDominantIntoRecessive() =>
         FromPair(Table.ProjectDominantIntoRecessive(Recessive, Dominant));
+
+    public (Proportion ii, Proportion ir, Proportion ri, Proportion rr) ExpandTerms() =>
+        (
+            Recessive.Recessive * Dominant.Recessive,
+            Recessive.Recessive * Dominant.Dominant,
+            Recessive.Dominant * Dominant.Recessive,
+            Recessive.Dominant * Dominant.Dominant);
+
+    public Area Intersect(Area other) =>
+        new(Recessive.Intersect(other.Recessive), Dominant.Intersect(other.Dominant));
+
+    public Area Union(Area other) =>
+        new(Recessive.Union(other.Recessive), Dominant.Union(other.Dominant));
+
+    public Area BooleanNot() =>
+        new(Recessive.BooleanNot(), Dominant.BooleanNot());
+
+    public Area Xor(Area other) =>
+        new(Recessive.Xor(other.Recessive), Dominant.Xor(other.Dominant));
 
     public static Area operator +(Area left, Area right) =>
         new(left.Recessive + right.Recessive, left.Dominant + right.Dominant);

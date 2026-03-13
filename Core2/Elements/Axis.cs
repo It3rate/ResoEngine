@@ -29,6 +29,20 @@ public sealed record Axis(Proportion Recessive, Proportion Dominant) : IElement
     private static Axis FromPair((Proportion Recessive, Proportion Dominant) pair) =>
         new(pair.Recessive, pair.Dominant);
 
+    public Scalar Start => -Recessive.Fold();
+    public Scalar End => Dominant.Fold();
+    public Scalar Span => End - Start;
+    public bool IsEmptyInterval => Start >= End;
+
+    public static Axis FromCoordinates(
+        Scalar start,
+        Scalar end,
+        Scalar? recessiveSupport = null,
+        Scalar? dominantSupport = null) =>
+        new(
+            Proportion.FromRecessiveDominant(recessiveSupport ?? Scalar.One, -start),
+            Proportion.FromRecessiveDominant(dominantSupport ?? Scalar.One, end));
+
     public Axis ApplyOpposition()
     {
         var result = Table.ApplyOpposition(Recessive, Dominant);
@@ -41,6 +55,8 @@ public sealed record Axis(Proportion Recessive, Proportion Dominant) : IElement
 
     public Axis SwapUnitRoles() => Mirror();
 
+    public Axis FlipPerspective() => -this;
+
     public Axis ConjugateRecessive() => FromPair(Table.NegateRecessive(Recessive, Dominant));
 
     public Axis ConjugateDominant() => FromPair(Table.NegateDominant(Recessive, Dominant));
@@ -50,6 +66,47 @@ public sealed record Axis(Proportion Recessive, Proportion Dominant) : IElement
 
     public Axis ProjectDominantIntoRecessive() =>
         FromPair(Table.ProjectDominantIntoRecessive(Recessive, Dominant));
+
+    public Area Pin(Axis other) => new(this, other);
+
+    public Axis Intersect(Axis other)
+    {
+        var start = SelectByStart(this, other, selectGreater: true);
+        var end = SelectByEnd(this, other, selectGreater: false);
+        return FromBounds(start, end);
+    }
+
+    public Axis Union(Axis other)
+    {
+        var start = SelectByStart(this, other, selectGreater: false);
+        var end = SelectByEnd(this, other, selectGreater: true);
+        return FromBounds(start, end);
+    }
+
+    /// <summary>
+    /// The current boolean visualizer's NOT is the interval mirrored across the origin:
+    /// start becomes the negated end and end becomes the negated start.
+    /// In Axis encoding, that is the recessive/dominant role swap.
+    /// </summary>
+    public Axis BooleanNot() => Mirror();
+
+    public Axis Xor(Axis other)
+    {
+        var leftOnly = Intersect(other.BooleanNot());
+        var rightOnly = BooleanNot().Intersect(other);
+
+        if (leftOnly.IsEmptyInterval)
+        {
+            return rightOnly;
+        }
+
+        if (rightOnly.IsEmptyInterval)
+        {
+            return leftOnly;
+        }
+
+        return leftOnly.Union(rightOnly);
+    }
 
     public static Axis operator +(Axis left, Axis right) =>
         new(left.Recessive + right.Recessive, left.Dominant + right.Dominant);
@@ -69,6 +126,34 @@ public sealed record Axis(Proportion Recessive, Proportion Dominant) : IElement
     public Proportion Fold() => Recessive * Dominant;
 
     public override string ToString() => $"[{Recessive}]i + [{Dominant}]";
+
+    private static (Proportion Value, Scalar Boundary) SelectByStart(Axis left, Axis right, bool selectGreater)
+    {
+        var leftBoundary = left.Start;
+        var rightBoundary = right.Start;
+        bool takeLeft = selectGreater ? leftBoundary >= rightBoundary : leftBoundary <= rightBoundary;
+        return takeLeft ? (left.Recessive, leftBoundary) : (right.Recessive, rightBoundary);
+    }
+
+    private static (Proportion Value, Scalar Boundary) SelectByEnd(Axis left, Axis right, bool selectGreater)
+    {
+        var leftBoundary = left.End;
+        var rightBoundary = right.End;
+        bool takeLeft = selectGreater ? leftBoundary >= rightBoundary : leftBoundary <= rightBoundary;
+        return takeLeft ? (left.Dominant, leftBoundary) : (right.Dominant, rightBoundary);
+    }
+
+    private static Axis FromBounds(
+        (Proportion Value, Scalar Boundary) start,
+        (Proportion Value, Scalar Boundary) end)
+    {
+        if (start.Boundary >= end.Boundary)
+        {
+            return Zero;
+        }
+
+        return new(start.Value, end.Value);
+    }
 
     private sealed class AxisArithmetic : IArithmetic<Axis>
     {

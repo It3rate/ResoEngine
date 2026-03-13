@@ -52,6 +52,8 @@ public sealed record Proportion : IElement
 
     public Proportion Mirror() => Reciprocal();
 
+    public Axis Pin(Proportion other) => new(this, other);
+
     public static Proportion operator +(Proportion left, Proportion right) =>
         FromRecessiveDominant(
             left.Recessive * right.Recessive,
