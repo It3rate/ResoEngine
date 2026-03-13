@@ -8,9 +8,17 @@ namespace Core2.Elements;
 /// dominant amount over recessive support. Together that gives four scalar degrees:
 /// recessive amount/support and dominant amount/support.
 /// </summary>
-public sealed record Axis(Proportion Recessive, Proportion Dominant) : IElement
+public sealed record Axis(Proportion Recessive, Proportion Dominant, AxisBasis Basis = AxisBasis.Complex) : IElement
 {
-    private static readonly AlgebraTable<Proportion> Table = new(Proportion.Arithmetic);
+    private static readonly AlgebraTable<Proportion> ComplexTable = new(Proportion.Arithmetic);
+    private static readonly AlgebraTable<Proportion> SplitComplexTable = new(
+        Proportion.Arithmetic,
+        [
+            new AlgebraEntry(0, 0, 1, +1),
+            new AlgebraEntry(0, 1, 0, +1),
+            new AlgebraEntry(1, 0, 0, +1),
+            new AlgebraEntry(1, 1, 1, +1),
+        ]);
 
     public static Axis Zero => new(Proportion.Zero, Proportion.Zero);
     public static Axis One => new(Proportion.Zero, Proportion.One);
@@ -29,6 +37,11 @@ public sealed record Axis(Proportion Recessive, Proportion Dominant) : IElement
     private static Axis FromPair((Proportion Recessive, Proportion Dominant) pair) =>
         new(pair.Recessive, pair.Dominant);
 
+    private static Axis FromPair((Proportion Recessive, Proportion Dominant) pair, AxisBasis basis) =>
+        new(pair.Recessive, pair.Dominant, basis);
+
+    private AlgebraTable<Proportion> Table => Basis == AxisBasis.SplitComplex ? SplitComplexTable : ComplexTable;
+
     public Scalar Start => -Recessive.Fold();
     public Scalar End => Dominant.Fold();
     public Scalar Span => End - Start;
@@ -38,34 +51,36 @@ public sealed record Axis(Proportion Recessive, Proportion Dominant) : IElement
         Scalar start,
         Scalar end,
         Scalar? recessiveSupport = null,
-        Scalar? dominantSupport = null) =>
+        Scalar? dominantSupport = null,
+        AxisBasis basis = AxisBasis.Complex) =>
         new(
             Proportion.FromRecessiveDominant(recessiveSupport ?? Scalar.One, -start),
-            Proportion.FromRecessiveDominant(dominantSupport ?? Scalar.One, end));
+            Proportion.FromRecessiveDominant(dominantSupport ?? Scalar.One, end),
+            basis);
 
     public Axis ApplyOpposition()
     {
         var result = Table.ApplyOpposition(Recessive, Dominant);
-        return FromPair(result);
+        return FromPair(result, Basis);
     }
 
     public Axis Oppose() => ApplyOpposition();
 
-    public Axis Mirror() => FromPair(Table.Mirror(Recessive, Dominant));
+    public Axis Mirror() => FromPair(Table.Mirror(Recessive, Dominant), Basis);
 
     public Axis SwapUnitRoles() => Mirror();
 
     public Axis FlipPerspective() => -this;
 
-    public Axis ConjugateRecessive() => FromPair(Table.NegateRecessive(Recessive, Dominant));
+    public Axis ConjugateRecessive() => FromPair(Table.NegateRecessive(Recessive, Dominant), Basis);
 
-    public Axis ConjugateDominant() => FromPair(Table.NegateDominant(Recessive, Dominant));
+    public Axis ConjugateDominant() => FromPair(Table.NegateDominant(Recessive, Dominant), Basis);
 
     public Axis ProjectRecessiveIntoDominant() =>
-        FromPair(Table.ProjectRecessiveIntoDominant(Recessive, Dominant));
+        FromPair(Table.ProjectRecessiveIntoDominant(Recessive, Dominant), Basis);
 
     public Axis ProjectDominantIntoRecessive() =>
-        FromPair(Table.ProjectDominantIntoRecessive(Recessive, Dominant));
+        FromPair(Table.ProjectDominantIntoRecessive(Recessive, Dominant), Basis);
 
     public Area Pin(Axis other) => new(this, other);
 
@@ -73,14 +88,14 @@ public sealed record Axis(Proportion Recessive, Proportion Dominant) : IElement
     {
         var start = SelectByStart(this, other, selectGreater: true);
         var end = SelectByEnd(this, other, selectGreater: false);
-        return FromBounds(start, end);
+        return FromBounds(start, end, Basis);
     }
 
     public Axis Union(Axis other)
     {
         var start = SelectByStart(this, other, selectGreater: false);
         var end = SelectByEnd(this, other, selectGreater: true);
-        return FromBounds(start, end);
+        return FromBounds(start, end, Basis);
     }
 
     /// <summary>
@@ -109,18 +124,18 @@ public sealed record Axis(Proportion Recessive, Proportion Dominant) : IElement
     }
 
     public static Axis operator +(Axis left, Axis right) =>
-        new(left.Recessive + right.Recessive, left.Dominant + right.Dominant);
+        new(left.Recessive + right.Recessive, left.Dominant + right.Dominant, left.Basis);
 
     public static Axis operator -(Axis value) =>
-        new(-value.Recessive, -value.Dominant);
+        new(-value.Recessive, -value.Dominant, value.Basis);
 
     /// <summary>
     /// Right action: the left operand is the current line-state, the right operand is transform data.
     /// </summary>
     public static Axis operator *(Axis state, Axis transform)
     {
-        var result = Table.Multiply((state.Recessive, state.Dominant), (transform.Recessive, transform.Dominant));
-        return FromPair(result);
+        var result = state.Table.Multiply((state.Recessive, state.Dominant), (transform.Recessive, transform.Dominant));
+        return FromPair(result, state.Basis);
     }
 
     public Proportion Fold() => Recessive * Dominant;
@@ -145,14 +160,15 @@ public sealed record Axis(Proportion Recessive, Proportion Dominant) : IElement
 
     private static Axis FromBounds(
         (Proportion Value, Scalar Boundary) start,
-        (Proportion Value, Scalar Boundary) end)
+        (Proportion Value, Scalar Boundary) end,
+        AxisBasis basis)
     {
         if (start.Boundary >= end.Boundary)
         {
             return Zero;
         }
 
-        return new(start.Value, end.Value);
+        return new(start.Value, end.Value, basis);
     }
 
     private sealed class AxisArithmetic : IArithmetic<Axis>

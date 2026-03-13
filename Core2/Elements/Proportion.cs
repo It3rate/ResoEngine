@@ -22,9 +22,6 @@ public sealed record Proportion : IElement
 
     private Proportion(Scalar numerator, Scalar denominator, bool _)
     {
-        if (denominator.IsZero)
-            throw new DivideByZeroException("Proportion denominator cannot be zero.");
-
         Numerator = numerator;
         Denominator = denominator;
     }

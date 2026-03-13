@@ -65,4 +65,12 @@ public class ProportionTests
 
         Assert.Equal(new Axis(recessive, dominant), pinned);
     }
+
+    [Fact]
+    public void ZeroDenominator_IsAllowed_AndFoldsToOverflowSentinel()
+    {
+        var proportion = new Proportion(5, 0);
+
+        Assert.Equal(new Scalar(decimal.MaxValue), proportion.Fold());
+    }
 }

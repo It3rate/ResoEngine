@@ -10,6 +10,8 @@ public readonly record struct Scalar(decimal Value) : IElement
 {
     public static Scalar Zero => new(0m);
     public static Scalar One => new(1m);
+    public static Scalar PositiveOverflow => new(decimal.MaxValue);
+    public static Scalar NegativeOverflow => new(decimal.MinValue);
 
     internal static IArithmetic<Scalar> Arithmetic { get; } = new ScalarArithmetic();
 
@@ -32,11 +34,24 @@ public readonly record struct Scalar(decimal Value) : IElement
     public static Scalar operator /(Scalar left, Scalar right)
     {
         if (right.IsZero)
-            throw new DivideByZeroException("Scalar divisor cannot be zero.");
+        {
+            if (left.IsZero)
+            {
+                return Zero;
+            }
+
+            return left.Value > 0m ? PositiveOverflow : NegativeOverflow;
+        }
+
         return new(left.Value / right.Value);
     }
 
-    public override string ToString() => Value.ToString("0.###");
+    public override string ToString() => Value switch
+    {
+        decimal.MaxValue => "Infinity",
+        decimal.MinValue => "-Infinity",
+        _ => Value.ToString("0.###"),
+    };
 
     private sealed class ScalarArithmetic : IArithmetic<Scalar>
     {

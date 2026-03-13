@@ -90,4 +90,16 @@ public class AxisTests
 
         Assert.Equal(-axis, axis.FlipPerspective());
     }
+
+    [Fact]
+    public void SplitComplexBasis_MakesISquaredPositive()
+    {
+        var axis = new Axis(new Proportion(1, 1), Proportion.Zero, AxisBasis.SplitComplex);
+
+        var result = axis * axis;
+
+        Assert.Equal(AxisBasis.SplitComplex, result.Basis);
+        Assert.Equal(Proportion.Zero, result.Recessive);
+        Assert.Equal(Proportion.One, result.Dominant);
+    }
 }
