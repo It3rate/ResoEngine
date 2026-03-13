@@ -39,13 +39,30 @@ public class AreaTests
             new Axis(new Proportion(3, 1), new Proportion(5, 1)),
             new Axis(new Proportion(2, 1), new Proportion(4, 1)));
 
+        var quadrants = area.Expand();
         var terms = area.ExpandTerms();
 
-        Assert.Equal(new Proportion(6, 1), terms.ii);
-        Assert.Equal(new Proportion(12, 1), terms.ir);
-        Assert.Equal(new Proportion(10, 1), terms.ri);
-        Assert.Equal(new Proportion(20, 1), terms.rr);
+        Assert.Equal(new Proportion(6, 1), quadrants.Ii);
+        Assert.Equal(new Proportion(12, 1), quadrants.Ir);
+        Assert.Equal(new Proportion(10, 1), quadrants.Ri);
+        Assert.Equal(new Proportion(20, 1), quadrants.Rr);
+        Assert.Equal(quadrants.Fold(), area.Fold());
+        Assert.Equal(quadrants.Ii, terms.ii);
+        Assert.Equal(quadrants.Ir, terms.ir);
+        Assert.Equal(quadrants.Ri, terms.ri);
+        Assert.Equal(quadrants.Rr, terms.rr);
         Assert.Equal(new Axis(new Proportion(22, 1), new Proportion(14, 1)), area.Fold());
+    }
+
+    [Fact]
+    public void Area_Value_IsTheFoldedOneDimensionalResult()
+    {
+        var area = new Area(
+            new Axis(new Proportion(3, 1), new Proportion(5, 1)),
+            new Axis(new Proportion(2, 1), new Proportion(4, 1)));
+
+        Assert.Equal(area.Fold(), area.Value);
+        Assert.Equal(AxisBasis.Complex, area.Basis);
     }
 
     [Fact]

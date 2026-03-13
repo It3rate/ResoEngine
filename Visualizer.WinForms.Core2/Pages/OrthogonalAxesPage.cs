@@ -71,6 +71,27 @@ public class OrthogonalAxesPage : IVisualizerPage
         Color = new SKColor(205, 205, 205, 230),
         IsAntialias = true,
     };
+    private readonly SKPaint _areaValueTextPaint = new()
+    {
+        Color = new SKColor(45, 45, 45),
+        TextSize = 19f,
+        Typeface = SKTypeface.FromFamilyName(VisualStyle.FontFamily, SKFontStyle.Bold),
+        TextAlign = SKTextAlign.Center,
+        IsAntialias = true,
+    };
+    private readonly SKPaint _areaValueBgPaint = new()
+    {
+        Style = SKPaintStyle.Fill,
+        Color = new SKColor(255, 255, 255, 245),
+        IsAntialias = true,
+    };
+    private readonly SKPaint _areaValueBorderPaint = new()
+    {
+        Style = SKPaintStyle.Stroke,
+        StrokeWidth = 1.4f,
+        Color = new SKColor(195, 195, 195, 230),
+        IsAntialias = true,
+    };
 
     public void Init(CoordinateSystem coords, HitTestEngine hitTest, SkiaCanvas canvas)
     {
@@ -103,6 +124,7 @@ public class OrthogonalAxesPage : IVisualizerPage
 
         _gridRenderer?.Render(canvas, _axisA, _axisB, SegmentColors.Red, SegmentColors.Blue);
         DrawQuadrantValues(canvas, area);
+        DrawAreaValue(canvas, area);
         _rendererA?.Render(canvas, _axisA);
         _rendererB?.Render(canvas, _axisB);
 
@@ -126,18 +148,54 @@ public class OrthogonalAxesPage : IVisualizerPage
             return;
         }
 
-        var terms = area.ExpandTerms();
+        var quadrants = area.Expand();
 
         var hImag = CreateZeroRange(_axisA.Imaginary);
         var hReal = CreateZeroRange(_axisA.Real);
         var vImag = CreateZeroRange(_axisB.Imaginary);
         var vReal = CreateZeroRange(_axisB.Real);
 
-        DrawQuadrantValue(canvas, hImag, vImag, $"i*i = {N(terms.ii.Fold())}");
-        DrawQuadrantValue(canvas, hImag, vReal, $"i*r = {N(terms.ir.Fold())}i");
-        DrawQuadrantValue(canvas, hReal, vImag, $"r*i = {N(terms.ri.Fold())}i");
-        DrawQuadrantValue(canvas, hReal, vReal, $"r*r = {N(terms.rr.Fold())}");
-            anchor.Y - bounds.Height - padY * 2f - 18f - 20f,
+        DrawQuadrantValue(canvas, hImag, vImag, $"i*i = {N(quadrants.Ii.Fold())}");
+        DrawQuadrantValue(canvas, hImag, vReal, $"i*r = {N(quadrants.Ir.Fold())}i");
+        DrawQuadrantValue(canvas, hReal, vImag, $"r*i = {N(quadrants.Ri.Fold())}i");
+        DrawQuadrantValue(canvas, hReal, vReal, $"r*r = {N(quadrants.Rr.Fold())}");
+    }
+
+    private void DrawAreaValue(SKCanvas canvas, Area area)
+    {
+        if (_coords == null)
+        {
+            return;
+        }
+
+        float xMin = MathF.Min(0f, MathF.Min(_axisA.Imaginary, _axisA.Real));
+        float xMax = MathF.Max(0f, MathF.Max(_axisA.Imaginary, _axisA.Real));
+        float yMin = MathF.Min(0f, MathF.Min(_axisB.Imaginary, _axisB.Real));
+        float yMax = MathF.Max(0f, MathF.Max(_axisB.Imaginary, _axisB.Real));
+
+        if (xMax <= xMin || yMax <= yMin)
+        {
+            return;
+        }
+
+        var anchor = _coords.MathToPixel(0f, yMax);
+        string text = $"Total Area = {FormatAxis(area.Value)}";
+
+        var bounds = new SKRect();
+        _areaValueTextPaint.MeasureText(text, ref bounds);
+
+        const float padX = 14f;
+        const float padY = 8f;
+        const float offset = 30f;
+        var rect = new SKRect(
+            anchor.X - bounds.Width * 0.5f - padX,
+            anchor.Y - bounds.Height - padY * 2f - 18f - offset,
+            anchor.X + bounds.Width * 0.5f + padX,
+            anchor.Y - 18f - offset);
+
+        canvas.DrawRoundRect(rect, 10f, 10f, _areaValueBgPaint);
+        canvas.DrawRoundRect(rect, 10f, 10f, _areaValueBorderPaint);
+        canvas.DrawText(text, anchor.X, rect.MidY + bounds.Height * 0.35f, _areaValueTextPaint);
     }
 
     private void DrawQuadrantValue(SKCanvas canvas, AxisRange xRange, AxisRange yRange, string text)
@@ -300,17 +358,17 @@ public class OrthogonalAxesPage : IVisualizerPage
         var axisA = _axisA.Axis;
         var axisB = _axisB.Axis;
         var area = axisA.Pin(axisB);
-        var terms = area.ExpandTerms();
-        var folded = area.Fold();
+        var quadrants = area.Expand();
+        var folded = area.Value;
 
         decimal ai = axisA.Recessive.Fold();
         decimal ar = axisA.Dominant.Fold();
         decimal bi = axisB.Recessive.Fold();
         decimal br = axisB.Dominant.Fold();
-        decimal ii = terms.ii.Fold();
-        decimal ir = terms.ir.Fold();
-        decimal ri = terms.ri.Fold();
-        decimal rr = terms.rr.Fold();
+        decimal ii = quadrants.Ii.Fold();
+        decimal ir = quadrants.Ir.Fold();
+        decimal ri = quadrants.Ri.Fold();
+        decimal rr = quadrants.Rr.Fold();
         decimal resultI = folded.Recessive.Fold();
         decimal resultR = folded.Dominant.Fold();
 
@@ -341,6 +399,23 @@ public class OrthogonalAxesPage : IVisualizerPage
     private static string A(decimal v) => N(decimal.Abs(v));
     private static string Pm(decimal v) => v >= 0m ? "+" : "-";
     private static string PmNeg(decimal v) => v >= 0m ? "-" : "+";
+    private static string FormatAxis(Axis axis)
+    {
+        decimal recessive = axis.Recessive.Fold();
+        decimal dominant = axis.Dominant.Fold();
+
+        if (recessive == 0m)
+        {
+            return N(dominant);
+        }
+
+        if (dominant == 0m)
+        {
+            return $"{N(recessive)}i";
+        }
+
+        return $"{N(recessive)}i {Pm(dominant)} {A(dominant)}";
+    }
 
     public bool IsOriginHit(SKPoint pixelPoint)
     {
@@ -385,6 +460,9 @@ public class OrthogonalAxesPage : IVisualizerPage
         _quadrantTextPaint.Dispose();
         _quadrantBgPaint.Dispose();
         _quadrantBorderPaint.Dispose();
+        _areaValueTextPaint.Dispose();
+        _areaValueBgPaint.Dispose();
+        _areaValueBorderPaint.Dispose();
         _originFillPaint.Dispose();
         _originStrokePaint.Dispose();
         _originDotPaint.Dispose();

@@ -1,17 +1,22 @@
+using Core2.Support;
 using ResoEngine.Core2.Support;
 
 namespace Core2.Elements;
 
 /// <summary>
-/// Degree 3 stub: an Area is the next recursive space, built from two orthogonal Axis instances.
-/// This is intentionally lightweight for now so the next step can flesh out area-specific semantics.
+/// Degree 3: an expanded 2D structure built from two pinned axes.
+/// The structure itself is two-dimensional, but when it folds it becomes a 1D Axis value.
 /// </summary>
 public sealed record Area(Axis Recessive, Axis Dominant) : IElement
 {
     private static readonly AlgebraTable<Axis> Table = new(Axis.Arithmetic);
 
     public static Area Zero => new(Axis.Zero, Axis.Zero);
+    public static Area One => new(Axis.One, Axis.One);
     public int Degree => 3;
+    public AxisBasis Basis => Recessive.Basis;
+    public AreaQuadrants Quadrants => Expand();
+    public Axis Value => Fold();
 
     private static Area FromPair((Axis Recessive, Axis Dominant) pair) =>
         new(pair.Recessive, pair.Dominant);
@@ -40,12 +45,19 @@ public sealed record Area(Axis Recessive, Axis Dominant) : IElement
     public Area ProjectDominantIntoRecessive() =>
         FromPair(Table.ProjectDominantIntoRecessive(Recessive, Dominant));
 
-    public (Proportion ii, Proportion ir, Proportion ri, Proportion rr) ExpandTerms() =>
-        (
+    public AreaQuadrants Expand() =>
+        new(
             Recessive.Recessive * Dominant.Recessive,
             Recessive.Recessive * Dominant.Dominant,
             Recessive.Dominant * Dominant.Recessive,
-            Recessive.Dominant * Dominant.Dominant);
+            Recessive.Dominant * Dominant.Dominant,
+            Basis);
+
+    public (Proportion ii, Proportion ir, Proportion ri, Proportion rr) ExpandTerms()
+    {
+        var quadrants = Expand();
+        return (quadrants.Ii, quadrants.Ir, quadrants.Ri, quadrants.Rr);
+    }
 
     public Area Intersect(Area other) =>
         new(Recessive.Intersect(other.Recessive), Dominant.Intersect(other.Dominant));
@@ -71,7 +83,7 @@ public sealed record Area(Axis Recessive, Axis Dominant) : IElement
         return FromPair(result);
     }
 
-    public Axis Fold() => Recessive * Dominant;
+    public Axis Fold() => Expand().Fold();
 
-    public override string ToString() => $"<{Recessive}>i + <{Dominant}>";
+    public override string ToString() => $"<{Recessive}> x <{Dominant}> => {Fold()}";
 }
