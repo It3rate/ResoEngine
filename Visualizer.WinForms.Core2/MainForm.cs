@@ -56,10 +56,8 @@ public class MainForm : Form
         _pageManager = new PageManager(_canvas, _navBar, hitTest);
         _pageManager.AddPage(new OrthogonalAxesPage());
         _pageManager.AddPage(new BooleanOpsPage());
-        _pageManager.AddPage(new OrthogonalBooleanGalleryPage(0));
-        _pageManager.AddPage(new OrthogonalBooleanGalleryPage(8));
-        _pageManager.AddPage(new ParallelBooleanGalleryPage(0));
-        _pageManager.AddPage(new ParallelBooleanGalleryPage(8));
+        _pageManager.AddPage(new OrthogonalBooleanGalleryPage());
+        _pageManager.AddPage(new ParallelBooleanGalleryPage());
     }
 
     private void OnPointerDown(SKPoint pt)

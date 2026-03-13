@@ -10,7 +10,6 @@ namespace ResoEngine.Visualizer.Pages;
 
 public class ParallelBooleanGalleryPage : IVisualizerPage
 {
-    private readonly int _startIndex;
     private readonly AxisDisplayMapper _axisA = new(new Axis(new Proportion(3, 1), new Proportion(5, 1)), "A");
     private readonly AxisDisplayMapper _axisB = new(new Axis(new Proportion(1, 1), new Proportion(7, 1)), "B");
 
@@ -72,6 +71,20 @@ public class ParallelBooleanGalleryPage : IVisualizerPage
         Color = new SKColor(170, 170, 170),
         IsAntialias = true,
     };
+    private readonly SKPaint _redStripePaint = new()
+    {
+        Style = SKPaintStyle.Stroke,
+        StrokeWidth = 1f,
+        Color = new SKColor(214, 95, 95, 180),
+        IsAntialias = true,
+    };
+    private readonly SKPaint _blueStripePaint = new()
+    {
+        Style = SKPaintStyle.Stroke,
+        StrokeWidth = 1f,
+        Color = new SKColor(95, 125, 214, 180),
+        IsAntialias = true,
+    };
     private readonly SKPaint _originFillPaint = new()
     {
         Style = SKPaintStyle.Fill,
@@ -95,12 +108,7 @@ public class ParallelBooleanGalleryPage : IVisualizerPage
     private const float InputAY = 2.0f;
     private const float InputBY = 0.5f;
 
-    public ParallelBooleanGalleryPage(int startIndex)
-    {
-        _startIndex = startIndex;
-    }
-
-    public string Title => _startIndex == 0 ? "Parallel Boolean I" : "Parallel Boolean II";
+    public string Title => "Parallel Boolean";
 
     public void Init(CoordinateSystem coords, HitTestEngine hitTest, SkiaCanvas canvas)
     {
@@ -147,16 +155,16 @@ public class ParallelBooleanGalleryPage : IVisualizerPage
             return;
         }
 
-        const float top = 300f;
+        const float top = 280f;
         const float left = 28f;
-        const float gapX = 18f;
-        const float gapY = 22f;
+        const float gapX = 14f;
+        const float gapY = 12f;
         const int columns = 4;
 
         float tileWidth = (_coords.Width - left * 2f - gapX * (columns - 1)) / columns;
-        float tileHeight = 190f;
+        float tileHeight = 92f;
 
-        var defs = BooleanOperationCatalog.All.Skip(_startIndex).Take(8).ToArray();
+        var defs = BooleanOperationCatalog.All.ToArray();
         for (int index = 0; index < defs.Length; index++)
         {
             int col = index % columns;
@@ -176,8 +184,8 @@ public class ParallelBooleanGalleryPage : IVisualizerPage
         canvas.DrawRoundRect(tile, 12f, 12f, _tileBackgroundPaint);
         canvas.DrawRoundRect(tile, 12f, 12f, _tileBorderPaint);
 
-        const float pad = 16f;
-        const float labelSpace = 34f;
+        const float pad = 14f;
+        const float labelSpace = 26f;
         var plot = new SKRect(tile.Left + pad, tile.Top + pad, tile.Right - pad, tile.Bottom - labelSpace);
 
         float aMin = MathF.Min(_axisA.Imaginary, _axisA.Real);
@@ -191,7 +199,15 @@ public class ParallelBooleanGalleryPage : IVisualizerPage
         float frameMin = min - margin;
         float frameMax = max + margin;
 
-        DrawAxisGuide(canvas, plot, frameMin, frameMax);
+        float bandGap = 4f;
+        float bandHeight = (plot.Height - bandGap * 2f) / 3f;
+        var aBand = new SKRect(plot.Left, plot.Top, plot.Right, plot.Top + bandHeight);
+        var bBand = new SKRect(plot.Left, aBand.Bottom + bandGap, plot.Right, aBand.Bottom + bandGap + bandHeight);
+        var resultBand = new SKRect(plot.Left, bBand.Bottom + bandGap, plot.Right, bBand.Bottom + bandGap + bandHeight);
+
+        DrawAxisGuide(canvas, aBand, frameMin, frameMax);
+        DrawAxisGuide(canvas, bBand, frameMin, frameMax);
+        DrawAxisGuide(canvas, resultBand, frameMin, frameMax);
 
         var boundaries = new List<float> { frameMin, aMin, aMax, bMin, bMax, frameMax };
         boundaries.Sort();
@@ -213,21 +229,48 @@ public class ParallelBooleanGalleryPage : IVisualizerPage
 
             var rect = new SKRect(
                 MapX(start, plot, frameMin, frameMax),
-                plot.Top,
+                0f,
                 MapX(end, plot, frameMin, frameMax),
-                plot.Bottom);
+                0f);
 
-            canvas.DrawRect(rect, active ? _truePaint : _falsePaint);
-            canvas.DrawRect(rect, _tileBorderPaint);
-
-            if (!active)
-            {
-                canvas.DrawLine(rect.Left, rect.Top, rect.Right, rect.Bottom, _crossPaint);
-                canvas.DrawLine(rect.Left, rect.Bottom, rect.Right, rect.Top, _crossPaint);
-            }
+            DrawBandSegment(canvas, aBand, rect.Left, rect.Right, a, _redStripePaint);
+            DrawBandSegment(canvas, bBand, rect.Left, rect.Right, b, _blueStripePaint);
+            DrawResultSegment(canvas, resultBand, rect.Left, rect.Right, active);
         }
 
         canvas.DrawText(definition.Name, tile.MidX, tile.Bottom - 10f, _labelPaint);
+    }
+
+    private void DrawBandSegment(SKCanvas canvas, SKRect band, float left, float right, bool active, SKPaint stripePaint)
+    {
+        var rect = new SKRect(left, band.Top, right, band.Bottom);
+        canvas.DrawRect(rect, active ? _truePaint : _falsePaint);
+        canvas.DrawRect(rect, _tileBorderPaint);
+
+        if (active)
+        {
+            canvas.Save();
+            canvas.ClipRect(rect);
+            const float stripe = 8f;
+            for (float x = rect.Left - 1f; x <= rect.Right + 1f; x += stripe)
+            {
+                canvas.DrawLine(x, rect.Top, x, rect.Bottom, stripePaint);
+            }
+            canvas.Restore();
+        }
+    }
+
+    private void DrawResultSegment(SKCanvas canvas, SKRect band, float left, float right, bool active)
+    {
+        var rect = new SKRect(left, band.Top, right, band.Bottom);
+        canvas.DrawRect(rect, active ? _truePaint : _falsePaint);
+        canvas.DrawRect(rect, _tileBorderPaint);
+
+        if (!active)
+        {
+            canvas.DrawLine(rect.Left, rect.Top, rect.Right, rect.Bottom, _crossPaint);
+            canvas.DrawLine(rect.Left, rect.Bottom, rect.Right, rect.Top, _crossPaint);
+        }
     }
 
     private void DrawAxisGuide(SKCanvas canvas, SKRect plot, float frameMin, float frameMax)
@@ -273,6 +316,8 @@ public class ParallelBooleanGalleryPage : IVisualizerPage
         _falsePaint.Dispose();
         _crossPaint.Dispose();
         _axisGuidePaint.Dispose();
+        _redStripePaint.Dispose();
+        _blueStripePaint.Dispose();
         _originFillPaint.Dispose();
         _originStrokePaint.Dispose();
         _originDotPaint.Dispose();
