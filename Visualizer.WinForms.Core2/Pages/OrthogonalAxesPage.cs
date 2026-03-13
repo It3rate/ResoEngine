@@ -137,6 +137,7 @@ public class OrthogonalAxesPage : IVisualizerPage
         DrawQuadrantValue(canvas, hImag, vReal, $"i*r = {N(terms.ir.Fold())}i");
         DrawQuadrantValue(canvas, hReal, vImag, $"r*i = {N(terms.ri.Fold())}i");
         DrawQuadrantValue(canvas, hReal, vReal, $"r*r = {N(terms.rr.Fold())}");
+            anchor.Y - bounds.Height - padY * 2f - 18f - 20f,
     }
 
     private void DrawQuadrantValue(SKCanvas canvas, AxisRange xRange, AxisRange yRange, string text)
