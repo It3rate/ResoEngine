@@ -157,7 +157,8 @@ public class ParallelBooleanGalleryPage : IVisualizerPage
             return;
         }
 
-        DrawTopComponentField(canvas);
+        var geometry = new AreaDisplayGeometry(_axisA.Axis.Pin(_axisB.Axis));
+        DrawTopComponentField(canvas, geometry);
 
         var zeroTop = _coords.MathToPixel(0, InputAY);
         var zeroBottom = _coords.MathToPixel(0, InputBY);
@@ -172,10 +173,10 @@ public class ParallelBooleanGalleryPage : IVisualizerPage
         canvas.DrawCircle(originPx, r, _originStrokePaint);
         canvas.DrawCircle(originPx, 3f, _originDotPaint);
 
-        DrawTiles(canvas);
+        DrawTiles(canvas, geometry);
     }
 
-    private void DrawTiles(SKCanvas canvas)
+    private void DrawTiles(SKCanvas canvas, AreaDisplayGeometry geometry)
     {
         if (_coords == null)
         {
@@ -202,11 +203,11 @@ public class ParallelBooleanGalleryPage : IVisualizerPage
                 left + col * (tileWidth + gapX) + tileWidth,
                 top + row * (tileHeight + gapY) + tileHeight);
 
-            DrawTile(canvas, tile, defs[index]);
+            DrawTile(canvas, tile, defs[index], geometry);
         }
     }
 
-    private void DrawTile(SKCanvas canvas, SKRect tile, BooleanOperationDefinition definition)
+    private void DrawTile(SKCanvas canvas, SKRect tile, BooleanOperationDefinition definition, AreaDisplayGeometry geometry)
     {
         canvas.DrawRoundRect(tile, 12f, 12f, _tileBackgroundPaint);
         canvas.DrawRoundRect(tile, 12f, 12f, _tileBorderPaint);
@@ -215,13 +216,13 @@ public class ParallelBooleanGalleryPage : IVisualizerPage
         const float labelSpace = 26f;
         var plot = new SKRect(tile.Left + pad, tile.Top + pad, tile.Right - pad, tile.Bottom - labelSpace);
 
-        float aMin = MathF.Min(_axisA.Imaginary, _axisA.Real);
-        float aMax = MathF.Max(_axisA.Imaginary, _axisA.Real);
-        float bMin = MathF.Min(_axisB.Imaginary, _axisB.Real);
-        float bMax = MathF.Max(_axisB.Imaginary, _axisB.Real);
+        float aMin = MathF.Min(geometry.HorizontalImaginary, geometry.HorizontalReal);
+        float aMax = MathF.Max(geometry.HorizontalImaginary, geometry.HorizontalReal);
+        float bMin = MathF.Min(geometry.VerticalImaginary, geometry.VerticalReal);
+        float bMax = MathF.Max(geometry.VerticalImaginary, geometry.VerticalReal);
 
-        float frameMin = MathF.Min(0f, MathF.Min(aMin, bMin));
-        float frameMax = MathF.Max(0f, MathF.Max(aMax, bMax));
+        float frameMin = geometry.FrameMin;
+        float frameMax = geometry.FrameMax;
         if (frameMax <= frameMin)
         {
             frameMax = frameMin + 1f;
@@ -238,19 +239,7 @@ public class ParallelBooleanGalleryPage : IVisualizerPage
         DrawAxisGuide(canvas, resultBand, frameMin, frameMax);
 
         const float epsilon = 0.0001f;
-        var boundaries = new[] { frameMin, aMin, aMax, 0f, bMin, bMax, frameMax }
-            .OrderBy(value => value)
-            .Aggregate(
-                new List<float>(),
-                (list, value) =>
-                {
-                    if (list.Count == 0 || MathF.Abs(list[^1] - value) > epsilon)
-                    {
-                        list.Add(value);
-                    }
-
-                    return list;
-                });
+        var boundaries = geometry.ParallelBoundaries;
 
         for (int i = 0; i < boundaries.Count - 1; i++)
         {
@@ -262,12 +251,12 @@ public class ParallelBooleanGalleryPage : IVisualizerPage
             }
 
             float mid = (start + end) * 0.5f;
-            bool inAImag = IsWithin(mid, 0f, _axisA.Imaginary);
-            bool inAReal = IsWithin(mid, 0f, _axisA.Real);
-            bool inBImag = IsWithin(mid, 0f, _axisB.Imaginary);
-            bool inBReal = IsWithin(mid, 0f, _axisB.Real);
-            bool inA = IsWithin(mid, aMin, aMax);
-            bool inB = IsWithin(mid, bMin, bMax);
+            bool inAImag = geometry.InHorizontalImag(mid);
+            bool inAReal = geometry.InHorizontalReal(mid);
+            bool inBImag = geometry.InVerticalImag(mid);
+            bool inBReal = geometry.InVerticalReal(mid);
+            bool inA = geometry.InHorizontal(mid);
+            bool inB = geometry.InVertical(mid);
 
             var rect = new SKRect(
                 MapX(start, plot, frameMin, frameMax),
@@ -288,39 +277,22 @@ public class ParallelBooleanGalleryPage : IVisualizerPage
         canvas.DrawText(definition.Name, tile.MidX, tile.Bottom - 10f, _labelPaint);
     }
 
-    private void DrawTopComponentField(SKCanvas canvas)
+    private void DrawTopComponentField(SKCanvas canvas, AreaDisplayGeometry geometry)
     {
         if (_coords == null)
         {
             return;
         }
 
-        float aMin = MathF.Min(_axisA.Imaginary, _axisA.Real);
-        float aMax = MathF.Max(_axisA.Imaginary, _axisA.Real);
-        float bMin = MathF.Min(_axisB.Imaginary, _axisB.Real);
-        float bMax = MathF.Max(_axisB.Imaginary, _axisB.Real);
-
-        float frameMin = MathF.Min(0f, MathF.Min(aMin, bMin));
-        float frameMax = MathF.Max(0f, MathF.Max(aMax, bMax));
+        float frameMin = geometry.FrameMin;
+        float frameMax = geometry.FrameMax;
         if (frameMax <= frameMin)
         {
             frameMax = frameMin + 1f;
         }
 
         const float epsilon = 0.0001f;
-        var boundaries = new[] { frameMin, aMin, aMax, 0f, bMin, bMax, frameMax }
-            .OrderBy(value => value)
-            .Aggregate(
-                new List<float>(),
-                (list, value) =>
-                {
-                    if (list.Count == 0 || MathF.Abs(list[^1] - value) > epsilon)
-                    {
-                        list.Add(value);
-                    }
-
-                    return list;
-                });
+        var boundaries = geometry.ParallelBoundaries;
 
         float topMath = MathF.Max(InputAY, InputBY) + 0.45f;
         float bottomMath = MathF.Min(InputAY, InputBY) - 0.45f;
@@ -335,10 +307,10 @@ public class ParallelBooleanGalleryPage : IVisualizerPage
             }
 
             float mid = (start + end) * 0.5f;
-            bool inAImag = IsWithin(mid, 0f, _axisA.Imaginary);
-            bool inAReal = IsWithin(mid, 0f, _axisA.Real);
-            bool inBImag = IsWithin(mid, 0f, _axisB.Imaginary);
-            bool inBReal = IsWithin(mid, 0f, _axisB.Real);
+            bool inAImag = geometry.InHorizontalImag(mid);
+            bool inAReal = geometry.InHorizontalReal(mid);
+            bool inBImag = geometry.InVerticalImag(mid);
+            bool inBReal = geometry.InVerticalReal(mid);
 
             var leftTop = _coords.MathToPixel(start, topMath);
             var rightBottom = _coords.MathToPixel(end, bottomMath);
@@ -492,10 +464,4 @@ public class ParallelBooleanGalleryPage : IVisualizerPage
         return _coords!.MathToPixel(0, (InputAY + InputBY) * 0.5f);
     }
 
-    private static bool IsWithin(float value, float first, float second)
-    {
-        float min = MathF.Min(first, second);
-        float max = MathF.Max(first, second);
-        return value > min && value < max;
-    }
 }

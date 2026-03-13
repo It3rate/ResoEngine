@@ -148,17 +148,13 @@ public class OrthogonalAxesPage : IVisualizerPage
             return;
         }
 
-        var quadrants = area.Expand();
+        var geometry = new AreaDisplayGeometry(area);
+        var quadrants = geometry.Quadrants;
 
-        var hImag = CreateZeroRange(_axisA.Imaginary);
-        var hReal = CreateZeroRange(_axisA.Real);
-        var vImag = CreateZeroRange(_axisB.Imaginary);
-        var vReal = CreateZeroRange(_axisB.Real);
-
-        DrawQuadrantValue(canvas, hImag, vImag, $"i*i = {N(quadrants.Ii.Fold())}");
-        DrawQuadrantValue(canvas, hImag, vReal, $"i*r = {N(quadrants.Ir.Fold())}i");
-        DrawQuadrantValue(canvas, hReal, vImag, $"r*i = {N(quadrants.Ri.Fold())}i");
-        DrawQuadrantValue(canvas, hReal, vReal, $"r*r = {N(quadrants.Rr.Fold())}");
+        DrawQuadrantValue(canvas, geometry.HorizontalImagRange, geometry.VerticalImagRange, $"i*i = {N(quadrants.Ii.Fold())}");
+        DrawQuadrantValue(canvas, geometry.HorizontalImagRange, geometry.VerticalRealRange, $"i*r = {N(quadrants.Ir.Fold())}i");
+        DrawQuadrantValue(canvas, geometry.HorizontalRealRange, geometry.VerticalImagRange, $"r*i = {N(quadrants.Ri.Fold())}i");
+        DrawQuadrantValue(canvas, geometry.HorizontalRealRange, geometry.VerticalRealRange, $"r*r = {N(quadrants.Rr.Fold())}");
     }
 
     private void DrawAreaValue(SKCanvas canvas, Area area)
@@ -168,10 +164,11 @@ public class OrthogonalAxesPage : IVisualizerPage
             return;
         }
 
-        float xMin = MathF.Min(0f, MathF.Min(_axisA.Imaginary, _axisA.Real));
-        float xMax = MathF.Max(0f, MathF.Max(_axisA.Imaginary, _axisA.Real));
-        float yMin = MathF.Min(0f, MathF.Min(_axisB.Imaginary, _axisB.Real));
-        float yMax = MathF.Max(0f, MathF.Max(_axisB.Imaginary, _axisB.Real));
+        var geometry = new AreaDisplayGeometry(area);
+        float xMin = geometry.WorldMinX;
+        float xMax = geometry.WorldMaxX;
+        float yMin = geometry.WorldMinY;
+        float yMax = geometry.WorldMaxY;
 
         if (xMax <= xMin || yMax <= yMin)
         {
@@ -198,7 +195,7 @@ public class OrthogonalAxesPage : IVisualizerPage
         canvas.DrawText(text, anchor.X, rect.MidY + bounds.Height * 0.35f, _areaValueTextPaint);
     }
 
-    private void DrawQuadrantValue(SKCanvas canvas, AxisRange xRange, AxisRange yRange, string text)
+    private void DrawQuadrantValue(SKCanvas canvas, AreaDisplayGeometry.AxisRange xRange, AreaDisplayGeometry.AxisRange yRange, string text)
     {
         if (_coords == null || !xRange.HasSpan || !yRange.HasSpan)
         {
@@ -378,8 +375,6 @@ public class OrthogonalAxesPage : IVisualizerPage
         return [line1, line2, line3];
     }
 
-    private static AxisRange CreateZeroRange(float value) => new(MathF.Min(0f, value), MathF.Max(0f, value));
-
     private static Bitmap CreateCopyIcon()
     {
         var bitmap = new Bitmap(16, 16);
@@ -466,11 +461,6 @@ public class OrthogonalAxesPage : IVisualizerPage
         _originFillPaint.Dispose();
         _originStrokePaint.Dispose();
         _originDotPaint.Dispose();
-    }
-
-    private readonly record struct AxisRange(float Min, float Max)
-    {
-        public bool HasSpan => Max > Min;
     }
 
     private sealed record FormulaRowUi(Panel RowPanel, TextBox TextBox, Button CopyButton);
