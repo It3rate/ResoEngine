@@ -70,6 +70,49 @@ public readonly record struct Quantity<T>(T Value, UnitSignature Signature, Unit
             []);
     }
 
+    public PowerResult<Quantity<T>> TryPow(Proportion exponent)
+    {
+        if (!PowerEngine.TryNormalize(exponent, out _, out var error))
+        {
+            return new PowerResult<Quantity<T>>(
+                [],
+                default,
+                [new PowerTension(PowerTensionKind.InvalidExponent, error)]);
+        }
+
+        var valueResult = QuantityPowerResolver.TryPow(Value, exponent);
+        if (!valueResult.Succeeded)
+        {
+            return new PowerResult<Quantity<T>>([], default, valueResult.Tensions);
+        }
+
+        UnitSignature poweredSignature;
+        try
+        {
+            poweredSignature = Signature.Pow(exponent);
+        }
+        catch (ArgumentException exception)
+        {
+            return new PowerResult<Quantity<T>>(
+                [],
+                default,
+                [new PowerTension(PowerTensionKind.InvalidExponent, exception.Message)]);
+        }
+
+        UnitChoice? preferredUnit = PreferredUnit is not null && PreferredUnit.CanExpress(poweredSignature)
+            ? PreferredUnit
+            : null;
+
+        Quantity<T> ToQuantity(T candidate) => new(candidate, poweredSignature, preferredUnit);
+
+        IReadOnlyList<Quantity<T>> candidates = valueResult.Candidates.Select(ToQuantity).ToArray();
+        Quantity<T> principal = valueResult.PrincipalCandidate is null
+            ? default
+            : ToQuantity(valueResult.PrincipalCandidate);
+
+        return new PowerResult<Quantity<T>>(candidates, principal, valueResult.Tensions);
+    }
+
     public override string ToString() =>
         PreferredUnit is null
             ? $"{Value} [{Signature}]"

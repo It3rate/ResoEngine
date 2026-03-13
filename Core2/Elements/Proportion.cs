@@ -58,6 +58,12 @@ public sealed record Proportion : IElement
         Proportion? reference = null) =>
         InverseContinuationEngine.InverseContinue(this, degree, rule, reference);
 
+    public PowerResult<Proportion> TryPow(
+        Proportion exponent,
+        InverseContinuationRule rule = InverseContinuationRule.Principal,
+        Proportion? reference = null) =>
+        PowerEngine.Pow(this, exponent, rule, reference);
+
     public static Proportion operator +(Proportion left, Proportion right) =>
         FromRecessiveDominant(
             left.Recessive * right.Recessive,

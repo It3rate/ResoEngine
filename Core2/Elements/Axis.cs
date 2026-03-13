@@ -92,6 +92,12 @@ public sealed record Axis(Proportion Recessive, Proportion Dominant, AxisBasis B
         Axis? reference = null) =>
         InverseContinuationEngine.InverseContinue(this, degree, rule, reference);
 
+    public PowerResult<Axis> TryPow(
+        Proportion exponent,
+        InverseContinuationRule rule = InverseContinuationRule.Principal,
+        Axis? reference = null) =>
+        PowerEngine.Pow(this, exponent, rule, reference);
+
     public Axis Intersect(Axis other)
     {
         var start = SelectByStart(this, other, selectGreater: true);

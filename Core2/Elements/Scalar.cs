@@ -53,6 +53,12 @@ public readonly record struct Scalar(decimal Value) : IElement
         Scalar? reference = null) =>
         InverseContinuationEngine.InverseContinue(this, degree, rule, reference);
 
+    public PowerResult<Scalar> TryPow(
+        Proportion exponent,
+        InverseContinuationRule rule = InverseContinuationRule.Principal,
+        Scalar? reference = null) =>
+        PowerEngine.Pow(this, exponent, rule, reference);
+
     public override string ToString() => Value switch
     {
         decimal.MaxValue => "Infinity",

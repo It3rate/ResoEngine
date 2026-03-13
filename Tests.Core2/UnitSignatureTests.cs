@@ -1,4 +1,5 @@
 using Core2.Elements;
+using Core2.Repetition;
 using Core2.Units;
 
 namespace Tests.Core2;
@@ -28,6 +29,16 @@ public class UnitSignatureTests
 
         Assert.Equal("L^2", area.ToString());
         Assert.Contains(DistanceReferent, area.Referents);
+    }
+
+    [Fact]
+    public void UnitSignature_Pow_SupportsRationalExponents()
+    {
+        var rootLength = UnitSignature.From(Length).Pow(new Proportion(1, 2));
+        var restored = rootLength.Multiply(rootLength);
+
+        Assert.Equal("L^(1/2)", rootLength.ToString());
+        Assert.Equal(UnitSignature.From(Length), restored);
     }
 
     [Fact]
@@ -87,5 +98,30 @@ public class UnitSignatureTests
         Assert.True(multiplicative.Succeeded);
         Assert.Equal(new Scalar(16), multiplicative.Quantity!.Value.Value);
         Assert.Equal("L^4", multiplicative.Quantity.Value.Signature.ToString());
+    }
+
+    [Fact]
+    public void Quantity_FractionalPower_AppliesToValueAndUnitSignature()
+    {
+        var area = new Scalar(4).AsQuantity(UnitSignature.From(Length).Pow(2));
+
+        var rooted = area.TryPow(new Proportion(1, 2));
+
+        Assert.True(rooted.Succeeded);
+        Assert.Equal(new Scalar(2), rooted.PrincipalCandidate!.Value);
+        Assert.Equal(UnitSignature.From(Length), rooted.PrincipalCandidate.Signature);
+        Assert.Contains(rooted.Candidates, candidate => candidate.Value == new Scalar(2));
+        Assert.Contains(rooted.Candidates, candidate => candidate.Value == new Scalar(-2));
+    }
+
+    [Fact]
+    public void Quantity_FractionalPower_ReportsShapeChangingAreaPath()
+    {
+        var quantity = new Area(Axis.I, Axis.I).AsQuantity(UnitSignature.From(Length).Pow(2));
+
+        var result = quantity.TryPow(new Proportion(1, 2));
+
+        Assert.False(result.Succeeded);
+        Assert.Contains(result.Tensions, tension => tension.Kind == PowerTensionKind.ShapeChangingPower);
     }
 }

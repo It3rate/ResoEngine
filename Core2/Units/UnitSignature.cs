@@ -1,4 +1,6 @@
 using System.Collections.Immutable;
+using Core2.Elements;
+using Core2.Support;
 
 namespace Core2.Units;
 
@@ -30,6 +32,16 @@ public sealed class UnitSignature : IEquatable<UnitSignature>
     public static UnitSignature From(UnitGenerator generator, int exponent = 1) =>
         exponent == 0 ? Dimensionless : new([new UnitPower(generator, exponent)]);
 
+    public static UnitSignature From(UnitGenerator generator, Proportion exponent)
+    {
+        if (!RationalExponent.TryFrom(exponent, out var rational))
+        {
+            throw new ArgumentException("Unit signatures require rational exponents with integer numerator and nonzero integer denominator.", nameof(exponent));
+        }
+
+        return rational.IsZero ? Dimensionless : new([new UnitPower(generator, rational.ToProportion())]);
+    }
+
     public bool Matches(UnitSignature other) => Equals(other);
 
     public UnitSignature Multiply(UnitSignature other) =>
@@ -48,7 +60,22 @@ public sealed class UnitSignature : IEquatable<UnitSignature>
             return Dimensionless;
         }
 
-        return new(_powers.Select(power => new UnitPower(power.Generator, power.Exponent * exponent)));
+        return new(_powers.Select(power => new UnitPower(power.Generator, power.Exponent * new Proportion(exponent, 1))));
+    }
+
+    public UnitSignature Pow(Proportion exponent)
+    {
+        if (!RationalExponent.TryFrom(exponent, out var rational))
+        {
+            throw new ArgumentException("Unit signatures require rational exponents with integer numerator and nonzero integer denominator.", nameof(exponent));
+        }
+
+        if (rational.IsZero)
+        {
+            return Dimensionless;
+        }
+
+        return new(_powers.Select(power => new UnitPower(power.Generator, power.Exponent * rational.ToProportion())));
     }
 
     public bool Equals(UnitSignature? other)
@@ -102,33 +129,50 @@ public sealed class UnitSignature : IEquatable<UnitSignature>
 
     private static ImmutableArray<UnitPower> Normalize(IEnumerable<UnitPower> powers)
     {
-        var combined = new Dictionary<string, UnitPower>(StringComparer.Ordinal);
+        var combined = new Dictionary<string, (UnitGenerator Generator, RationalExponent Exponent)>(StringComparer.Ordinal);
 
         foreach (var power in powers)
         {
-            if (power.Exponent == 0)
+            if (!RationalExponent.TryFrom(power.Exponent, out var exponent))
+            {
+                throw new ArgumentException("Unit signatures require rational exponents with integer numerator and nonzero integer denominator.", nameof(powers));
+            }
+
+            if (exponent.IsZero)
             {
                 continue;
             }
 
             if (combined.TryGetValue(power.Generator.Id, out var existing))
             {
-                combined[power.Generator.Id] = new UnitPower(existing.Generator, existing.Exponent + power.Exponent);
+                combined[power.Generator.Id] = (existing.Generator, existing.Exponent.Add(exponent));
             }
             else
             {
-                combined[power.Generator.Id] = power;
+                combined[power.Generator.Id] = (power.Generator, exponent);
             }
         }
 
         return combined.Values
-            .Where(power => power.Exponent != 0)
+            .Where(power => !power.Exponent.IsZero)
             .OrderBy(power => power.Generator)
+            .Select(power => new UnitPower(power.Generator, power.Exponent.ToProportion()))
             .ToImmutableArray();
     }
 
     private static string FormatPower(UnitPower power) =>
-        power.Exponent == 1
+        RationalExponent.TryFrom(power.Exponent, out var exponent) && exponent.IsInteger && exponent.Numerator == 1
             ? power.Generator.Symbol
-            : $"{power.Generator.Symbol}^{power.Exponent}";
+            : FormatNonIdentityPower(power.Generator.Symbol, power.Exponent);
+
+    private static string FormatNonIdentityPower(string symbol, Proportion exponent)
+    {
+        RationalExponent.TryFrom(exponent, out var rational);
+        if (rational.IsInteger)
+        {
+            return $"{symbol}^{rational.Numerator}";
+        }
+
+        return $"{symbol}^({rational.Numerator}/{rational.Denominator})";
+    }
 }
