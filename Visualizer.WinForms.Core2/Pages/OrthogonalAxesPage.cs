@@ -14,10 +14,10 @@ public class OrthogonalAxesPage : IVisualizerPage
 {
     public string Title => "Orthogonal Axes (Core2)";
 
-    private readonly AxisDisplayBinding _axisA = new(
+    private readonly AxisDisplayMapper _axisA = new(
         new Axis(new Proportion(3, 1), new Proportion(5, 1)),
         "A");
-    private readonly AxisDisplayBinding _axisB = new(
+    private readonly AxisDisplayMapper _axisB = new(
         new Axis(new Proportion(2, 1), new Proportion(5, 1)),
         "B");
 
@@ -84,8 +84,8 @@ public class OrthogonalAxesPage : IVisualizerPage
         _rendererA = new SegmentRenderer(coords, SegmentOrientation.Horizontal, SegmentColors.Red, crossPosition: 0);
         _rendererB = new SegmentRenderer(coords, SegmentOrientation.Vertical, SegmentColors.Blue, crossPosition: 0);
 
-        hitTest.Register(_rendererA, _axisA.Segment);
-        hitTest.Register(_rendererB, _axisB.Segment);
+        hitTest.Register(_rendererA, _axisA);
+        hitTest.Register(_rendererB, _axisB);
 
         EnsureFormulaOverlay();
         UpdateFormulaOverlay();
@@ -101,10 +101,10 @@ public class OrthogonalAxesPage : IVisualizerPage
         SyncInputsFromDisplay();
         var area = _axisA.Axis.Pin(_axisB.Axis);
 
-        _gridRenderer?.Render(canvas, _axisA.Segment, _axisB.Segment, SegmentColors.Red, SegmentColors.Blue);
+        _gridRenderer?.Render(canvas, _axisA, _axisB, SegmentColors.Red, SegmentColors.Blue);
         DrawQuadrantValues(canvas, area);
-        _rendererA?.Render(canvas, _axisA.Segment);
-        _rendererB?.Render(canvas, _axisB.Segment);
+        _rendererA?.Render(canvas, _axisA);
+        _rendererB?.Render(canvas, _axisB);
 
         var originPx = _coords.MathToPixel(0, 0);
         float r = VisualStyle.OriginDotRadius;
@@ -117,8 +117,6 @@ public class OrthogonalAxesPage : IVisualizerPage
 
     private void SyncInputsFromDisplay()
     {
-        _axisA.CaptureInput();
-        _axisB.CaptureInput();
     }
 
     private void DrawQuadrantValues(SKCanvas canvas, Area area)
@@ -130,10 +128,10 @@ public class OrthogonalAxesPage : IVisualizerPage
 
         var terms = area.ExpandTerms();
 
-        var hImag = CreateZeroRange(_axisA.Segment.Imaginary);
-        var hReal = CreateZeroRange(_axisA.Segment.Real);
-        var vImag = CreateZeroRange(_axisB.Segment.Imaginary);
-        var vReal = CreateZeroRange(_axisB.Segment.Real);
+        var hImag = CreateZeroRange(_axisA.Imaginary);
+        var hReal = CreateZeroRange(_axisA.Real);
+        var vImag = CreateZeroRange(_axisB.Imaginary);
+        var vReal = CreateZeroRange(_axisB.Real);
 
         DrawQuadrantValue(canvas, hImag, vImag, $"i*i = {N(terms.ii.Fold())}");
         DrawQuadrantValue(canvas, hImag, vReal, $"i*r = {N(terms.ir.Fold())}i");
@@ -354,7 +352,7 @@ public class OrthogonalAxesPage : IVisualizerPage
         return SKPoint.Distance(pixelPoint, originPx) <= VisualStyle.HitPadding;
     }
 
-    public IReadOnlyList<DirectedSegment>? GetDraggableSegments() => [_axisA.Segment, _axisB.Segment];
+    public IReadOnlyList<ISegmentValue>? GetDraggableSegments() => [_axisA, _axisB];
 
     public SKPoint? GetOriginPixel() => _coords?.MathToPixel(0, 0);
 

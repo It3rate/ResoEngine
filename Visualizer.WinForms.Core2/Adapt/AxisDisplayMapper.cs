@@ -3,34 +3,46 @@ using ResoEngine.Visualizer.Core;
 
 namespace ResoEngine.Visualizer.Adapt;
 
-public static class AxisDisplayMapper
+/// <summary>
+/// Live display adapter over a Core2 Axis.
+/// It does not own display-state copies; it projects from the Axis on demand and
+/// writes drag changes back into the referenced Axis using its current supports.
+/// </summary>
+public sealed class AxisDisplayMapper : ISegmentValue
 {
-    public static DirectedSegment ToSegment(Axis axis, string label = "")
+    public AxisDisplayMapper(Axis axis, string label = "")
     {
-        var segment = new DirectedSegment(0f, 0f, label);
-        CopyToSegment(axis, segment, label);
-        return segment;
+        Axis = axis;
+        Label = label;
     }
 
-    public static void CopyToSegment(Axis axis, DirectedSegment segment, string? label = null)
+    public Axis Axis { get; private set; }
+    public string Label { get; set; }
+
+    public float Imaginary
     {
-        segment.Imaginary = ToFloat(axis.Start);
-        segment.Real = ToFloat(axis.End);
-        if (label != null)
-        {
-            segment.Label = label;
-        }
+        get => ToFloat(Axis.Start);
+        set => Axis = Axis.FromCoordinates(
+            (Scalar)(decimal)value,
+            Axis.End,
+            Axis.Recessive.Recessive,
+            Axis.Dominant.Recessive);
     }
 
-    public static Axis FromSegment(
-        DirectedSegment segment,
-        Scalar recessiveSupport,
-        Scalar dominantSupport) =>
-        Axis.FromCoordinates(
-            (Scalar)(decimal)segment.Imaginary,
-            (Scalar)(decimal)segment.Real,
-            recessiveSupport,
-            dominantSupport);
+    public float Real
+    {
+        get => ToFloat(Axis.End);
+        set => Axis = Axis.FromCoordinates(
+            Axis.Start,
+            (Scalar)(decimal)value,
+            Axis.Recessive.Recessive,
+            Axis.Dominant.Recessive);
+    }
+
+    public void SetAxis(Axis axis)
+    {
+        Axis = axis;
+    }
 
     public static float ToFloat(Scalar value) => (float)(decimal)value;
     public static float ToFloat(Proportion value) => ToFloat(value.Fold());

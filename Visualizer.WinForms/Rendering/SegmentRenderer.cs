@@ -91,7 +91,7 @@ public class SegmentRenderer : IDisposable
     }
 
     /// <summary>Compute key pixel positions for a segment.</summary>
-    private (SKPoint origin, SKPoint imag, SKPoint real) GetPixelPositions(DirectedSegment segment)
+    private (SKPoint origin, SKPoint imag, SKPoint real) GetPixelPositions(ISegmentValue segment)
     {
         bool isH = _orientation == SegmentOrientation.Horizontal;
         float cp = _crossPosition;
@@ -102,7 +102,7 @@ public class SegmentRenderer : IDisposable
     }
 
     /// <summary>Render the segment onto the canvas.</summary>
-    public void Render(SKCanvas canvas, DirectedSegment segment)
+    public void Render(SKCanvas canvas, ISegmentValue segment)
     {
         var (originPx, imagPx, realPx) = GetPixelPositions(segment);
 
@@ -166,7 +166,7 @@ public class SegmentRenderer : IDisposable
     }
 
     /// <summary>Hit-test a pixel point against this segment's drag zones.</summary>
-    public DragZone? HitTest(SKPoint point, DirectedSegment segment)
+    public DragZone? HitTest(SKPoint point, ISegmentValue segment)
     {
         var (_, imagPx, realPx) = GetPixelPositions(segment);
         float pad = VisualStyle.HitPadding;

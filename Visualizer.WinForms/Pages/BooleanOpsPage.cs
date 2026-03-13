@@ -245,7 +245,7 @@ public class BooleanOpsPage : IVisualizerPage
         return SKPoint.Distance(pixelPoint, originPx) <= VisualStyle.HitPadding;
     }
 
-    public IReadOnlyList<DirectedSegment>? GetDraggableSegments() => [_segA, _segB];
+    public IReadOnlyList<ISegmentValue>? GetDraggableSegments() => [_segA, _segB];
     public SKPoint? GetOriginPixel() => _coords?.MathToPixel(0, 0);
 
     public void Destroy()

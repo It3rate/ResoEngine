@@ -12,10 +12,10 @@ public class BooleanOpsPage : IVisualizerPage
 {
     public string Title => "Boolean Operations (Core2)";
 
-    private readonly AxisDisplayBinding _axisA = new(
+    private readonly AxisDisplayMapper _axisA = new(
         new Axis(new Proportion(3, 1), new Proportion(5, 1)),
         "A");
-    private readonly AxisDisplayBinding _axisB = new(
+    private readonly AxisDisplayMapper _axisB = new(
         new Axis(new Proportion(1, 1), new Proportion(3, 1)),
         "B");
 
@@ -25,11 +25,11 @@ public class BooleanOpsPage : IVisualizerPage
     private Axis _notBAxis = Axis.Zero;
     private Axis _xorAxis = Axis.Zero;
 
-    private readonly DirectedSegment _andSegment = new(0f, 0f);
-    private readonly DirectedSegment _orSegment = new(0f, 0f);
-    private readonly DirectedSegment _notASegment = new(0f, 0f);
-    private readonly DirectedSegment _notBSegment = new(0f, 0f);
-    private readonly DirectedSegment _xorSegment = new(0f, 0f);
+    private readonly AxisDisplayMapper _andDisplay = new(Axis.Zero);
+    private readonly AxisDisplayMapper _orDisplay = new(Axis.Zero);
+    private readonly AxisDisplayMapper _notADisplay = new(Axis.Zero);
+    private readonly AxisDisplayMapper _notBDisplay = new(Axis.Zero);
+    private readonly AxisDisplayMapper _xorDisplay = new(Axis.Zero);
 
     private CoordinateSystem? _coords;
 
@@ -95,8 +95,8 @@ public class BooleanOpsPage : IVisualizerPage
 
         _rendererA = new SegmentRenderer(coords, SegmentOrientation.Horizontal, SegmentColors.Red, crossPosition: InputAY);
         _rendererB = new SegmentRenderer(coords, SegmentOrientation.Horizontal, SegmentColors.Blue, crossPosition: InputBY);
-        hitTest.Register(_rendererA, _axisA.Segment);
-        hitTest.Register(_rendererB, _axisB.Segment);
+        hitTest.Register(_rendererA, _axisA);
+        hitTest.Register(_rendererB, _axisB);
 
         _andRenderer = new SegmentRenderer(coords, SegmentOrientation.Horizontal, SegmentColors.Green, crossPosition: AndY);
         _orRenderer = new SegmentRenderer(coords, SegmentOrientation.Horizontal, SegmentColors.Orange, crossPosition: OrY);
@@ -120,14 +120,14 @@ public class BooleanOpsPage : IVisualizerPage
         var sepRight = _coords.MathToPixel(14, sepY);
         canvas.DrawLine(sepLeft, sepRight, _separatorPaint);
 
-        _rendererA?.Render(canvas, _axisA.Segment);
-        _rendererB?.Render(canvas, _axisB.Segment);
+        _rendererA?.Render(canvas, _axisA);
+        _rendererB?.Render(canvas, _axisB);
 
-        _andRenderer?.Render(canvas, _andSegment);
-        _orRenderer?.Render(canvas, _orSegment);
-        _notARenderer?.Render(canvas, _notASegment);
-        _notBRenderer?.Render(canvas, _notBSegment);
-        _xorRenderer?.Render(canvas, _xorSegment);
+        _andRenderer?.Render(canvas, _andDisplay);
+        _orRenderer?.Render(canvas, _orDisplay);
+        _notARenderer?.Render(canvas, _notADisplay);
+        _notBRenderer?.Render(canvas, _notBDisplay);
+        _xorRenderer?.Render(canvas, _xorDisplay);
 
         float labelX = _coords.Width - 20;
         DrawLabel(canvas, "A", InputAY, SegmentColors.Red.Label, labelX);
@@ -158,8 +158,6 @@ public class BooleanOpsPage : IVisualizerPage
 
     private void SyncInputsFromDisplay()
     {
-        _axisA.CaptureInput();
-        _axisB.CaptureInput();
     }
 
     private void DrawLabel(SKCanvas canvas, string text, float mathY, SKColor color, float pixelX)
@@ -177,11 +175,11 @@ public class BooleanOpsPage : IVisualizerPage
         _notBAxis = _axisB.Axis.BooleanNot();
         _xorAxis = _axisA.Axis.Xor(_axisB.Axis);
 
-        AxisDisplayMapper.CopyToSegment(_andAxis, _andSegment);
-        AxisDisplayMapper.CopyToSegment(_orAxis, _orSegment);
-        AxisDisplayMapper.CopyToSegment(_notAAxis, _notASegment);
-        AxisDisplayMapper.CopyToSegment(_notBAxis, _notBSegment);
-        AxisDisplayMapper.CopyToSegment(_xorAxis, _xorSegment);
+        _andDisplay.SetAxis(_andAxis);
+        _orDisplay.SetAxis(_orAxis);
+        _notADisplay.SetAxis(_notAAxis);
+        _notBDisplay.SetAxis(_notBAxis);
+        _xorDisplay.SetAxis(_xorAxis);
     }
 
     public bool IsOriginHit(SKPoint pixelPoint)
@@ -195,7 +193,7 @@ public class BooleanOpsPage : IVisualizerPage
         return SKPoint.Distance(pixelPoint, originPx) <= VisualStyle.HitPadding;
     }
 
-    public IReadOnlyList<DirectedSegment>? GetDraggableSegments() => [_axisA.Segment, _axisB.Segment];
+    public IReadOnlyList<ISegmentValue>? GetDraggableSegments() => [_axisA, _axisB];
 
     public SKPoint? GetOriginPixel() => _coords?.MathToPixel(0, 0);
 

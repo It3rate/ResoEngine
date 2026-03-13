@@ -10,9 +10,9 @@ namespace ResoEngine.Visualizer.Input;
 /// </summary>
 public class HitTestEngine
 {
-    private readonly List<(SegmentRenderer Renderer, DirectedSegment Segment)> _targets = [];
+    private readonly List<(SegmentRenderer Renderer, ISegmentValue Segment)> _targets = [];
 
-    public void Register(SegmentRenderer renderer, DirectedSegment segment) =>
+    public void Register(SegmentRenderer renderer, ISegmentValue segment) =>
         _targets.Add((renderer, segment));
 
     public void Clear() => _targets.Clear();

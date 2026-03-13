@@ -31,7 +31,7 @@ public class GridRenderer : IDisposable
         };
     }
 
-    public void Render(SKCanvas canvas, DirectedSegment hSeg, DirectedSegment vSeg,
+    public void Render(SKCanvas canvas, ISegmentValue hSeg, ISegmentValue vSeg,
                        SegmentColorSet hColors, SegmentColorSet vColors)
     {
         float hImagMin = MathF.Min(0f, hSeg.Imaginary);

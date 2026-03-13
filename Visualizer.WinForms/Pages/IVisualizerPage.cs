@@ -20,7 +20,7 @@ public interface IVisualizerPage : IDisposable
     bool IsOriginHit(SKPoint pixelPoint) => false;
 
     /// <summary>Get all segments on this page (for origin drag: move all at once).</summary>
-    IReadOnlyList<DirectedSegment>? GetDraggableSegments() => null;
+    IReadOnlyList<ISegmentValue>? GetDraggableSegments() => null;
 
     /// <summary>Get the origin's pixel position (for cursor changes).</summary>
     SKPoint? GetOriginPixel() => null;

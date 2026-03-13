@@ -4,7 +4,7 @@ namespace ResoEngine.Visualizer.Core;
 /// A directed segment: a 1D value with imaginary (start/dot) and real (end/arrow) extents.
 /// Maps to Proportion/Axis in ResoEngine — imaginary is Con, real is Pro.
 /// </summary>
-public class DirectedSegment
+public class DirectedSegment : ISegmentValue
 {
     public float Imaginary { get; set; }
     public float Real { get; set; }

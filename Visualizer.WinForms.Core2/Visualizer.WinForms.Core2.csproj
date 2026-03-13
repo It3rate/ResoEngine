@@ -25,6 +25,7 @@
     <Compile Include="..\Visualizer.WinForms\Controls\SkiaCanvas.cs" Link="Controls\SkiaCanvas.cs" />
     <Compile Include="..\Visualizer.WinForms\Core\CoordinateSystem.cs" Link="Core\CoordinateSystem.cs" />
     <Compile Include="..\Visualizer.WinForms\Core\DirectedSegment.cs" Link="Core\DirectedSegment.cs" />
+    <Compile Include="..\Visualizer.WinForms\Core\ISegmentValue.cs" Link="Core\ISegmentValue.cs" />
     <Compile Include="..\Visualizer.WinForms\Core\SegmentColors.cs" Link="Core\SegmentColors.cs" />
     <Compile Include="..\Visualizer.WinForms\Core\VisualStyle.cs" Link="Core\VisualStyle.cs" />
     <Compile Include="..\Visualizer.WinForms\Input\DragController.cs" Link="Input\DragController.cs" />

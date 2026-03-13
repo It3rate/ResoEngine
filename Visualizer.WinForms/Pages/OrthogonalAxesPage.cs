@@ -328,7 +328,7 @@ public class OrthogonalAxesPage : IVisualizerPage
         return SKPoint.Distance(pixelPoint, originPx) <= VisualStyle.HitPadding;
     }
 
-    public IReadOnlyList<DirectedSegment>? GetDraggableSegments() => _allSegments;
+    public IReadOnlyList<ISegmentValue>? GetDraggableSegments() => _allSegments;
 
     public SKPoint? GetOriginPixel() => _coords?.MathToPixel(0, 0);
 
