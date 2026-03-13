@@ -17,17 +17,10 @@ public class ParallelBooleanGalleryPage : IVisualizerPage
     private SegmentRenderer? _rendererA;
     private SegmentRenderer? _rendererB;
 
-    private readonly SKPaint _titlePaint = new()
-    {
-        Color = new SKColor(55, 55, 55),
-        TextSize = 18f,
-        Typeface = SKTypeface.FromFamilyName(VisualStyle.FontFamily, SKFontStyle.Bold),
-        IsAntialias = true,
-    };
     private readonly SKPaint _labelPaint = new()
     {
         Color = new SKColor(55, 55, 55),
-        TextSize = 15f,
+        TextSize = 14f,
         Typeface = SKTypeface.FromFamilyName(VisualStyle.FontFamily, SKFontStyle.Bold),
         TextAlign = SKTextAlign.Center,
         IsAntialias = true,
@@ -42,26 +35,32 @@ public class ParallelBooleanGalleryPage : IVisualizerPage
     private readonly SKPaint _tileBackgroundPaint = new()
     {
         Style = SKPaintStyle.Fill,
-        Color = new SKColor(248, 248, 248),
+        Color = new SKColor(244, 244, 244),
         IsAntialias = true,
     };
-    private readonly SKPaint _truePaint = new()
+    private readonly SKPaint _yellowPaint = new()
     {
         Style = SKPaintStyle.Fill,
-        Color = new SKColor(177, 225, 157),
+        Color = VisualStyle.FillColor,
+        IsAntialias = true,
+    };
+    private readonly SKPaint _activeWashPaint = new()
+    {
+        Style = SKPaintStyle.Fill,
+        Color = new SKColor(176, 219, 170, 85),
         IsAntialias = true,
     };
     private readonly SKPaint _falsePaint = new()
     {
         Style = SKPaintStyle.Fill,
-        Color = new SKColor(231, 231, 231),
+        Color = new SKColor(244, 244, 244),
         IsAntialias = true,
     };
     private readonly SKPaint _crossPaint = new()
     {
         Style = SKPaintStyle.Stroke,
         StrokeWidth = 1f,
-        Color = new SKColor(120, 120, 120, 200),
+        Color = new SKColor(188, 188, 188, 190),
         IsAntialias = true,
     };
     private readonly SKPaint _axisGuidePaint = new()
@@ -104,6 +103,34 @@ public class ParallelBooleanGalleryPage : IVisualizerPage
         Color = new SKColor(80, 80, 80),
         IsAntialias = true,
     };
+    private readonly SKPaint _inactiveRegionBorderPaint = new()
+    {
+        Style = SKPaintStyle.Stroke,
+        StrokeWidth = 1f,
+        Color = new SKColor(206, 206, 206),
+        IsAntialias = true,
+    };
+    private readonly SKPaint _activeRegionBorderPaint = new()
+    {
+        Style = SKPaintStyle.Stroke,
+        StrokeWidth = 2.2f,
+        Color = new SKColor(123, 168, 108),
+        IsAntialias = true,
+    };
+    private readonly SKPaint _zeroBarPaint = new()
+    {
+        Style = SKPaintStyle.Stroke,
+        StrokeWidth = 2f,
+        Color = new SKColor(165, 165, 165),
+        IsAntialias = true,
+    };
+    private readonly SKPaint _topRegionBorderPaint = new()
+    {
+        Style = SKPaintStyle.Stroke,
+        StrokeWidth = 1f,
+        Color = new SKColor(198, 198, 198),
+        IsAntialias = true,
+    };
 
     private const float InputAY = 2.0f;
     private const float InputBY = 0.5f;
@@ -130,16 +157,16 @@ public class ParallelBooleanGalleryPage : IVisualizerPage
             return;
         }
 
-        canvas.DrawText("Drag A and B above. The tiles below show boolean truth along the framed line, including gaps and overlaps.", 28, 32, _titlePaint);
+        DrawTopComponentField(canvas);
+
+        var zeroTop = _coords.MathToPixel(0, InputAY);
+        var zeroBottom = _coords.MathToPixel(0, InputBY);
+        canvas.DrawLine(zeroTop, zeroBottom, _zeroBarPaint);
 
         _rendererA?.Render(canvas, _axisA);
         _rendererB?.Render(canvas, _axisB);
 
-        var sepLeft = _coords.MathToPixel(-15, -0.5f);
-        var sepRight = _coords.MathToPixel(15, -0.5f);
-        canvas.DrawLine(sepLeft, sepRight, _axisGuidePaint);
-
-        var originPx = _coords.MathToPixel(0, 0);
+        var originPx = GetZeroCenterPixel();
         float r = VisualStyle.OriginDotRadius;
         canvas.DrawCircle(originPx, r, _originFillPaint);
         canvas.DrawCircle(originPx, r, _originStrokePaint);
@@ -155,14 +182,14 @@ public class ParallelBooleanGalleryPage : IVisualizerPage
             return;
         }
 
-        const float top = 280f;
+        const float top = 246f;
         const float left = 28f;
         const float gapX = 14f;
         const float gapY = 12f;
         const int columns = 4;
 
         float tileWidth = (_coords.Width - left * 2f - gapX * (columns - 1)) / columns;
-        float tileHeight = 92f;
+        float tileHeight = 98f;
 
         var defs = BooleanOperationCatalog.All.ToArray();
         for (int index = 0; index < defs.Length; index++)
@@ -193,11 +220,12 @@ public class ParallelBooleanGalleryPage : IVisualizerPage
         float bMin = MathF.Min(_axisB.Imaginary, _axisB.Real);
         float bMax = MathF.Max(_axisB.Imaginary, _axisB.Real);
 
-        float min = MathF.Min(0f, MathF.Min(aMin, bMin));
-        float max = MathF.Max(0f, MathF.Max(aMax, bMax));
-        float margin = MathF.Max(1f, (max - min) * 0.18f);
-        float frameMin = min - margin;
-        float frameMax = max + margin;
+        float frameMin = MathF.Min(0f, MathF.Min(aMin, bMin));
+        float frameMax = MathF.Max(0f, MathF.Max(aMax, bMax));
+        if (frameMax <= frameMin)
+        {
+            frameMax = frameMin + 1f;
+        }
 
         float bandGap = 4f;
         float bandHeight = (plot.Height - bandGap * 2f) / 3f;
@@ -209,9 +237,20 @@ public class ParallelBooleanGalleryPage : IVisualizerPage
         DrawAxisGuide(canvas, bBand, frameMin, frameMax);
         DrawAxisGuide(canvas, resultBand, frameMin, frameMax);
 
-        var boundaries = new List<float> { frameMin, aMin, aMax, bMin, bMax, frameMax };
-        boundaries.Sort();
         const float epsilon = 0.0001f;
+        var boundaries = new[] { frameMin, aMin, aMax, 0f, bMin, bMax, frameMax }
+            .OrderBy(value => value)
+            .Aggregate(
+                new List<float>(),
+                (list, value) =>
+                {
+                    if (list.Count == 0 || MathF.Abs(list[^1] - value) > epsilon)
+                    {
+                        list.Add(value);
+                    }
+
+                    return list;
+                });
 
         for (int i = 0; i < boundaries.Count - 1; i++)
         {
@@ -223,9 +262,12 @@ public class ParallelBooleanGalleryPage : IVisualizerPage
             }
 
             float mid = (start + end) * 0.5f;
-            bool a = mid >= aMin && mid <= aMax;
-            bool b = mid >= bMin && mid <= bMax;
-            bool active = definition.Evaluate(a, b);
+            bool inAImag = IsWithin(mid, 0f, _axisA.Imaginary);
+            bool inAReal = IsWithin(mid, 0f, _axisA.Real);
+            bool inBImag = IsWithin(mid, 0f, _axisB.Imaginary);
+            bool inBReal = IsWithin(mid, 0f, _axisB.Real);
+            bool inA = IsWithin(mid, aMin, aMax);
+            bool inB = IsWithin(mid, bMin, bMax);
 
             var rect = new SKRect(
                 MapX(start, plot, frameMin, frameMax),
@@ -233,40 +275,158 @@ public class ParallelBooleanGalleryPage : IVisualizerPage
                 MapX(end, plot, frameMin, frameMax),
                 0f);
 
-            DrawBandSegment(canvas, aBand, rect.Left, rect.Right, a, _redStripePaint);
-            DrawBandSegment(canvas, bBand, rect.Left, rect.Right, b, _blueStripePaint);
-            DrawResultSegment(canvas, resultBand, rect.Left, rect.Right, active);
+            DrawStyledSegment(canvas, aBand, rect.Left, rect.Right, inAImag || inAReal, inAImag, inAReal, false, false);
+            DrawStyledSegment(canvas, bBand, rect.Left, rect.Right, inBImag || inBReal, inBImag, false, inBReal, false);
+
+            bool active = definition.Evaluate(inA, inB);
+            bool showYellow = active && (inAImag || inBImag);
+            bool showRed = active && inAReal && inB;
+            bool showBlue = active && inBReal && inA;
+            DrawStyledSegment(canvas, resultBand, rect.Left, rect.Right, active, showYellow, showRed, showBlue, true);
         }
 
         canvas.DrawText(definition.Name, tile.MidX, tile.Bottom - 10f, _labelPaint);
     }
 
-    private void DrawBandSegment(SKCanvas canvas, SKRect band, float left, float right, bool active, SKPaint stripePaint)
+    private void DrawTopComponentField(SKCanvas canvas)
+    {
+        if (_coords == null)
+        {
+            return;
+        }
+
+        float aMin = MathF.Min(_axisA.Imaginary, _axisA.Real);
+        float aMax = MathF.Max(_axisA.Imaginary, _axisA.Real);
+        float bMin = MathF.Min(_axisB.Imaginary, _axisB.Real);
+        float bMax = MathF.Max(_axisB.Imaginary, _axisB.Real);
+
+        float frameMin = MathF.Min(0f, MathF.Min(aMin, bMin));
+        float frameMax = MathF.Max(0f, MathF.Max(aMax, bMax));
+        if (frameMax <= frameMin)
+        {
+            frameMax = frameMin + 1f;
+        }
+
+        const float epsilon = 0.0001f;
+        var boundaries = new[] { frameMin, aMin, aMax, 0f, bMin, bMax, frameMax }
+            .OrderBy(value => value)
+            .Aggregate(
+                new List<float>(),
+                (list, value) =>
+                {
+                    if (list.Count == 0 || MathF.Abs(list[^1] - value) > epsilon)
+                    {
+                        list.Add(value);
+                    }
+
+                    return list;
+                });
+
+        float topMath = MathF.Max(InputAY, InputBY) + 0.45f;
+        float bottomMath = MathF.Min(InputAY, InputBY) - 0.45f;
+
+        for (int i = 0; i < boundaries.Count - 1; i++)
+        {
+            float start = boundaries[i];
+            float end = boundaries[i + 1];
+            if (end - start <= epsilon)
+            {
+                continue;
+            }
+
+            float mid = (start + end) * 0.5f;
+            bool inAImag = IsWithin(mid, 0f, _axisA.Imaginary);
+            bool inAReal = IsWithin(mid, 0f, _axisA.Real);
+            bool inBImag = IsWithin(mid, 0f, _axisB.Imaginary);
+            bool inBReal = IsWithin(mid, 0f, _axisB.Real);
+
+            var leftTop = _coords.MathToPixel(start, topMath);
+            var rightBottom = _coords.MathToPixel(end, bottomMath);
+            var rect = new SKRect(leftTop.X, leftTop.Y, rightBottom.X, rightBottom.Y);
+
+            canvas.DrawRect(rect, _falsePaint);
+            if (inAImag || inBImag)
+            {
+                canvas.DrawRect(rect, _yellowPaint);
+            }
+
+            if (inAReal || inBReal)
+            {
+                canvas.Save();
+                canvas.ClipRect(rect);
+                const float stripe = 8f;
+                if (inAReal)
+                {
+                    for (float y = rect.Top - 1f; y <= rect.Bottom + 1f; y += stripe)
+                    {
+                        canvas.DrawLine(rect.Left, y, rect.Right, y, _redStripePaint);
+                    }
+                }
+
+                if (inBReal)
+                {
+                    for (float x = rect.Left - 1f; x <= rect.Right + 1f; x += stripe)
+                    {
+                        canvas.DrawLine(x, rect.Top, x, rect.Bottom, _blueStripePaint);
+                    }
+                }
+
+                canvas.Restore();
+            }
+
+            canvas.DrawRect(rect, _topRegionBorderPaint);
+        }
+    }
+
+    private void DrawStyledSegment(
+        SKCanvas canvas,
+        SKRect band,
+        float left,
+        float right,
+        bool active,
+        bool showYellow,
+        bool showRed,
+        bool showBlue,
+        bool drawCrossWhenFalse)
     {
         var rect = new SKRect(left, band.Top, right, band.Bottom);
-        canvas.DrawRect(rect, active ? _truePaint : _falsePaint);
-        canvas.DrawRect(rect, _tileBorderPaint);
-
+        canvas.DrawRect(rect, _falsePaint);
         if (active)
+        {
+            canvas.DrawRect(rect, _activeWashPaint);
+        }
+
+        if (showYellow)
+        {
+            canvas.DrawRect(rect, _yellowPaint);
+        }
+
+        if (showRed || showBlue)
         {
             canvas.Save();
             canvas.ClipRect(rect);
             const float stripe = 8f;
-            for (float x = rect.Left - 1f; x <= rect.Right + 1f; x += stripe)
+            if (showRed)
             {
-                canvas.DrawLine(x, rect.Top, x, rect.Bottom, stripePaint);
+                for (float x = rect.Left - 1f; x <= rect.Right + 1f; x += stripe)
+                {
+                    canvas.DrawLine(x, rect.Top, x, rect.Bottom, _redStripePaint);
+                }
+            }
+
+            if (showBlue)
+            {
+                for (float y = rect.Top - 1f; y <= rect.Bottom + 1f; y += stripe)
+                {
+                    canvas.DrawLine(rect.Left, y, rect.Right, y, _blueStripePaint);
+                }
             }
             canvas.Restore();
         }
-    }
 
-    private void DrawResultSegment(SKCanvas canvas, SKRect band, float left, float right, bool active)
-    {
-        var rect = new SKRect(left, band.Top, right, band.Bottom);
-        canvas.DrawRect(rect, active ? _truePaint : _falsePaint);
-        canvas.DrawRect(rect, _tileBorderPaint);
+        canvas.DrawRect(rect, active ? _activeRegionBorderPaint : _inactiveRegionBorderPaint);
 
-        if (!active)
+        if (drawCrossWhenFalse && !active)
         {
             canvas.DrawLine(rect.Left, rect.Top, rect.Right, rect.Bottom, _crossPaint);
             canvas.DrawLine(rect.Left, rect.Bottom, rect.Right, rect.Top, _crossPaint);
@@ -289,12 +449,12 @@ public class ParallelBooleanGalleryPage : IVisualizerPage
             return false;
         }
 
-        var originPx = _coords.MathToPixel(0, 0);
+        var originPx = GetZeroCenterPixel();
         return SKPoint.Distance(pixelPoint, originPx) <= VisualStyle.HitPadding;
     }
 
     public IReadOnlyList<ISegmentValue>? GetDraggableSegments() => [_axisA, _axisB];
-    public SKPoint? GetOriginPixel() => _coords?.MathToPixel(0, 0);
+    public SKPoint? GetOriginPixel() => _coords == null ? null : GetZeroCenterPixel();
 
     public void Destroy()
     {
@@ -308,11 +468,11 @@ public class ParallelBooleanGalleryPage : IVisualizerPage
     public void Dispose()
     {
         Destroy();
-        _titlePaint.Dispose();
         _labelPaint.Dispose();
         _tileBorderPaint.Dispose();
         _tileBackgroundPaint.Dispose();
-        _truePaint.Dispose();
+        _yellowPaint.Dispose();
+        _activeWashPaint.Dispose();
         _falsePaint.Dispose();
         _crossPaint.Dispose();
         _axisGuidePaint.Dispose();
@@ -321,5 +481,21 @@ public class ParallelBooleanGalleryPage : IVisualizerPage
         _originFillPaint.Dispose();
         _originStrokePaint.Dispose();
         _originDotPaint.Dispose();
+        _inactiveRegionBorderPaint.Dispose();
+        _activeRegionBorderPaint.Dispose();
+        _zeroBarPaint.Dispose();
+        _topRegionBorderPaint.Dispose();
+    }
+
+    private SKPoint GetZeroCenterPixel()
+    {
+        return _coords!.MathToPixel(0, (InputAY + InputBY) * 0.5f);
+    }
+
+    private static bool IsWithin(float value, float first, float second)
+    {
+        float min = MathF.Min(first, second);
+        float max = MathF.Max(first, second);
+        return value > min && value < max;
     }
 }

@@ -21,8 +21,8 @@ public class MainForm : Form
     public MainForm()
     {
         Text = "ResoEngine Visualizer (Core2)";
-        Size = new Size(1320, 1120);
-        MinimumSize = new Size(900, 760);
+        Size = new Size(1420, 1220);
+        MinimumSize = new Size(980, 820);
         StartPosition = FormStartPosition.CenterScreen;
         BackColor = Color.FromArgb(240, 240, 240);
 

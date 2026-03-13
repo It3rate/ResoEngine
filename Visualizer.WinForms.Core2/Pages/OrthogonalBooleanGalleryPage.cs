@@ -18,17 +18,10 @@ public class OrthogonalBooleanGalleryPage : IVisualizerPage
     private SegmentRenderer? _rendererB;
     private GridRenderer? _gridRenderer;
 
-    private readonly SKPaint _titlePaint = new()
-    {
-        Color = new SKColor(55, 55, 55),
-        TextSize = 18f,
-        Typeface = SKTypeface.FromFamilyName(VisualStyle.FontFamily, SKFontStyle.Bold),
-        IsAntialias = true,
-    };
     private readonly SKPaint _labelPaint = new()
     {
         Color = new SKColor(55, 55, 55),
-        TextSize = 15f,
+        TextSize = 14f,
         Typeface = SKTypeface.FromFamilyName(VisualStyle.FontFamily, SKFontStyle.Bold),
         TextAlign = SKTextAlign.Center,
         IsAntialias = true,
@@ -37,32 +30,52 @@ public class OrthogonalBooleanGalleryPage : IVisualizerPage
     {
         Style = SKPaintStyle.Stroke,
         StrokeWidth = 1f,
-        Color = new SKColor(180, 180, 180),
+        Color = new SKColor(210, 210, 210),
         IsAntialias = true,
     };
     private readonly SKPaint _tileBackgroundPaint = new()
     {
         Style = SKPaintStyle.Fill,
-        Color = new SKColor(248, 248, 248),
+        Color = new SKColor(244, 244, 244),
         IsAntialias = true,
     };
-    private readonly SKPaint _truePaint = new()
+    private readonly SKPaint _yellowPaint = new()
     {
         Style = SKPaintStyle.Fill,
-        Color = new SKColor(177, 225, 157),
+        Color = VisualStyle.FillColor,
+        IsAntialias = true,
+    };
+    private readonly SKPaint _activeWashPaint = new()
+    {
+        Style = SKPaintStyle.Fill,
+        Color = new SKColor(176, 219, 170, 85),
         IsAntialias = true,
     };
     private readonly SKPaint _falsePaint = new()
     {
         Style = SKPaintStyle.Fill,
-        Color = new SKColor(231, 231, 231),
+        Color = new SKColor(244, 244, 244),
         IsAntialias = true,
     };
     private readonly SKPaint _crossPaint = new()
     {
         Style = SKPaintStyle.Stroke,
         StrokeWidth = 1f,
-        Color = new SKColor(120, 120, 120, 200),
+        Color = new SKColor(188, 188, 188, 190),
+        IsAntialias = true,
+    };
+    private readonly SKPaint _inactiveRegionBorderPaint = new()
+    {
+        Style = SKPaintStyle.Stroke,
+        StrokeWidth = 1f,
+        Color = new SKColor(206, 206, 206),
+        IsAntialias = true,
+    };
+    private readonly SKPaint _activeRegionBorderPaint = new()
+    {
+        Style = SKPaintStyle.Stroke,
+        StrokeWidth = 2.2f,
+        Color = new SKColor(123, 168, 108),
         IsAntialias = true,
     };
     private readonly SKPaint _axisGuidePaint = new()
@@ -130,8 +143,6 @@ public class OrthogonalBooleanGalleryPage : IVisualizerPage
             return;
         }
 
-        canvas.DrawText("Drag A and B above. The tiles below show boolean truth over the four segment components.", 28, 32, _titlePaint);
-
         _gridRenderer?.Render(canvas, _axisA, _axisB, SegmentColors.Red, SegmentColors.Blue);
         _rendererA?.Render(canvas, _axisA);
         _rendererB?.Render(canvas, _axisB);
@@ -152,24 +163,23 @@ public class OrthogonalBooleanGalleryPage : IVisualizerPage
             return;
         }
 
-        const float top = 300f;
-        const float left = 28f;
-        const float gapX = 14f;
-        const float gapY = 14f;
+        const float top = 244f;
+        const float rightPad = 24f;
+        const float gapX = 10f;
+        const float gapY = 10f;
         const int columns = 4;
 
-        float tileWidth = (_coords.Width - left * 2f - gapX * (columns - 1)) / columns;
-        float tileHeight = 136f;
+        float availableWidth = MathF.Max(440f, _coords.Width - 580f);
+        float tileSize = MathF.Min(122f, (availableWidth - gapX * (columns - 1)) / columns);
+        float tileWidth = tileSize;
+        float tileHeight = tileSize;
+        float totalWidth = tileWidth * columns + gapX * (columns - 1);
+        float left = _coords.Width - rightPad - totalWidth;
 
-        var aImag = CreateRange(0f, _axisA.Imaginary);
-        var aReal = CreateRange(0f, _axisA.Real);
-        var bImag = CreateRange(0f, _axisB.Imaginary);
-        var bReal = CreateRange(0f, _axisB.Real);
-
-        float worldMinX = MathF.Min(MathF.Min(aImag.Min, aReal.Min), 0f);
-        float worldMaxX = MathF.Max(MathF.Max(aImag.Max, aReal.Max), 0f);
-        float worldMinY = MathF.Min(MathF.Min(bImag.Min, bReal.Min), 0f);
-        float worldMaxY = MathF.Max(MathF.Max(bImag.Max, bReal.Max), 0f);
+        float worldMinX = MathF.Min(0f, MathF.Min(_axisA.Imaginary, _axisA.Real));
+        float worldMaxX = MathF.Max(0f, MathF.Max(_axisA.Imaginary, _axisA.Real));
+        float worldMinY = MathF.Min(0f, MathF.Min(_axisB.Imaginary, _axisB.Real));
+        float worldMaxY = MathF.Max(0f, MathF.Max(_axisB.Imaginary, _axisB.Real));
 
         if (worldMaxX <= worldMinX) worldMaxX = worldMinX + 1f;
         if (worldMaxY <= worldMinY) worldMaxY = worldMinY + 1f;
@@ -185,7 +195,7 @@ public class OrthogonalBooleanGalleryPage : IVisualizerPage
                 left + col * (tileWidth + gapX) + tileWidth,
                 top + row * (tileHeight + gapY) + tileHeight);
 
-            DrawTile(canvas, tile, defs[index], worldMinX, worldMaxX, worldMinY, worldMaxY, aImag, aReal, bImag, bReal);
+            DrawTile(canvas, tile, defs[index], worldMinX, worldMaxX, worldMinY, worldMaxY);
         }
     }
 
@@ -196,21 +206,17 @@ public class OrthogonalBooleanGalleryPage : IVisualizerPage
         float worldMinX,
         float worldMaxX,
         float worldMinY,
-        float worldMaxY,
-        AxisRange aImag,
-        AxisRange aReal,
-        AxisRange bImag,
-        AxisRange bReal)
+        float worldMaxY)
     {
         canvas.DrawRoundRect(tile, 12f, 12f, _tileBackgroundPaint);
         canvas.DrawRoundRect(tile, 12f, 12f, _tileBorderPaint);
 
-        const float pad = 16f;
-        const float labelSpace = 30f;
+        const float pad = 8f;
+        const float labelSpace = 22f;
         var plot = new SKRect(tile.Left + pad, tile.Top + pad, tile.Right - pad, tile.Bottom - labelSpace);
 
         DrawAxes(canvas, plot, worldMinX, worldMaxX, worldMinY, worldMaxY);
-        DrawBooleanRegions(canvas, plot, worldMinX, worldMaxX, worldMinY, worldMaxY, definition, aImag, aReal, bImag, bReal);
+        DrawBooleanRegions(canvas, plot, worldMinX, worldMaxX, worldMinY, worldMaxY, definition);
 
         canvas.DrawText(definition.Name, tile.MidX, tile.Bottom - 10f, _labelPaint);
     }
@@ -222,28 +228,68 @@ public class OrthogonalBooleanGalleryPage : IVisualizerPage
         float worldMaxX,
         float worldMinY,
         float worldMaxY,
-        BooleanOperationDefinition definition,
-        AxisRange aImag,
-        AxisRange aReal,
-        AxisRange bImag,
-        AxisRange bReal)
+        BooleanOperationDefinition definition)
     {
-        var regions = new[]
-        {
-            new Region(aImag, bImag, definition.Evaluate(false, false)),
-            new Region(aImag, bReal, definition.Evaluate(false, true)),
-            new Region(aReal, bImag, definition.Evaluate(true, false)),
-            new Region(aReal, bReal, definition.Evaluate(true, true)),
-        };
+        const float epsilon = 0.0001f;
+        var xBoundaries = new[] { 0f, _axisA.Imaginary, _axisA.Real }
+            .OrderBy(value => value)
+            .Aggregate(
+                new List<float>(),
+                (list, value) =>
+                {
+                    if (list.Count == 0 || MathF.Abs(list[^1] - value) > epsilon)
+                    {
+                        list.Add(value);
+                    }
 
-        foreach (var region in regions.Where(region => !region.Active))
-        {
-            DrawRegion(canvas, plot, worldMinX, worldMaxX, worldMinY, worldMaxY, region.XRange, region.YRange, false);
-        }
+                    return list;
+                });
+        var yBoundaries = new[] { 0f, _axisB.Imaginary, _axisB.Real }
+            .OrderBy(value => value)
+            .Aggregate(
+                new List<float>(),
+                (list, value) =>
+                {
+                    if (list.Count == 0 || MathF.Abs(list[^1] - value) > epsilon)
+                    {
+                        list.Add(value);
+                    }
 
-        foreach (var region in regions.Where(region => region.Active))
+                    return list;
+                });
+
+        for (int xi = 0; xi < xBoundaries.Count - 1; xi++)
         {
-            DrawRegion(canvas, plot, worldMinX, worldMaxX, worldMinY, worldMaxY, region.XRange, region.YRange, true);
+            var xRange = new AxisRange(xBoundaries[xi], xBoundaries[xi + 1]);
+            if (!xRange.HasSpan)
+            {
+                continue;
+            }
+
+            for (int yi = 0; yi < yBoundaries.Count - 1; yi++)
+            {
+                var yRange = new AxisRange(yBoundaries[yi], yBoundaries[yi + 1]);
+                if (!yRange.HasSpan)
+                {
+                    continue;
+                }
+
+                float midX = (xRange.Min + xRange.Max) * 0.5f;
+                float midY = (yRange.Min + yRange.Max) * 0.5f;
+                bool inAImag = IsWithin(midX, 0f, _axisA.Imaginary);
+                bool inAReal = IsWithin(midX, 0f, _axisA.Real);
+                bool inBImag = IsWithin(midY, 0f, _axisB.Imaginary);
+                bool inBReal = IsWithin(midY, 0f, _axisB.Real);
+
+                bool showYellow = inAImag && inBImag && definition.Evaluate(false, false);
+                bool showRed = inAReal && (inBImag || inBReal) &&
+                    ((inBImag && definition.Evaluate(true, false)) || (inBReal && definition.Evaluate(true, true)));
+                bool showBlue = inBReal && (inAImag || inAReal) &&
+                    ((inAImag && definition.Evaluate(false, true)) || (inAReal && definition.Evaluate(true, true)));
+
+                bool active = showYellow || showRed || showBlue;
+                DrawRegion(canvas, plot, worldMinX, worldMaxX, worldMinY, worldMaxY, xRange, yRange, active, showYellow, showRed, showBlue);
+            }
         }
     }
 
@@ -256,7 +302,10 @@ public class OrthogonalBooleanGalleryPage : IVisualizerPage
         float worldMaxY,
         AxisRange xRange,
         AxisRange yRange,
-        bool active)
+        bool active,
+        bool showYellow,
+        bool showRed,
+        bool showBlue)
     {
         if (!xRange.HasSpan || !yRange.HasSpan)
         {
@@ -269,9 +318,19 @@ public class OrthogonalBooleanGalleryPage : IVisualizerPage
         float bottom = MapY(yRange.Min, plot, worldMinY, worldMaxY);
         var rect = new SKRect(left, top, right, bottom);
 
-        canvas.DrawRect(rect, active ? _truePaint : _falsePaint);
-        canvas.DrawRect(rect, _tileBorderPaint);
-        DrawStripes(canvas, rect);
+        canvas.DrawRect(rect, _falsePaint);
+        if (active)
+        {
+            canvas.DrawRect(rect, _activeWashPaint);
+        }
+
+        if (showYellow)
+        {
+            canvas.DrawRect(rect, _yellowPaint);
+        }
+
+        DrawStripes(canvas, rect, showRed, showBlue);
+        canvas.DrawRect(rect, active ? _activeRegionBorderPaint : _inactiveRegionBorderPaint);
 
         if (!active)
         {
@@ -280,20 +339,31 @@ public class OrthogonalBooleanGalleryPage : IVisualizerPage
         }
     }
 
-    private void DrawStripes(SKCanvas canvas, SKRect rect)
+    private void DrawStripes(SKCanvas canvas, SKRect rect, bool showRed, bool showBlue)
     {
+        if (!showRed && !showBlue)
+        {
+            return;
+        }
+
         canvas.Save();
         canvas.ClipRect(rect);
 
         const float stripe = 8f;
-        for (float x = rect.Left - 1f; x <= rect.Right + 1f; x += stripe)
+        if (showRed)
         {
-            canvas.DrawLine(x, rect.Top, x, rect.Bottom, _redStripePaint);
+            for (float x = rect.Left - 1f; x <= rect.Right + 1f; x += stripe)
+            {
+                canvas.DrawLine(x, rect.Top, x, rect.Bottom, _redStripePaint);
+            }
         }
 
-        for (float y = rect.Top - 1f; y <= rect.Bottom + 1f; y += stripe)
+        if (showBlue)
         {
-            canvas.DrawLine(rect.Left, y, rect.Right, y, _blueStripePaint);
+            for (float y = rect.Top - 1f; y <= rect.Bottom + 1f; y += stripe)
+            {
+                canvas.DrawLine(rect.Left, y, rect.Right, y, _blueStripePaint);
+            }
         }
 
         canvas.Restore();
@@ -321,6 +391,12 @@ public class OrthogonalBooleanGalleryPage : IVisualizerPage
         plot.Bottom - ((value - worldMinY) / (worldMaxY - worldMinY)) * plot.Height;
 
     private static AxisRange CreateRange(float start, float end) => new(MathF.Min(start, end), MathF.Max(start, end));
+    private static bool IsWithin(float value, float first, float second)
+    {
+        float min = MathF.Min(first, second);
+        float max = MathF.Max(first, second);
+        return value > min && value < max;
+    }
 
     public bool IsOriginHit(SKPoint pixelPoint)
     {
@@ -350,13 +426,15 @@ public class OrthogonalBooleanGalleryPage : IVisualizerPage
     public void Dispose()
     {
         Destroy();
-        _titlePaint.Dispose();
         _labelPaint.Dispose();
         _tileBorderPaint.Dispose();
         _tileBackgroundPaint.Dispose();
-        _truePaint.Dispose();
+        _yellowPaint.Dispose();
+        _activeWashPaint.Dispose();
         _falsePaint.Dispose();
         _crossPaint.Dispose();
+        _inactiveRegionBorderPaint.Dispose();
+        _activeRegionBorderPaint.Dispose();
         _redStripePaint.Dispose();
         _blueStripePaint.Dispose();
         _axisGuidePaint.Dispose();
@@ -370,5 +448,4 @@ public class OrthogonalBooleanGalleryPage : IVisualizerPage
         public bool HasSpan => Max > Min;
     }
 
-    private readonly record struct Region(AxisRange XRange, AxisRange YRange, bool Active);
 }
