@@ -86,6 +86,12 @@ public sealed record Axis(Proportion Recessive, Proportion Dominant, AxisBasis B
 
     public Area Pin(Axis other) => new(this, other);
 
+    public InverseContinuationResult<Axis> InverseContinue(
+        int degree,
+        InverseContinuationRule rule = InverseContinuationRule.Principal,
+        Axis? reference = null) =>
+        InverseContinuationEngine.InverseContinue(this, degree, rule, reference);
+
     public Axis Intersect(Axis other)
     {
         var start = SelectByStart(this, other, selectGreater: true);

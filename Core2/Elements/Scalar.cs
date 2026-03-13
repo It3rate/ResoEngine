@@ -1,3 +1,4 @@
+using Core2.Repetition;
 using ResoEngine.Core2.Support;
 
 namespace Core2.Elements;
@@ -45,6 +46,12 @@ public readonly record struct Scalar(decimal Value) : IElement
 
         return new(left.Value / right.Value);
     }
+
+    public InverseContinuationResult<Scalar> InverseContinue(
+        int degree,
+        InverseContinuationRule rule = InverseContinuationRule.Principal,
+        Scalar? reference = null) =>
+        InverseContinuationEngine.InverseContinue(this, degree, rule, reference);
 
     public override string ToString() => Value switch
     {

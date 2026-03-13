@@ -1,3 +1,4 @@
+using Core2.Repetition;
 using Core2.Support;
 using ResoEngine.Core2.Support;
 
@@ -29,6 +30,13 @@ public sealed record Area(Axis Recessive, Axis Dominant) : IElement
     }
 
     public Area Oppose() => ApplyOpposition();
+
+    public InverseContinuationResult<Axis> InverseContinue(
+        int degree,
+        AreaInverseContinuationMode mode = AreaInverseContinuationMode.FoldFirst,
+        InverseContinuationRule rule = InverseContinuationRule.Principal,
+        Axis? foldedReference = null) =>
+        InverseContinuationEngine.InverseContinue(this, degree, mode, rule, foldedReference);
 
     public Area Mirror() => FromPair(Table.Mirror(Recessive, Dominant));
 

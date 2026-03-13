@@ -12,12 +12,15 @@ public class OperationCatalogTests
 
         var compare = scalar.DescribeOperation(ElementOperation.Compare);
         var repeat = scalar.DescribeOperation(ElementOperation.Repeat);
+        var inverseContinue = scalar.DescribeOperation(ElementOperation.InverseContinue);
         var scale = scalar.DescribeOperation(ElementOperation.Scale);
 
         Assert.Equal(OperationActivation.Dormant, compare.Activation);
         Assert.Equal(1, compare.MinimumGrade);
         Assert.Equal(OperationActivation.Relational, repeat.Activation);
         Assert.False(repeat.RequiresRelation);
+        Assert.Equal(OperationActivation.Relational, inverseContinue.Activation);
+        Assert.False(inverseContinue.RequiresRelation);
         Assert.Equal(OperationActivation.Relational, scale.Activation);
         Assert.True(scale.RequiresRelation);
     }
@@ -65,6 +68,7 @@ public class OperationCatalogTests
         Assert.Equal(Enum.GetValues<ElementOperation>().Length, profiles.Count);
         Assert.Equal(ElementOperation.Pin, profiles[0].Operation);
         Assert.Contains(profiles, profile => profile.Operation == ElementOperation.Repeat);
+        Assert.Contains(profiles, profile => profile.Operation == ElementOperation.InverseContinue);
         Assert.Contains(profiles, profile => profile.Operation == ElementOperation.PerspectiveFlip);
     }
 }

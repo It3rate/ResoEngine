@@ -1,3 +1,4 @@
+using Core2.Repetition;
 using ResoEngine.Core2.Support;
 
 namespace Core2.Elements;
@@ -50,6 +51,12 @@ public sealed record Proportion : IElement
     public Proportion Mirror() => Reciprocal();
 
     public Axis Pin(Proportion other) => new(this, other);
+
+    public InverseContinuationResult<Proportion> InverseContinue(
+        int degree,
+        InverseContinuationRule rule = InverseContinuationRule.Principal,
+        Proportion? reference = null) =>
+        InverseContinuationEngine.InverseContinue(this, degree, rule, reference);
 
     public static Proportion operator +(Proportion left, Proportion right) =>
         FromRecessiveDominant(
