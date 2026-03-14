@@ -50,11 +50,39 @@ public class RepetitionTests
 
         var wrapped = frame.Continue(new Scalar(11), BoundaryContinuationLaw.PeriodicWrap);
         var reflected = frame.Continue(new Scalar(11), BoundaryContinuationLaw.ReflectiveBounce);
+        var clamped = frame.Continue(new Scalar(11), BoundaryContinuationLaw.Clamp);
         var preserved = frame.Continue(new Scalar(11), BoundaryContinuationLaw.TensionPreserving);
 
         Assert.Equal(1m, wrapped.Value);
         Assert.Equal(9m, reflected.Value);
+        Assert.Equal(10m, clamped.Value);
         Assert.Equal(11m, preserved.Value);
         Assert.Contains(preserved.Tensions, tension => tension.Kind == RepetitionTensionKind.BoundaryExceeded);
+    }
+
+    [Fact]
+    public void BoundaryContinuation_WrapsAcrossMultiplePeriods()
+    {
+        var frame = Axis.FromCoordinates(0, 5);
+
+        var wrappedPositive = frame.Continue(new Scalar(15), BoundaryContinuationLaw.PeriodicWrap);
+        var wrappedNegative = frame.Continue(new Scalar(-2), BoundaryContinuationLaw.PeriodicWrap);
+
+        Assert.Equal(0m, wrappedPositive.Value);
+        Assert.Equal(3m, wrappedNegative.Value);
+    }
+
+    [Fact]
+    public void BoundaryContinuation_ReflectsAcrossMultipleBounces()
+    {
+        var frame = Axis.FromCoordinates(0, 5);
+
+        var reflectedPositive = frame.Continue(new Scalar(15), BoundaryContinuationLaw.ReflectiveBounce);
+        var reflectedOver = frame.Continue(new Scalar(17), BoundaryContinuationLaw.ReflectiveBounce);
+        var reflectedNegative = frame.Continue(new Scalar(-2), BoundaryContinuationLaw.ReflectiveBounce);
+
+        Assert.Equal(5m, reflectedPositive.Value);
+        Assert.Equal(3m, reflectedOver.Value);
+        Assert.Equal(2m, reflectedNegative.Value);
     }
 }

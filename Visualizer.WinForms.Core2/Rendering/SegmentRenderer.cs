@@ -110,7 +110,34 @@ public class SegmentRenderer : IDisposable
         float dirX = realPx.X - imagPx.X;
         float dirY = realPx.Y - imagPx.Y;
         float len = MathF.Sqrt(dirX * dirX + dirY * dirY);
-        if (len < 1f) return; // degenerate segment
+        bool isH = _orientation == SegmentOrientation.Horizontal;
+        if (len < 1f)
+        {
+            canvas.DrawLine(originPx, imagPx, _dashPaint);
+            DrawNoDirectionMarker(canvas, imagPx);
+
+            string imagLabelZero = FormatValue(segment.Imaginary, isImaginary: true);
+            string realLabelZero = FormatValue(segment.Real, isImaginary: false);
+            if (isH)
+            {
+                canvas.DrawText(imagLabelZero, imagPx.X, imagPx.Y + 28, _labelPaint);
+                canvas.DrawText(realLabelZero, realPx.X, realPx.Y + 46, _labelPaint);
+            }
+            else
+            {
+                canvas.DrawText(imagLabelZero, imagPx.X - 22, imagPx.Y + 7, _labelRightPaint);
+                canvas.DrawText(realLabelZero, realPx.X - 22, realPx.Y + 25, _labelRightPaint);
+            }
+
+            if (!string.IsNullOrEmpty(segment.Label))
+            {
+                float lx = isH ? imagPx.X + 20f : imagPx.X + 14f;
+                float ly = isH ? imagPx.Y - 10f : imagPx.Y - 10f;
+                canvas.DrawText(segment.Label, lx, ly, _labelPaint);
+            }
+
+            return;
+        }
 
         float ux = dirX / len;
         float uy = dirY / len;
@@ -143,8 +170,6 @@ public class SegmentRenderer : IDisposable
         canvas.DrawCircle(imagPx, VisualStyle.DotRadius, _dotPaint);
 
         // --- 5. Labels ---
-        bool isH = _orientation == SegmentOrientation.Horizontal;
-
         string imagLabel = FormatValue(segment.Imaginary, isImaginary: true);
         if (isH)
             canvas.DrawText(imagLabel, imagPx.X, imagPx.Y + 28, _labelPaint);
@@ -163,6 +188,12 @@ public class SegmentRenderer : IDisposable
             float ly = tipY + uy * 22 + perpY * 4 + 7;
             canvas.DrawText(segment.Label, lx, ly, _labelPaint);
         }
+    }
+
+    private void DrawNoDirectionMarker(SKCanvas canvas, SKPoint point)
+    {
+        canvas.DrawLine(point.X, point.Y - 10f, point.X, point.Y + 10f, _solidPaint);
+        canvas.DrawCircle(point, VisualStyle.DotRadius, _dotPaint);
     }
 
     /// <summary>Hit-test a pixel point against this segment's drag zones.</summary>

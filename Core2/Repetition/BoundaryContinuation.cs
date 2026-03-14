@@ -39,6 +39,7 @@ public static class BoundaryContinuation
                 ]),
             BoundaryContinuationLaw.PeriodicWrap => new BoundaryContinuationResult(Wrap(min, max, value), []),
             BoundaryContinuationLaw.ReflectiveBounce => new BoundaryContinuationResult(Reflect(min, max, value), []),
+            BoundaryContinuationLaw.Clamp => new BoundaryContinuationResult(decimal.Clamp(value, min, max), []),
             _ => throw new ArgumentOutOfRangeException(nameof(law), law, null),
         };
     }

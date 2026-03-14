@@ -133,25 +133,33 @@ public class BoundaryRepetitionPage : IVisualizerPage
         IsAntialias = true,
     };
 
-    private readonly SKPaint _probePaint = new()
-    {
-        Style = SKPaintStyle.Fill,
-        Color = new SKColor(80, 80, 80),
-        IsAntialias = true,
-    };
-
-    private readonly SKPaint _probeStrokePaint = new()
+    private readonly SKPaint _sweepLinePaint = new()
     {
         Style = SKPaintStyle.Stroke,
-        StrokeWidth = 2f,
-        Color = new SKColor(80, 80, 80),
+        StrokeWidth = 3f,
+        Color = new SKColor(120, 120, 120),
         IsAntialias = true,
     };
 
-    private readonly SKPaint _resultPaint = new()
+    private readonly SKPaint _sweepStartPaint = new()
+    {
+        Style = SKPaintStyle.Fill,
+        Color = SegmentColors.Purple.Solid,
+        IsAntialias = true,
+    };
+
+    private readonly SKPaint _sweepEndPaint = new()
     {
         Style = SKPaintStyle.Fill,
         Color = SegmentColors.Green.Solid,
+        IsAntialias = true,
+    };
+
+    private readonly SKPaint _mappedLinkPaint = new()
+    {
+        Style = SKPaintStyle.Stroke,
+        StrokeWidth = 2f,
+        Color = new SKColor(96, 96, 96),
         IsAntialias = true,
     };
 
@@ -250,9 +258,8 @@ public class BoundaryRepetitionPage : IVisualizerPage
         {
             _probeValue = (decimal)_probeRange.Real;
         }
-        _probeRenderer?.Render(canvas, _probeRange);
+        DrawProbeSweep(canvas);
         DrawRowBadge(canvas, "Probe Sweep", ProbeY, SegmentColors.Green);
-        DrawProbeMarker(canvas);
         DrawCards(canvas);
 
         var originPx = _coords.MathToPixel(0, 0);
@@ -292,19 +299,36 @@ public class BoundaryRepetitionPage : IVisualizerPage
             _bottomTickTextPaint);
     }
 
-    private void DrawProbeMarker(SKCanvas canvas)
+    private void DrawProbeSweep(SKCanvas canvas)
     {
         if (_coords == null)
         {
             return;
         }
 
-        ClampProbeValueToRange();
-        var top = _coords.MathToPixel((float)_probeValue, FrameY + 0.75f);
-        var bottom = _coords.MathToPixel((float)_probeValue, ProbeY - 0.75f);
-        canvas.DrawLine(top, bottom, _probeStrokePaint);
-        canvas.DrawCircle(new SKPoint(top.X, (top.Y + bottom.Y) * 0.5f), 6f, _probePaint);
-        canvas.DrawText($"Probe {_probeValue:0.0}", top.X + 12f, top.Y - 6f, _cardTextPaint);
+        var start = _coords.MathToPixel(_probeRange.Imaginary, ProbeY);
+        var end = _coords.MathToPixel(_probeRange.Real, ProbeY);
+        float span = MathF.Abs(end.X - start.X);
+        if (span < 1f)
+        {
+            canvas.DrawCircle(start, 6f, _sweepStartPaint);
+            canvas.DrawLine(end.X, end.Y - 10f, end.X, end.Y + 10f, _sweepEndPaint);
+            return;
+        }
+
+        float direction = end.X >= start.X ? 1f : -1f;
+        float arrowLen = 12f;
+        float lineEndX = end.X - direction * arrowLen;
+
+        canvas.DrawLine(start.X, start.Y, lineEndX, start.Y, _sweepLinePaint);
+        canvas.DrawCircle(start, 6f, _sweepStartPaint);
+
+        using var path = new SKPath();
+        path.MoveTo(end.X, end.Y);
+        path.LineTo(end.X - direction * 12f, end.Y - 6f);
+        path.LineTo(end.X - direction * 12f, end.Y + 6f);
+        path.Close();
+        canvas.DrawPath(path, _sweepEndPaint);
     }
 
     private void DrawCards(SKCanvas canvas)
@@ -318,22 +342,25 @@ public class BoundaryRepetitionPage : IVisualizerPage
         {
             ("Wrap", BoundaryContinuationLaw.PeriodicWrap),
             ("Reflect", BoundaryContinuationLaw.ReflectiveBounce),
+            ("Clamp", BoundaryContinuationLaw.Clamp),
             ("Tension", BoundaryContinuationLaw.TensionPreserving),
         };
 
         const float left = 42f;
         const float top = 448f;
         const float gap = 18f;
-        float cardWidth = (_coords.Width - left * 2f - gap * 2f) / 3f;
-        const float cardHeight = 188f;
+        float cardWidth = (_coords.Width - left * 2f - gap) / 2f;
+        const float cardHeight = 146f;
 
         for (int i = 0; i < cards.Length; i++)
         {
+            int row = i / 2;
+            int col = i % 2;
             var rect = new SKRect(
-                left + i * (cardWidth + gap),
-                top,
-                left + i * (cardWidth + gap) + cardWidth,
-                top + cardHeight);
+                left + col * (cardWidth + gap),
+                top + row * (cardHeight + gap),
+                left + col * (cardWidth + gap) + cardWidth,
+                top + row * (cardHeight + gap) + cardHeight);
 
             DrawContinuationCard(canvas, rect, cards[i].Item1, cards[i].Item2);
         }
@@ -341,72 +368,107 @@ public class BoundaryRepetitionPage : IVisualizerPage
 
     private void DrawContinuationCard(SKCanvas canvas, SKRect rect, string title, BoundaryContinuationLaw law)
     {
-        var result = _frame.Axis.Continue((Scalar)_probeValue, law);
         decimal frameStart = _frame.Axis.Start.Value;
         decimal frameEnd = _frame.Axis.End.Value;
         decimal probeStart = (decimal)_probeRange.Imaginary;
         decimal probeEnd = (decimal)_probeRange.Real;
-        decimal min = Math.Min(Math.Min(Math.Min(frameStart, frameEnd), Math.Min(probeStart, probeEnd)), Math.Min(_probeValue, result.Value)) - 1m;
-        decimal max = Math.Max(Math.Max(Math.Max(frameStart, frameEnd), Math.Max(probeStart, probeEnd)), Math.Max(_probeValue, result.Value)) + 1m;
+        decimal minFrame = Math.Min(frameStart, frameEnd);
+        decimal maxFrame = Math.Max(frameStart, frameEnd);
+        var startResult = _frame.Axis.Continue((Scalar)probeStart, law);
+        var endResult = _frame.Axis.Continue((Scalar)probeEnd, law);
 
         canvas.DrawRoundRect(rect, 14f, 14f, _cardFillPaint);
         canvas.DrawRoundRect(rect, 14f, 14f, _cardBorderPaint);
         canvas.DrawText(title, rect.MidX, rect.Top + 24f, _cardTitlePaint);
 
-        float midY = rect.Top + 70f;
+        float midY = rect.Top + 58f;
         float left = rect.Left + 24f;
         float right = rect.Right - 24f;
         canvas.DrawLine(left, midY, right, midY, _guidePaint);
 
-        float frameLeft = Map(frameStart, min, max, left, right);
-        float frameRight = Map(frameEnd, min, max, left, right);
-        canvas.DrawLine(frameLeft, midY - 16f, frameLeft, midY + 16f, _baselinePaint);
-        canvas.DrawLine(frameRight, midY - 16f, frameRight, midY + 16f, _baselinePaint);
-        canvas.DrawLine(frameLeft, midY, frameRight, midY, _baselinePaint);
-
-        float zeroX = Map(0m, min, max, left, right);
-        canvas.DrawLine(zeroX, midY - 18f, zeroX, midY + 18f, _baselinePaint);
-
-        float probeStartX = Map(probeStart, min, max, left, right);
-        float probeEndX = Map(probeEnd, min, max, left, right);
-        float probeDirection = probeEndX >= probeStartX ? 1f : -1f;
-        float probeArrowLen = 12f;
-        float probeLineEndX = probeEndX - probeDirection * probeArrowLen;
-        canvas.DrawLine(probeStartX, midY, probeLineEndX, midY, _framePaint);
-        canvas.DrawCircle(probeStartX, midY, 5f, _framePaint);
-        using (var probePath = new SKPath())
+        float frameLeft = left;
+        float frameRight = right;
+        float direction = frameRight >= frameLeft ? 1f : -1f;
+        float arrowLen = 12f;
+        float lineEndX = frameRight - direction * arrowLen;
+        canvas.DrawLine(frameLeft, midY, lineEndX, midY, _framePaint);
+        canvas.DrawCircle(frameLeft, midY, 5f, _framePaint);
+        using (var framePath = new SKPath())
         {
-            probePath.MoveTo(probeEndX, midY);
-            probePath.LineTo(probeEndX - probeDirection * 12f, midY - 6f);
-            probePath.LineTo(probeEndX - probeDirection * 12f, midY + 6f);
-            probePath.Close();
-            canvas.DrawPath(probePath, _framePaint);
+            framePath.MoveTo(frameRight, midY);
+            framePath.LineTo(frameRight - direction * 12f, midY - 6f);
+            framePath.LineTo(frameRight - direction * 12f, midY + 6f);
+            framePath.Close();
+            canvas.DrawPath(framePath, _framePaint);
         }
 
-        float resultX = Map(result.Value, min, max, left, right);
-        var resultPaint = result.HasTension ? _tensionPaint : _resultPaint;
-        canvas.DrawCircle(resultX, midY, 7f, resultPaint);
-
-        string resultText = result.HasTension
-            ? $"preserved -> {result.Value:0.0}"
-            : $"mapped -> {result.Value:0.0}";
-
-        canvas.DrawText(resultText, rect.MidX, rect.Top + 118f, _cardTextPaint);
-
-        if (result.HasTension)
+        if (0m >= minFrame && 0m <= maxFrame)
         {
-            canvas.DrawText("outside frame; kept as tension", rect.MidX, rect.Top + 138f, _cardTextPaint);
+            float zeroRatio = (float)((0m - minFrame) / (maxFrame - minFrame));
+            float zeroX = frameLeft + zeroRatio * (frameRight - frameLeft);
+            canvas.DrawLine(zeroX, midY - 18f, zeroX, midY + 18f, _baselinePaint);
         }
-        else if (law == BoundaryContinuationLaw.PeriodicWrap)
+
+        decimal displayedStart = startResult.HasTension ? decimal.Clamp(probeStart, minFrame, maxFrame) : startResult.Value;
+        decimal displayedEnd = endResult.HasTension ? decimal.Clamp(probeEnd, minFrame, maxFrame) : endResult.Value;
+
+        float startX = Map(displayedStart, minFrame, maxFrame, frameLeft, frameRight);
+        float endX = Map(displayedEnd, minFrame, maxFrame, frameLeft, frameRight);
+
+        using var startPaint = new SKPaint
         {
-            canvas.DrawText("wrapped into the frame period", rect.MidX, rect.Top + 138f, _cardTextPaint);
+            Style = SKPaintStyle.Fill,
+            Color = startResult.HasTension ? _tensionPaint.Color : _sweepStartPaint.Color,
+            IsAntialias = true,
+        };
+        using var endPaint = new SKPaint
+        {
+            Style = SKPaintStyle.Fill,
+            Color = endResult.HasTension ? _tensionPaint.Color : _sweepEndPaint.Color,
+            IsAntialias = true,
+        };
+
+        float span = MathF.Abs(endX - startX);
+        if (span < 1f)
+        {
+            canvas.DrawCircle(startX, midY, 7f, startPaint);
+            canvas.DrawLine(endX, midY - 10f, endX, midY + 10f, endPaint);
         }
         else
         {
-            canvas.DrawText("reflected from the frame boundary", rect.MidX, rect.Top + 138f, _cardTextPaint);
+            canvas.DrawCircle(startX, midY, 7f, startPaint);
+            float mappedDirection = endX >= startX ? 1f : -1f;
+            float mappedArrowLen = 14f;
+            float mappedLineEndX = endX - mappedDirection * mappedArrowLen;
+            canvas.DrawLine(startX, midY, mappedLineEndX, midY, _mappedLinkPaint);
+            using var mappedPath = new SKPath();
+            mappedPath.MoveTo(endX, midY);
+            mappedPath.LineTo(endX - mappedDirection * 14f, midY - 8f);
+            mappedPath.LineTo(endX - mappedDirection * 14f, midY + 8f);
+            mappedPath.Close();
+            canvas.DrawPath(mappedPath, endPaint);
         }
 
-        canvas.DrawText($"frame [{frameStart:0.0}, {frameEnd:0.0}]", rect.MidX, rect.Bottom - 14f, _cardTextPaint);
+        canvas.DrawText($"start -> {startResult.Value:0.0}    end -> {endResult.Value:0.0}", rect.MidX, rect.Top + 98f, _cardTextPaint);
+
+        if (law == BoundaryContinuationLaw.TensionPreserving)
+        {
+            canvas.DrawText("outside values stay as tension", rect.MidX, rect.Top + 118f, _cardTextPaint);
+        }
+        else if (law == BoundaryContinuationLaw.Clamp)
+        {
+            canvas.DrawText("values clamp to the nearest edge", rect.MidX, rect.Top + 118f, _cardTextPaint);
+        }
+        else if (law == BoundaryContinuationLaw.PeriodicWrap)
+        {
+            canvas.DrawText("values wrap through the frame period", rect.MidX, rect.Top + 118f, _cardTextPaint);
+        }
+        else
+        {
+            canvas.DrawText("values reflect from each boundary", rect.MidX, rect.Top + 118f, _cardTextPaint);
+        }
+
+        canvas.DrawText($"frame [{frameStart:0.0}, {frameEnd:0.0}]", rect.MidX, rect.Bottom - 12f, _cardTextPaint);
     }
 
     private void DrawRowBadge(SKCanvas canvas, string text, float y, SegmentColorSet colors)
@@ -722,9 +784,10 @@ public class BoundaryRepetitionPage : IVisualizerPage
         _cardTextPaint.Dispose();
         _baselinePaint.Dispose();
         _framePaint.Dispose();
-        _probePaint.Dispose();
-        _probeStrokePaint.Dispose();
-        _resultPaint.Dispose();
+        _sweepLinePaint.Dispose();
+        _sweepStartPaint.Dispose();
+        _sweepEndPaint.Dispose();
+        _mappedLinkPaint.Dispose();
         _tensionPaint.Dispose();
         _guidePaint.Dispose();
         _originFillPaint.Dispose();

@@ -48,14 +48,14 @@ public class MainForm : Form
         _pageNamePanel = new Panel
         {
             BackColor = Color.FromArgb(248, 248, 248),
-            Size = new Size(286, 28),
+            Size = new Size(286, 30),
             Anchor = AnchorStyles.Left | AnchorStyles.Bottom,
         };
         _pageNameLabel = new Label
         {
             AutoSize = false,
-            Location = new Point(10, 6),
-            Size = new Size(238, 16),
+            Location = new Point(10, 5),
+            Size = new Size(238, 18),
             Font = new Font("Arial", 8.5f, FontStyle.Regular),
             ForeColor = Color.FromArgb(132, 132, 132),
             TextAlign = ContentAlignment.MiddleLeft,
@@ -64,7 +64,7 @@ public class MainForm : Form
         {
             Width = 24,
             Height = 24,
-            Location = new Point(254, 2),
+            Location = new Point(254, 3),
             FlatStyle = FlatStyle.Flat,
             BackColor = Color.FromArgb(248, 248, 248),
             Image = _copyIcon,

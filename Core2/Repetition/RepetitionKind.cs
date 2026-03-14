@@ -13,6 +13,7 @@ public enum BoundaryContinuationLaw
     TensionPreserving,
     PeriodicWrap,
     ReflectiveBounce,
+    Clamp,
 }
 
 public enum RepetitionTensionKind
