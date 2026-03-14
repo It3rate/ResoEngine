@@ -10,81 +10,30 @@ namespace ResoEngine.Visualizer.Pages;
 
 public class BooleanOpsPage : IVisualizerPage
 {
+    private const float InputAY = 6.4f;
+    private const float InputBY = 4.1f;
+    private const float AndY = 0.9f;
+    private const float OrY = -0.5f;
+    private const float NandY = -1.9f;
+    private const float NorY = -3.3f;
+    private const float NotAY = -4.9f;
+    private const float NotBY = -6.3f;
+    private const float XorY = -7.7f;
+    private const float XnorY = -9.1f;
+
     public string Title => "Boolean Operations (Core2)";
 
     private readonly AxisDisplayMapper _axisA = new(
         new Axis(new Proportion(3, 1), new Proportion(5, 1)),
-        "A");
+        string.Empty);
     private readonly AxisDisplayMapper _axisB = new(
         new Axis(new Proportion(1, 1), new Proportion(3, 1)),
-        "B");
-
-    private Axis _andAxis = Axis.Zero;
-    private Axis _orAxis = Axis.Zero;
-    private Axis _notAAxis = Axis.Zero;
-    private Axis _notBAxis = Axis.Zero;
-    private Axis _xorAxis = Axis.Zero;
-
-    private readonly AxisDisplayMapper _andDisplay = new(Axis.Zero);
-    private readonly AxisDisplayMapper _orDisplay = new(Axis.Zero);
-    private readonly AxisDisplayMapper _notADisplay = new(Axis.Zero);
-    private readonly AxisDisplayMapper _notBDisplay = new(Axis.Zero);
-    private readonly AxisDisplayMapper _xorDisplay = new(Axis.Zero);
+        string.Empty);
 
     private CoordinateSystem? _coords;
-
-    private const float InputAY = 2.0f;
-    private const float InputBY = 0.5f;
-    private const float AndY = -2.0f;
-    private const float OrY = -3.5f;
-    private const float NotAY = -5.0f;
-    private const float NotBY = -6.5f;
-    private const float XorY = -8.0f;
-
     private SegmentRenderer? _rendererA;
     private SegmentRenderer? _rendererB;
-    private SegmentRenderer? _andRenderer;
-    private SegmentRenderer? _orRenderer;
-    private SegmentRenderer? _notARenderer;
-    private SegmentRenderer? _notBRenderer;
-    private SegmentRenderer? _xorRenderer;
 
-    private readonly SKPaint _separatorPaint = new()
-    {
-        Style = SKPaintStyle.Stroke,
-        StrokeWidth = 1f,
-        Color = new SKColor(180, 180, 180),
-        IsAntialias = true,
-    };
-
-    private readonly SKPaint _labelPaint = new()
-    {
-        Color = new SKColor(60, 60, 60),
-        TextSize = VisualStyle.FontSize * 0.85f,
-        Typeface = SKTypeface.FromFamilyName(VisualStyle.FontFamily, SKFontStyle.Bold),
-        TextAlign = SKTextAlign.Right,
-        IsAntialias = true,
-    };
-
-    private readonly SKPaint _originFillPaint = new()
-    {
-        Style = SKPaintStyle.Fill,
-        Color = SKColors.White,
-        IsAntialias = true
-    };
-    private readonly SKPaint _originStrokePaint = new()
-    {
-        Style = SKPaintStyle.Stroke,
-        StrokeWidth = VisualStyle.StrokeWidth,
-        Color = new SKColor(80, 80, 80),
-        IsAntialias = true
-    };
-    private readonly SKPaint _originDotPaint = new()
-    {
-        Style = SKPaintStyle.Fill,
-        Color = new SKColor(80, 80, 80),
-        IsAntialias = true
-    };
     private readonly SKPaint _headingPaint = new()
     {
         Color = new SKColor(45, 45, 45),
@@ -92,6 +41,7 @@ public class BooleanOpsPage : IVisualizerPage
         Typeface = SKTypeface.FromFamilyName(VisualStyle.FontFamily, SKFontStyle.Bold),
         IsAntialias = true,
     };
+
     private readonly SKPaint _bodyPaint = new()
     {
         Color = new SKColor(92, 92, 92),
@@ -100,23 +50,147 @@ public class BooleanOpsPage : IVisualizerPage
         IsAntialias = true,
     };
 
+    private readonly SKPaint _graphFillPaint = new()
+    {
+        Style = SKPaintStyle.Fill,
+        Color = new SKColor(249, 249, 250),
+        IsAntialias = true,
+    };
+
+    private readonly SKPaint _graphBorderPaint = new()
+    {
+        Style = SKPaintStyle.Stroke,
+        StrokeWidth = 1f,
+        Color = new SKColor(206, 206, 206),
+        IsAntialias = true,
+    };
+
+    private readonly SKPaint _rulerLinePaint = new()
+    {
+        Style = SKPaintStyle.Stroke,
+        StrokeWidth = 1.1f,
+        Color = new SKColor(176, 176, 176),
+        IsAntialias = true,
+    };
+
+    private readonly SKPaint _zeroAxisPaint = new()
+    {
+        Style = SKPaintStyle.Stroke,
+        StrokeWidth = 1.3f,
+        Color = new SKColor(176, 176, 176),
+        IsAntialias = true,
+    };
+
+    private readonly SKPaint _topTickPaint = new()
+    {
+        Style = SKPaintStyle.Stroke,
+        StrokeWidth = 1.1f,
+        Color = new SKColor(24, 38, 94),
+        IsAntialias = true,
+    };
+
+    private readonly SKPaint _bottomTickPaint = new()
+    {
+        Style = SKPaintStyle.Stroke,
+        StrokeWidth = 1.1f,
+        Color = new SKColor(80, 30, 112),
+        IsAntialias = true,
+    };
+
+    private readonly SKPaint _tickTextPaint = new()
+    {
+        Color = new SKColor(132, 132, 132),
+        TextSize = 12f,
+        Typeface = SKTypeface.FromFamilyName(VisualStyle.FontFamily, SKFontStyle.Bold),
+        TextAlign = SKTextAlign.Center,
+        IsAntialias = true,
+    };
+
+    private readonly SKPaint _badgeTextPaint = new()
+    {
+        TextSize = 15f,
+        Typeface = SKTypeface.FromFamilyName(VisualStyle.FontFamily, SKFontStyle.Bold),
+        TextAlign = SKTextAlign.Center,
+        IsAntialias = true,
+    };
+
+    private readonly SKPaint _rowGuidePaint = new()
+    {
+        Style = SKPaintStyle.Stroke,
+        StrokeWidth = 1f,
+        Color = new SKColor(205, 205, 205),
+        PathEffect = SKPathEffect.CreateDash([6f, 4f], 0f),
+        IsAntialias = true,
+    };
+
+    private readonly SKPaint _rowLinePaint = new()
+    {
+        Style = SKPaintStyle.Stroke,
+        StrokeWidth = 4f,
+        Color = SKColors.Black,
+        StrokeCap = SKStrokeCap.Butt,
+        IsAntialias = true,
+    };
+
+    private readonly SKPaint _rowDotPaint = new()
+    {
+        Style = SKPaintStyle.Fill,
+        Color = SKColors.Black,
+        IsAntialias = true,
+    };
+
+    private readonly SKPaint _rowArrowPaint = new()
+    {
+        Style = SKPaintStyle.Fill,
+        Color = SKColors.Black,
+        IsAntialias = true,
+    };
+
+    private readonly SKPaint _originFillPaint = new()
+    {
+        Style = SKPaintStyle.Fill,
+        Color = SKColors.White,
+        IsAntialias = true,
+    };
+
+    private readonly SKPaint _originStrokePaint = new()
+    {
+        Style = SKPaintStyle.Stroke,
+        StrokeWidth = VisualStyle.StrokeWidth,
+        Color = new SKColor(80, 80, 80),
+        IsAntialias = true,
+    };
+
+    private readonly SKPaint _originDotPaint = new()
+    {
+        Style = SKPaintStyle.Fill,
+        Color = new SKColor(80, 80, 80),
+        IsAntialias = true,
+    };
+
+    private static readonly BooleanRow[] Rows =
+    [
+        new("AND", AndY, SegmentColors.Green, static (inA, inB) => inA && inB),
+        new("OR", OrY, SegmentColors.Orange, static (inA, inB) => inA || inB),
+        new("NAND", NandY, SegmentColors.Green, static (inA, inB) => !(inA && inB)),
+        new("NOR", NorY, SegmentColors.Orange, static (inA, inB) => !(inA || inB)),
+        new("NOT A", NotAY, SegmentColors.Red, static (inA, inB) => !inA),
+        new("NOT B", NotBY, SegmentColors.Blue, static (inA, inB) => !inB),
+        new("XOR", XorY, SegmentColors.Purple, static (inA, inB) => inA ^ inB),
+        new("XNOR", XnorY, SegmentColors.Purple, static (inA, inB) => !(inA ^ inB)),
+    ];
+
     public void Init(CoordinateSystem coords, HitTestEngine hitTest, SkiaCanvas canvas)
     {
         _coords = coords;
-
-        coords.OriginX = coords.Width / 2;
-        coords.OriginY = 232;
+        coords.OriginX = coords.Width * 0.5f;
+        coords.OriginY = 380f;
 
         _rendererA = new SegmentRenderer(coords, SegmentOrientation.Horizontal, SegmentColors.Red, crossPosition: InputAY);
         _rendererB = new SegmentRenderer(coords, SegmentOrientation.Horizontal, SegmentColors.Blue, crossPosition: InputBY);
+
         hitTest.Register(_rendererA, _axisA);
         hitTest.Register(_rendererB, _axisB);
-
-        _andRenderer = new SegmentRenderer(coords, SegmentOrientation.Horizontal, SegmentColors.Green, crossPosition: AndY);
-        _orRenderer = new SegmentRenderer(coords, SegmentOrientation.Horizontal, SegmentColors.Orange, crossPosition: OrY);
-        _notARenderer = new SegmentRenderer(coords, SegmentOrientation.Horizontal, SegmentColors.Red, crossPosition: NotAY);
-        _notBRenderer = new SegmentRenderer(coords, SegmentOrientation.Horizontal, SegmentColors.Blue, crossPosition: NotBY);
-        _xorRenderer = new SegmentRenderer(coords, SegmentOrientation.Horizontal, SegmentColors.Purple, crossPosition: XorY);
     }
 
     public void Render(SKCanvas canvas)
@@ -126,84 +200,269 @@ public class BooleanOpsPage : IVisualizerPage
             return;
         }
 
-        canvas.DrawText("Boolean Operations", 34f, 42f, _headingPaint);
+        canvas.DrawText("Boolean Operations On Directed Segments", 34f, 42f, _headingPaint);
         float subtitleY = 68f;
         PageChrome.DrawWrappedText(
             canvas,
-            "Drag the two input intervals at the top. The rows below show common boolean-style interval operations using the current A and B segments.",
+            "The two interactive segments on the top define a shared frame. The lower rows show which partitions of that framed line stay true for each boolean rule.",
             34f,
             ref subtitleY,
             560f,
             _bodyPaint);
 
-        SyncInputsFromDisplay();
-        ComputeResults();
-
-        float sepY = (InputBY + AndY) / 2f;
-        var sepLeft = _coords.MathToPixel(-14, sepY);
-        var sepRight = _coords.MathToPixel(14, sepY);
-        canvas.DrawLine(sepLeft, sepRight, _separatorPaint);
+        GetGraphBounds(out var minValue, out var maxValue, out var topRect, out var resultsRect);
+        DrawGraphFrames(canvas, minValue, maxValue, topRect, resultsRect);
 
         _rendererA?.Render(canvas, _axisA);
+        DrawRowBadge(canvas, topRect, "A", InputAY, SegmentColors.Red);
         _rendererB?.Render(canvas, _axisB);
+        DrawRowBadge(canvas, topRect, "B", InputBY, SegmentColors.Blue);
 
-        _andRenderer?.Render(canvas, _andDisplay);
-        _orRenderer?.Render(canvas, _orDisplay);
-        _notARenderer?.Render(canvas, _notADisplay);
-        _notBRenderer?.Render(canvas, _notBDisplay);
-        _xorRenderer?.Render(canvas, _xorDisplay);
-
-        float labelX = _coords.Width - 20;
-        DrawLabel(canvas, "A", InputAY, SegmentColors.Red.Label, labelX);
-        DrawLabel(canvas, "B", InputBY, SegmentColors.Blue.Label, labelX);
-        DrawLabel(canvas, "AND", AndY, SegmentColors.Green.Label, labelX);
-        DrawLabel(canvas, "OR", OrY, SegmentColors.Orange.Label, labelX);
-        DrawLabel(canvas, "NOT A", NotAY, SegmentColors.Red.Label, labelX);
-        DrawLabel(canvas, "NOT B", NotBY, SegmentColors.Blue.Label, labelX);
-        DrawLabel(canvas, "XOR", XorY, SegmentColors.Purple.Label, labelX);
+        DrawBooleanRows(canvas, minValue, maxValue, resultsRect);
 
         var originPx = _coords.MathToPixel(0, 0);
-        var axisTop = _coords.MathToPixel(0, InputAY + 1.5f);
-        var axisBot = _coords.MathToPixel(0, XorY - 1.5f);
-        using var axisPaint = new SKPaint
-        {
-            Style = SKPaintStyle.Stroke,
-            StrokeWidth = 0.5f,
-            Color = new SKColor(200, 200, 200),
-            IsAntialias = true,
-        };
-        canvas.DrawLine(axisTop, axisBot, axisPaint);
-
         float r = VisualStyle.OriginDotRadius;
         canvas.DrawCircle(originPx, r, _originFillPaint);
         canvas.DrawCircle(originPx, r, _originStrokePaint);
         canvas.DrawCircle(originPx, 3f, _originDotPaint);
     }
 
-    private void SyncInputsFromDisplay()
+    private void DrawGraphFrames(SKCanvas canvas, decimal minValue, decimal maxValue, SKRect topRect, SKRect resultsRect)
     {
+        if (_coords == null)
+        {
+            return;
+        }
+
+        canvas.DrawRoundRect(topRect, 16f, 16f, _graphFillPaint);
+        canvas.DrawRoundRect(topRect, 16f, 16f, _graphBorderPaint);
+        canvas.DrawRoundRect(resultsRect, 16f, 16f, _graphFillPaint);
+        canvas.DrawRoundRect(resultsRect, 16f, 16f, _graphBorderPaint);
+
+        float rulerTop = _coords.MathToPixel(0f, InputAY - 0.35f).Y;
+        float rulerBottom = _coords.MathToPixel(0f, InputBY + 0.35f).Y;
+        float rulerAxisY = _coords.MathToPixel(0f, (InputAY + InputBY) * 0.5f).Y;
+        float rulerInsetLeft = topRect.Left + 164f;
+        float rulerInsetRight = topRect.Right - 22f;
+
+        canvas.Save();
+        canvas.ClipRect(new SKRect(rulerInsetLeft, topRect.Top + 6f, rulerInsetRight, topRect.Bottom - 6f));
+        PageChrome.DrawRuler(
+            canvas,
+            _coords,
+            minValue,
+            maxValue,
+            rulerAxisY,
+            rulerTop,
+            rulerBottom,
+            _rulerLinePaint,
+            _zeroAxisPaint,
+            _topTickPaint,
+            _bottomTickPaint,
+            _tickTextPaint,
+            _tickTextPaint);
+        canvas.Restore();
+
+        float resultsTop = _coords.MathToPixel(0f, AndY + 0.7f).Y;
+        float resultsBottom = _coords.MathToPixel(0f, XnorY - 0.7f).Y;
+        float zeroX = ValueToPixelX(0m, minValue, maxValue, resultsRect);
+        canvas.DrawLine(zeroX, resultsTop, zeroX, resultsBottom, _zeroAxisPaint);
     }
 
-    private void DrawLabel(SKCanvas canvas, string text, float mathY, SKColor color, float pixelX)
+    private void DrawBooleanRows(SKCanvas canvas, decimal minValue, decimal maxValue, SKRect resultsRect)
     {
-        var pos = _coords!.MathToPixel(0, mathY);
-        _labelPaint.Color = color;
-        canvas.DrawText(text, pixelX, pos.Y + 6, _labelPaint);
+        decimal frameLeft = Math.Min(Math.Min(_axisA.Axis.Start.Value, _axisA.Axis.End.Value), Math.Min(_axisB.Axis.Start.Value, _axisB.Axis.End.Value));
+        decimal frameRight = Math.Max(Math.Max(_axisA.Axis.Start.Value, _axisA.Axis.End.Value), Math.Max(_axisB.Axis.Start.Value, _axisB.Axis.End.Value));
+
+        if (frameRight <= frameLeft)
+        {
+            return;
+        }
+
+        var boundaries = new SortedSet<decimal>
+        {
+            frameLeft,
+            frameRight,
+            _axisA.Axis.Start.Value,
+            _axisA.Axis.End.Value,
+            _axisB.Axis.Start.Value,
+            _axisB.Axis.End.Value,
+        };
+
+        foreach (var row in Rows)
+        {
+            DrawRowBadge(canvas, resultsRect, row.Label, row.Y, row.Colors);
+            DrawBooleanRow(canvas, row, boundaries.ToArray(), frameLeft, frameRight, minValue, maxValue, resultsRect);
+        }
     }
 
-    private void ComputeResults()
+    private void DrawBooleanRow(
+        SKCanvas canvas,
+        BooleanRow row,
+        decimal[] boundaries,
+        decimal frameLeft,
+        decimal frameRight,
+        decimal minValue,
+        decimal maxValue,
+        SKRect resultsRect)
     {
-        _andAxis = _axisA.Axis.Intersect(_axisB.Axis);
-        _orAxis = _axisA.Axis.Union(_axisB.Axis);
-        _notAAxis = _axisA.Axis.BooleanNot();
-        _notBAxis = _axisB.Axis.BooleanNot();
-        _xorAxis = _axisA.Axis.Xor(_axisB.Axis);
+        if (_coords == null)
+        {
+            return;
+        }
 
-        _andDisplay.SetAxis(_andAxis);
-        _orDisplay.SetAxis(_orAxis);
-        _notADisplay.SetAxis(_notAAxis);
-        _notBDisplay.SetAxis(_notBAxis);
-        _xorDisplay.SetAxis(_xorAxis);
+        float y = _coords.MathToPixel(0f, row.Y).Y;
+        float lineLeft = ValueToPixelX(frameLeft, minValue, maxValue, resultsRect);
+        float lineRight = ValueToPixelX(frameRight, minValue, maxValue, resultsRect);
+        canvas.DrawLine(lineLeft, y, lineRight, y, _rowGuidePaint);
+
+        for (int i = 0; i < boundaries.Length - 1; i++)
+        {
+            decimal start = boundaries[i];
+            decimal end = boundaries[i + 1];
+            if (end <= start)
+            {
+                continue;
+            }
+
+            decimal mid = (start + end) / 2m;
+            bool inA = IsWithin(mid, _axisA.Axis);
+            bool inB = IsWithin(mid, _axisB.Axis);
+
+            if (!row.Evaluate(inA, inB))
+            {
+                continue;
+            }
+
+            DrawIntervalPiece(canvas, row.Colors, row.Y, start, end, minValue, maxValue, resultsRect);
+        }
+    }
+
+    private void DrawIntervalPiece(
+        SKCanvas canvas,
+        SegmentColorSet colors,
+        float y,
+        decimal start,
+        decimal end,
+        decimal minValue,
+        decimal maxValue,
+        SKRect resultsRect)
+    {
+        if (_coords == null)
+        {
+            return;
+        }
+
+        float startX = ValueToPixelX(start, minValue, maxValue, resultsRect);
+        float endX = ValueToPixelX(end, minValue, maxValue, resultsRect);
+        float pixelY = _coords.MathToPixel(0f, y).Y;
+
+        _rowLinePaint.Color = colors.Solid;
+        _rowDotPaint.Color = colors.Solid;
+        _rowArrowPaint.Color = colors.Solid;
+
+        float span = endX - startX;
+        if (Math.Abs(span) < 1f)
+        {
+            canvas.DrawLine(startX, pixelY - 10f, startX, pixelY + 10f, _rowLinePaint);
+            canvas.DrawCircle(startX, pixelY, VisualStyle.DotRadius, _rowDotPaint);
+            return;
+        }
+
+        float direction = Math.Sign(span);
+        float arrowSize = VisualStyle.ArrowSize;
+        float lineEndX = endX - direction * (arrowSize * 1.3f);
+
+        canvas.DrawLine(startX, pixelY, lineEndX, pixelY, _rowLinePaint);
+        canvas.DrawCircle(startX, pixelY, VisualStyle.DotRadius, _rowDotPaint);
+
+        using var arrowPath = new SKPath();
+        arrowPath.MoveTo(endX, pixelY);
+        arrowPath.LineTo(endX - direction * arrowSize * 1.5f, pixelY - arrowSize);
+        arrowPath.LineTo(endX - direction * arrowSize * 1.5f, pixelY + arrowSize);
+        arrowPath.Close();
+        canvas.DrawPath(arrowPath, _rowArrowPaint);
+    }
+
+    private void DrawRowBadge(SKCanvas canvas, SKRect boxRect, string label, float y, SegmentColorSet colors)
+    {
+        if (_coords == null)
+        {
+            return;
+        }
+
+        var point = _coords.MathToPixel(0f, y);
+        var bounds = new SKRect();
+        _badgeTextPaint.MeasureText(label, ref bounds);
+        float width = Math.Max(94f, bounds.Width + 28f);
+        var rect = new SKRect(boxRect.Left + 16f, point.Y - 16f, boxRect.Left + 16f + width, point.Y + 16f);
+
+        using var fill = new SKPaint
+        {
+            Style = SKPaintStyle.Fill,
+            Color = new SKColor(colors.Grid.Red, colors.Grid.Green, colors.Grid.Blue, 68),
+            IsAntialias = true,
+        };
+        using var border = new SKPaint
+        {
+            Style = SKPaintStyle.Stroke,
+            StrokeWidth = 1.2f,
+            Color = colors.Solid,
+            IsAntialias = true,
+        };
+
+        _badgeTextPaint.Color = colors.Solid;
+        canvas.DrawRoundRect(rect, 12f, 12f, fill);
+        canvas.DrawRoundRect(rect, 12f, 12f, border);
+        canvas.DrawText(label, rect.MidX, rect.MidY + 5f, _badgeTextPaint);
+    }
+
+    private void GetGraphBounds(out decimal minValue, out decimal maxValue, out SKRect topRect, out SKRect resultsRect)
+    {
+        if (_coords == null)
+        {
+            minValue = 0m;
+            maxValue = 1m;
+            topRect = SKRect.Empty;
+            resultsRect = SKRect.Empty;
+            return;
+        }
+
+        minValue = Math.Min(Math.Min(_axisA.Axis.Start.Value, _axisA.Axis.End.Value), Math.Min(_axisB.Axis.Start.Value, _axisB.Axis.End.Value));
+        maxValue = Math.Max(Math.Max(_axisA.Axis.Start.Value, _axisA.Axis.End.Value), Math.Max(_axisB.Axis.Start.Value, _axisB.Axis.End.Value));
+
+        minValue = decimal.Floor(minValue) - 1m;
+        maxValue = decimal.Ceiling(maxValue) + 1m;
+        if (maxValue - minValue < 24m)
+        {
+            minValue = -12m;
+            maxValue = 12m;
+        }
+
+        float topTop = _coords.MathToPixel(0f, InputAY + 1.0f).Y;
+        float topBottom = _coords.MathToPixel(0f, InputBY - 1.0f).Y;
+        float resultsTop = _coords.MathToPixel(0f, AndY + 0.6f).Y;
+        float resultsBottom = _coords.MathToPixel(0f, XnorY - 1.1f).Y;
+        topRect = new SKRect(_coords.Width * 0.05f, topTop - 16f, _coords.Width * 0.95f, topBottom + 18f);
+        resultsRect = new SKRect(_coords.Width * 0.05f, resultsTop - 12f, _coords.Width * 0.95f, resultsBottom + 22f);
+    }
+
+    private bool IsWithin(decimal value, Axis axis)
+    {
+        decimal left = Math.Min(axis.Start.Value, axis.End.Value);
+        decimal right = Math.Max(axis.Start.Value, axis.End.Value);
+        return value >= left && value <= right;
+    }
+
+    private float ValueToPixelX(decimal value, decimal minValue, decimal maxValue, SKRect rect)
+    {
+        if (maxValue == minValue)
+        {
+            return rect.MidX;
+        }
+
+        float t = (float)((value - minValue) / (maxValue - minValue));
+        return rect.Left + t * rect.Width;
     }
 
     public bool IsOriginHit(SKPoint pixelPoint)
@@ -225,23 +484,30 @@ public class BooleanOpsPage : IVisualizerPage
     {
         _rendererA?.Dispose(); _rendererA = null;
         _rendererB?.Dispose(); _rendererB = null;
-        _andRenderer?.Dispose(); _andRenderer = null;
-        _orRenderer?.Dispose(); _orRenderer = null;
-        _notARenderer?.Dispose(); _notARenderer = null;
-        _notBRenderer?.Dispose(); _notBRenderer = null;
-        _xorRenderer?.Dispose(); _xorRenderer = null;
         _coords = null;
     }
 
     public void Dispose()
     {
         Destroy();
-        _separatorPaint.Dispose();
-        _labelPaint.Dispose();
         _headingPaint.Dispose();
         _bodyPaint.Dispose();
+        _graphFillPaint.Dispose();
+        _graphBorderPaint.Dispose();
+        _rulerLinePaint.Dispose();
+        _zeroAxisPaint.Dispose();
+        _topTickPaint.Dispose();
+        _bottomTickPaint.Dispose();
+        _tickTextPaint.Dispose();
+        _badgeTextPaint.Dispose();
+        _rowGuidePaint.Dispose();
+        _rowLinePaint.Dispose();
+        _rowDotPaint.Dispose();
+        _rowArrowPaint.Dispose();
         _originFillPaint.Dispose();
         _originStrokePaint.Dispose();
         _originDotPaint.Dispose();
     }
+
+    private sealed record BooleanRow(string Label, float Y, SegmentColorSet Colors, Func<bool, bool, bool> Evaluate);
 }

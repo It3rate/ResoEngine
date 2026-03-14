@@ -136,11 +136,13 @@ public class OrthogonalAxesPage : IVisualizerPage
         SyncInputsFromDisplay();
         var area = _axisA.Axis.Pin(_axisB.Axis);
 
-        canvas.DrawText("Orthogonal Axes", 34f, 42f, _headingPaint);
+        canvas.DrawText("2D Multiplication of Complex Numbers", 34f, 42f, _headingPaint);
         float subtitleY = 68f;
         PageChrome.DrawWrappedText(
             canvas,
-            "Drag A and B to pin two directed axes into an area. The grid shows the expanded four-quadrant product, and the title above the chart shows the folded total area.",
+            "The grid shows the expanded four-quadrant product, and the title is the folded total area.\n" +
+            "Four Quadrants: (ir)(ir)=(ri+ir)i+(rr-ii)\n" +
+            "With Parameters: (a+bi)(c+di)=(ac−bd)+i(ad+bc)",
             34f,
             ref subtitleY,
             560f,

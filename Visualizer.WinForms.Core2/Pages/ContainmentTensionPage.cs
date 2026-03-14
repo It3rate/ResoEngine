@@ -236,7 +236,10 @@ public class ContainmentTensionPage : IVisualizerPage
         float subtitleY = 68f;
         PageChrome.DrawWrappedText(
             canvas,
-            "Drag the parent and child. Flip the parent perspective to reinterpret the child. The two number boxes change the child's i-side and r-side support, which acts like a resolution/support mismatch and creates tension instead of failure.",
+            "Drag the parent and child. Flip the parent perspective to reinterpret the child.\n" +
+            "The two number boxes change the child's i-side and r-side unit resolution," +
+            "which acts like a resolution/unit mismatch.\n" +
+            "This creates tension information instead of failure.",
             34f,
             ref subtitleY,
             560f,

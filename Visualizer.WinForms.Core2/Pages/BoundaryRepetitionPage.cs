@@ -244,7 +244,8 @@ public class BoundaryRepetitionPage : IVisualizerPage
         float subtitleY = 68f;
         PageChrome.DrawWrappedText(
             canvas,
-            "The same out-of-range value can wrap, reflect, or stay unresolved as tension. Drag the frame or animate the probe.",
+            "The same out-of-range value can wrap, reflect, clamp, or stay unresolved as tension.\n" +
+            "This demonstrates the various effects on both the start and end points of a segment.",
             34f,
             ref subtitleY,
             430f,

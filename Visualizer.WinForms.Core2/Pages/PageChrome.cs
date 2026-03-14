@@ -36,31 +36,42 @@ internal static class PageChrome
             return [];
         }
 
-        var words = text.Split(' ', StringSplitOptions.RemoveEmptyEntries);
         var lines = new List<string>();
-        var current = string.Empty;
+        var paragraphs = text.Replace("\r\n", "\n").Split('\n');
 
-        foreach (var word in words)
+        foreach (var paragraph in paragraphs)
         {
-            var candidate = string.IsNullOrEmpty(current) ? word : $"{current} {word}";
-            if (paint.MeasureText(candidate) <= width)
+            if (string.IsNullOrWhiteSpace(paragraph))
             {
-                current = candidate;
+                lines.Add(string.Empty);
+                continue;
             }
-            else
+
+            var words = paragraph.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+            var current = string.Empty;
+
+            foreach (var word in words)
             {
-                if (!string.IsNullOrEmpty(current))
+                var candidate = string.IsNullOrEmpty(current) ? word : $"{current} {word}";
+                if (paint.MeasureText(candidate) <= width)
                 {
-                    lines.Add(current);
+                    current = candidate;
                 }
+                else
+                {
+                    if (!string.IsNullOrEmpty(current))
+                    {
+                        lines.Add(current);
+                    }
 
-                current = word;
+                    current = word;
+                }
             }
-        }
 
-        if (!string.IsNullOrEmpty(current))
-        {
-            lines.Add(current);
+            if (!string.IsNullOrEmpty(current))
+            {
+                lines.Add(current);
+            }
         }
 
         return lines;
