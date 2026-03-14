@@ -246,6 +246,10 @@ public class BoundaryRepetitionPage : IVisualizerPage
         _frameRenderer?.Render(canvas, _frame);
         DrawRowBadge(canvas, "Frame", FrameY, SegmentColors.Red);
         SyncProbeControlsFromState();
+        if (_animateCheck?.Checked != true)
+        {
+            _probeValue = (decimal)_probeRange.Real;
+        }
         _probeRenderer?.Render(canvas, _probeRange);
         DrawRowBadge(canvas, "Probe Sweep", ProbeY, SegmentColors.Green);
         DrawProbeMarker(canvas);
@@ -340,8 +344,10 @@ public class BoundaryRepetitionPage : IVisualizerPage
         var result = _frame.Axis.Continue((Scalar)_probeValue, law);
         decimal frameStart = _frame.Axis.Start.Value;
         decimal frameEnd = _frame.Axis.End.Value;
-        decimal min = Math.Min(Math.Min(frameStart, frameEnd), Math.Min(_probeValue, result.Value)) - 1m;
-        decimal max = Math.Max(Math.Max(frameStart, frameEnd), Math.Max(_probeValue, result.Value)) + 1m;
+        decimal probeStart = (decimal)_probeRange.Imaginary;
+        decimal probeEnd = (decimal)_probeRange.Real;
+        decimal min = Math.Min(Math.Min(Math.Min(frameStart, frameEnd), Math.Min(probeStart, probeEnd)), Math.Min(_probeValue, result.Value)) - 1m;
+        decimal max = Math.Max(Math.Max(Math.Max(frameStart, frameEnd), Math.Max(probeStart, probeEnd)), Math.Max(_probeValue, result.Value)) + 1m;
 
         canvas.DrawRoundRect(rect, 14f, 14f, _cardFillPaint);
         canvas.DrawRoundRect(rect, 14f, 14f, _cardBorderPaint);
@@ -354,32 +360,28 @@ public class BoundaryRepetitionPage : IVisualizerPage
 
         float frameLeft = Map(frameStart, min, max, left, right);
         float frameRight = Map(frameEnd, min, max, left, right);
-        float direction = frameRight >= frameLeft ? 1f : -1f;
-        float arrowLen = 12f;
-        float lineEndX = frameRight - direction * arrowLen;
-        canvas.DrawLine(frameLeft, midY, lineEndX, midY, _framePaint);
-        canvas.DrawCircle(frameLeft, midY, 5f, _framePaint);
-        using (var arrowPath = new SKPath())
-        {
-            arrowPath.MoveTo(frameRight, midY);
-            arrowPath.LineTo(frameRight - direction * 12f, midY - 6f);
-            arrowPath.LineTo(frameRight - direction * 12f, midY + 6f);
-            arrowPath.Close();
-            canvas.DrawPath(arrowPath, _framePaint);
-        }
+        canvas.DrawLine(frameLeft, midY - 16f, frameLeft, midY + 16f, _baselinePaint);
+        canvas.DrawLine(frameRight, midY - 16f, frameRight, midY + 16f, _baselinePaint);
+        canvas.DrawLine(frameLeft, midY, frameRight, midY, _baselinePaint);
 
         float zeroX = Map(0m, min, max, left, right);
         canvas.DrawLine(zeroX, midY - 18f, zeroX, midY + 18f, _baselinePaint);
 
-        float probeX = Map(_probeValue, min, max, left, right);
-        using var originalFill = new SKPaint
+        float probeStartX = Map(probeStart, min, max, left, right);
+        float probeEndX = Map(probeEnd, min, max, left, right);
+        float probeDirection = probeEndX >= probeStartX ? 1f : -1f;
+        float probeArrowLen = 12f;
+        float probeLineEndX = probeEndX - probeDirection * probeArrowLen;
+        canvas.DrawLine(probeStartX, midY, probeLineEndX, midY, _framePaint);
+        canvas.DrawCircle(probeStartX, midY, 5f, _framePaint);
+        using (var probePath = new SKPath())
         {
-            Style = SKPaintStyle.Fill,
-            Color = new SKColor(255, 255, 255),
-            IsAntialias = true,
-        };
-        canvas.DrawCircle(probeX, midY, 7f, originalFill);
-        canvas.DrawCircle(probeX, midY, 7f, _probeStrokePaint);
+            probePath.MoveTo(probeEndX, midY);
+            probePath.LineTo(probeEndX - probeDirection * 12f, midY - 6f);
+            probePath.LineTo(probeEndX - probeDirection * 12f, midY + 6f);
+            probePath.Close();
+            canvas.DrawPath(probePath, _framePaint);
+        }
 
         float resultX = Map(result.Value, min, max, left, right);
         var resultPaint = result.HasTension ? _tensionPaint : _resultPaint;
@@ -393,15 +395,15 @@ public class BoundaryRepetitionPage : IVisualizerPage
 
         if (result.HasTension)
         {
-            canvas.DrawText("boundary exceeded; kept as tension", rect.MidX, rect.Top + 138f, _cardTextPaint);
+            canvas.DrawText("outside frame; kept as tension", rect.MidX, rect.Top + 138f, _cardTextPaint);
         }
         else if (law == BoundaryContinuationLaw.PeriodicWrap)
         {
-            canvas.DrawText("periodic continuation", rect.MidX, rect.Top + 138f, _cardTextPaint);
+            canvas.DrawText("wrapped into the frame period", rect.MidX, rect.Top + 138f, _cardTextPaint);
         }
         else
         {
-            canvas.DrawText("reflective continuation", rect.MidX, rect.Top + 138f, _cardTextPaint);
+            canvas.DrawText("reflected from the frame boundary", rect.MidX, rect.Top + 138f, _cardTextPaint);
         }
 
         canvas.DrawText($"frame [{frameStart:0.0}, {frameEnd:0.0}]", rect.MidX, rect.Bottom - 14f, _cardTextPaint);
@@ -488,7 +490,7 @@ public class BoundaryRepetitionPage : IVisualizerPage
         _controlsPanel = new Panel
         {
             BackColor = Color.FromArgb(248, 248, 248),
-            Size = new Size(248, 114),
+            Size = new Size(320, 114),
             Anchor = AnchorStyles.Top | AnchorStyles.Right,
         };
         PageChrome.PositionTopRightPanel(_canvasHost, _controlsPanel, 18);
@@ -508,7 +510,7 @@ public class BoundaryRepetitionPage : IVisualizerPage
             Minimum = -20m,
             Maximum = 20m,
             Value = (decimal)_probeRange.Imaginary,
-            Width = 86,
+            Width = 94,
             Location = new Point(12, 34),
         };
         _probeStartInput.ValueChanged += (_, _) =>
@@ -527,7 +529,7 @@ public class BoundaryRepetitionPage : IVisualizerPage
         {
             Text = "End Probe",
             AutoSize = true,
-            Location = new Point(112, 12),
+            Location = new Point(126, 12),
             Font = new Font("Arial", 9f, FontStyle.Bold),
         };
 
@@ -538,8 +540,8 @@ public class BoundaryRepetitionPage : IVisualizerPage
             Minimum = -20m,
             Maximum = 20m,
             Value = (decimal)_probeRange.Real,
-            Width = 86,
-            Location = new Point(112, 34),
+            Width = 94,
+            Location = new Point(126, 34),
         };
         _probeEndInput.ValueChanged += (_, _) =>
         {
@@ -572,7 +574,7 @@ public class BoundaryRepetitionPage : IVisualizerPage
             Text = "The cards below show the current probe under different continuation laws.",
             AutoSize = false,
             Location = new Point(12, 84),
-            Size = new Size(224, 24),
+            Size = new Size(292, 24),
             Font = new Font("Arial", 8f, FontStyle.Regular),
             ForeColor = Color.FromArgb(105, 105, 105),
         };

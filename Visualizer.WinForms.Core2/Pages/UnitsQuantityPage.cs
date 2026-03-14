@@ -489,7 +489,7 @@ public class UnitsQuantityPage : IVisualizerPage
         _controlsPanel = new Panel
         {
             BackColor = Color.FromArgb(248, 248, 248),
-            Size = new Size(240, 104),
+            Size = new Size(328, 104),
             Anchor = AnchorStyles.Top | AnchorStyles.Right,
         };
         PageChrome.PositionTopRightPanel(_canvasHost, _controlsPanel, 18);
@@ -506,7 +506,7 @@ public class UnitsQuantityPage : IVisualizerPage
         {
             DropDownStyle = ComboBoxStyle.DropDownList,
             Location = new Point(12, 32),
-            Width = 96,
+            Width = 132,
         };
         _unitACombo.Items.AddRange(UnitOptions.All.Select(option => option.Name).ToArray());
         _unitACombo.SelectedIndex = 0;
@@ -524,7 +524,7 @@ public class UnitsQuantityPage : IVisualizerPage
         {
             DropDownStyle = ComboBoxStyle.DropDownList,
             Location = new Point(126, 32),
-            Width = 96,
+            Width = 132,
         };
         _unitBCombo.Items.AddRange(UnitOptions.All.Select(option => option.Name).ToArray());
         _unitBCombo.SelectedIndex = 1;
@@ -535,7 +535,7 @@ public class UnitsQuantityPage : IVisualizerPage
             Text = "Multiply and powers carry signatures. Addition requires them to match.",
             AutoSize = false,
             Location = new Point(12, 64),
-            Size = new Size(214, 28),
+            Size = new Size(300, 28),
             Font = new Font("Arial", 8f, FontStyle.Regular),
             ForeColor = Color.FromArgb(105, 105, 105),
         };

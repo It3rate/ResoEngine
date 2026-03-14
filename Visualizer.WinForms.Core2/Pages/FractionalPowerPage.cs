@@ -441,7 +441,7 @@ public class FractionalPowerPage : IVisualizerPage
         _controlsPanel = new Panel
         {
             BackColor = Color.FromArgb(248, 248, 248),
-            Size = new Size(242, 126),
+            Size = new Size(318, 126),
             Anchor = AnchorStyles.Top | AnchorStyles.Right,
         };
         PositionControlsPanel();
@@ -480,7 +480,7 @@ public class FractionalPowerPage : IVisualizerPage
         {
             DropDownStyle = ComboBoxStyle.DropDownList,
             Location = new Point(110, 30),
-            Width = 100,
+            Width = 126,
         };
         _branchCombo.Items.AddRange(["Principal", "Prefer +Dominant", "Nearest"]);
         _branchCombo.SelectedIndex = 0;
@@ -510,7 +510,7 @@ public class FractionalPowerPage : IVisualizerPage
             Text = "Nearest follows the previous principal while the orbit moves.",
             AutoSize = false,
             Location = new Point(10, 92),
-            Size = new Size(220, 28),
+            Size = new Size(292, 28),
             Font = new Font("Arial", 8f, FontStyle.Regular),
             ForeColor = Color.FromArgb(105, 105, 105),
         };

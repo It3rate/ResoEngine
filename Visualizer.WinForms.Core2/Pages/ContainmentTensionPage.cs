@@ -465,7 +465,7 @@ public class ContainmentTensionPage : IVisualizerPage
         _controlsPanel = new Panel
         {
             BackColor = Color.FromArgb(248, 248, 248),
-            Size = new Size(304, 112),
+            Size = new Size(392, 112),
             Anchor = AnchorStyles.Top | AnchorStyles.Right,
         };
         PageChrome.PositionTopRightPanel(_canvasHost, _controlsPanel, 18);
@@ -500,7 +500,7 @@ public class ContainmentTensionPage : IVisualizerPage
         {
             DropDownStyle = ComboBoxStyle.DropDownList,
             Location = new Point(156, 32),
-            Width = 58,
+            Width = 76,
         };
         _recessiveSupportCombo.Items.AddRange(["1", "2", "3"]);
         _recessiveSupportCombo.SelectedIndex = 0;
@@ -522,7 +522,7 @@ public class ContainmentTensionPage : IVisualizerPage
         {
             DropDownStyle = ComboBoxStyle.DropDownList,
             Location = new Point(224, 32),
-            Width = 58,
+            Width = 76,
         };
         _dominantSupportCombo.Items.AddRange(["1", "2", "3"]);
         _dominantSupportCombo.SelectedIndex = 0;
@@ -537,7 +537,7 @@ public class ContainmentTensionPage : IVisualizerPage
             Text = "Drag the child beyond the parent to create range tension. Change either support to create resolution tension.",
             AutoSize = false,
             Location = new Point(12, 66),
-            Size = new Size(274, 34),
+            Size = new Size(364, 34),
             Font = new Font("Arial", 8f, FontStyle.Regular),
             ForeColor = Color.FromArgb(105, 105, 105),
         };
