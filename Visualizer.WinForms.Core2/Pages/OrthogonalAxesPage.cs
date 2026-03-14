@@ -73,9 +73,9 @@ public class OrthogonalAxesPage : IVisualizerPage
     };
     private readonly SKPaint _areaValueTextPaint = new()
     {
-        Color = new SKColor(45, 45, 45),
-        TextSize = 19f,
-        Typeface = SKTypeface.FromFamilyName(VisualStyle.FontFamily, SKFontStyle.Bold),
+        Color = new SKColor(130,100,130),
+        TextSize = 16f,
+        Typeface = SKTypeface.FromFamilyName(VisualStyle.FontFamily, SKFontStyle.Normal),
         TextAlign = SKTextAlign.Center,
         IsAntialias = true,
     };

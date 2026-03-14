@@ -236,13 +236,14 @@ public class ContainmentTensionPage : IVisualizerPage
         float subtitleY = 68f;
         PageChrome.DrawWrappedText(
             canvas,
-            "Drag the parent and child. Flip the parent perspective to reinterpret the child.\n" +
-            "The two number boxes change the child's i-side and r-side unit resolution," +
-            "which acts like a resolution/unit mismatch.\n" +
-            "This creates tension information instead of failure.",
+            "Every number is also a frame, and it can be in the context of a frame.\n" +
+            "When elements overflow the parent bounds, or have resolution mismatches " +
+            "this creates tension information rather than failure. This can be resolved within the relevant context.\n" +
+            "The two number boxes change the child's i-side and r-side unit resolution, " +
+            "which acts like a resolution/unit mismatch.",
             34f,
             ref subtitleY,
-            560f,
+            480f,
             _bodyPaint);
 
         var metrics = relation.TensionMetrics;

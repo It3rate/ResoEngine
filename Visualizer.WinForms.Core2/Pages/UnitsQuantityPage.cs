@@ -193,7 +193,8 @@ public class UnitsQuantityPage : IVisualizerPage
         float subtitleY = 68f;
         PageChrome.DrawWrappedText(
             canvas,
-            "The top segments are values A and B. The lower cards show what each operation does to the value shape and the unit signature.",
+            "The this shows the algebra of combining units.\n" +
+            "The lower cards show what each operation does to the value shape and the unit signature.",
             34f,
             ref subtitleY,
             560f,

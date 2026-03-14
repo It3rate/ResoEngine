@@ -171,11 +171,13 @@ public class ParallelBooleanGalleryPage : IVisualizerPage
             return;
         }
 
-        canvas.DrawText("Parallel Boolean Gallery", 34f, 42f, _headingPaint);
+        canvas.DrawText("Parallel Boolean Operations", 34f, 42f, _headingPaint);
         float subtitleY = 68f;
         PageChrome.DrawWrappedText(
             canvas,
-            "Drag the two parallel segments above. The tiles below show how each boolean rule reads along the shared framed line, including overlap, separation, and mirrored continuity.",
+            "The tiles below shows the result of combining A and B with the given boolean rule.\n" +
+            "This includes overlap, separation, and mirrored continuity.\n" +
+            "The direction is preserved, A is dominant as it short-circuits the calculation.",
             34f,
             ref subtitleY,
             560f,

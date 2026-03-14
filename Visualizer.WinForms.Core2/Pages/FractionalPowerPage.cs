@@ -173,7 +173,7 @@ public class FractionalPowerPage : IVisualizerPage
         _canvasHost = canvas;
 
         coords.OriginX = coords.Width * 0.5f;
-        coords.OriginY = 586f;
+        coords.OriginY = 486f;
 
         _inputRenderer = new SegmentRenderer(coords, SegmentOrientation.Horizontal, SegmentColors.Red, crossPosition: InputY);
         _candidateRenderers =
@@ -205,7 +205,7 @@ public class FractionalPowerPage : IVisualizerPage
             "There can be multiple possible solutions, like how sqrt(4) can be 2 or -2.",
             34f,
             ref subtitleY,
-            430f,
+            500f,
             _bodyPaint);
 
         var exponent = SelectedExponent;
@@ -295,8 +295,8 @@ public class FractionalPowerPage : IVisualizerPage
 
         var bounds = new SKRect();
         _sectionPaint.MeasureText(summary, ref bounds);
-        float badgeWidth = Math.Max(640f, bounds.Width + 28f);
-        var rect = new SKRect(36f, 104f, 36f + badgeWidth, 136f);
+        float badgeWidth = Math.Max(500f, bounds.Width + 28f);
+        var rect = new SKRect(36f, 200f, 36f + badgeWidth, 250f);
         canvas.DrawRoundRect(rect, 12f, 12f, _resultBadgePaint);
         canvas.DrawRoundRect(rect, 12f, 12f, _resultBorderPaint);
         canvas.DrawText(summary, rect.Left + 14f, rect.MidY + 5f, _sectionPaint);

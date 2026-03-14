@@ -157,7 +157,7 @@ public class OrthogonalBooleanGalleryPage : IVisualizerPage
             return;
         }
 
-        canvas.DrawText("Orthogonal Boolean Gallery", 34f, 42f, _headingPaint);
+        canvas.DrawText("Orthogonal Boolean Operations", 34f, 42f, _headingPaint);
         float subtitleY = 68f;
         PageChrome.DrawWrappedText(
             canvas,

@@ -13,9 +13,9 @@ public static class VisualStyle
     public const float DotRadius = 5f;
     public const float OriginDotRadius = 8f;
     public const float ArrowSize = 12f;
-    public const float FontSize = 20f;
-    public const string FontFamily = "Cambria";
-    public const string UiFontFamily = "Cambria";
+    public const float FontSize = 18f;
+    public const string FontFamily = "Arial";
+    public const string UiFontFamily = "Arial";
     public static readonly SKColor FillColor = SKColor.Parse("#FFFACD");
     public const float GridSpacing = 1f;
     public const float GridExtension = 1f;     // how far grid lines extend past segment ends
