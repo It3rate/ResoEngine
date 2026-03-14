@@ -102,6 +102,7 @@ public class MainForm : Form
 
         _pageManager = new PageManager(_canvas, _navBar, hitTest);
         _pageManager.CurrentPageChanged += page => UpdatePageName(page);
+        _pageManager.AddPage(new StripOrnamentGalleryPage());
         _pageManager.AddPage(new SquareWaveDynamicsPage());
         _pageManager.AddPage(new OrthogonalAxesPage());
         _pageManager.AddPage(new BooleanOpsPage());
@@ -153,6 +154,12 @@ public class MainForm : Form
     {
         var page = _pageManager.CurrentPage;
 
+        if (page != null && page.OnPointerDown(pt))
+        {
+            _canvas.InvalidateCanvas();
+            return;
+        }
+
         if (page != null && page.IsOriginHit(pt))
         {
             _originDragging = true;
@@ -190,6 +197,7 @@ public class MainForm : Form
         else
         {
             var page = _pageManager.CurrentPage;
+            page?.OnPointerMove(pt);
             if (page != null && page.IsOriginHit(pt))
             {
                 _canvas.Cursor = Cursors.SizeAll;

@@ -30,4 +30,10 @@ public interface IVisualizerPage : IDisposable
     /// Return true if the event was consumed (suppresses origin drag and segment drag).
     /// </summary>
     bool OnPointerDown(SKPoint pixelPoint) => false;
+
+    /// <summary>
+    /// Observe pointer movement at a viewBox pixel point.
+    /// Pages can use this for hover state without participating in drag logic.
+    /// </summary>
+    void OnPointerMove(SKPoint pixelPoint) { }
 }
