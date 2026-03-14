@@ -247,10 +247,10 @@ public class UnitsQuantityPage : IVisualizerPage
         }
 
         const float left = 36f;
-        const float top = 390f;
+        const float top = 412f;
         const float gap = 18f;
         float cardWidth = (_coords.Width - left * 2f - gap) / 2f;
-        const float cardHeight = 188f;
+        const float cardHeight = 156f;
 
         var multiplyRect = new SKRect(left, top, left + cardWidth, top + cardHeight);
         var squareRect = new SKRect(left + cardWidth + gap, top, left + cardWidth * 2f + gap, top + cardHeight);
@@ -384,20 +384,19 @@ public class UnitsQuantityPage : IVisualizerPage
         minValue = decimal.Floor(minValue) - 1m;
         maxValue = decimal.Ceiling(maxValue) + 1m;
 
-        decimal desiredSpan = 20m;
+        decimal desiredSpan = 24m;
         decimal currentSpan = maxValue - minValue;
         if (currentSpan < desiredSpan)
         {
-            decimal midpoint = (minValue + maxValue) * 0.5m;
-            minValue = decimal.Floor(midpoint - desiredSpan * 0.5m);
-            maxValue = decimal.Ceiling(midpoint + desiredSpan * 0.5m);
+            minValue = -12m;
+            maxValue = 12m;
         }
 
         float left = _coords.MathToPixel((float)minValue, 0f).X;
         float right = _coords.MathToPixel((float)maxValue, 0f).X;
         float top = _coords.MathToPixel(0f, InputAY + 1.0f).Y;
         float bottom = _coords.MathToPixel(0f, -1.0f).Y;
-        outerRect = new SKRect(left - 104f, top - 18f, right + 28f, bottom + 24f);
+        outerRect = new SKRect(_coords.Width * 0.05f, top - 18f, _coords.Width * 0.95f, bottom + 24f);
     }
 
     private void DrawQuantityCard(SKCanvas canvas, SKRect rect, string title, Axis axis, string signatureText, SegmentColorSet colors)
@@ -406,10 +405,10 @@ public class UnitsQuantityPage : IVisualizerPage
         canvas.DrawRoundRect(rect, 14f, 14f, _cardBorderPaint);
         canvas.DrawText(title, rect.MidX, rect.Top + 24f, _cardTitlePaint);
 
-        var segmentRect = new SKRect(rect.Left + 22f, rect.Top + 44f, rect.Right - 22f, rect.Top + 116f);
+        var segmentRect = new SKRect(rect.Left + 22f, rect.Top + 38f, rect.Right - 22f, rect.Top + 90f);
         DrawMiniAxis(canvas, segmentRect, axis, colors);
 
-        canvas.DrawText(signatureText, rect.MidX, rect.Bottom - 22f, _cardTextPaint);
+        canvas.DrawText(signatureText, rect.MidX, rect.Bottom - 14f, _cardTextPaint);
     }
 
     private void DrawMessageCard(SKCanvas canvas, SKRect rect, string title, string message, bool tension)

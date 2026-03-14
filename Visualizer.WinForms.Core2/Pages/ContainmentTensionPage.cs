@@ -13,7 +13,7 @@ public class ContainmentTensionPage : IVisualizerPage
 {
     private const float ParentY = 4.8f;
     private const float ChildY = 2.0f;
-    private const float ContextY = -0.8f;
+    private const float ContextY = -1.25f;
 
     private readonly AxisDisplayMapper _parent = new(
         Axis.FromCoordinates((Scalar)(-4m), (Scalar)7m, Scalar.One, Scalar.One),
@@ -388,20 +388,19 @@ public class ContainmentTensionPage : IVisualizerPage
         minValue = decimal.Floor(minValue) - 1m;
         maxValue = decimal.Ceiling(maxValue) + 1m;
 
-        decimal desiredSpan = 20m;
+        decimal desiredSpan = 24m;
         decimal currentSpan = maxValue - minValue;
         if (currentSpan < desiredSpan)
         {
-            decimal midpoint = (minValue + maxValue) * 0.5m;
-            minValue = decimal.Floor(midpoint - desiredSpan * 0.5m);
-            maxValue = decimal.Ceiling(midpoint + desiredSpan * 0.5m);
+            minValue = -12m;
+            maxValue = 12m;
         }
 
         float left = _coords.MathToPixel((float)minValue, 0f).X;
         float right = _coords.MathToPixel((float)maxValue, 0f).X;
         float top = _coords.MathToPixel(0f, ParentY + 1.0f).Y;
         float bottom = _coords.MathToPixel(0f, ContextY - 1.0f).Y;
-        outerRect = new SKRect(left - 112f, top - 18f, right + 28f, bottom + 24f);
+        outerRect = new SKRect(_coords.Width * 0.05f, top - 18f, _coords.Width * 0.95f, bottom + 24f);
     }
 
     private void DrawWrappedText(SKCanvas canvas, string text, float x, ref float y, float width, SKPaint paint)

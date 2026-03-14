@@ -293,7 +293,8 @@ public class FractionalPowerPage : IVisualizerPage
 
         var bounds = new SKRect();
         _sectionPaint.MeasureText(summary, ref bounds);
-        var rect = new SKRect(36f, 104f, 36f + bounds.Width + 28f, 136f);
+        float badgeWidth = Math.Max(640f, bounds.Width + 28f);
+        var rect = new SKRect(36f, 104f, 36f + badgeWidth, 136f);
         canvas.DrawRoundRect(rect, 12f, 12f, _resultBadgePaint);
         canvas.DrawRoundRect(rect, 12f, 12f, _resultBorderPaint);
         canvas.DrawText(summary, rect.Left + 14f, rect.MidY + 5f, _sectionPaint);
@@ -415,20 +416,19 @@ public class FractionalPowerPage : IVisualizerPage
         minValue = decimal.Floor(minValue) - 1m;
         maxValue = decimal.Ceiling(maxValue) + 1m;
 
-        decimal desiredSpan = 20m;
+        decimal desiredSpan = 24m;
         decimal currentSpan = maxValue - minValue;
         if (currentSpan < desiredSpan)
         {
-            decimal midpoint = (minValue + maxValue) * 0.5m;
-            minValue = decimal.Floor(midpoint - desiredSpan * 0.5m);
-            maxValue = decimal.Ceiling(midpoint + desiredSpan * 0.5m);
+            minValue = -12m;
+            maxValue = 12m;
         }
 
         innerLeft = _coords.MathToPixel((float)minValue, 0f).X;
         innerRight = _coords.MathToPixel((float)maxValue, 0f).X;
         float top = _coords.MathToPixel(0f, InputY + 0.95f).Y;
         float bottom = _coords.MathToPixel(0f, CandidateRows[^1] - 0.95f).Y;
-        outerRect = new SKRect(innerLeft - 104f, top - 18f, innerRight + 28f, bottom + 20f);
+        outerRect = new SKRect(_coords.Width * 0.05f, top - 18f, _coords.Width * 0.95f, bottom + 20f);
     }
 
     private void EnsureControls()
@@ -553,8 +553,8 @@ public class FractionalPowerPage : IVisualizerPage
         _timer.Tick += (_, _) =>
         {
             _phase += 0.04f;
-            decimal recessive = 7m + (decimal)Math.Sin(_phase) * 3m;
-            decimal dominant = 7m + (decimal)Math.Cos(_phase * 0.85f) * 3m;
+            decimal recessive = 7m + (decimal)Math.Sin(_phase * 0.73f) * 3m;
+            decimal dominant = (decimal)Math.Cos(_phase * 0.51f) * 8m;
             _input.SetAxis(Axis.FromCoordinates((Scalar)(-recessive), (Scalar)dominant, Scalar.One, Scalar.One));
             _canvasHost.InvalidateCanvas();
         };

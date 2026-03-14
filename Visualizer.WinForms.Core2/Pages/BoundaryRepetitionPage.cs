@@ -306,10 +306,10 @@ public class BoundaryRepetitionPage : IVisualizerPage
         };
 
         const float left = 42f;
-        const float top = 388f;
+        const float top = 424f;
         const float gap = 18f;
         float cardWidth = (_coords.Width - left * 2f - gap * 2f) / 3f;
-        const float cardHeight = 230f;
+        const float cardHeight = 188f;
 
         for (int i = 0; i < cards.Length; i++)
         {
@@ -335,14 +335,26 @@ public class BoundaryRepetitionPage : IVisualizerPage
         canvas.DrawRoundRect(rect, 14f, 14f, _cardBorderPaint);
         canvas.DrawText(title, rect.MidX, rect.Top + 24f, _cardTitlePaint);
 
-        float midY = rect.Top + 92f;
+        float midY = rect.Top + 70f;
         float left = rect.Left + 24f;
         float right = rect.Right - 24f;
         canvas.DrawLine(left, midY, right, midY, _guidePaint);
 
         float frameLeft = Map(frameStart, min, max, left, right);
         float frameRight = Map(frameEnd, min, max, left, right);
-        canvas.DrawLine(frameLeft, midY, frameRight, midY, _framePaint);
+        float direction = frameRight >= frameLeft ? 1f : -1f;
+        float arrowLen = 12f;
+        float lineEndX = frameRight - direction * arrowLen;
+        canvas.DrawLine(frameLeft, midY, lineEndX, midY, _framePaint);
+        canvas.DrawCircle(frameLeft, midY, 5f, _framePaint);
+        using (var arrowPath = new SKPath())
+        {
+            arrowPath.MoveTo(frameRight, midY);
+            arrowPath.LineTo(frameRight - direction * 12f, midY - 6f);
+            arrowPath.LineTo(frameRight - direction * 12f, midY + 6f);
+            arrowPath.Close();
+            canvas.DrawPath(arrowPath, _framePaint);
+        }
 
         float zeroX = Map(0m, min, max, left, right);
         canvas.DrawLine(zeroX, midY - 18f, zeroX, midY + 18f, _baselinePaint);
@@ -365,22 +377,22 @@ public class BoundaryRepetitionPage : IVisualizerPage
             ? $"preserved -> {result.Value:0.0}"
             : $"mapped -> {result.Value:0.0}";
 
-        canvas.DrawText(resultText, rect.MidX, rect.Top + 146f, _cardTextPaint);
+        canvas.DrawText(resultText, rect.MidX, rect.Top + 118f, _cardTextPaint);
 
         if (result.HasTension)
         {
-            canvas.DrawText("boundary exceeded; kept as tension", rect.MidX, rect.Top + 171f, _cardTextPaint);
+            canvas.DrawText("boundary exceeded; kept as tension", rect.MidX, rect.Top + 138f, _cardTextPaint);
         }
         else if (law == BoundaryContinuationLaw.PeriodicWrap)
         {
-            canvas.DrawText("periodic continuation", rect.MidX, rect.Top + 171f, _cardTextPaint);
+            canvas.DrawText("periodic continuation", rect.MidX, rect.Top + 138f, _cardTextPaint);
         }
         else
         {
-            canvas.DrawText("reflective continuation", rect.MidX, rect.Top + 171f, _cardTextPaint);
+            canvas.DrawText("reflective continuation", rect.MidX, rect.Top + 138f, _cardTextPaint);
         }
 
-        canvas.DrawText($"frame [{frameStart:0.0}, {frameEnd:0.0}]", rect.MidX, rect.Bottom - 18f, _cardTextPaint);
+        canvas.DrawText($"frame [{frameStart:0.0}, {frameEnd:0.0}]", rect.MidX, rect.Bottom - 14f, _cardTextPaint);
     }
 
     private void DrawRowBadge(SKCanvas canvas, string text, float y, SegmentColorSet colors)
@@ -439,20 +451,19 @@ public class BoundaryRepetitionPage : IVisualizerPage
         minValue = decimal.Floor(minValue) - 1m;
         maxValue = decimal.Ceiling(maxValue) + 1m;
 
-        decimal desiredSpan = 20m;
+        decimal desiredSpan = 24m;
         decimal currentSpan = maxValue - minValue;
         if (currentSpan < desiredSpan)
         {
-            decimal midpoint = (minValue + maxValue) * 0.5m;
-            minValue = decimal.Floor(midpoint - desiredSpan * 0.5m);
-            maxValue = decimal.Ceiling(midpoint + desiredSpan * 0.5m);
+            minValue = -12m;
+            maxValue = 12m;
         }
 
         float left = _coords.MathToPixel((float)minValue, 0f).X;
         float right = _coords.MathToPixel((float)maxValue, 0f).X;
         float top = _coords.MathToPixel(0f, FrameY + 0.95f).Y;
         float bottom = _coords.MathToPixel(0f, -1.0f).Y;
-        outerRect = new SKRect(left - 104f, top - 18f, right + 28f, bottom + 22f);
+        outerRect = new SKRect(_coords.Width * 0.05f, top - 18f, _coords.Width * 0.95f, bottom + 22f);
     }
 
     private void EnsureControls()
