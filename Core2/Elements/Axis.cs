@@ -46,8 +46,13 @@ public sealed record Axis(Proportion Recessive, Proportion Dominant, AxisBasis B
 
     public Scalar Start => -Recessive.Fold();
     public Scalar End => Dominant.Fold();
+    public Scalar Left => Start.Value <= End.Value ? Start : End;
+    public Scalar Right => Start.Value <= End.Value ? End : Start;
     public Scalar Span => End - Start;
-    public bool IsEmptyInterval => Start >= End;
+    public bool IsDegenerate => Start == End;
+    public bool HasExtent => !IsDegenerate;
+    public bool IsEmptyInterval => IsDegenerate;
+    public bool PointsRight => End.Value >= Start.Value;
 
     public static Axis FromCoordinates(
         Scalar start,
@@ -56,9 +61,25 @@ public sealed record Axis(Proportion Recessive, Proportion Dominant, AxisBasis B
         Scalar? dominantSupport = null,
         AxisBasis basis = AxisBasis.Complex) =>
         new(
-            Proportion.FromRecessiveDominant(recessiveSupport ?? Scalar.One, -start),
-            Proportion.FromRecessiveDominant(dominantSupport ?? Scalar.One, end),
+            Proportion.FromRecessiveDominant(
+                recessiveSupport ?? Scalar.One,
+                (-start) * (recessiveSupport ?? Scalar.One)),
+            Proportion.FromRecessiveDominant(
+                dominantSupport ?? Scalar.One,
+                end * (dominantSupport ?? Scalar.One)),
             basis);
+
+    public Axis WithCoordinates(Scalar start, Scalar end) =>
+        FromCoordinates(start, end, Recessive.Recessive, Dominant.Recessive, Basis);
+
+    internal Axis WithBounds(Scalar left, Scalar right) =>
+        PointsRight ? WithCoordinates(left, right) : WithCoordinates(right, left);
+
+    internal bool HasCompatibleCarrier(Axis other) =>
+        Basis == other.Basis &&
+        PointsRight == other.PointsRight &&
+        Recessive.Recessive == other.Recessive.Recessive &&
+        Dominant.Recessive == other.Dominant.Recessive;
 
     public Axis ApplyOpposition()
     {
@@ -98,44 +119,41 @@ public sealed record Axis(Proportion Recessive, Proportion Dominant, AxisBasis B
         Axis? reference = null) =>
         PowerEngine.Pow(this, exponent, rule, reference);
 
-    public Axis Intersect(Axis other)
-    {
-        var start = SelectByStart(this, other, selectGreater: true);
-        var end = SelectByEnd(this, other, selectGreater: false);
-        return FromBounds(start, end, Basis);
-    }
+    /// <summary>
+    /// Returns the geometric overlap clipped into the left operand's direction/support frame.
+    /// Use TryIntersect(...) if you need to distinguish "no overlap" from a point result.
+    /// </summary>
+    public Axis Intersect(Axis other) =>
+        TryIntersect(other, out var intersection) ? intersection : Zero;
 
-    public Axis Union(Axis other)
+    public bool TryIntersect(Axis other, out Axis intersection)
     {
-        var start = SelectByStart(this, other, selectGreater: false);
-        var end = SelectByEnd(this, other, selectGreater: true);
-        return FromBounds(start, end, Basis);
+        var left = Max(Left, other.Left);
+        var right = Min(Right, other.Right);
+        if (left.Value > right.Value)
+        {
+            intersection = Zero;
+            return false;
+        }
+
+        intersection = WithBounds(left, right);
+        return true;
     }
 
     /// <summary>
-    /// The current boolean visualizer's NOT is the interval mirrored across the origin:
-    /// start becomes the negated end and end becomes the negated start.
-    /// In Axis encoding, that is the recessive/dominant role swap.
+    /// Returns the convex envelope spanning both segments in the left operand's direction/support frame.
+    /// This is not a split-preserving boolean OR; use Boolean(...) for that.
     /// </summary>
-    public Axis BooleanNot() => Mirror();
+    public Axis Envelope(Axis other) =>
+        WithBounds(Min(Left, other.Left), Max(Right, other.Right));
 
-    public Axis Xor(Axis other)
-    {
-        var leftOnly = Intersect(other.BooleanNot());
-        var rightOnly = BooleanNot().Intersect(other);
+    public Axis Union(Axis other) => Envelope(other);
 
-        if (leftOnly.IsEmptyInterval)
-        {
-            return rightOnly;
-        }
-
-        if (rightOnly.IsEmptyInterval)
-        {
-            return leftOnly;
-        }
-
-        return leftOnly.Union(rightOnly);
-    }
+    public AxisBooleanResult Boolean(
+        Axis other,
+        AxisBooleanOperation operation,
+        Axis? frame = null) =>
+        AxisBooleanProjection.Resolve(this, other, operation, frame);
 
     public BoundaryContinuationResult Continue(Scalar value, BoundaryContinuationLaw law) =>
         BoundaryContinuation.Continue(this, value, law);
@@ -159,34 +177,9 @@ public sealed record Axis(Proportion Recessive, Proportion Dominant, AxisBasis B
 
     public override string ToString() => $"[{Recessive}]i + [{Dominant}]";
 
-    private static (Proportion Value, Scalar Boundary) SelectByStart(Axis left, Axis right, bool selectGreater)
-    {
-        var leftBoundary = left.Start;
-        var rightBoundary = right.Start;
-        bool takeLeft = selectGreater ? leftBoundary >= rightBoundary : leftBoundary <= rightBoundary;
-        return takeLeft ? (left.Recessive, leftBoundary) : (right.Recessive, rightBoundary);
-    }
+    private static Scalar Min(Scalar left, Scalar right) => left.Value <= right.Value ? left : right;
 
-    private static (Proportion Value, Scalar Boundary) SelectByEnd(Axis left, Axis right, bool selectGreater)
-    {
-        var leftBoundary = left.End;
-        var rightBoundary = right.End;
-        bool takeLeft = selectGreater ? leftBoundary >= rightBoundary : leftBoundary <= rightBoundary;
-        return takeLeft ? (left.Dominant, leftBoundary) : (right.Dominant, rightBoundary);
-    }
-
-    private static Axis FromBounds(
-        (Proportion Value, Scalar Boundary) start,
-        (Proportion Value, Scalar Boundary) end,
-        AxisBasis basis)
-    {
-        if (start.Boundary >= end.Boundary)
-        {
-            return Zero;
-        }
-
-        return new(start.Value, end.Value, basis);
-    }
+    private static Scalar Max(Scalar left, Scalar right) => left.Value >= right.Value ? left : right;
 
     private sealed class AxisArithmetic : IArithmetic<Axis>
     {

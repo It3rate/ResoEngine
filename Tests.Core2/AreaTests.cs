@@ -67,7 +67,7 @@ public class AreaTests
     }
 
     [Fact]
-    public void Area_BooleanOperations_RecurseAcrossBothAxes()
+    public void Area_EnvelopeAndIntersection_RecurseAcrossBothAxes()
     {
         var left = new Area(
             new Axis(new Proportion(3, 1), new Proportion(5, 1)),
@@ -80,8 +80,8 @@ public class AreaTests
 
         Assert.Equal(new Axis(new Proportion(1, 1), new Proportion(3, 1)), intersection.Recessive);
         Assert.Equal(new Axis(new Proportion(2, 1), new Proportion(5, 1)), intersection.Dominant);
-        Assert.Equal(new Area(left.Recessive.Mirror(), left.Dominant.Mirror()), left.BooleanNot());
-        Assert.Equal(left.Recessive.Xor(right.Recessive), left.Xor(right).Recessive);
+        Assert.Equal(new Area(left.Recessive.Envelope(right.Recessive), left.Dominant.Envelope(right.Dominant)), left.Envelope(right));
+        Assert.Equal(left.Envelope(right), left.Union(right));
     }
 
     [Fact]

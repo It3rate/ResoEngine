@@ -68,20 +68,21 @@ public class AxisTests
 
         Assert.Equal(new Scalar(-1.5m), axis.Start);
         Assert.Equal(new Scalar(2.5m), axis.End);
+        Assert.Equal(new Scalar(-1.5m), axis.Left);
+        Assert.Equal(new Scalar(2.5m), axis.Right);
         Assert.Equal(new Scalar(4.0m), axis.Span);
         Assert.False(axis.IsEmptyInterval);
     }
 
     [Fact]
-    public void BooleanOperations_FollowTheCurrentSegmentDisplayRules()
+    public void Envelope_ReturnsTheConvexHullInPrimaryDirection()
     {
         var a = new Axis(new Proportion(3, 1), new Proportion(5, 1));
         var b = new Axis(new Proportion(1, 1), new Proportion(3, 1));
 
         Assert.Equal(new Axis(new Proportion(1, 1), new Proportion(3, 1)), a.Intersect(b));
-        Assert.Equal(new Axis(new Proportion(3, 1), new Proportion(5, 1)), a.Union(b));
-        Assert.Equal(new Axis(new Proportion(5, 1), new Proportion(3, 1)), a.BooleanNot());
-        Assert.Equal(a.Intersect(b.BooleanNot()).Union(a.BooleanNot().Intersect(b)), a.Xor(b));
+        Assert.Equal(new Axis(new Proportion(3, 1), new Proportion(5, 1)), a.Envelope(b));
+        Assert.Equal(a.Envelope(b), a.Union(b));
     }
 
     [Fact]
@@ -102,5 +103,29 @@ public class AxisTests
         Assert.Equal(AxisBasis.SplitComplex, result.Basis);
         Assert.Equal(Proportion.Zero, result.Recessive);
         Assert.Equal(Proportion.One, result.Dominant);
+    }
+
+    [Fact]
+    public void ReversedSegmentsRetainExtentAndAreNotMarkedEmpty()
+    {
+        var axis = Axis.FromCoordinates((Scalar)5m, (Scalar)(-2m));
+
+        Assert.True(axis.HasExtent);
+        Assert.False(axis.IsEmptyInterval);
+        Assert.False(axis.PointsRight);
+        Assert.Equal(new Scalar(-2m), axis.Left);
+        Assert.Equal(new Scalar(5m), axis.Right);
+    }
+
+    [Fact]
+    public void Intersect_PreservesPrimaryDirection_ForReversedSegments()
+    {
+        var primary = Axis.FromCoordinates((Scalar)5m, (Scalar)(-5m));
+        var secondary = Axis.FromCoordinates((Scalar)(-2m), (Scalar)4m);
+
+        Assert.True(primary.TryIntersect(secondary, out var intersection));
+        Assert.Equal(new Scalar(4m), intersection.Start);
+        Assert.Equal(new Scalar(-2m), intersection.End);
+        Assert.False(intersection.PointsRight);
     }
 }

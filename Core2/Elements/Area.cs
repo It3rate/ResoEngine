@@ -78,14 +78,13 @@ public sealed record Area(Axis Recessive, Axis Dominant) : IElement
     public Area Intersect(Area other) =>
         new(Recessive.Intersect(other.Recessive), Dominant.Intersect(other.Dominant));
 
-    public Area Union(Area other) =>
-        new(Recessive.Union(other.Recessive), Dominant.Union(other.Dominant));
+    /// <summary>
+    /// Returns the axis-wise convex envelope. This is not a split-preserving region union.
+    /// </summary>
+    public Area Envelope(Area other) =>
+        new(Recessive.Envelope(other.Recessive), Dominant.Envelope(other.Dominant));
 
-    public Area BooleanNot() =>
-        new(Recessive.BooleanNot(), Dominant.BooleanNot());
-
-    public Area Xor(Area other) =>
-        new(Recessive.Xor(other.Recessive), Dominant.Xor(other.Dominant));
+    public Area Union(Area other) => Envelope(other);
 
     public static Area operator +(Area left, Area right) =>
         new(left.Recessive + right.Recessive, left.Dominant + right.Dominant);

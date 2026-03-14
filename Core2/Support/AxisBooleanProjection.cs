@@ -4,44 +4,99 @@ namespace Core2.Support;
 
 public enum AxisBooleanOperation
 {
+    False,
+    True,
+    TransferA,
+    TransferB,
     And,
     Or,
     Nand,
     Nor,
     NotA,
     NotB,
+    Implication,
+    ReverseImplication,
+    Inhibition,
+    ReverseInhibition,
     Xor,
     Xnor,
 }
 
-public readonly record struct AxisBooleanPiece(Axis Segment, Axis Source);
+public enum AxisBooleanCarrier
+{
+    Primary,
+    Secondary,
+    Frame,
+}
+
+public readonly record struct AxisBooleanPiece(
+    Axis Segment,
+    AxisBooleanCarrier Carrier,
+    bool InPrimary,
+    bool InSecondary);
+
+public sealed record AxisBooleanResult(
+    Axis Primary,
+    Axis Secondary,
+    Axis Frame,
+    AxisBooleanOperation Operation,
+    IReadOnlyList<AxisBooleanPiece> Pieces)
+{
+    public bool HasAny => Pieces.Count > 0;
+    public IReadOnlyList<Axis> Segments => Pieces.Select(piece => piece.Segment).ToArray();
+}
+
+public static class AxisBooleanOperationExtensions
+{
+    public static bool Evaluate(this AxisBooleanOperation operation, bool inA, bool inB) =>
+        operation switch
+        {
+            AxisBooleanOperation.False => false,
+            AxisBooleanOperation.True => true,
+            AxisBooleanOperation.TransferA => inA,
+            AxisBooleanOperation.TransferB => inB,
+            AxisBooleanOperation.And => inA && inB,
+            AxisBooleanOperation.Or => inA || inB,
+            AxisBooleanOperation.Nand => !(inA && inB),
+            AxisBooleanOperation.Nor => !(inA || inB),
+            AxisBooleanOperation.NotA => !inA,
+            AxisBooleanOperation.NotB => !inB,
+            AxisBooleanOperation.Implication => !inA || inB,
+            AxisBooleanOperation.ReverseImplication => !inB || inA,
+            AxisBooleanOperation.Inhibition => inA && !inB,
+            AxisBooleanOperation.ReverseInhibition => !inA && inB,
+            AxisBooleanOperation.Xor => inA ^ inB,
+            AxisBooleanOperation.Xnor => !(inA ^ inB),
+            _ => throw new ArgumentOutOfRangeException(nameof(operation), operation, null),
+        };
+}
 
 public static class AxisBooleanProjection
 {
-    public static IReadOnlyList<AxisBooleanPiece> Project(Axis a, Axis b, AxisBooleanOperation operation)
+    public static AxisBooleanResult Resolve(
+        Axis a,
+        Axis b,
+        AxisBooleanOperation operation,
+        Axis? frame = null)
     {
-        decimal frameLeft = Math.Min(Math.Min(a.Start.Value, a.End.Value), Math.Min(b.Start.Value, b.End.Value));
-        decimal frameRight = Math.Max(Math.Max(a.Start.Value, a.End.Value), Math.Max(b.Start.Value, b.End.Value));
+        Axis actualFrame = frame ?? BuildImplicitFrame(a, b);
+        decimal frameLeft = actualFrame.Left.Value;
+        decimal frameRight = actualFrame.Right.Value;
 
         if (frameRight <= frameLeft)
         {
-            return [];
+            return new AxisBooleanResult(a, b, actualFrame, operation, []);
         }
 
-        var boundaries = new SortedSet<decimal>
-        {
-            frameLeft,
-            frameRight,
-            a.Start.Value,
-            a.End.Value,
-            b.Start.Value,
-            b.End.Value,
-        };
+        var boundaries = CollectBoundaries(frameLeft, frameRight, a, b);
 
         var pieces = new List<AxisBooleanPiece>();
         decimal? currentLeft = null;
         decimal? currentRight = null;
-        Axis? currentSource = null;
+        Axis? currentTemplate = null;
+        AxisBooleanCarrier currentCarrier = default;
+        bool currentInA = false;
+        bool currentInB = false;
 
         foreach (var pair in boundaries.Zip(boundaries.Skip(1)))
         {
@@ -55,93 +110,123 @@ public static class AxisBooleanProjection
             decimal mid = (left + right) / 2m;
             bool inA = IsWithin(mid, a);
             bool inB = IsWithin(mid, b);
-            if (!Evaluate(operation, inA, inB))
+            if (!operation.Evaluate(inA, inB))
             {
                 FlushCurrent();
                 continue;
             }
 
-            Axis source = SelectSource(operation, inA, inB, a, b);
-            if (currentSource is not null &&
+            AxisBooleanCarrier carrier = SelectCarrier(inA, inB);
+            Axis template = SelectTemplate(carrier, a, b, actualFrame);
+            if (currentTemplate is not null &&
                 currentRight == left &&
-                HaveSameDirection(currentSource, source))
+                currentTemplate.HasCompatibleCarrier(template))
             {
                 currentRight = right;
+                currentInA |= inA;
+                currentInB |= inB;
                 continue;
             }
 
             FlushCurrent();
             currentLeft = left;
             currentRight = right;
-            currentSource = source;
+            currentTemplate = template;
+            currentCarrier = carrier;
+            currentInA = inA;
+            currentInB = inB;
         }
 
         FlushCurrent();
-        return pieces;
+        return new AxisBooleanResult(a, b, actualFrame, operation, pieces);
 
         void FlushCurrent()
         {
-            if (currentLeft is null || currentRight is null || currentSource is null)
+            if (currentLeft is null || currentRight is null || currentTemplate is null)
             {
                 currentLeft = null;
                 currentRight = null;
-                currentSource = null;
+                currentTemplate = null;
+                currentInA = false;
+                currentInB = false;
                 return;
             }
 
             pieces.Add(new AxisBooleanPiece(
-                BuildDirectedPiece(currentLeft.Value, currentRight.Value, currentSource),
-                currentSource));
+                currentTemplate.WithBounds((Scalar)currentLeft.Value, (Scalar)currentRight.Value),
+                currentCarrier,
+                currentInA,
+                currentInB));
 
             currentLeft = null;
             currentRight = null;
-            currentSource = null;
+            currentTemplate = null;
+            currentInA = false;
+            currentInB = false;
         }
     }
 
-    private static Axis BuildDirectedPiece(decimal left, decimal right, Axis source)
+    public static IReadOnlyList<AxisBooleanPiece> Project(
+        Axis a,
+        Axis b,
+        AxisBooleanOperation operation,
+        Axis? frame = null) =>
+        Resolve(a, b, operation, frame).Pieces;
+
+    private static Axis BuildImplicitFrame(Axis a, Axis b)
     {
-        bool pointsRight = source.End.Value >= source.Start.Value;
-        decimal start = pointsRight ? left : right;
-        decimal end = pointsRight ? right : left;
-        return Axis.FromCoordinates((Scalar)start, (Scalar)end);
+        Axis template = a.HasExtent ? a : b;
+        Scalar left = a.Left.Value <= b.Left.Value ? a.Left : b.Left;
+        Scalar right = a.Right.Value >= b.Right.Value ? a.Right : b.Right;
+        return template.WithBounds(left, right);
     }
 
-    private static bool HaveSameDirection(Axis left, Axis right) =>
-        (left.End.Value >= left.Start.Value) == (right.End.Value >= right.Start.Value);
+    private static SortedSet<decimal> CollectBoundaries(decimal frameLeft, decimal frameRight, Axis a, Axis b)
+    {
+        var boundaries = new SortedSet<decimal> { frameLeft, frameRight };
+        AddIfWithin(boundaries, a.Left.Value, frameLeft, frameRight);
+        AddIfWithin(boundaries, a.Right.Value, frameLeft, frameRight);
+        AddIfWithin(boundaries, b.Left.Value, frameLeft, frameRight);
+        AddIfWithin(boundaries, b.Right.Value, frameLeft, frameRight);
+        return boundaries;
+    }
 
-    private static Axis SelectSource(AxisBooleanOperation operation, bool inA, bool inB, Axis a, Axis b) =>
-        operation switch
+    private static void AddIfWithin(SortedSet<decimal> boundaries, decimal value, decimal frameLeft, decimal frameRight)
+    {
+        if (value > frameLeft && value < frameRight)
         {
-            AxisBooleanOperation.And => a,
-            AxisBooleanOperation.Or => inA ? a : b,
-            AxisBooleanOperation.Nand => !inA ? a : b,
-            AxisBooleanOperation.Nor => a,
-            AxisBooleanOperation.NotA => a,
-            AxisBooleanOperation.NotB => b,
-            AxisBooleanOperation.Xor => (inA && !inB) ? a : b,
-            AxisBooleanOperation.Xnor => a,
-            _ => a,
-        };
+            boundaries.Add(value);
+        }
+    }
 
-    private static bool Evaluate(AxisBooleanOperation operation, bool inA, bool inB) =>
-        operation switch
+    private static AxisBooleanCarrier SelectCarrier(bool inA, bool inB)
+    {
+        if (inA)
         {
-            AxisBooleanOperation.And => inA && inB,
-            AxisBooleanOperation.Or => inA || inB,
-            AxisBooleanOperation.Nand => !(inA && inB),
-            AxisBooleanOperation.Nor => !(inA || inB),
-            AxisBooleanOperation.NotA => !inA,
-            AxisBooleanOperation.NotB => !inB,
-            AxisBooleanOperation.Xor => inA ^ inB,
-            AxisBooleanOperation.Xnor => !(inA ^ inB),
-            _ => false,
+            return AxisBooleanCarrier.Primary;
+        }
+
+        if (inB)
+        {
+            return AxisBooleanCarrier.Secondary;
+        }
+
+        return AxisBooleanCarrier.Frame;
+    }
+
+    private static Axis SelectTemplate(AxisBooleanCarrier carrier, Axis a, Axis b, Axis frame) =>
+        carrier switch
+        {
+            AxisBooleanCarrier.Primary => a,
+            AxisBooleanCarrier.Secondary => b,
+            AxisBooleanCarrier.Frame => frame,
+            _ => throw new ArgumentOutOfRangeException(nameof(carrier), carrier, null),
         };
 
     private static bool IsWithin(decimal value, Axis axis)
     {
-        decimal left = Math.Min(axis.Start.Value, axis.End.Value);
-        decimal right = Math.Max(axis.Start.Value, axis.End.Value);
-        return value >= left && value <= right;
+        decimal left = axis.Left.Value;
+        decimal right = axis.Right.Value;
+        return value > left && value < right;
     }
 }
