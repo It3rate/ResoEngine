@@ -17,13 +17,13 @@ public class ContainmentTensionPage : IVisualizerPage
 
     private readonly AxisDisplayMapper _parent = new(
         Axis.FromCoordinates((Scalar)(-4m), (Scalar)7m, Scalar.One, Scalar.One),
-        "Parent");
+        string.Empty);
 
     private readonly AxisDisplayMapper _child = new(
         Axis.FromCoordinates((Scalar)(-2m), (Scalar)3.5m, Scalar.One, Scalar.One),
-        "Child");
+        string.Empty);
 
-    private readonly AxisDisplayMapper _contextualChild = new(Axis.Zero, "In Parent");
+    private readonly AxisDisplayMapper _contextualChild = new(Axis.Zero, string.Empty);
 
     private readonly SKPaint _headingPaint = new()
     {
@@ -38,6 +38,62 @@ public class ContainmentTensionPage : IVisualizerPage
         Color = new SKColor(92, 92, 92),
         TextSize = 14f,
         Typeface = SKTypeface.FromFamilyName(VisualStyle.FontFamily, SKFontStyle.Normal),
+        IsAntialias = true,
+    };
+
+    private readonly SKPaint _graphFillPaint = new()
+    {
+        Style = SKPaintStyle.Fill,
+        Color = new SKColor(249, 249, 250),
+        IsAntialias = true,
+    };
+
+    private readonly SKPaint _graphBorderPaint = new()
+    {
+        Style = SKPaintStyle.Stroke,
+        StrokeWidth = 1f,
+        Color = new SKColor(206, 206, 206),
+        IsAntialias = true,
+    };
+
+    private readonly SKPaint _rulerLinePaint = new()
+    {
+        Style = SKPaintStyle.Stroke,
+        StrokeWidth = 1.1f,
+        Color = new SKColor(176, 176, 176),
+        IsAntialias = true,
+    };
+
+    private readonly SKPaint _zeroAxisPaint = new()
+    {
+        Style = SKPaintStyle.Stroke,
+        StrokeWidth = 1.3f,
+        Color = new SKColor(176, 176, 176),
+        IsAntialias = true,
+    };
+
+    private readonly SKPaint _topTickPaint = new()
+    {
+        Style = SKPaintStyle.Stroke,
+        StrokeWidth = 1.1f,
+        Color = new SKColor(24, 38, 94),
+        IsAntialias = true,
+    };
+
+    private readonly SKPaint _bottomTickPaint = new()
+    {
+        Style = SKPaintStyle.Stroke,
+        StrokeWidth = 1.1f,
+        Color = new SKColor(80, 30, 112),
+        IsAntialias = true,
+    };
+
+    private readonly SKPaint _tickTextPaint = new()
+    {
+        Color = new SKColor(132, 132, 132),
+        TextSize = 12f,
+        Typeface = SKTypeface.FromFamilyName(VisualStyle.FontFamily, SKFontStyle.Bold),
+        TextAlign = SKTextAlign.Center,
         IsAntialias = true,
     };
 
@@ -136,8 +192,8 @@ public class ContainmentTensionPage : IVisualizerPage
         _coords = coords;
         _canvasHost = canvas;
 
-        coords.OriginX = coords.Width * 0.34f;
-        coords.OriginY = 360f;
+        coords.OriginX = coords.Width * 0.5f;
+        coords.OriginY = 372f;
 
         _parentRenderer = new SegmentRenderer(coords, SegmentOrientation.Horizontal, SegmentColors.Red, crossPosition: ParentY);
         _childRenderer = new SegmentRenderer(coords, SegmentOrientation.Horizontal, SegmentColors.Blue, crossPosition: ChildY);
@@ -162,15 +218,23 @@ public class ContainmentTensionPage : IVisualizerPage
         _contextualChild.SetAxis(contextual);
 
         canvas.DrawText("Containment and Tension", 34f, 42f, _headingPaint);
-        canvas.DrawText("Drag the parent and child. Flip the parent perspective to reinterpret the child, or change child support to create tension instead of failure.", 34f, 68f, _bodyPaint);
+        float subtitleY = 68f;
+        PageChrome.DrawWrappedText(
+            canvas,
+            "Drag the parent and child. Flip the parent perspective to reinterpret the child, or change child support to create tension instead of failure.",
+            34f,
+            ref subtitleY,
+            430f,
+            _bodyPaint);
 
-        DrawSegmentLabel(canvas, "Parent Frame", ParentY);
-        DrawSegmentLabel(canvas, "Child Raw", ChildY);
-        DrawSegmentLabel(canvas, "Child In Parent Context", ContextY);
+        DrawGraphFrame(canvas, relation);
 
         _parentRenderer?.Render(canvas, _parent);
+        DrawSegmentLabel(canvas, "Parent Frame", ParentY, SegmentColors.Red);
         _childRenderer?.Render(canvas, _child);
+        DrawSegmentLabel(canvas, "Child Raw", ChildY, SegmentColors.Blue);
         _contextRenderer?.Render(canvas, _contextualChild);
+        DrawSegmentLabel(canvas, "Child In Parent Context", ContextY, SegmentColors.Green);
 
         DrawRelationCard(canvas, relation, contextual);
 
@@ -181,15 +245,45 @@ public class ContainmentTensionPage : IVisualizerPage
         canvas.DrawCircle(originPx, 3f, _originDotPaint);
     }
 
-    private void DrawSegmentLabel(SKCanvas canvas, string label, float y)
+    private void DrawSegmentLabel(SKCanvas canvas, string label, float y, SegmentColorSet colors)
     {
         if (_coords == null)
         {
             return;
         }
 
+        GetGraphBounds(out _, out _, out var outerRect);
         var point = _coords.MathToPixel(0f, y);
-        canvas.DrawText(label, 38f, point.Y - 16f, _labelPaint);
+        var bounds = new SKRect();
+        _labelPaint.MeasureText(label, ref bounds);
+        float width = Math.Max(116f, bounds.Width + 26f);
+        var rect = new SKRect(outerRect.Left + 14f, point.Y - 16f, outerRect.Left + 14f + width, point.Y + 16f);
+
+        using var fill = new SKPaint
+        {
+            Style = SKPaintStyle.Fill,
+            Color = new SKColor(colors.Grid.Red, colors.Grid.Green, colors.Grid.Blue, 68),
+            IsAntialias = true,
+        };
+        using var border = new SKPaint
+        {
+            Style = SKPaintStyle.Stroke,
+            StrokeWidth = 1.2f,
+            Color = colors.Solid,
+            IsAntialias = true,
+        };
+        using var textPaint = new SKPaint
+        {
+            Color = colors.Solid,
+            TextSize = 15f,
+            Typeface = SKTypeface.FromFamilyName(VisualStyle.FontFamily, SKFontStyle.Bold),
+            TextAlign = SKTextAlign.Center,
+            IsAntialias = true,
+        };
+
+        canvas.DrawRoundRect(rect, 12f, 12f, fill);
+        canvas.DrawRoundRect(rect, 12f, 12f, border);
+        canvas.DrawText(label, rect.MidX, rect.MidY + 5f, textPaint);
     }
 
     private void DrawRelationCard(SKCanvas canvas, Containment relation, Axis contextual)
@@ -199,7 +293,7 @@ public class ContainmentTensionPage : IVisualizerPage
             return;
         }
 
-        var rect = new SKRect(_coords.Width - 390f, 132f, _coords.Width - 36f, 520f);
+        var rect = new SKRect(170f, 558f, _coords.Width - 170f, 760f);
         canvas.DrawRoundRect(rect, 16f, 16f, _cardFillPaint);
         canvas.DrawRoundRect(rect, 16f, 16f, _cardBorderPaint);
 
@@ -241,6 +335,73 @@ public class ContainmentTensionPage : IVisualizerPage
                 break;
             }
         }
+    }
+
+    private void DrawGraphFrame(SKCanvas canvas, Containment relation)
+    {
+        if (_coords == null)
+        {
+            return;
+        }
+
+        GetGraphBounds(out var minValue, out var maxValue, out var outerRect);
+        canvas.DrawRoundRect(outerRect, 16f, 16f, _graphFillPaint);
+        canvas.DrawRoundRect(outerRect, 16f, 16f, _graphBorderPaint);
+
+        float top = _coords.MathToPixel(0f, ParentY + 0.95f).Y;
+        float bottom = _coords.MathToPixel(0f, ContextY - 0.95f).Y;
+        float axisY = _coords.MathToPixel(0f, 0f).Y;
+        PageChrome.DrawRuler(
+            canvas,
+            _coords,
+            minValue,
+            maxValue,
+            axisY,
+            top,
+            bottom,
+            _rulerLinePaint,
+            _zeroAxisPaint,
+            _topTickPaint,
+            _bottomTickPaint,
+            _tickTextPaint,
+            _tickTextPaint);
+    }
+
+    private void GetGraphBounds(out decimal minValue, out decimal maxValue, out SKRect outerRect)
+    {
+        if (_coords == null)
+        {
+            minValue = 0m;
+            maxValue = 1m;
+            outerRect = SKRect.Empty;
+            return;
+        }
+
+        minValue = 0m;
+        maxValue = 0m;
+        foreach (var axis in new[] { _parent.Axis, _child.Axis, _contextualChild.Axis })
+        {
+            minValue = Math.Min(minValue, Math.Min(axis.Start.Value, axis.End.Value));
+            maxValue = Math.Max(maxValue, Math.Max(axis.Start.Value, axis.End.Value));
+        }
+
+        minValue = decimal.Floor(minValue) - 1m;
+        maxValue = decimal.Ceiling(maxValue) + 1m;
+
+        decimal desiredSpan = 20m;
+        decimal currentSpan = maxValue - minValue;
+        if (currentSpan < desiredSpan)
+        {
+            decimal midpoint = (minValue + maxValue) * 0.5m;
+            minValue = decimal.Floor(midpoint - desiredSpan * 0.5m);
+            maxValue = decimal.Ceiling(midpoint + desiredSpan * 0.5m);
+        }
+
+        float left = _coords.MathToPixel((float)minValue, 0f).X;
+        float right = _coords.MathToPixel((float)maxValue, 0f).X;
+        float top = _coords.MathToPixel(0f, ParentY + 1.0f).Y;
+        float bottom = _coords.MathToPixel(0f, ContextY - 1.0f).Y;
+        outerRect = new SKRect(left - 112f, top - 18f, right + 28f, bottom + 24f);
     }
 
     private void DrawWrappedText(SKCanvas canvas, string text, float x, ref float y, float width, SKPaint paint)
@@ -306,8 +467,9 @@ public class ContainmentTensionPage : IVisualizerPage
         {
             BackColor = Color.FromArgb(248, 248, 248),
             Size = new Size(304, 112),
-            Location = new Point(690, 20),
+            Anchor = AnchorStyles.Top | AnchorStyles.Right,
         };
+        PageChrome.PositionTopRightPanel(_canvasHost, _controlsPanel, 18);
 
         var perspectiveLabel = new Label
         {
@@ -390,7 +552,11 @@ public class ContainmentTensionPage : IVisualizerPage
         _controlsPanel.Controls.Add(note);
         _canvasHost.Controls.Add(_controlsPanel);
         _controlsPanel.BringToFront();
+        _canvasHost.Resize += CanvasHostOnResize;
     }
+
+    private void CanvasHostOnResize(object? sender, EventArgs e) =>
+        PageChrome.PositionTopRightPanel(_canvasHost, _controlsPanel, 18);
 
     private void ApplyChildSupports()
     {
@@ -464,6 +630,7 @@ public class ContainmentTensionPage : IVisualizerPage
 
         if (_controlsPanel != null && _canvasHost != null)
         {
+            _canvasHost.Resize -= CanvasHostOnResize;
             _canvasHost.Controls.Remove(_controlsPanel);
             _controlsPanel.Dispose();
             _controlsPanel = null;
@@ -478,6 +645,13 @@ public class ContainmentTensionPage : IVisualizerPage
         Destroy();
         _headingPaint.Dispose();
         _bodyPaint.Dispose();
+        _graphFillPaint.Dispose();
+        _graphBorderPaint.Dispose();
+        _rulerLinePaint.Dispose();
+        _zeroAxisPaint.Dispose();
+        _topTickPaint.Dispose();
+        _bottomTickPaint.Dispose();
+        _tickTextPaint.Dispose();
         _labelPaint.Dispose();
         _cardFillPaint.Dispose();
         _cardBorderPaint.Dispose();

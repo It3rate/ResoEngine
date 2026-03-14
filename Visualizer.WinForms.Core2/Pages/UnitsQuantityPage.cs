@@ -21,11 +21,11 @@ public class UnitsQuantityPage : IVisualizerPage
 
     private readonly AxisDisplayMapper _axisA = new(
         Axis.FromCoordinates((Scalar)(-2m), (Scalar)4m, Scalar.One, Scalar.One),
-        "A");
+        string.Empty);
 
     private readonly AxisDisplayMapper _axisB = new(
         Axis.FromCoordinates((Scalar)(-1.5m), (Scalar)3m, Scalar.One, Scalar.One),
-        "B");
+        string.Empty);
 
     private readonly SKPaint _headingPaint = new()
     {
@@ -40,6 +40,46 @@ public class UnitsQuantityPage : IVisualizerPage
         Color = new SKColor(92, 92, 92),
         TextSize = 14f,
         Typeface = SKTypeface.FromFamilyName(VisualStyle.FontFamily, SKFontStyle.Normal),
+        IsAntialias = true,
+    };
+
+    private readonly SKPaint _graphFillPaint = new()
+    {
+        Style = SKPaintStyle.Fill,
+        Color = new SKColor(249, 249, 250),
+        IsAntialias = true,
+    };
+
+    private readonly SKPaint _graphBorderPaint = new()
+    {
+        Style = SKPaintStyle.Stroke,
+        StrokeWidth = 1f,
+        Color = new SKColor(206, 206, 206),
+        IsAntialias = true,
+    };
+
+    private readonly SKPaint _topTickPaint = new()
+    {
+        Style = SKPaintStyle.Stroke,
+        StrokeWidth = 1.1f,
+        Color = new SKColor(24, 38, 94),
+        IsAntialias = true,
+    };
+
+    private readonly SKPaint _bottomTickPaint = new()
+    {
+        Style = SKPaintStyle.Stroke,
+        StrokeWidth = 1.1f,
+        Color = new SKColor(80, 30, 112),
+        IsAntialias = true,
+    };
+
+    private readonly SKPaint _tickTextPaint = new()
+    {
+        Color = new SKColor(132, 132, 132),
+        TextSize = 12f,
+        Typeface = SKTypeface.FromFamilyName(VisualStyle.FontFamily, SKFontStyle.Bold),
+        TextAlign = SKTextAlign.Center,
         IsAntialias = true,
     };
 
@@ -132,7 +172,7 @@ public class UnitsQuantityPage : IVisualizerPage
         _canvasHost = canvas;
 
         coords.OriginX = coords.Width * 0.5f;
-        coords.OriginY = 290f;
+        coords.OriginY = 370f;
 
         _rendererA = new SegmentRenderer(coords, SegmentOrientation.Horizontal, SegmentColors.Red, crossPosition: InputAY);
         _rendererB = new SegmentRenderer(coords, SegmentOrientation.Horizontal, SegmentColors.Blue, crossPosition: InputBY);
@@ -150,8 +190,16 @@ public class UnitsQuantityPage : IVisualizerPage
         }
 
         canvas.DrawText("Units and Quantity", 34f, 42f, _headingPaint);
-        canvas.DrawText("Structure lives in the segment. Unit signatures live beside it and combine independently.", 34f, 68f, _bodyPaint);
+        float subtitleY = 68f;
+        PageChrome.DrawWrappedText(
+            canvas,
+            "Structure lives in the segment. Unit signatures live beside it and combine independently.",
+            34f,
+            ref subtitleY,
+            430f,
+            _bodyPaint);
 
+        DrawGraphFrame(canvas);
         _rendererA?.Render(canvas, _axisA);
         _rendererB?.Render(canvas, _axisB);
         DrawInputBadges(canvas);
@@ -171,12 +219,8 @@ public class UnitsQuantityPage : IVisualizerPage
             return;
         }
 
-        string aText = $"A  [{SelectedUnitA.Choice.Symbol}]";
-        string bText = $"B  [{SelectedUnitB.Choice.Symbol}]";
-        var posA = _coords.MathToPixel(0, InputAY);
-        var posB = _coords.MathToPixel(0, InputBY);
-        canvas.DrawText(aText, 52f, posA.Y - 14f, _cardTitlePaint);
-        canvas.DrawText(bText, 52f, posB.Y - 14f, _cardTitlePaint);
+        DrawRowBadge(canvas, $"A [{SelectedUnitA.Choice.Symbol}]", InputAY, SegmentColors.Red);
+        DrawRowBadge(canvas, $"B [{SelectedUnitB.Choice.Symbol}]", InputBY, SegmentColors.Blue);
     }
 
     private void DrawCards(SKCanvas canvas)
@@ -203,7 +247,7 @@ public class UnitsQuantityPage : IVisualizerPage
         }
 
         const float left = 36f;
-        const float top = 330f;
+        const float top = 390f;
         const float gap = 18f;
         float cardWidth = (_coords.Width - left * 2f - gap) / 2f;
         const float cardHeight = 188f;
@@ -246,6 +290,114 @@ public class UnitsQuantityPage : IVisualizerPage
                 : tension.Message;
             DrawMessageCard(canvas, addRect, "Add / Tension", message, true);
         }
+    }
+
+    private void DrawGraphFrame(SKCanvas canvas)
+    {
+        if (_coords == null)
+        {
+            return;
+        }
+
+        GetGraphBounds(out var minValue, out var maxValue, out var outerRect);
+        canvas.DrawRoundRect(outerRect, 16f, 16f, _graphFillPaint);
+        canvas.DrawRoundRect(outerRect, 16f, 16f, _graphBorderPaint);
+
+        float top = _coords.MathToPixel(0f, InputAY + 0.95f).Y;
+        float bottom = _coords.MathToPixel(0f, -0.9f).Y;
+        float axisY = _coords.MathToPixel(0f, 0f).Y;
+        PageChrome.DrawRuler(
+            canvas,
+            _coords,
+            minValue,
+            maxValue,
+            axisY,
+            top,
+            bottom,
+            _guidePaint,
+            _guidePaint,
+            _topTickPaint,
+            _bottomTickPaint,
+            _tickTextPaint,
+            _tickTextPaint);
+    }
+
+    private void DrawRowBadge(SKCanvas canvas, string text, float y, SegmentColorSet colors)
+    {
+        if (_coords == null)
+        {
+            return;
+        }
+
+        GetGraphBounds(out _, out _, out var outerRect);
+        var center = _coords.MathToPixel(0f, y);
+        var bounds = new SKRect();
+        _cardTitlePaint.MeasureText(text, ref bounds);
+        float width = Math.Max(90f, bounds.Width + 24f);
+        var rect = new SKRect(outerRect.Left + 14f, center.Y - 16f, outerRect.Left + 14f + width, center.Y + 16f);
+
+        using var fill = new SKPaint
+        {
+            Style = SKPaintStyle.Fill,
+            Color = new SKColor(colors.Grid.Red, colors.Grid.Green, colors.Grid.Blue, 68),
+            IsAntialias = true,
+        };
+        using var border = new SKPaint
+        {
+            Style = SKPaintStyle.Stroke,
+            StrokeWidth = 1.2f,
+            Color = colors.Solid,
+            IsAntialias = true,
+        };
+        using var textPaint = new SKPaint
+        {
+            Color = colors.Solid,
+            TextSize = 15f,
+            Typeface = SKTypeface.FromFamilyName(VisualStyle.FontFamily, SKFontStyle.Bold),
+            TextAlign = SKTextAlign.Center,
+            IsAntialias = true,
+        };
+
+        canvas.DrawRoundRect(rect, 12f, 12f, fill);
+        canvas.DrawRoundRect(rect, 12f, 12f, border);
+        canvas.DrawText(text, rect.MidX, rect.MidY + 5f, textPaint);
+    }
+
+    private void GetGraphBounds(out decimal minValue, out decimal maxValue, out SKRect outerRect)
+    {
+        if (_coords == null)
+        {
+            minValue = 0m;
+            maxValue = 1m;
+            outerRect = SKRect.Empty;
+            return;
+        }
+
+        minValue = 0m;
+        maxValue = 0m;
+        foreach (var axis in new[] { _axisA.Axis, _axisB.Axis })
+        {
+            minValue = Math.Min(minValue, Math.Min(axis.Start.Value, axis.End.Value));
+            maxValue = Math.Max(maxValue, Math.Max(axis.Start.Value, axis.End.Value));
+        }
+
+        minValue = decimal.Floor(minValue) - 1m;
+        maxValue = decimal.Ceiling(maxValue) + 1m;
+
+        decimal desiredSpan = 20m;
+        decimal currentSpan = maxValue - minValue;
+        if (currentSpan < desiredSpan)
+        {
+            decimal midpoint = (minValue + maxValue) * 0.5m;
+            minValue = decimal.Floor(midpoint - desiredSpan * 0.5m);
+            maxValue = decimal.Ceiling(midpoint + desiredSpan * 0.5m);
+        }
+
+        float left = _coords.MathToPixel((float)minValue, 0f).X;
+        float right = _coords.MathToPixel((float)maxValue, 0f).X;
+        float top = _coords.MathToPixel(0f, InputAY + 1.0f).Y;
+        float bottom = _coords.MathToPixel(0f, -1.0f).Y;
+        outerRect = new SKRect(left - 104f, top - 18f, right + 28f, bottom + 24f);
     }
 
     private void DrawQuantityCard(SKCanvas canvas, SKRect rect, string title, Axis axis, string signatureText, SegmentColorSet colors)
@@ -339,8 +491,9 @@ public class UnitsQuantityPage : IVisualizerPage
         {
             BackColor = Color.FromArgb(248, 248, 248),
             Size = new Size(240, 104),
-            Location = new Point(640, 24),
+            Anchor = AnchorStyles.Top | AnchorStyles.Right,
         };
+        PageChrome.PositionTopRightPanel(_canvasHost, _controlsPanel, 18);
 
         var labelA = new Label
         {
@@ -395,7 +548,11 @@ public class UnitsQuantityPage : IVisualizerPage
         _controlsPanel.Controls.Add(note);
         _canvasHost.Controls.Add(_controlsPanel);
         _controlsPanel.BringToFront();
+        _canvasHost.Resize += CanvasHostOnResize;
     }
+
+    private void CanvasHostOnResize(object? sender, EventArgs e) =>
+        PageChrome.PositionTopRightPanel(_canvasHost, _controlsPanel, 18);
 
     private UnitOption SelectedUnitA => UnitOptions.Get(_unitACombo?.SelectedItem?.ToString());
     private UnitOption SelectedUnitB => UnitOptions.Get(_unitBCombo?.SelectedItem?.ToString());
@@ -433,6 +590,7 @@ public class UnitsQuantityPage : IVisualizerPage
 
         if (_controlsPanel != null && _canvasHost != null)
         {
+            _canvasHost.Resize -= CanvasHostOnResize;
             _canvasHost.Controls.Remove(_controlsPanel);
             _controlsPanel.Dispose();
             _controlsPanel = null;
@@ -447,6 +605,11 @@ public class UnitsQuantityPage : IVisualizerPage
         Destroy();
         _headingPaint.Dispose();
         _bodyPaint.Dispose();
+        _graphFillPaint.Dispose();
+        _graphBorderPaint.Dispose();
+        _topTickPaint.Dispose();
+        _bottomTickPaint.Dispose();
+        _tickTextPaint.Dispose();
         _cardFillPaint.Dispose();
         _cardBorderPaint.Dispose();
         _cardTitlePaint.Dispose();

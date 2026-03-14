@@ -15,7 +15,7 @@ public class BoundaryRepetitionPage : IVisualizerPage
 
     private readonly AxisDisplayMapper _frame = new(
         Axis.FromCoordinates((Scalar)(-4m), (Scalar)8m, Scalar.One, Scalar.One),
-        "Frame");
+        string.Empty);
 
     private readonly SKPaint _headingPaint = new()
     {
@@ -30,6 +30,55 @@ public class BoundaryRepetitionPage : IVisualizerPage
         Color = new SKColor(92, 92, 92),
         TextSize = 14f,
         Typeface = SKTypeface.FromFamilyName(VisualStyle.FontFamily, SKFontStyle.Normal),
+        IsAntialias = true,
+    };
+
+    private readonly SKPaint _graphFillPaint = new()
+    {
+        Style = SKPaintStyle.Fill,
+        Color = new SKColor(249, 249, 250),
+        IsAntialias = true,
+    };
+
+    private readonly SKPaint _graphBorderPaint = new()
+    {
+        Style = SKPaintStyle.Stroke,
+        StrokeWidth = 1f,
+        Color = new SKColor(206, 206, 206),
+        IsAntialias = true,
+    };
+
+    private readonly SKPaint _topTickPaint = new()
+    {
+        Style = SKPaintStyle.Stroke,
+        StrokeWidth = 1.1f,
+        Color = new SKColor(24, 38, 94),
+        IsAntialias = true,
+    };
+
+    private readonly SKPaint _bottomTickPaint = new()
+    {
+        Style = SKPaintStyle.Stroke,
+        StrokeWidth = 1.1f,
+        Color = new SKColor(80, 30, 112),
+        IsAntialias = true,
+    };
+
+    private readonly SKPaint _topTickTextPaint = new()
+    {
+        Color = new SKColor(128, 128, 128),
+        TextSize = 12f,
+        Typeface = SKTypeface.FromFamilyName(VisualStyle.FontFamily, SKFontStyle.Bold),
+        TextAlign = SKTextAlign.Center,
+        IsAntialias = true,
+    };
+
+    private readonly SKPaint _bottomTickTextPaint = new()
+    {
+        Color = new SKColor(128, 128, 128),
+        TextSize = 12f,
+        Typeface = SKTypeface.FromFamilyName(VisualStyle.FontFamily, SKFontStyle.Bold),
+        TextAlign = SKTextAlign.Center,
         IsAntialias = true,
     };
 
@@ -159,7 +208,7 @@ public class BoundaryRepetitionPage : IVisualizerPage
         _canvasHost = canvas;
 
         coords.OriginX = coords.Width * 0.5f;
-        coords.OriginY = 295f;
+        coords.OriginY = 370f;
 
         _frameRenderer = new SegmentRenderer(coords, SegmentOrientation.Horizontal, SegmentColors.Red, crossPosition: FrameY);
         hitTest.Register(_frameRenderer, _frame);
@@ -176,9 +225,18 @@ public class BoundaryRepetitionPage : IVisualizerPage
         }
 
         canvas.DrawText("Boundary Repetition", 34f, 42f, _headingPaint);
-        canvas.DrawText("The same out-of-range value can wrap, reflect, or stay unresolved as tension. Drag the frame or animate the probe.", 34f, 68f, _bodyPaint);
+        float subtitleY = 68f;
+        PageChrome.DrawWrappedText(
+            canvas,
+            "The same out-of-range value can wrap, reflect, or stay unresolved as tension. Drag the frame or animate the probe.",
+            34f,
+            ref subtitleY,
+            430f,
+            _bodyPaint);
 
+        DrawGraphFrame(canvas);
         _frameRenderer?.Render(canvas, _frame);
+        DrawRowBadge(canvas, "Frame", FrameY, SegmentColors.Red);
         DrawProbeMarker(canvas);
         DrawCards(canvas);
 
@@ -187,6 +245,36 @@ public class BoundaryRepetitionPage : IVisualizerPage
         canvas.DrawCircle(originPx, r, _originFillPaint);
         canvas.DrawCircle(originPx, r, _originStrokePaint);
         canvas.DrawCircle(originPx, 3f, _originDotPaint);
+    }
+
+    private void DrawGraphFrame(SKCanvas canvas)
+    {
+        if (_coords == null)
+        {
+            return;
+        }
+
+        GetGraphBounds(out var minValue, out var maxValue, out var outerRect);
+        canvas.DrawRoundRect(outerRect, 16f, 16f, _graphFillPaint);
+        canvas.DrawRoundRect(outerRect, 16f, 16f, _graphBorderPaint);
+
+        float top = _coords.MathToPixel(0f, FrameY + 0.9f).Y;
+        float bottom = _coords.MathToPixel(0f, -0.9f).Y;
+        float axisY = _coords.MathToPixel(0f, 0f).Y;
+        PageChrome.DrawRuler(
+            canvas,
+            _coords,
+            minValue,
+            maxValue,
+            axisY,
+            top,
+            bottom,
+            _baselinePaint,
+            _guidePaint,
+            _topTickPaint,
+            _bottomTickPaint,
+            _topTickTextPaint,
+            _bottomTickTextPaint);
     }
 
     private void DrawProbeMarker(SKCanvas canvas)
@@ -218,7 +306,7 @@ public class BoundaryRepetitionPage : IVisualizerPage
         };
 
         const float left = 42f;
-        const float top = 320f;
+        const float top = 388f;
         const float gap = 18f;
         float cardWidth = (_coords.Width - left * 2f - gap * 2f) / 3f;
         const float cardHeight = 230f;
@@ -295,6 +383,78 @@ public class BoundaryRepetitionPage : IVisualizerPage
         canvas.DrawText($"frame [{frameStart:0.0}, {frameEnd:0.0}]", rect.MidX, rect.Bottom - 18f, _cardTextPaint);
     }
 
+    private void DrawRowBadge(SKCanvas canvas, string text, float y, SegmentColorSet colors)
+    {
+        if (_coords == null)
+        {
+            return;
+        }
+
+        GetGraphBounds(out _, out _, out var outerRect);
+        var center = _coords.MathToPixel(0f, y);
+        var bounds = new SKRect();
+        _cardTitlePaint.MeasureText(text, ref bounds);
+        float width = Math.Max(82f, bounds.Width + 24f);
+        var rect = new SKRect(outerRect.Left + 14f, center.Y - 16f, outerRect.Left + 14f + width, center.Y + 16f);
+
+        using var fill = new SKPaint
+        {
+            Style = SKPaintStyle.Fill,
+            Color = new SKColor(colors.Grid.Red, colors.Grid.Green, colors.Grid.Blue, 68),
+            IsAntialias = true,
+        };
+        using var border = new SKPaint
+        {
+            Style = SKPaintStyle.Stroke,
+            StrokeWidth = 1.2f,
+            Color = colors.Solid,
+            IsAntialias = true,
+        };
+        using var textPaint = new SKPaint
+        {
+            Color = colors.Solid,
+            TextSize = 15f,
+            Typeface = SKTypeface.FromFamilyName(VisualStyle.FontFamily, SKFontStyle.Bold),
+            TextAlign = SKTextAlign.Center,
+            IsAntialias = true,
+        };
+
+        canvas.DrawRoundRect(rect, 12f, 12f, fill);
+        canvas.DrawRoundRect(rect, 12f, 12f, border);
+        canvas.DrawText(text, rect.MidX, rect.MidY + 5f, textPaint);
+    }
+
+    private void GetGraphBounds(out decimal minValue, out decimal maxValue, out SKRect outerRect)
+    {
+        if (_coords == null)
+        {
+            minValue = 0m;
+            maxValue = 1m;
+            outerRect = SKRect.Empty;
+            return;
+        }
+
+        minValue = Math.Min(Math.Min(_frame.Axis.Start.Value, _frame.Axis.End.Value), _probeValue);
+        maxValue = Math.Max(Math.Max(_frame.Axis.Start.Value, _frame.Axis.End.Value), _probeValue);
+        minValue = decimal.Floor(minValue) - 1m;
+        maxValue = decimal.Ceiling(maxValue) + 1m;
+
+        decimal desiredSpan = 20m;
+        decimal currentSpan = maxValue - minValue;
+        if (currentSpan < desiredSpan)
+        {
+            decimal midpoint = (minValue + maxValue) * 0.5m;
+            minValue = decimal.Floor(midpoint - desiredSpan * 0.5m);
+            maxValue = decimal.Ceiling(midpoint + desiredSpan * 0.5m);
+        }
+
+        float left = _coords.MathToPixel((float)minValue, 0f).X;
+        float right = _coords.MathToPixel((float)maxValue, 0f).X;
+        float top = _coords.MathToPixel(0f, FrameY + 0.95f).Y;
+        float bottom = _coords.MathToPixel(0f, -1.0f).Y;
+        outerRect = new SKRect(left - 104f, top - 18f, right + 28f, bottom + 22f);
+    }
+
     private void EnsureControls()
     {
         if (_canvasHost == null || _controlsPanel != null)
@@ -306,8 +466,9 @@ public class BoundaryRepetitionPage : IVisualizerPage
         {
             BackColor = Color.FromArgb(248, 248, 248),
             Size = new Size(206, 98),
-            Location = new Point(650, 24),
+            Anchor = AnchorStyles.Top | AnchorStyles.Right,
         };
+        PageChrome.PositionTopRightPanel(_canvasHost, _controlsPanel, 18);
 
         var probeLabel = new Label
         {
@@ -363,7 +524,11 @@ public class BoundaryRepetitionPage : IVisualizerPage
         _controlsPanel.Controls.Add(note);
         _canvasHost.Controls.Add(_controlsPanel);
         _controlsPanel.BringToFront();
+        _canvasHost.Resize += CanvasHostOnResize;
     }
+
+    private void CanvasHostOnResize(object? sender, EventArgs e) =>
+        PageChrome.PositionTopRightPanel(_canvasHost, _controlsPanel, 18);
 
     private void EnsureTimer()
     {
@@ -433,6 +598,7 @@ public class BoundaryRepetitionPage : IVisualizerPage
 
         if (_controlsPanel != null && _canvasHost != null)
         {
+            _canvasHost.Resize -= CanvasHostOnResize;
             _canvasHost.Controls.Remove(_controlsPanel);
             _controlsPanel.Dispose();
             _controlsPanel = null;
@@ -447,6 +613,12 @@ public class BoundaryRepetitionPage : IVisualizerPage
         Destroy();
         _headingPaint.Dispose();
         _bodyPaint.Dispose();
+        _graphFillPaint.Dispose();
+        _graphBorderPaint.Dispose();
+        _topTickPaint.Dispose();
+        _bottomTickPaint.Dispose();
+        _topTickTextPaint.Dispose();
+        _bottomTickTextPaint.Dispose();
         _cardFillPaint.Dispose();
         _cardBorderPaint.Dispose();
         _cardTitlePaint.Dispose();

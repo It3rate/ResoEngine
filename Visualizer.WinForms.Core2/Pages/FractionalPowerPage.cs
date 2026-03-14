@@ -172,7 +172,7 @@ public class FractionalPowerPage : IVisualizerPage
         _coords = coords;
         _canvasHost = canvas;
 
-        coords.OriginX = coords.Width * 0.73f;
+        coords.OriginX = coords.Width * 0.5f;
         coords.OriginY = 552f;
 
         _inputRenderer = new SegmentRenderer(coords, SegmentOrientation.Horizontal, SegmentColors.Red, crossPosition: InputY);
@@ -198,12 +198,12 @@ public class FractionalPowerPage : IVisualizerPage
 
         canvas.DrawText("Fractional Power / Branch", 34f, 42f, _headingPaint);
         float subtitleY = 68f;
-        DrawWrappedText(
+        PageChrome.DrawWrappedText(
             canvas,
             "Drag z or animate an orbit. The candidates below come from inverse continuation, with one selected as the principal branch.",
             34f,
             ref subtitleY,
-            390f,
+            430f,
             _bodyPaint);
 
         var exponent = SelectedExponent;
@@ -314,25 +314,20 @@ public class FractionalPowerPage : IVisualizerPage
         float top = _coords.MathToPixel(0f, InputY + 0.9f).Y;
         float bottom = _coords.MathToPixel(0f, CandidateRows[^1] - 0.9f).Y;
         float axisY = _coords.MathToPixel(0f, 0f).Y;
-        float zeroX = _coords.MathToPixel(0f, 0f).X;
-
-        canvas.DrawLine(zeroX, top, zeroX, bottom, _zeroAxisPaint);
-        canvas.DrawLine(innerLeft, axisY, innerRight, axisY, _rulerLinePaint);
-
-        int start = (int)decimal.Floor(minValue);
-        int end = (int)decimal.Ceiling(maxValue);
-        for (int tick = start; tick <= end; tick++)
-        {
-            float x = _coords.MathToPixel(tick, 0f).X;
-            canvas.DrawLine(x, axisY - 8f, x, axisY, _topTickPaint);
-            canvas.DrawLine(x, axisY, x, axisY + 8f, _bottomTickPaint);
-
-            if (tick % 2 == 0)
-            {
-                canvas.DrawText(FormatRealTick(tick), x, axisY - 12f, _topTickTextPaint);
-                canvas.DrawText(FormatImaginaryTick(tick), x, axisY + 22f, _bottomTickTextPaint);
-            }
-        }
+        PageChrome.DrawRuler(
+            canvas,
+            _coords,
+            minValue,
+            maxValue,
+            axisY,
+            top,
+            bottom,
+            _rulerLinePaint,
+            _zeroAxisPaint,
+            _topTickPaint,
+            _bottomTickPaint,
+            _topTickTextPaint,
+            _bottomTickTextPaint);
     }
 
     private void DrawRowBadge(SKCanvas canvas, string text, float y, SegmentColorSet colors)
@@ -419,6 +414,15 @@ public class FractionalPowerPage : IVisualizerPage
 
         minValue = decimal.Floor(minValue) - 1m;
         maxValue = decimal.Ceiling(maxValue) + 1m;
+
+        decimal desiredSpan = 20m;
+        decimal currentSpan = maxValue - minValue;
+        if (currentSpan < desiredSpan)
+        {
+            decimal midpoint = (minValue + maxValue) * 0.5m;
+            minValue = decimal.Floor(midpoint - desiredSpan * 0.5m);
+            maxValue = decimal.Ceiling(midpoint + desiredSpan * 0.5m);
+        }
 
         innerLeft = _coords.MathToPixel((float)minValue, 0f).X;
         innerRight = _coords.MathToPixel((float)maxValue, 0f).X;
@@ -529,9 +533,7 @@ public class FractionalPowerPage : IVisualizerPage
             return;
         }
 
-        _controlsPanel.Location = new Point(
-            Math.Max(12, _canvasHost.ClientSize.Width - _controlsPanel.Width - 18),
-            18);
+        PageChrome.PositionTopRightPanel(_canvasHost, _controlsPanel, 18);
     }
 
     private void CanvasHostOnResize(object? sender, EventArgs e) => PositionControlsPanel();
@@ -551,9 +553,9 @@ public class FractionalPowerPage : IVisualizerPage
         _timer.Tick += (_, _) =>
         {
             _phase += 0.04f;
-            decimal start = (decimal)(-Math.Sin(_phase));
-            decimal end = (decimal)Math.Cos(_phase);
-            _input.SetAxis(Axis.FromCoordinates((Scalar)start, (Scalar)end, Scalar.One, Scalar.One));
+            decimal recessive = 7m + (decimal)Math.Sin(_phase) * 3m;
+            decimal dominant = 7m + (decimal)Math.Cos(_phase * 0.85f) * 3m;
+            _input.SetAxis(Axis.FromCoordinates((Scalar)(-recessive), (Scalar)dominant, Scalar.One, Scalar.One));
             _canvasHost.InvalidateCanvas();
         };
     }
@@ -644,62 +646,6 @@ public class FractionalPowerPage : IVisualizerPage
         _originFillPaint.Dispose();
         _originStrokePaint.Dispose();
         _originDotPaint.Dispose();
-    }
-
-    private void DrawWrappedText(SKCanvas canvas, string text, float x, ref float y, float width, SKPaint paint)
-    {
-        foreach (var line in WrapText(text, width, paint))
-        {
-            canvas.DrawText(line, x, y, paint);
-            y += paint.TextSize + 5f;
-        }
-    }
-
-    private static IReadOnlyList<string> WrapText(string text, float width, SKPaint paint)
-    {
-        if (string.IsNullOrWhiteSpace(text))
-        {
-            return [];
-        }
-
-        var words = text.Split(' ', StringSplitOptions.RemoveEmptyEntries);
-        var lines = new List<string>();
-        var current = string.Empty;
-
-        foreach (var word in words)
-        {
-            var candidate = string.IsNullOrEmpty(current) ? word : $"{current} {word}";
-            if (paint.MeasureText(candidate) <= width)
-            {
-                current = candidate;
-            }
-            else
-            {
-                if (!string.IsNullOrEmpty(current))
-                {
-                    lines.Add(current);
-                }
-
-                current = word;
-            }
-        }
-
-        if (!string.IsNullOrEmpty(current))
-        {
-            lines.Add(current);
-        }
-
-        return lines;
-    }
-
-    private static string FormatRealTick(int value) =>
-        value > 0 ? $"+{value}" : value.ToString();
-
-    private static string FormatImaginaryTick(int value)
-    {
-        int display = -value;
-        string sign = display > 0 ? "+" : string.Empty;
-        return $"{sign}{display}i";
     }
 
     private static string FormatAxis(Axis axis)
