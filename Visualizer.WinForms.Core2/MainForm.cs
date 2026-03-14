@@ -102,6 +102,7 @@ public class MainForm : Form
 
         _pageManager = new PageManager(_canvas, _navBar, hitTest);
         _pageManager.CurrentPageChanged += page => UpdatePageName(page);
+        _pageManager.AddPage(new SquareWaveDynamicsPage());
         _pageManager.AddPage(new OrthogonalAxesPage());
         _pageManager.AddPage(new BooleanOpsPage());
         _pageManager.AddPage(new OrthogonalBooleanGalleryPage());

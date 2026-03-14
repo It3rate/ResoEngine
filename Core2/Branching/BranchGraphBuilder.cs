@@ -9,6 +9,19 @@ public sealed class BranchGraphBuilder<T>
 
     public BranchFrontier CurrentFrontier => _frontier;
 
+    public BranchNode<T> GetNode(BranchId id) =>
+        _nodes.TryGetValue(id, out var node)
+            ? node
+            : throw new KeyNotFoundException($"No branch node exists for id {id}.");
+
+    public bool TryGetNode(BranchId id, out BranchNode<T>? node) =>
+        _nodes.TryGetValue(id, out node);
+
+    public IReadOnlyList<BranchNode<T>> GetFrontierNodes() =>
+        _frontier.ActiveNodeIds
+            .Select(GetNode)
+            .ToArray();
+
     public BranchGraphBuilder<T> Seed(
         T value,
         IReadOnlyList<IBranchAnnotation>? annotations = null,
