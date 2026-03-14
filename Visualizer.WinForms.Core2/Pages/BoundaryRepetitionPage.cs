@@ -12,10 +12,12 @@ namespace ResoEngine.Visualizer.Pages;
 public class BoundaryRepetitionPage : IVisualizerPage
 {
     private const float FrameY = 4.2f;
+    private const float ProbeY = 2.0f;
 
     private readonly AxisDisplayMapper _frame = new(
         Axis.FromCoordinates((Scalar)(-4m), (Scalar)8m, Scalar.One, Scalar.One),
         string.Empty);
+    private readonly DirectedSegment _probeRange = new(9f, 13f);
 
     private readonly SKPaint _headingPaint = new()
     {
@@ -194,11 +196,15 @@ public class BoundaryRepetitionPage : IVisualizerPage
     private CoordinateSystem? _coords;
     private SkiaCanvas? _canvasHost;
     private SegmentRenderer? _frameRenderer;
+    private SegmentRenderer? _probeRenderer;
     private Panel? _controlsPanel;
-    private NumericUpDown? _probeInput;
+    private NumericUpDown? _probeStartInput;
+    private NumericUpDown? _probeEndInput;
     private CheckBox? _animateCheck;
     private System.Windows.Forms.Timer? _timer;
     private decimal _probeValue = 11m;
+    private float _animationPhase;
+    private bool _syncingControls;
 
     public string Title => "Boundary Repetition";
 
@@ -211,7 +217,9 @@ public class BoundaryRepetitionPage : IVisualizerPage
         coords.OriginY = 370f;
 
         _frameRenderer = new SegmentRenderer(coords, SegmentOrientation.Horizontal, SegmentColors.Red, crossPosition: FrameY);
+        _probeRenderer = new SegmentRenderer(coords, SegmentOrientation.Horizontal, SegmentColors.Green, crossPosition: ProbeY);
         hitTest.Register(_frameRenderer, _frame);
+        hitTest.Register(_probeRenderer, _probeRange);
 
         EnsureControls();
         EnsureTimer();
@@ -237,6 +245,9 @@ public class BoundaryRepetitionPage : IVisualizerPage
         DrawGraphFrame(canvas);
         _frameRenderer?.Render(canvas, _frame);
         DrawRowBadge(canvas, "Frame", FrameY, SegmentColors.Red);
+        SyncProbeControlsFromState();
+        _probeRenderer?.Render(canvas, _probeRange);
+        DrawRowBadge(canvas, "Probe Sweep", ProbeY, SegmentColors.Green);
         DrawProbeMarker(canvas);
         DrawCards(canvas);
 
@@ -284,8 +295,9 @@ public class BoundaryRepetitionPage : IVisualizerPage
             return;
         }
 
+        ClampProbeValueToRange();
         var top = _coords.MathToPixel((float)_probeValue, FrameY + 0.75f);
-        var bottom = _coords.MathToPixel((float)_probeValue, FrameY - 0.75f);
+        var bottom = _coords.MathToPixel((float)_probeValue, ProbeY - 0.75f);
         canvas.DrawLine(top, bottom, _probeStrokePaint);
         canvas.DrawCircle(new SKPoint(top.X, (top.Y + bottom.Y) * 0.5f), 6f, _probePaint);
         canvas.DrawText($"Probe {_probeValue:0.0}", top.X + 12f, top.Y - 6f, _cardTextPaint);
@@ -306,7 +318,7 @@ public class BoundaryRepetitionPage : IVisualizerPage
         };
 
         const float left = 42f;
-        const float top = 424f;
+        const float top = 448f;
         const float gap = 18f;
         float cardWidth = (_coords.Width - left * 2f - gap * 2f) / 3f;
         const float cardHeight = 188f;
@@ -446,8 +458,8 @@ public class BoundaryRepetitionPage : IVisualizerPage
             return;
         }
 
-        minValue = Math.Min(Math.Min(_frame.Axis.Start.Value, _frame.Axis.End.Value), _probeValue);
-        maxValue = Math.Max(Math.Max(_frame.Axis.Start.Value, _frame.Axis.End.Value), _probeValue);
+        minValue = Math.Min(Math.Min(Math.Min(_frame.Axis.Start.Value, _frame.Axis.End.Value), (decimal)_probeRange.Imaginary), Math.Min((decimal)_probeRange.Real, _probeValue));
+        maxValue = Math.Max(Math.Max(Math.Max(_frame.Axis.Start.Value, _frame.Axis.End.Value), (decimal)_probeRange.Imaginary), Math.Max((decimal)_probeRange.Real, _probeValue));
         minValue = decimal.Floor(minValue) - 1m;
         maxValue = decimal.Ceiling(maxValue) + 1m;
 
@@ -476,32 +488,68 @@ public class BoundaryRepetitionPage : IVisualizerPage
         _controlsPanel = new Panel
         {
             BackColor = Color.FromArgb(248, 248, 248),
-            Size = new Size(206, 98),
+            Size = new Size(248, 114),
             Anchor = AnchorStyles.Top | AnchorStyles.Right,
         };
         PageChrome.PositionTopRightPanel(_canvasHost, _controlsPanel, 18);
 
-        var probeLabel = new Label
+        var startLabel = new Label
         {
-            Text = "Probe Value",
+            Text = "Start Probe",
             AutoSize = true,
             Location = new Point(12, 12),
             Font = new Font("Arial", 9f, FontStyle.Bold),
         };
 
-        _probeInput = new NumericUpDown
+        _probeStartInput = new NumericUpDown
         {
             DecimalPlaces = 1,
             Increment = 0.5m,
             Minimum = -20m,
             Maximum = 20m,
-            Value = _probeValue,
+            Value = (decimal)_probeRange.Imaginary,
             Width = 86,
             Location = new Point(12, 34),
         };
-        _probeInput.ValueChanged += (_, _) =>
+        _probeStartInput.ValueChanged += (_, _) =>
         {
-            _probeValue = _probeInput.Value;
+            if (_syncingControls)
+            {
+                return;
+            }
+
+            _probeRange.Imaginary = (float)_probeStartInput.Value;
+            ClampProbeValueToRange();
+            _canvasHost?.InvalidateCanvas();
+        };
+
+        var endLabel = new Label
+        {
+            Text = "End Probe",
+            AutoSize = true,
+            Location = new Point(112, 12),
+            Font = new Font("Arial", 9f, FontStyle.Bold),
+        };
+
+        _probeEndInput = new NumericUpDown
+        {
+            DecimalPlaces = 1,
+            Increment = 0.5m,
+            Minimum = -20m,
+            Maximum = 20m,
+            Value = (decimal)_probeRange.Real,
+            Width = 86,
+            Location = new Point(112, 34),
+        };
+        _probeEndInput.ValueChanged += (_, _) =>
+        {
+            if (_syncingControls)
+            {
+                return;
+            }
+
+            _probeRange.Real = (float)_probeEndInput.Value;
+            ClampProbeValueToRange();
             _canvasHost?.InvalidateCanvas();
         };
 
@@ -509,7 +557,7 @@ public class BoundaryRepetitionPage : IVisualizerPage
         {
             Text = "Animate Sweep",
             AutoSize = true,
-            Location = new Point(110, 35),
+            Location = new Point(12, 64),
         };
         _animateCheck.CheckedChanged += (_, _) =>
         {
@@ -521,16 +569,18 @@ public class BoundaryRepetitionPage : IVisualizerPage
 
         var note = new Label
         {
-            Text = "The cards below show the same probe under different continuation laws.",
+            Text = "The cards below show the current probe under different continuation laws.",
             AutoSize = false,
-            Location = new Point(12, 62),
-            Size = new Size(182, 24),
+            Location = new Point(12, 84),
+            Size = new Size(224, 24),
             Font = new Font("Arial", 8f, FontStyle.Regular),
             ForeColor = Color.FromArgb(105, 105, 105),
         };
 
-        _controlsPanel.Controls.Add(probeLabel);
-        _controlsPanel.Controls.Add(_probeInput);
+        _controlsPanel.Controls.Add(startLabel);
+        _controlsPanel.Controls.Add(_probeStartInput);
+        _controlsPanel.Controls.Add(endLabel);
+        _controlsPanel.Controls.Add(_probeEndInput);
         _controlsPanel.Controls.Add(_animateCheck);
         _controlsPanel.Controls.Add(note);
         _canvasHost.Controls.Add(_controlsPanel);
@@ -556,19 +606,51 @@ public class BoundaryRepetitionPage : IVisualizerPage
 
         _timer.Tick += (_, _) =>
         {
-            _probeValue += 0.2m;
-            if (_probeValue > 14m)
-            {
-                _probeValue = -8m;
-            }
-
-            if (_probeInput != null)
-            {
-                _probeInput.Value = decimal.Clamp(_probeValue, _probeInput.Minimum, _probeInput.Maximum);
-            }
+            _animationPhase += 0.035f;
+            decimal start = (decimal)_probeRange.Imaginary;
+            decimal end = (decimal)_probeRange.Real;
+            decimal center = (start + end) * 0.5m;
+            decimal halfSpan = (end - start) * 0.5m;
+            _probeValue = center + halfSpan * (decimal)Math.Sin(_animationPhase);
 
             _canvasHost.InvalidateCanvas();
         };
+    }
+
+    private void SyncProbeControlsFromState()
+    {
+        if (_probeStartInput == null || _probeEndInput == null)
+        {
+            return;
+        }
+
+        _syncingControls = true;
+        try
+        {
+            decimal start = decimal.Clamp((decimal)_probeRange.Imaginary, _probeStartInput.Minimum, _probeStartInput.Maximum);
+            decimal end = decimal.Clamp((decimal)_probeRange.Real, _probeEndInput.Minimum, _probeEndInput.Maximum);
+
+            if (_probeStartInput.Value != start)
+            {
+                _probeStartInput.Value = start;
+            }
+
+            if (_probeEndInput.Value != end)
+            {
+                _probeEndInput.Value = end;
+            }
+        }
+        finally
+        {
+            _syncingControls = false;
+        }
+    }
+
+    private void ClampProbeValueToRange()
+    {
+        decimal min = Math.Min((decimal)_probeRange.Imaginary, (decimal)_probeRange.Real);
+        decimal max = Math.Max((decimal)_probeRange.Imaginary, (decimal)_probeRange.Real);
+        _probeValue = decimal.Clamp(_probeValue, min, max);
     }
 
     private static float Map(decimal value, decimal min, decimal max, float left, float right)
@@ -591,7 +673,7 @@ public class BoundaryRepetitionPage : IVisualizerPage
         return SKPoint.Distance(pixelPoint, _coords.MathToPixel(0f, 0f)) <= VisualStyle.HitPadding;
     }
 
-    public IReadOnlyList<ISegmentValue>? GetDraggableSegments() => [_frame];
+    public IReadOnlyList<ISegmentValue>? GetDraggableSegments() => [_frame, _probeRange];
 
     public SKPoint? GetOriginPixel() => _coords?.MathToPixel(0f, 0f);
 
@@ -599,6 +681,8 @@ public class BoundaryRepetitionPage : IVisualizerPage
     {
         _frameRenderer?.Dispose();
         _frameRenderer = null;
+        _probeRenderer?.Dispose();
+        _probeRenderer = null;
 
         if (_timer != null)
         {

@@ -11,8 +11,8 @@ namespace ResoEngine.Visualizer.Pages;
 
 public class FractionalPowerPage : IVisualizerPage
 {
-    private const float InputY = 4.2f;
-    private static readonly float[] CandidateRows = [1.5f, -0.9f, -3.3f];
+    private const float InputY = 4.6f;
+    private static readonly float[] CandidateRows = [2.3f, -1.9f, -4.5f];
 
     private readonly AxisDisplayMapper _input = new(
         Axis.FromCoordinates((Scalar)(-0.5m), (Scalar)1m, Scalar.One, Scalar.One),
@@ -173,7 +173,7 @@ public class FractionalPowerPage : IVisualizerPage
         _canvasHost = canvas;
 
         coords.OriginX = coords.Width * 0.5f;
-        coords.OriginY = 552f;
+        coords.OriginY = 586f;
 
         _inputRenderer = new SegmentRenderer(coords, SegmentOrientation.Horizontal, SegmentColors.Red, crossPosition: InputY);
         _candidateRenderers =

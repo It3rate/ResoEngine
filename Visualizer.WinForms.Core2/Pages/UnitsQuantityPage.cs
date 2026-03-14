@@ -247,10 +247,10 @@ public class UnitsQuantityPage : IVisualizerPage
         }
 
         const float left = 36f;
-        const float top = 412f;
+        const float top = 446f;
         const float gap = 18f;
         float cardWidth = (_coords.Width - left * 2f - gap) / 2f;
-        const float cardHeight = 156f;
+        const float cardHeight = 126f;
 
         var multiplyRect = new SKRect(left, top, left + cardWidth, top + cardHeight);
         var squareRect = new SKRect(left + cardWidth + gap, top, left + cardWidth * 2f + gap, top + cardHeight);

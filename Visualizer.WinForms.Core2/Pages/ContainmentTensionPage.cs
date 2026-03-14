@@ -12,8 +12,8 @@ namespace ResoEngine.Visualizer.Pages;
 public class ContainmentTensionPage : IVisualizerPage
 {
     private const float ParentY = 4.8f;
-    private const float ChildY = 2.0f;
-    private const float ContextY = -1.25f;
+    private const float ChildY = 1.9f;
+    private const float ContextY = -2.15f;
 
     private readonly AxisDisplayMapper _parent = new(
         Axis.FromCoordinates((Scalar)(-4m), (Scalar)7m, Scalar.One, Scalar.One),
@@ -193,7 +193,7 @@ public class ContainmentTensionPage : IVisualizerPage
         _canvasHost = canvas;
 
         coords.OriginX = coords.Width * 0.5f;
-        coords.OriginY = 372f;
+        coords.OriginY = 396f;
 
         _parentRenderer = new SegmentRenderer(coords, SegmentOrientation.Horizontal, SegmentColors.Red, crossPosition: ParentY);
         _childRenderer = new SegmentRenderer(coords, SegmentOrientation.Horizontal, SegmentColors.Blue, crossPosition: ChildY);
