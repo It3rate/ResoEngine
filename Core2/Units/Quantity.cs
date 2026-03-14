@@ -83,7 +83,11 @@ public readonly record struct Quantity<T>(T Value, UnitSignature Signature, Unit
         var valueResult = QuantityPowerResolver.TryPow(Value, exponent);
         if (!valueResult.Succeeded)
         {
-            return new PowerResult<Quantity<T>>([], default, valueResult.Tensions);
+            UnitSignature failedSignature = Signature;
+            UnitChoice? failedPreferredUnit = PreferredUnit;
+            return new PowerResult<Quantity<T>>(
+                valueResult.Branches.Map(candidate => new Quantity<T>(candidate, failedSignature, failedPreferredUnit)),
+                valueResult.Tensions);
         }
 
         UnitSignature poweredSignature;
@@ -105,12 +109,8 @@ public readonly record struct Quantity<T>(T Value, UnitSignature Signature, Unit
 
         Quantity<T> ToQuantity(T candidate) => new(candidate, poweredSignature, preferredUnit);
 
-        IReadOnlyList<Quantity<T>> candidates = valueResult.Candidates.Select(ToQuantity).ToArray();
-        Quantity<T> principal = valueResult.PrincipalCandidate is null
-            ? default
-            : ToQuantity(valueResult.PrincipalCandidate);
-
-        return new PowerResult<Quantity<T>>(candidates, principal, valueResult.Tensions);
+        var branches = valueResult.Branches.Map(ToQuantity);
+        return new PowerResult<Quantity<T>>(branches, valueResult.Tensions);
     }
 
     public override string ToString() =>

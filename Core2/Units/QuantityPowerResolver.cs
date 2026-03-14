@@ -36,8 +36,7 @@ internal static class QuantityPowerResolver
         where T : IElement
         where TValue : IElement
     {
-        IReadOnlyList<T> candidates = result.Candidates.Select(candidate => (T)(object)candidate).ToArray();
-        T principal = result.PrincipalCandidate is null ? default! : (T)(object)result.PrincipalCandidate;
-        return new PowerResult<T>(candidates, principal, result.Tensions);
+        var branches = result.Branches.Map(candidate => (T)(object)candidate);
+        return new PowerResult<T>(branches, result.Tensions);
     }
 }

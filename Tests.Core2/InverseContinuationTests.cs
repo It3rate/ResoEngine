@@ -1,3 +1,4 @@
+using Core2.Branching;
 using Core2.Elements;
 using Core2.Repetition;
 using Core2.Support;
@@ -44,6 +45,10 @@ public class InverseContinuationTests
         Assert.Contains(Axis.I, principal.Candidates);
         Assert.Contains(Axis.NegativeI, principal.Candidates);
         Assert.Equal(Axis.NegativeI, nearest.PrincipalCandidate);
+        Assert.Equal(BranchOrigin.Preimage, principal.Branches.Origin);
+        Assert.Equal(BranchSemantics.Alternative, principal.Branches.Semantics);
+        Assert.Equal(BranchDirection.Reverse, principal.Branches.Direction);
+        Assert.All(principal.Branches.Members, member => Assert.Empty(member.Parents));
     }
 
     [Fact]

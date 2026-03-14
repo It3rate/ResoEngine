@@ -1,3 +1,4 @@
+using Core2.Branching;
 using Core2.Elements;
 using Core2.Support;
 
@@ -23,19 +24,19 @@ public static class PowerEngine
 
         if (normalized.IsZero)
         {
-            return new PowerResult<Scalar>([Scalar.One], Scalar.One, []);
+            return SingleCandidate(Scalar.One);
         }
 
         if (normalized.IsInteger)
         {
             var trace = RepetitionEngine.RepeatMultiplicative(value, normalized.Numerator);
-            return new PowerResult<Scalar>([trace.Result], trace.Result, []);
+            return SingleCandidate(trace.Result);
         }
 
         var roots = InverseContinuationEngine.InverseContinue(value, normalized.Denominator, rule, reference);
         if (!roots.Succeeded)
         {
-            return FromInverseFailure<Scalar>(roots.Tensions);
+            return FromInverseFailure(roots);
         }
 
         List<Scalar> candidates = roots.Candidates
@@ -44,7 +45,13 @@ public static class PowerEngine
             .ToList();
 
         Scalar principal = SelectScalarPrincipal(candidates, rule, reference);
-        return new PowerResult<Scalar>(candidates, principal, []);
+        var branches = ProjectRoots(
+            roots.Branches,
+            root => RepetitionEngine.RepeatMultiplicative(root, normalized.Numerator).Result,
+            candidate => candidate.Value,
+            principal);
+
+        return new PowerResult<Scalar>(branches, []);
     }
 
     public static PowerResult<Proportion> Pow(
@@ -65,19 +72,19 @@ public static class PowerEngine
 
         if (normalized.IsZero)
         {
-            return new PowerResult<Proportion>([Proportion.One], Proportion.One, []);
+            return SingleCandidate(Proportion.One);
         }
 
         if (normalized.IsInteger)
         {
             var trace = RepetitionEngine.RepeatMultiplicative(value, normalized.Numerator);
-            return new PowerResult<Proportion>([trace.Result], trace.Result, []);
+            return SingleCandidate(trace.Result);
         }
 
         var roots = InverseContinuationEngine.InverseContinue(value, normalized.Denominator, rule, reference);
         if (!roots.Succeeded)
         {
-            return FromInverseFailure<Proportion>(roots.Tensions);
+            return FromInverseFailure(roots);
         }
 
         List<Proportion> candidates = roots.Candidates
@@ -86,7 +93,13 @@ public static class PowerEngine
             .ToList();
 
         Proportion principal = SelectProportionPrincipal(candidates, rule, reference);
-        return new PowerResult<Proportion>(candidates, principal, []);
+        var branches = ProjectRoots(
+            roots.Branches,
+            root => RepetitionEngine.RepeatMultiplicative(root, normalized.Numerator).Result,
+            candidate => (candidate.Dominant.Value, candidate.Recessive.Value),
+            principal);
+
+        return new PowerResult<Proportion>(branches, []);
     }
 
     public static PowerResult<Axis> Pow(
@@ -107,19 +120,19 @@ public static class PowerEngine
 
         if (normalized.IsZero)
         {
-            return new PowerResult<Axis>([Axis.One], Axis.One, []);
+            return SingleCandidate(Axis.One);
         }
 
         if (normalized.IsInteger)
         {
             var trace = RepetitionEngine.RepeatMultiplicative(value, normalized.Numerator);
-            return new PowerResult<Axis>([trace.Result], trace.Result, []);
+            return SingleCandidate(trace.Result);
         }
 
         var roots = InverseContinuationEngine.InverseContinue(value, normalized.Denominator, rule, reference);
         if (!roots.Succeeded)
         {
-            return FromInverseFailure<Axis>(roots.Tensions);
+            return FromInverseFailure(roots);
         }
 
         List<Axis> candidates = roots.Candidates
@@ -128,7 +141,13 @@ public static class PowerEngine
             .ToList();
 
         Axis principal = SelectAxisPrincipal(candidates, rule, reference);
-        return new PowerResult<Axis>(candidates, principal, []);
+        var branches = ProjectRoots(
+            roots.Branches,
+            root => RepetitionEngine.RepeatMultiplicative(root, normalized.Numerator).Result,
+            RootKey,
+            principal);
+
+        return new PowerResult<Axis>(branches, []);
     }
 
     public static PowerResult<Axis> Pow(
@@ -171,11 +190,80 @@ public static class PowerEngine
     private static PowerResult<T> UnsupportedNegativeExponent<T>(Proportion exponent) =>
         new([], default, [new PowerTension(PowerTensionKind.UnsupportedNegativeExponent, $"Negative exponents are not implemented yet for {exponent}.")]);
 
-    private static PowerResult<T> FromInverseFailure<T>(IReadOnlyList<InverseContinuationTension> tensions) =>
+    private static PowerResult<T> FromInverseFailure<T>(InverseContinuationResult<T> roots) =>
         new(
-            [],
-            default,
-            tensions.Select(tension => new PowerTension(PowerTensionKind.InverseContinuationFailed, tension.Message)).ToArray());
+            BranchFamily<T>.Empty(
+                roots.Branches.Origin,
+                roots.Branches.Semantics,
+                BranchDirection.Forward,
+                roots.Branches.Tensions,
+                roots.Branches.Annotations),
+            roots.Tensions.Select(tension => new PowerTension(PowerTensionKind.InverseContinuationFailed, tension.Message)).ToArray());
+
+    private static PowerResult<T> SingleCandidate<T>(T value) =>
+        new(
+            BranchFamily<T>.FromValues(
+                BranchOrigin.Continuation,
+                BranchSemantics.Alternative,
+                BranchDirection.Forward,
+                [value],
+                selectedIndex: 0,
+                selectionMode: BranchSelectionMode.Principal),
+            []);
+
+    private static BranchFamily<T> ProjectRoots<T, TKey>(
+        BranchFamily<T> roots,
+        Func<T, T> projector,
+        Func<T, TKey> keySelector,
+        T principal)
+        where TKey : notnull
+    {
+        Dictionary<TKey, BranchMember<T>> membersByKey = [];
+        var keyComparer = EqualityComparer<TKey>.Default;
+
+        foreach (var root in roots.Members)
+        {
+            T projected = projector(root.Value);
+            TKey key = keySelector(projected);
+            if (membersByKey.TryGetValue(key, out var existing))
+            {
+                var parents = existing.Parents
+                    .Concat([root.Id])
+                    .Distinct()
+                    .ToArray();
+
+                membersByKey[key] = existing with { Parents = parents };
+                continue;
+            }
+
+            membersByKey[key] = new BranchMember<T>(
+                BranchId.New(),
+                projected,
+                [root.Id],
+                []);
+        }
+
+        var members = membersByKey.Values.ToArray();
+        TKey principalKey = keySelector(principal);
+        BranchSelection selection = BranchSelection.None;
+        foreach (var member in members)
+        {
+            if (keyComparer.Equals(keySelector(member.Value), principalKey))
+            {
+                selection = BranchSelection.Principal(member.Id);
+                break;
+            }
+        }
+
+        return BranchFamily<T>.FromMembers(
+            roots.Origin,
+            roots.Semantics,
+            BranchDirection.Forward,
+            members,
+            selection,
+            roots.Tensions,
+            roots.Annotations);
+    }
 
     private static Scalar SelectScalarPrincipal(
         IReadOnlyList<Scalar> candidates,

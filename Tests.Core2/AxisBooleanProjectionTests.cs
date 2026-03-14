@@ -1,3 +1,4 @@
+using Core2.Branching;
 using Core2.Elements;
 using Core2.Support;
 
@@ -70,6 +71,15 @@ public class AxisBooleanProjectionTests
         Assert.Equal(5m, result.Pieces[1].Segment.Start.Value);
         Assert.Equal(10m, result.Pieces[1].Segment.End.Value);
         Assert.All(result.Pieces, piece => Assert.Equal(AxisBooleanCarrier.Secondary, piece.Carrier));
+        Assert.Equal(BranchOrigin.Component, result.Branches.Origin);
+        Assert.Equal(BranchSemantics.CoPresent, result.Branches.Semantics);
+        Assert.Equal(BranchDirection.Structural, result.Branches.Direction);
+        Assert.False(result.Branches.Selection.HasSelection);
+        Assert.All(result.Branches.Members, member =>
+        {
+            Assert.True(member.TryGetAnnotation<AxisBooleanPieceAnnotation>(out var annotation));
+            Assert.Equal(AxisBooleanCarrier.Secondary, annotation.Carrier);
+        });
     }
 
     [Fact]

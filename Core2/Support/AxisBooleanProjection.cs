@@ -1,3 +1,4 @@
+using Core2.Branching;
 using Core2.Elements;
 
 namespace Core2.Support;
@@ -35,15 +36,76 @@ public readonly record struct AxisBooleanPiece(
     bool InPrimary,
     bool InSecondary);
 
-public sealed record AxisBooleanResult(
-    Axis Primary,
-    Axis Secondary,
-    Axis Frame,
-    AxisBooleanOperation Operation,
-    IReadOnlyList<AxisBooleanPiece> Pieces)
+public readonly record struct AxisBooleanPieceAnnotation(
+    AxisBooleanCarrier Carrier,
+    bool InPrimary,
+    bool InSecondary) : IBranchAnnotation;
+
+public sealed record AxisBooleanResult
 {
-    public bool HasAny => Pieces.Count > 0;
-    public IReadOnlyList<Axis> Segments => Pieces.Select(piece => piece.Segment).ToArray();
+    public AxisBooleanResult(
+        Axis primary,
+        Axis secondary,
+        Axis frame,
+        AxisBooleanOperation operation,
+        IReadOnlyList<AxisBooleanPiece> pieces)
+        : this(primary, secondary, frame, operation, CreateBranches(pieces))
+    {
+    }
+
+    public AxisBooleanResult(
+        Axis primary,
+        Axis secondary,
+        Axis frame,
+        AxisBooleanOperation operation,
+        BranchFamily<Axis> branches)
+    {
+        Primary = primary;
+        Secondary = secondary;
+        Frame = frame;
+        Operation = operation;
+        Branches = branches;
+    }
+
+    public Axis Primary { get; }
+    public Axis Secondary { get; }
+    public Axis Frame { get; }
+    public AxisBooleanOperation Operation { get; }
+    public BranchFamily<Axis> Branches { get; }
+    public bool HasAny => Branches.HasMembers;
+    public IReadOnlyList<Axis> Segments => Branches.Values;
+    public IReadOnlyList<AxisBooleanPiece> Pieces => Branches.Members.Select(ToPiece).ToArray();
+
+    private static BranchFamily<Axis> CreateBranches(IReadOnlyList<AxisBooleanPiece> pieces)
+    {
+        var members = pieces
+            .Select(piece => new BranchMember<Axis>(
+                BranchId.New(),
+                piece.Segment,
+                [],
+                [new AxisBooleanPieceAnnotation(piece.Carrier, piece.InPrimary, piece.InSecondary)]))
+            .ToArray();
+
+        return BranchFamily<Axis>.FromMembers(
+            BranchOrigin.Component,
+            BranchSemantics.CoPresent,
+            BranchDirection.Structural,
+            members);
+    }
+
+    private static AxisBooleanPiece ToPiece(BranchMember<Axis> member)
+    {
+        if (!member.TryGetAnnotation<AxisBooleanPieceAnnotation>(out var annotation))
+        {
+            throw new InvalidOperationException("Axis boolean branches must carry piece metadata.");
+        }
+
+        return new AxisBooleanPiece(
+            member.Value,
+            annotation.Carrier,
+            annotation.InPrimary,
+            annotation.InSecondary);
+    }
 }
 
 public static class AxisBooleanOperationExtensions

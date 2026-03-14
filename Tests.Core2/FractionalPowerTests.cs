@@ -1,3 +1,4 @@
+using Core2.Branching;
 using Core2.Elements;
 using Core2.Repetition;
 
@@ -36,6 +37,10 @@ public class FractionalPowerTests
         Assert.Equal(Axis.I, result.PrincipalCandidate);
         Assert.Contains(Axis.I, result.Candidates);
         Assert.Contains(Axis.NegativeI, result.Candidates);
+        Assert.Equal(BranchOrigin.Preimage, result.Branches.Origin);
+        Assert.Equal(BranchSemantics.Alternative, result.Branches.Semantics);
+        Assert.Equal(BranchDirection.Forward, result.Branches.Direction);
+        Assert.All(result.Branches.Members, member => Assert.Single(member.Parents));
     }
 
     [Fact]

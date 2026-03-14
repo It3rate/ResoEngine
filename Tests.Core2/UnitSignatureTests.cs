@@ -1,3 +1,4 @@
+using Core2.Branching;
 using Core2.Elements;
 using Core2.Repetition;
 using Core2.Units;
@@ -112,6 +113,9 @@ public class UnitSignatureTests
         Assert.Equal(UnitSignature.From(Length), rooted.PrincipalCandidate.Signature);
         Assert.Contains(rooted.Candidates, candidate => candidate.Value == new Scalar(2));
         Assert.Contains(rooted.Candidates, candidate => candidate.Value == new Scalar(-2));
+        Assert.Equal(BranchOrigin.Preimage, rooted.Branches.Origin);
+        Assert.Equal(BranchDirection.Forward, rooted.Branches.Direction);
+        Assert.All(rooted.Branches.Members, member => Assert.Single(member.Parents));
     }
 
     [Fact]
