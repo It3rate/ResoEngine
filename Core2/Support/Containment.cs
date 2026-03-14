@@ -19,6 +19,11 @@ public sealed class Containment
     public Perspective Perspective => Parent.Perspective;
     public IElement ChildInParentContext => Analyze().ChildInParentContext;
     public IReadOnlyList<ContainmentTension> Tensions => Analyze().Tensions;
+    public ContainmentTensionMetrics TensionMetrics => Analyze().Metrics;
+    public bool HasTension => Tensions.Count > 0;
+
+    public bool HasTensionOf(ContainmentTensionKind kind) =>
+        Tensions.Any(tension => tension.Kind == kind);
 
     public override string ToString() =>
         $"{Parent.Element} [{Perspective}] contains {ChildInParentContext}";
@@ -64,7 +69,8 @@ public static class ElementNodeExtensions
 
 internal readonly record struct ContainmentAnalysisResult(
     IElement ChildInParentContext,
-    IReadOnlyList<ContainmentTension> Tensions);
+    IReadOnlyList<ContainmentTension> Tensions,
+    ContainmentTensionMetrics Metrics);
 
 internal static class ContainmentAnalysis
 {
@@ -75,14 +81,15 @@ internal static class ContainmentAnalysis
     {
         var encodedChild = EncodeForPerspective(child, perspective);
         var tensions = new List<ContainmentTension>();
+        var metrics = new List<ContainmentTensionMeasure>();
 
         return parent switch
         {
-            Scalar => new ContainmentAnalysisResult(encodedChild, tensions),
-            Proportion proportionParent => AnalyzeProportionParent(proportionParent, encodedChild, tensions),
-            Axis axisParent => AnalyzeAxisParent(axisParent, encodedChild, tensions),
-            Area areaParent => AnalyzeAreaParent(areaParent, encodedChild, tensions),
-            _ => Unsupported(encodedChild, tensions, parent, child),
+            Scalar => new ContainmentAnalysisResult(encodedChild, tensions, ContainmentTensionMetrics.None),
+            Proportion proportionParent => AnalyzeProportionParent(proportionParent, encodedChild, tensions, metrics),
+            Axis axisParent => AnalyzeAxisParent(axisParent, encodedChild, tensions, metrics),
+            Area areaParent => AnalyzeAreaParent(areaParent, encodedChild, tensions, metrics),
+            _ => Unsupported(encodedChild, tensions, metrics, parent, child),
         };
     }
 
@@ -104,11 +111,12 @@ internal static class ContainmentAnalysis
     private static ContainmentAnalysisResult AnalyzeProportionParent(
         Proportion parent,
         IElement child,
-        List<ContainmentTension> tensions)
+        List<ContainmentTension> tensions,
+        List<ContainmentTensionMeasure> metrics)
     {
         if (child is not Scalar and not Proportion)
         {
-            return CrossGrade(child, tensions, parent, child,
+            return CrossGrade(child, tensions, metrics, parent, child,
                 "A proportion can host higher-degree children, but it cannot fully place their orientation or expansion without an additional rule.");
         }
 
@@ -119,38 +127,40 @@ internal static class ContainmentAnalysis
             _ => throw new InvalidOperationException("Unreachable child normalization."),
         };
 
-        AnalyzeProportionRangeAndResolution(parent, normalized, tensions, string.Empty);
-        return new ContainmentAnalysisResult(normalized, tensions);
+        AnalyzeProportionRangeAndResolution(parent, normalized, tensions, metrics, string.Empty);
+        return BuildResult(normalized, tensions, metrics);
     }
 
     private static ContainmentAnalysisResult AnalyzeAxisParent(
         Axis parent,
         IElement child,
-        List<ContainmentTension> tensions)
+        List<ContainmentTension> tensions,
+        List<ContainmentTensionMeasure> metrics)
     {
         if (child is Axis axisChild)
         {
-            AnalyzeAxisEnvelope(parent, axisChild, tensions, string.Empty);
-            AnalyzeAxisSupport(parent, axisChild, tensions, string.Empty);
-            return new ContainmentAnalysisResult(axisChild, tensions);
+            AnalyzeAxisEnvelope(parent, axisChild, tensions, metrics, string.Empty);
+            AnalyzeAxisSupport(parent, axisChild, tensions, metrics, string.Empty);
+            return BuildResult(axisChild, tensions, metrics);
         }
 
-        return CrossGrade(child, tensions, parent, child,
+        return CrossGrade(child, tensions, metrics, parent, child,
             "An Axis parent can host a child of another degree, but the child's placement along the line is underspecified without additional anchoring information.");
     }
 
     private static ContainmentAnalysisResult AnalyzeAreaParent(
         Area parent,
         IElement child,
-        List<ContainmentTension> tensions)
+        List<ContainmentTension> tensions,
+        List<ContainmentTensionMeasure> metrics)
     {
         if (child is Area areaChild)
         {
-            AnalyzeAreaEnvelope(parent, areaChild, tensions, string.Empty);
-            return new ContainmentAnalysisResult(areaChild, tensions);
+            AnalyzeAreaEnvelope(parent, areaChild, tensions, metrics, string.Empty);
+            return BuildResult(areaChild, tensions, metrics);
         }
 
-        return CrossGrade(child, tensions, parent, child,
+        return CrossGrade(child, tensions, metrics, parent, child,
             "An Area parent can host a child of another degree, but its location inside the area is underspecified without an additional embedding rule.");
     }
 
@@ -158,39 +168,46 @@ internal static class ContainmentAnalysis
         Area parent,
         Area child,
         List<ContainmentTension> tensions,
+        List<ContainmentTensionMeasure> metrics,
         string pathPrefix)
     {
-        AnalyzeAxisEnvelope(parent.Recessive, child.Recessive, tensions, AppendPath(pathPrefix, "recessive-axis"));
-        AnalyzeAxisSupport(parent.Recessive, child.Recessive, tensions, AppendPath(pathPrefix, "recessive-axis"));
-        AnalyzeAxisEnvelope(parent.Dominant, child.Dominant, tensions, AppendPath(pathPrefix, "dominant-axis"));
-        AnalyzeAxisSupport(parent.Dominant, child.Dominant, tensions, AppendPath(pathPrefix, "dominant-axis"));
+        AnalyzeAxisEnvelope(parent.Recessive, child.Recessive, tensions, metrics, AppendPath(pathPrefix, "recessive-axis"));
+        AnalyzeAxisSupport(parent.Recessive, child.Recessive, tensions, metrics, AppendPath(pathPrefix, "recessive-axis"));
+        AnalyzeAxisEnvelope(parent.Dominant, child.Dominant, tensions, metrics, AppendPath(pathPrefix, "dominant-axis"));
+        AnalyzeAxisSupport(parent.Dominant, child.Dominant, tensions, metrics, AppendPath(pathPrefix, "dominant-axis"));
     }
 
     private static void AnalyzeAxisEnvelope(
         Axis parent,
         Axis child,
         List<ContainmentTension> tensions,
+        List<ContainmentTensionMeasure> metrics,
         string pathPrefix)
     {
         decimal parentLeft = Math.Min(parent.Start.Value, parent.End.Value);
         decimal parentRight = Math.Max(parent.Start.Value, parent.End.Value);
         decimal childLeft = Math.Min(child.Start.Value, child.End.Value);
         decimal childRight = Math.Max(child.Start.Value, child.End.Value);
+        decimal validSpan = parentRight - parentLeft;
 
         if (childLeft < parentLeft)
         {
+            string path = AppendPath(pathPrefix, "recessive.boundary");
             tensions.Add(new ContainmentTension(
                 ContainmentTensionKind.OutsideExpectedRange,
-                AppendPath(pathPrefix, "recessive.boundary"),
+                path,
                 $"Child left boundary {childLeft:0.###} falls outside parent left boundary {parentLeft:0.###}."));
+            AddMeasure(metrics, ContainmentTensionKind.OutsideExpectedRange, path, parentLeft - childLeft, validSpan, "overflow / valid span");
         }
 
         if (childRight > parentRight)
         {
+            string path = AppendPath(pathPrefix, "dominant.boundary");
             tensions.Add(new ContainmentTension(
                 ContainmentTensionKind.OutsideExpectedRange,
-                AppendPath(pathPrefix, "dominant.boundary"),
+                path,
                 $"Child right boundary {childRight:0.###} falls outside parent right boundary {parentRight:0.###}."));
+            AddMeasure(metrics, ContainmentTensionKind.OutsideExpectedRange, path, childRight - parentRight, validSpan, "overflow / valid span");
         }
     }
 
@@ -198,16 +215,18 @@ internal static class ContainmentAnalysis
         Axis parent,
         Axis child,
         List<ContainmentTension> tensions,
+        List<ContainmentTensionMeasure> metrics,
         string pathPrefix)
     {
-        AnalyzeProportionSupport(parent.Recessive, child.Recessive, tensions, AppendPath(pathPrefix, "recessive.support"));
-        AnalyzeProportionSupport(parent.Dominant, child.Dominant, tensions, AppendPath(pathPrefix, "dominant.support"));
+        AnalyzeProportionSupport(parent.Recessive, child.Recessive, tensions, metrics, AppendPath(pathPrefix, "recessive.support"));
+        AnalyzeProportionSupport(parent.Dominant, child.Dominant, tensions, metrics, AppendPath(pathPrefix, "dominant.support"));
     }
 
     private static void AnalyzeProportionRangeAndResolution(
         Proportion parent,
         Proportion child,
         List<ContainmentTension> tensions,
+        List<ContainmentTensionMeasure> metrics,
         string path)
     {
         if (child.Recessive != parent.Recessive)
@@ -216,19 +235,29 @@ internal static class ContainmentAnalysis
                 ContainmentTensionKind.ResolutionMismatch,
                 path,
                 $"Child recessive support {child.Recessive} does not match parent recessive support {parent.Recessive}."));
+            AddMeasure(
+                metrics,
+                ContainmentTensionKind.ResolutionMismatch,
+                path,
+                Math.Abs(child.Recessive.Value - parent.Recessive.Value),
+                Math.Abs(parent.Recessive.Value),
+                "support difference / parent support");
         }
 
         decimal parentValue = parent.Fold();
         decimal childValue = child.Fold();
         decimal min = Math.Min(0m, parentValue);
         decimal max = Math.Max(0m, parentValue);
+        decimal validSpan = max - min;
 
         if (childValue < min || childValue > max)
         {
+            decimal overflow = childValue < min ? min - childValue : childValue - max;
             tensions.Add(new ContainmentTension(
                 ContainmentTensionKind.OutsideExpectedRange,
                 path,
                 $"Child value {childValue:0.###} falls outside expected range [{min:0.###}, {max:0.###}]."));
+            AddMeasure(metrics, ContainmentTensionKind.OutsideExpectedRange, path, overflow, validSpan, "overflow / valid span");
         }
     }
 
@@ -236,6 +265,7 @@ internal static class ContainmentAnalysis
         Proportion parent,
         Proportion child,
         List<ContainmentTension> tensions,
+        List<ContainmentTensionMeasure> metrics,
         string path)
     {
         if (child.Recessive != parent.Recessive)
@@ -244,12 +274,20 @@ internal static class ContainmentAnalysis
                 ContainmentTensionKind.ResolutionMismatch,
                 path,
                 $"Child recessive support {child.Recessive} does not match parent recessive support {parent.Recessive}."));
+            AddMeasure(
+                metrics,
+                ContainmentTensionKind.ResolutionMismatch,
+                path,
+                Math.Abs(child.Recessive.Value - parent.Recessive.Value),
+                Math.Abs(parent.Recessive.Value),
+                "support difference / parent support");
         }
     }
 
     private static ContainmentAnalysisResult CrossGrade(
         IElement encodedChild,
         List<ContainmentTension> tensions,
+        List<ContainmentTensionMeasure> metrics,
         IElement parent,
         IElement child,
         string message)
@@ -259,12 +297,13 @@ internal static class ContainmentAnalysis
             string.Empty,
             $"{message} Parent degree {parent.Degree}, child degree {child.Degree}."));
 
-        return new ContainmentAnalysisResult(encodedChild, tensions);
+        return BuildResult(encodedChild, tensions, metrics);
     }
 
     private static ContainmentAnalysisResult Unsupported(
         IElement encodedChild,
         List<ContainmentTension> tensions,
+        List<ContainmentTensionMeasure> metrics,
         IElement parent,
         IElement child)
     {
@@ -273,7 +312,36 @@ internal static class ContainmentAnalysis
             string.Empty,
             $"No containment rule exists for parent degree {parent.Degree} and child degree {child.Degree}."));
 
-        return new ContainmentAnalysisResult(encodedChild, tensions);
+        return BuildResult(encodedChild, tensions, metrics);
+    }
+
+    private static ContainmentAnalysisResult BuildResult(
+        IElement encodedChild,
+        List<ContainmentTension> tensions,
+        List<ContainmentTensionMeasure> metrics) =>
+        new(
+            encodedChild,
+            tensions,
+            metrics.Count == 0 ? ContainmentTensionMetrics.None : new ContainmentTensionMetrics(metrics.ToArray()));
+
+    private static void AddMeasure(
+        List<ContainmentTensionMeasure> metrics,
+        ContainmentTensionKind kind,
+        string path,
+        decimal numerator,
+        decimal denominator,
+        string basis)
+    {
+        if (numerator <= 0m)
+        {
+            return;
+        }
+
+        metrics.Add(new ContainmentTensionMeasure(
+            kind,
+            path,
+            Proportion.FromRecessiveDominant((Scalar)denominator, (Scalar)numerator),
+            basis));
     }
 
     private static string AppendPath(string prefix, string segment) =>

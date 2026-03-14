@@ -31,6 +31,9 @@ public class ContainmentTests
         Assert.Equal(new Proportion(7, 3), Assert.IsType<Proportion>(proportionRelation.ChildInParentContext));
         Assert.Contains(proportionRelation.Tensions, tension => tension.Kind == ContainmentTensionKind.OutsideExpectedRange);
         Assert.Contains(proportionRelation.Tensions, tension => tension.Kind == ContainmentTensionKind.ResolutionMismatch);
+
+        Assert.Equal(1m / 6m, proportionRelation.TensionMetrics.GetAmount(ContainmentTensionKind.OutsideExpectedRange, string.Empty)?.Fold());
+        Assert.Equal(1m / 2m, proportionRelation.TensionMetrics.GetAmount(ContainmentTensionKind.ResolutionMismatch, string.Empty)?.Fold());
     }
 
     [Fact]
@@ -59,6 +62,10 @@ public class ContainmentTests
         Assert.Contains(relation.Tensions, tension =>
             tension.Kind == ContainmentTensionKind.OutsideExpectedRange && tension.Path == "recessive.boundary");
         Assert.DoesNotContain(relation.Tensions, tension => tension.Path.StartsWith("dominant"));
+        Assert.Equal(1m / 15m, relation.TensionMetrics.StartRange?.Amount.Fold());
+        Assert.Equal(1m / 2m, relation.TensionMetrics.RecessiveSupport?.Amount.Fold());
+        Assert.True(relation.HasTension);
+        Assert.True(relation.HasTensionOf(ContainmentTensionKind.OutsideExpectedRange));
     }
 
     [Fact]
@@ -71,6 +78,21 @@ public class ContainmentTests
 
         Assert.Equal(child, Assert.IsType<Axis>(relation.ChildInParentContext));
         Assert.Empty(relation.Tensions);
+        Assert.False(relation.TensionMetrics.HasAny);
+    }
+
+    [Fact]
+    public void AxisContainment_RecordsEndSpecificMetrics_OnBothSides()
+    {
+        var parent = Axis.FromCoordinates((Scalar)(-2m), (Scalar)3m).AsNode();
+        var child = Axis.FromCoordinates((Scalar)(-4m), (Scalar)5m, (Scalar)2m, (Scalar)4m);
+
+        var relation = parent.AddChild(child);
+
+        Assert.Equal(2m / 5m, relation.TensionMetrics.StartRange?.Amount.Fold());
+        Assert.Equal(2m / 5m, relation.TensionMetrics.EndRange?.Amount.Fold());
+        Assert.Equal(1m, relation.TensionMetrics.RecessiveSupport?.Amount.Fold());
+        Assert.Equal(3m, relation.TensionMetrics.DominantSupport?.Amount.Fold());
     }
 
     [Fact]

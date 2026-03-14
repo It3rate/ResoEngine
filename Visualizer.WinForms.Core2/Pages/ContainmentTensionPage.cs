@@ -242,8 +242,8 @@ public class ContainmentTensionPage : IVisualizerPage
             560f,
             _bodyPaint);
 
-        float tensionScore = CalculateTensionScore(relation);
-        DrawGraphFrame(canvas, relation, tensionScore);
+        var metrics = relation.TensionMetrics;
+        DrawGraphFrame(canvas, relation, metrics);
 
         _parentRenderer?.Render(canvas, _parent);
         DrawSegmentLabel(canvas, "Parent Frame", ParentY, SegmentColors.Red);
@@ -252,7 +252,7 @@ public class ContainmentTensionPage : IVisualizerPage
         _contextRenderer?.Render(canvas, _contextualChild);
         DrawSegmentLabel(canvas, "Child In Parent Context", ContextY, SegmentColors.Green);
 
-        DrawRelationCard(canvas, relation, contextual, tensionScore);
+        DrawRelationCard(canvas, relation, contextual, metrics);
 
         var originPx = _coords.MathToPixel(0f, 0f);
         float r = VisualStyle.OriginDotRadius;
@@ -302,7 +302,7 @@ public class ContainmentTensionPage : IVisualizerPage
         canvas.DrawText(label, rect.MidX, rect.MidY + 5f, textPaint);
     }
 
-    private void DrawRelationCard(SKCanvas canvas, Containment relation, Axis contextual, float tensionScore)
+    private void DrawRelationCard(SKCanvas canvas, Containment relation, Axis contextual, ContainmentTensionMetrics metrics)
     {
         if (_coords == null)
         {
@@ -320,7 +320,27 @@ public class ContainmentTensionPage : IVisualizerPage
 
         DrawWrappedText(canvas, $"Parent perspective: {SelectedPerspective}", x, ref y, rect.Width - 36f, _cardTextPaint);
         DrawWrappedText(canvas, $"Child in context: {FormatAxis(contextual)}", x, ref y, rect.Width - 36f, _cardTextPaint);
-        DrawWrappedText(canvas, $"Display tension score: {tensionScore:0.0}", x, ref y, rect.Width - 36f, _cardTextPaint);
+        DrawWrappedText(canvas, $"Total normalized tension: {metrics.TotalMagnitude:0.###}", x, ref y, rect.Width - 36f, _cardTextPaint);
+        if (metrics.StartRange is { } startRange)
+        {
+            DrawWrappedText(canvas, $"Start range tension: {FormatMeasure(startRange)}", x, ref y, rect.Width - 36f, _cardTextPaint);
+        }
+
+        if (metrics.EndRange is { } endRange)
+        {
+            DrawWrappedText(canvas, $"End range tension: {FormatMeasure(endRange)}", x, ref y, rect.Width - 36f, _cardTextPaint);
+        }
+
+        if (metrics.RecessiveSupport is { } recessiveSupport)
+        {
+            DrawWrappedText(canvas, $"i-side support tension: {FormatMeasure(recessiveSupport)}", x, ref y, rect.Width - 36f, _cardTextPaint);
+        }
+
+        if (metrics.DominantSupport is { } dominantSupport)
+        {
+            DrawWrappedText(canvas, $"r-side support tension: {FormatMeasure(dominantSupport)}", x, ref y, rect.Width - 36f, _cardTextPaint);
+        }
+
         y += 6f;
         DrawWrappedText(canvas, relation.ToString(), x, ref y, rect.Width - 36f, _cardTextPaint);
         y += 12f;
@@ -354,7 +374,7 @@ public class ContainmentTensionPage : IVisualizerPage
         }
     }
 
-    private void DrawGraphFrame(SKCanvas canvas, Containment relation, float tensionScore)
+    private void DrawGraphFrame(SKCanvas canvas, Containment relation, ContainmentTensionMetrics metrics)
     {
         if (_coords == null)
         {
@@ -363,7 +383,7 @@ public class ContainmentTensionPage : IVisualizerPage
 
         GetGraphBounds(out var minValue, out var maxValue, out var outerRect);
         canvas.DrawRoundRect(outerRect, 16f, 16f, _graphFillPaint);
-        DrawLocalizedTensionOverlays(canvas, relation, minValue, maxValue, outerRect, tensionScore);
+        DrawLocalizedTensionOverlays(canvas, relation, metrics, minValue, maxValue, outerRect);
         canvas.DrawRoundRect(outerRect, 16f, 16f, _graphBorderPaint);
 
         float top = _coords.MathToPixel(0f, ParentY + 0.95f).Y;
@@ -388,10 +408,10 @@ public class ContainmentTensionPage : IVisualizerPage
     private void DrawLocalizedTensionOverlays(
         SKCanvas canvas,
         Containment relation,
+        ContainmentTensionMetrics metrics,
         decimal minValue,
         decimal maxValue,
-        SKRect outerRect,
-        float tensionScore)
+        SKRect outerRect)
     {
         if (_coords == null)
         {
@@ -405,28 +425,19 @@ public class ContainmentTensionPage : IVisualizerPage
             return;
         }
 
-        decimal parentStart = parent.Start.Value;
-        decimal parentEnd = parent.End.Value;
         decimal childStart = contextualChild.Start.Value;
         decimal childEnd = contextualChild.End.Value;
-        decimal parentLeft = Math.Min(parentStart, parentEnd);
-        decimal parentRight = Math.Max(parentStart, parentEnd);
         decimal childLeft = Math.Min(childStart, childEnd);
         decimal childRight = Math.Max(childStart, childEnd);
-        decimal validSpan = Math.Max(1m, parentRight - parentLeft);
+        decimal parentLeft = Math.Min(parent.Start.Value, parent.End.Value);
+        decimal parentRight = Math.Max(parent.Start.Value, parent.End.Value);
 
-        decimal startOverflow = childLeft < parentLeft ? parentLeft - childLeft : 0m;
-        decimal endOverflow = childRight > parentRight ? childRight - parentRight : 0m;
-
-        decimal startSupportDelta = parent.Recessive.Recessive == 0m
-            ? 0m
-            : Math.Abs(contextualChild.Recessive.Recessive.Value - parent.Recessive.Recessive.Value) / Math.Abs(parent.Recessive.Recessive.Value);
-        decimal endSupportDelta = parent.Dominant.Recessive == 0m
-            ? 0m
-            : Math.Abs(contextualChild.Dominant.Recessive.Value - parent.Dominant.Recessive.Value) / Math.Abs(parent.Dominant.Recessive.Value);
-
-        float startIntensity = Clamp01((float)(startOverflow / validSpan) + (float)startSupportDelta * 0.5f);
-        float endIntensity = Clamp01((float)(endOverflow / validSpan) + (float)endSupportDelta * 0.5f);
+        float startIntensity = Clamp01(
+            ToMagnitude(metrics.GetAmount(ContainmentTensionKind.OutsideExpectedRange, "recessive.boundary")) +
+            ToMagnitude(metrics.GetAmount(ContainmentTensionKind.ResolutionMismatch, "recessive.support")) * 0.5f);
+        float endIntensity = Clamp01(
+            ToMagnitude(metrics.GetAmount(ContainmentTensionKind.OutsideExpectedRange, "dominant.boundary")) +
+            ToMagnitude(metrics.GetAmount(ContainmentTensionKind.ResolutionMismatch, "dominant.support")) * 0.5f);
 
         float top = outerRect.Top + 8f;
         float bottom = outerRect.Bottom - 8f;
@@ -440,7 +451,7 @@ public class ContainmentTensionPage : IVisualizerPage
             float right = ValueToGraphX(parentLeft, minValue, maxValue, outerRect);
             DrawTensionBand(canvas, left, right, top, bottom, startIntensity);
 
-            if (startSupportDelta > 0m)
+            if (metrics.GetAmount(ContainmentTensionKind.ResolutionMismatch, "recessive.support") is not null)
             {
                 float markerX = ValueToGraphX(childStart, minValue, maxValue, outerRect);
                 DrawTensionBand(canvas, markerX - 14f, markerX + 14f, top, bottom, Math.Max(0.22f, startIntensity * 0.7f));
@@ -453,16 +464,16 @@ public class ContainmentTensionPage : IVisualizerPage
             float right = ValueToGraphX(Math.Max(childRight, parentRight), minValue, maxValue, outerRect);
             DrawTensionBand(canvas, left, right, top, bottom, endIntensity);
 
-            if (endSupportDelta > 0m)
+            if (metrics.GetAmount(ContainmentTensionKind.ResolutionMismatch, "dominant.support") is not null)
             {
                 float markerX = ValueToGraphX(childEnd, minValue, maxValue, outerRect);
                 DrawTensionBand(canvas, markerX - 14f, markerX + 14f, top, bottom, Math.Max(0.22f, endIntensity * 0.7f));
             }
         }
 
-        if (startIntensity == 0f && endIntensity == 0f && tensionScore > 0f)
+        if (startIntensity == 0f && endIntensity == 0f && metrics.TotalMagnitude > 0m)
         {
-            byte alpha = (byte)Math.Clamp(16f + tensionScore * 12f, 0f, 72f);
+            byte alpha = (byte)Math.Clamp(16m + metrics.TotalMagnitude * 24m, 0m, 72m);
             _tensionOverlayPaint.Color = new SKColor(232, 128, 72, alpha);
             canvas.DrawRoundRect(new SKRect(outerRect.Left + 12f, top, outerRect.Right - 12f, bottom), 12f, 12f, _tensionOverlayPaint);
         }
@@ -501,6 +512,12 @@ public class ContainmentTensionPage : IVisualizerPage
     }
 
     private static float Clamp01(float value) => Math.Max(0f, Math.Min(1f, value));
+
+    private static float ToMagnitude(Proportion? amount) =>
+        amount is null ? 0f : (float)Math.Abs((decimal)amount.Fold());
+
+    private static string FormatMeasure(ContainmentTensionMeasure measure) =>
+        $"{measure.Amount} ({measure.Magnitude:0.###})";
 
     private void GetGraphBounds(out decimal minValue, out decimal maxValue, out SKRect outerRect)
     {
