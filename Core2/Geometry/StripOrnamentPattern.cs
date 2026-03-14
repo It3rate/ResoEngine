@@ -8,5 +8,9 @@ public sealed record StripOrnamentPattern(
     int DefaultRepeats,
     IReadOnlyList<StripOrnamentStrand> Strands)
 {
+    public string? CallPattern { get; init; }
+
+    public StripEquationProgram? Program { get; init; }
+
     public int TotalSteps(int repeats) => Math.Max(0, repeats) * StepsPerRepeat;
 }

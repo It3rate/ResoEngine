@@ -2,6 +2,13 @@ namespace Core2.Geometry;
 
 public static class StripOrnamentCatalog
 {
+    private static readonly IReadOnlyList<StripEquationDefinition> SharedEquations =
+    [
+        new StripEquationDefinition("X0", StripDelta.Right, StripEquationMode.Bounce, 1),
+        new StripEquationDefinition("Y0", StripDelta.Up, StripEquationMode.Bounce, 2),
+        new StripEquationDefinition("XLong", new StripDelta(2, 0), StripEquationMode.Continue, 1),
+    ];
+
     public static IReadOnlyList<StripOrnamentPattern> GalleryPatterns { get; } =
     [
         new StripOrnamentPattern(
@@ -30,61 +37,137 @@ public static class StripOrnamentCatalog
         new StripOrnamentPattern(
             "crossbar",
             "Crossbar Lattice",
-            "Top and bottom cap pulses ride on a shared rail, producing a repeating I-beam rhythm.",
-            8,
+            "A short bouncing horizontal equation, a two-step vertical bounce, and a longer rightward carry combine into the repeating crossbar cell.",
+            10,
             8,
             [
-                Strand("Pillar", "U . . D D . . U", "Raise to the top cap, drop through the stem, then recover to the baseline.",
-                    StripDelta.Up, StripDelta.Zero, StripDelta.Zero, StripDelta.Down, StripDelta.Down, StripDelta.Zero, StripDelta.Zero, StripDelta.Up),
-                Strand("Rail", ". R R . . R R .", "Carry the top and bottom cap spans across the strip.",
-                    StripDelta.Zero, StripDelta.Right, StripDelta.Right, StripDelta.Zero, StripDelta.Zero, StripDelta.Right, StripDelta.Right, StripDelta.Zero),
-            ]),
+                SharedX0(),
+                SharedY0(),
+                SharedXLong(),
+            ])
+        {
+            CallPattern = "X0, Y0, X0, Y0, XLong, then the mirrored descent before repeating",
+            Program = Program(
+                [
+                    Fire("X0"), Commit(),
+                    Fire("Y0"), Commit(),
+                    Fire("X0"), Commit(),
+                    Fire("Y0"), Commit(),
+                    Fire("XLong"), Commit(),
+                    Fire("X0"), Commit(),
+                    Fire("Y0"), Commit(),
+                    Fire("X0"), Commit(),
+                    Fire("Y0"), Commit(),
+                    Fire("XLong"), Commit(),
+                ]),
+        },
         new StripOrnamentPattern(
             "trapezoid",
             "Trapezoid Wave",
-            "A falling ramp, flat span, rising ramp, and recovery span repeat as one strip cell.",
-            4,
+            "The bounced short equation makes the slanted walls while the long carrier closes the top and bottom rails.",
+            6,
             9,
             [
-                Strand("Drift", "R R R R", "Advance one unit right on each beat.", Repeat(4, StripDelta.Right)),
-                Strand("Ramp", "D . U .", "Drop into the cell, hold, then climb back to the baseline.",
-                    StripDelta.Down, StripDelta.Zero, StripDelta.Up, StripDelta.Zero),
-            ]),
+                SharedX0(),
+                SharedY0(),
+                SharedXLong(),
+            ])
+        {
+            CallPattern = "X0; Y0 + X0 + Y0; XLong, then the mirrored descent half",
+            Program = Program(
+                [
+                    Fire("X0"), Commit(),
+                    Fire("Y0"),
+                    Fire("X0"),
+                    Fire("Y0"), Commit(),
+                    Fire("XLong"), Commit(),
+                    Fire("X0"), Commit(),
+                    Fire("Y0"),
+                    Fire("X0"),
+                    Fire("Y0"), Commit(),
+                    Fire("XLong"), Commit(),
+                ]),
+        },
         new StripOrnamentPattern(
             "chevron",
             "Chevron Drift",
-            "Each repeat resolves into a pointed chevron followed by a brief glide.",
+            "Two paired fires of the short horizontal and vertical equations create the pointed chevrons before the longer glide resets the spacing.",
             3,
             10,
             [
-                Strand("Drift", "R R R", "Carry the chevron train to the right.", Repeat(3, StripDelta.Right)),
-                Strand("Point", "U D .", "Lift and return on adjacent beats to form the chevron point.",
-                    StripDelta.Up, StripDelta.Down, StripDelta.Zero),
-            ]),
+                SharedX0(),
+                SharedY0(),
+                SharedXLong(),
+            ])
+        {
+            CallPattern = "X0 + Y0; X0 + Y0; XLong, then the opposite-slope half",
+            Program = Program(
+                [
+                    Fire("X0"),
+                    Fire("Y0"), Commit(),
+                    Fire("X0"),
+                    Fire("Y0"), Commit(),
+                    Fire("XLong"), Commit(),
+                    Fire("X0"),
+                    Fire("Y0"), Commit(),
+                    Fire("X0"),
+                    Fire("Y0"), Commit(),
+                    Fire("XLong"), Commit(),
+                ]),
+        },
         new StripOrnamentPattern(
             "interlock",
             "Interlock",
-            "Alternating upper and lower sockets share one baseline and produce an interlocking rectilinear rhythm.",
-            8,
+            "A primed short equation is switched to continue mode so the lattice can carry one extra horizontal tooth inside each interlocking cell.",
+            6,
             8,
             [
-                Strand("Socket", "U . D . D . U .", "Open an upper socket, then a lower one, before returning to baseline.",
-                    StripDelta.Up, StripDelta.Zero, StripDelta.Down, StripDelta.Zero, StripDelta.Down, StripDelta.Zero, StripDelta.Up, StripDelta.Zero),
-                Strand("Bridge", ". R . R . R . R", "Span across each socket to keep the strip continuous.",
-                    StripDelta.Zero, StripDelta.Right, StripDelta.Zero, StripDelta.Right, StripDelta.Zero, StripDelta.Right, StripDelta.Zero, StripDelta.Right),
-            ]),
+                SharedX0(),
+                SharedY0(),
+                SharedXLong(),
+            ])
+        {
+            CallPattern = "Prelude X0 then Continue; XLong; Y0,Y0; XLong; Y0; X0; Y0",
+            Program = Program(
+                [
+                    Fire("X0"), Commit(),
+                    Fire("Y0"), Commit(),
+                    Fire("X0"), Commit(),
+                    Fire("Y0"), Commit(),
+                    Fire("X0"), Commit(),
+                    Fire("Y0"), Commit(),
+                    Fire("XLong"), Commit(),
+                ],
+                [
+                    //Fire("X0"),
+                    //SetMode("X0", StripEquationMode.Continue),
+                ]),
+        },
         new StripOrnamentPattern(
             "stair",
             "Stair Step",
-            "A stepped ascent and descent sit on a longer tread so the motif lands cleanly at the next start point.",
-            10,
+            "The vertical bounce fires on its own and the long horizontal carrier follows, producing a clean stepped ascent and descent.",
+            8,
             7,
             [
-                Strand("RiseFall", "U . U . D . D . . .", "Climb in two short risers, then descend in two matching risers.",
-                    StripDelta.Up, StripDelta.Zero, StripDelta.Up, StripDelta.Zero, StripDelta.Down, StripDelta.Zero, StripDelta.Down, StripDelta.Zero, StripDelta.Zero, StripDelta.Zero),
-                Strand("Tread", ". R . R . R . R R R", "Lay out the treads between risers and extend the recovery run.",
-                    StripDelta.Zero, StripDelta.Right, StripDelta.Zero, StripDelta.Right, StripDelta.Zero, StripDelta.Right, StripDelta.Zero, StripDelta.Right, StripDelta.Right, StripDelta.Right),
-            ]),
+                SharedX0(),
+                SharedY0(),
+                SharedXLong(),
+            ])
+        {
+            CallPattern = "Y0; XLong across one full up-up-down-down bounce cycle",
+            Program = Program(
+                [
+                    Fire("Y0"), Commit(),
+                    Fire("XLong"), Commit(),
+                    Fire("Y0"), Commit(),
+                    Fire("XLong"), Commit(),
+                    Fire("Y0"), Commit(),
+                    Fire("XLong"), Commit(),
+                    Fire("Y0"), Commit(),
+                    Fire("XLong"), Commit(),
+                ]),
+        },
     ];
 
     private static StripOrnamentStrand Strand(
@@ -100,4 +183,39 @@ public static class StripOrnamentCatalog
         Array.Fill(values, delta);
         return values;
     }
+
+    private static StripOrnamentStrand SharedX0() =>
+        new(
+            "X0",
+            "R, L, R, L, ...",
+            "A one-step horizontal equation that remembers its current facing and bounces on every call.",
+            []);
+
+    private static StripOrnamentStrand SharedY0() =>
+        new(
+            "Y0",
+            "U, U, D, D, ...",
+            "A one-step vertical equation that holds direction for two calls before bouncing.",
+            []);
+
+    private static StripOrnamentStrand SharedXLong() =>
+        new(
+            "XLong",
+            "2R, 2R, 2R, ...",
+            "A longer horizontal carrier that does not bounce and always continues to the right.",
+            []);
+
+    private static StripEquationProgram Program(
+        IReadOnlyList<StripEquationCommand> loop,
+        IReadOnlyList<StripEquationCommand>? prelude = null) =>
+        new(SharedEquations, loop, prelude);
+
+    private static StripEquationCommand Fire(string equationName) =>
+        StripEquationCommand.Fire(equationName);
+
+    private static StripEquationCommand Commit() =>
+        StripEquationCommand.Commit();
+
+    private static StripEquationCommand SetMode(string equationName, StripEquationMode mode) =>
+        StripEquationCommand.SetMode(equationName, mode);
 }

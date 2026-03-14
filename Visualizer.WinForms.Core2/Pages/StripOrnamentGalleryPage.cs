@@ -98,14 +98,6 @@ public class StripOrnamentGalleryPage : IVisualizerPage
         IsAntialias = true,
     };
 
-    private readonly SKPaint _detailTitlePaint = new()
-    {
-        Color = new SKColor(51, 51, 51),
-        TextSize = 15f,
-        Typeface = SKTypeface.FromFamilyName(VisualStyle.FontFamily, SKFontStyle.Bold),
-        IsAntialias = true,
-    };
-
     private readonly SKPaint _detailBodyPaint = new()
     {
         Color = new SKColor(86, 86, 86),
@@ -119,7 +111,7 @@ public class StripOrnamentGalleryPage : IVisualizerPage
     private NumericUpDown? _repeatInput;
     private IReadOnlyList<StripOrnamentResult>? _results;
     private int _cachedRepeats = -1;
-    private int? _hoveredIndex;
+    private int? _activeIndex;
 
     public string Title => "Strip Ornament Gallery";
 
@@ -138,8 +130,8 @@ public class StripOrnamentGalleryPage : IVisualizerPage
         float subtitleY = 68f;
         PageChrome.DrawWrappedText(
             canvas,
-            "Each strip is generated from the same small set of repeating strand instructions summed into one continuous path. " +
-            "Hover to inspect the active strand rhythms behind the pattern.",
+            "Each strip is generated from a compact instruction set. The lower patterns now use the same three stateful equations " +
+            "with different call orders, so the visible shape comes from how the equations fire, bounce, and commit.",
             34f,
             ref subtitleY,
             700f,
@@ -155,12 +147,9 @@ public class StripOrnamentGalleryPage : IVisualizerPage
         canvas.DrawRoundRect(layout.Card, _cardFillPaint);
         canvas.DrawRoundRect(layout.Card, _cardBorderPaint);
 
-        //canvas.DrawText("Frieze Strips", layout.Card.Rect.Left + 24f, layout.Card.Rect.Top + 34f, _detailTitlePaint);
-        //canvas.DrawText("Shared strand programs, varied local rhythms.", layout.Card.Rect.Left + 24f, layout.Card.Rect.Top + 56f, _mutedPaint);
-
         for (int index = 0; index < _results.Count; index++)
         {
-            DrawStripRow(canvas, layout.RowRects[index], _results[index], index == _hoveredIndex);
+            DrawStripRow(canvas, layout.RowRects[index], _results[index], index == _activeIndex);
         }
 
         DrawDetails(canvas, layout.DetailRect, SelectedResult());
@@ -175,7 +164,7 @@ public class StripOrnamentGalleryPage : IVisualizerPage
             _controlsPanel = null;
         }
 
-        _hoveredIndex = null;
+        _activeIndex = null;
     }
 
     public void Dispose()
@@ -192,7 +181,6 @@ public class StripOrnamentGalleryPage : IVisualizerPage
         _pathPaint.Dispose();
         _labelPaint.Dispose();
         _mutedPaint.Dispose();
-        _detailTitlePaint.Dispose();
         _detailBodyPaint.Dispose();
     }
 
@@ -204,20 +192,18 @@ public class StripOrnamentGalleryPage : IVisualizerPage
         }
 
         var layout = ComputeLayout(_results.Count);
-        int? hovered = null;
         for (int index = 0; index < layout.RowRects.Count; index++)
         {
             if (layout.RowRects[index].Contains(pixelPoint.X, pixelPoint.Y))
             {
-                hovered = index;
-                break;
-            }
-        }
+                if (_activeIndex != index)
+                {
+                    _activeIndex = index;
+                    _canvasHost.InvalidateCanvas();
+                }
 
-        if (_hoveredIndex != hovered)
-        {
-            _hoveredIndex = hovered;
-            _canvasHost.InvalidateCanvas();
+                return;
+            }
         }
     }
 
@@ -289,13 +275,13 @@ public class StripOrnamentGalleryPage : IVisualizerPage
             .ToArray();
 
         _cachedRepeats = repeats;
-        if (_hoveredIndex is null && _results.Count > 0)
+        if (_activeIndex is null && _results.Count > 0)
         {
-            _hoveredIndex = 0;
+            _activeIndex = 0;
         }
-        else if (_hoveredIndex is not null && _hoveredIndex >= _results.Count)
+        else if (_activeIndex is not null && _activeIndex >= _results.Count)
         {
-            _hoveredIndex = _results.Count - 1;
+            _activeIndex = _results.Count - 1;
         }
     }
 
@@ -306,18 +292,16 @@ public class StripOrnamentGalleryPage : IVisualizerPage
             throw new InvalidOperationException("No ornament results are available.");
         }
 
-        int index = Math.Clamp(_hoveredIndex ?? 0, 0, _results.Count - 1);
+        int index = Math.Clamp(_activeIndex ?? 0, 0, _results.Count - 1);
         return _results[index];
     }
 
     private GalleryLayout ComputeLayout(int patternCount)
     {
-        float width = _canvasHost?.ClientSize.Width ?? 1280f;
-        float height = _canvasHost?.ClientSize.Height ?? 980f;
         float cardLeft = 20f;
         float cardTop = 100f;
-        float cardRight = Math.Max(cardLeft + 860f, 0);// width - 300f);
-        float cardBottom = Math.Max(cardTop + 660f, 0);// height - 228f);
+        float cardRight = cardLeft + 860f;
+        float cardBottom = cardTop + 660f;
 
         var card = new SKRoundRect(new SKRect(cardLeft, cardTop, cardRight, cardBottom), 24f, 24f);
         var rowRects = new List<SKRect>(patternCount);
@@ -339,9 +323,9 @@ public class StripOrnamentGalleryPage : IVisualizerPage
         return new GalleryLayout(card, rowRects, detailRect);
     }
 
-    private void DrawStripRow(SKCanvas canvas, SKRect rowRect, StripOrnamentResult result, bool isHovered)
+    private void DrawStripRow(SKCanvas canvas, SKRect rowRect, StripOrnamentResult result, bool isActive)
     {
-        if (isHovered)
+        if (isActive)
         {
             using var highlight = new SKRoundRect(rowRect, 14f, 14f);
             canvas.DrawRoundRect(highlight, _rowHighlightPaint);
@@ -354,9 +338,7 @@ public class StripOrnamentGalleryPage : IVisualizerPage
         canvas.DrawText($"{result.Pattern.Strands.Count} strands · {result.Pattern.StepsPerRepeat} steps", labelX, rowRect.Top + 42f, _mutedPaint);
 
         var stripRect = new SKRect(rowRect.Left + 176f, rowRect.Top + 8f, rowRect.Right - 14f, rowRect.Bottom - 8f);
-        float guideY = stripRect.MidY;
-        canvas.DrawLine(stripRect.Left, guideY, stripRect.Right, guideY, _stripGuidePaint);
-
+        canvas.DrawLine(stripRect.Left, stripRect.MidY, stripRect.Right, stripRect.MidY, _stripGuidePaint);
         DrawPath(canvas, stripRect, result);
     }
 
@@ -408,15 +390,28 @@ public class StripOrnamentGalleryPage : IVisualizerPage
     private void DrawDetails(SKCanvas canvas, SKRect detailRect, StripOrnamentResult selected)
     {
         canvas.DrawLine(detailRect.Left, detailRect.Top - 12f, detailRect.Right, detailRect.Top - 12f, _dividerPaint);
-        //canvas.DrawText(selected.Pattern.DisplayName, detailRect.Left, detailRect.Top + 20f, _detailTitlePaint);
 
-        float descriptionY = detailRect.Top + 26f;
-        PageChrome.DrawWrappedText(canvas, selected.Pattern.Description, detailRect.Left, ref descriptionY, detailRect.Width, _detailBodyPaint);
+        float y = detailRect.Top + 24f;
+        PageChrome.DrawWrappedText(canvas, selected.Pattern.Description, detailRect.Left, ref y, detailRect.Width, _detailBodyPaint);
 
-        string meta = $"cycle {selected.Pattern.StepsPerRepeat} steps   ·   repeats {selected.RepeatCount}   ·   end ({selected.Cursor.X}, {selected.Cursor.Y})";
-        canvas.DrawText(meta, detailRect.Left, descriptionY + 8f, _mutedPaint);
+        if (!string.IsNullOrWhiteSpace(selected.Pattern.CallPattern))
+        {
+            PageChrome.DrawWrappedText(
+                canvas,
+                $"call cycle: {selected.Pattern.CallPattern}",
+                detailRect.Left,
+                ref y,
+                detailRect.Width,
+                _mutedPaint);
+        }
 
-        float strandY = descriptionY + 34f;
+        canvas.DrawText(
+            $"cycle {selected.Pattern.StepsPerRepeat} steps   ·   repeats {selected.RepeatCount}   ·   end ({selected.Cursor.X}, {selected.Cursor.Y})",
+            detailRect.Left,
+            y + 6f,
+            _mutedPaint);
+
+        float strandY = y + 32f;
         foreach (var strand in selected.Pattern.Strands)
         {
             canvas.DrawText(strand.Name, detailRect.Left, strandY, _labelPaint);

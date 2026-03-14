@@ -56,4 +56,120 @@ public class StripOrnamentCatalogTests
             [StripDelta.UpRight, StripDelta.DownRight, StripDelta.UpRight, StripDelta.DownRight],
             deltas);
     }
+
+    [Fact]
+    public void Crossbar_ComposesFromBouncedEquationCycle()
+    {
+        var pattern = StripOrnamentCatalog.GalleryPatterns.Single(item => item.Key == "crossbar");
+        var result = StripOrnamentComposer.Compose(pattern, 1);
+
+        var deltas = result.Segments
+            .Select(segment => new StripDelta(segment.End.X - segment.Start.X, segment.End.Y - segment.Start.Y))
+            .ToArray();
+
+        Assert.Equal(
+            [
+                StripDelta.Right,
+                StripDelta.Up,
+                StripDelta.Left,
+                StripDelta.Up,
+                new StripDelta(2, 0),
+                StripDelta.Right,
+                StripDelta.Down,
+                StripDelta.Left,
+                StripDelta.Down,
+                new StripDelta(2, 0),
+            ],
+            deltas);
+    }
+
+    [Fact]
+    public void Trapezoid_ComposesFromPendingEquationCommits()
+    {
+        var pattern = StripOrnamentCatalog.GalleryPatterns.Single(item => item.Key == "trapezoid");
+        var result = StripOrnamentComposer.Compose(pattern, 1);
+
+        var deltas = result.Segments
+            .Select(segment => new StripDelta(segment.End.X - segment.Start.X, segment.End.Y - segment.Start.Y))
+            .ToArray();
+
+        Assert.Equal(
+            [
+                StripDelta.Right,
+                new StripDelta(-1, 2),
+                new StripDelta(2, 0),
+                StripDelta.Right,
+                new StripDelta(-1, -2),
+                new StripDelta(2, 0),
+            ],
+            deltas);
+    }
+
+    [Fact]
+    public void Chevron_ComposesFromPairedEquationFires()
+    {
+        var pattern = StripOrnamentCatalog.GalleryPatterns.Single(item => item.Key == "chevron");
+        var result = StripOrnamentComposer.Compose(pattern, 1);
+
+        var deltas = result.Segments
+            .Select(segment => new StripDelta(segment.End.X - segment.Start.X, segment.End.Y - segment.Start.Y))
+            .ToArray();
+
+        Assert.Equal(
+            [
+                new StripDelta(1, 1),
+                new StripDelta(-1, 1),
+                new StripDelta(2, 0),
+                new StripDelta(1, -1),
+                new StripDelta(-1, -1),
+                new StripDelta(2, 0),
+            ],
+            deltas);
+    }
+
+    [Fact]
+    public void Interlock_UsesPrimedContinuationOnShortEquation()
+    {
+        var pattern = StripOrnamentCatalog.GalleryPatterns.Single(item => item.Key == "interlock");
+        var result = StripOrnamentComposer.Compose(pattern, 1);
+
+        var deltas = result.Segments
+            .Select(segment => new StripDelta(segment.End.X - segment.Start.X, segment.End.Y - segment.Start.Y))
+            .ToArray();
+
+        Assert.Equal(
+            [
+                new StripDelta(3, 0),
+                new StripDelta(0, 2),
+                new StripDelta(2, 0),
+                new StripDelta(0, -1),
+                StripDelta.Right,
+                new StripDelta(0, -1),
+            ],
+            deltas);
+    }
+
+    [Fact]
+    public void Stair_AlternatesVerticalBounceWithLongCarrier()
+    {
+        var pattern = StripOrnamentCatalog.GalleryPatterns.Single(item => item.Key == "stair");
+        var result = StripOrnamentComposer.Compose(pattern, 1);
+
+        var deltas = result.Segments
+            .Select(segment => new StripDelta(segment.End.X - segment.Start.X, segment.End.Y - segment.Start.Y))
+            .ToArray();
+
+        Assert.Equal(
+            [
+                StripDelta.Up,
+                new StripDelta(2, 0),
+                StripDelta.Up,
+                new StripDelta(2, 0),
+                StripDelta.Down,
+                new StripDelta(2, 0),
+                StripDelta.Down,
+                new StripDelta(2, 0),
+            ],
+            deltas);
+    }
 }
