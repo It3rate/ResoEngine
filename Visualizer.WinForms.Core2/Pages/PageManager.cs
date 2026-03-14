@@ -15,6 +15,8 @@ public class PageManager
     private readonly List<IVisualizerPage> _pages = [];
     private int _currentIndex = -1;
 
+    public event Action<IVisualizerPage?>? CurrentPageChanged;
+
     public IVisualizerPage? CurrentPage =>
         _currentIndex >= 0 && _currentIndex < _pages.Count ? _pages[_currentIndex] : null;
 
@@ -58,6 +60,7 @@ public class PageManager
         // Init new page
         _pages[_currentIndex].Init(_canvas.Coords, _hitTest, _canvas);
         UpdateNavBar();
+        CurrentPageChanged?.Invoke(CurrentPage);
         _canvas.InvalidateCanvas();
     }
 

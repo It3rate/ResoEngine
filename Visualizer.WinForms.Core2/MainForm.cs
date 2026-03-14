@@ -3,6 +3,7 @@ using ResoEngine.Visualizer.Core;
 using ResoEngine.Visualizer.Input;
 using ResoEngine.Visualizer.Pages;
 using SkiaSharp;
+using System.Drawing.Drawing2D;
 
 namespace ResoEngine.Visualizer;
 
@@ -12,6 +13,10 @@ public class MainForm : Form
     private readonly PageNavBar _navBar;
     private readonly PageManager _pageManager;
     private readonly DragController _dragController;
+    private readonly Panel _pageNamePanel;
+    private readonly Label _pageNameLabel;
+    private readonly Button _copyPageNameButton;
+    private readonly Bitmap _copyIcon;
 
     private bool _originDragging;
     private SKPoint _originDragStart;
@@ -39,10 +44,52 @@ public class MainForm : Form
 
         _canvas = new SkiaCanvas { Dock = DockStyle.Fill };
         _navBar = new PageNavBar { Dock = DockStyle.Fill };
+        _copyIcon = CreateCopyIcon();
+        _pageNamePanel = new Panel
+        {
+            BackColor = Color.FromArgb(248, 248, 248),
+            Size = new Size(188, 28),
+            Anchor = AnchorStyles.Left | AnchorStyles.Bottom,
+        };
+        _pageNameLabel = new Label
+        {
+            AutoSize = false,
+            Location = new Point(10, 6),
+            Size = new Size(142, 16),
+            Font = new Font("Arial", 8.5f, FontStyle.Regular),
+            ForeColor = Color.FromArgb(132, 132, 132),
+            TextAlign = ContentAlignment.MiddleLeft,
+        };
+        _copyPageNameButton = new Button
+        {
+            Width = 24,
+            Height = 24,
+            Location = new Point(156, 2),
+            FlatStyle = FlatStyle.Flat,
+            BackColor = Color.FromArgb(248, 248, 248),
+            Image = _copyIcon,
+            TabStop = false,
+            Cursor = Cursors.Hand,
+        };
+        _copyPageNameButton.FlatAppearance.BorderSize = 0;
+        _copyPageNameButton.FlatAppearance.MouseDownBackColor = Color.FromArgb(232, 232, 232);
+        _copyPageNameButton.FlatAppearance.MouseOverBackColor = Color.FromArgb(240, 240, 240);
+        _copyPageNameButton.Click += (_, _) =>
+        {
+            if (!string.IsNullOrWhiteSpace(_pageNameLabel.Text))
+            {
+                Clipboard.SetText(_pageNameLabel.Text);
+            }
+        };
+        _pageNamePanel.Controls.Add(_pageNameLabel);
+        _pageNamePanel.Controls.Add(_copyPageNameButton);
 
         layout.Controls.Add(_canvas, 0, 0);
         layout.Controls.Add(_navBar, 0, 1);
         Controls.Add(layout);
+        _canvas.Controls.Add(_pageNamePanel);
+        PositionPageNamePanel();
+        _canvas.Resize += (_, _) => PositionPageNamePanel();
 
         var hitTest = new HitTestEngine();
         _dragController = new DragController(_canvas.Coords, hitTest);
@@ -54,10 +101,51 @@ public class MainForm : Form
         _dragController.Changed += () => _canvas.InvalidateCanvas();
 
         _pageManager = new PageManager(_canvas, _navBar, hitTest);
+        _pageManager.CurrentPageChanged += page => UpdatePageName(page);
         _pageManager.AddPage(new OrthogonalAxesPage());
         _pageManager.AddPage(new BooleanOpsPage());
         _pageManager.AddPage(new OrthogonalBooleanGalleryPage());
         _pageManager.AddPage(new ParallelBooleanGalleryPage());
+        _pageManager.AddPage(new FractionalPowerPage());
+        _pageManager.AddPage(new BoundaryRepetitionPage());
+        _pageManager.AddPage(new UnitsQuantityPage());
+        _pageManager.AddPage(new ContainmentTensionPage());
+    }
+
+    protected override void Dispose(bool disposing)
+    {
+        if (disposing)
+        {
+            _copyIcon.Dispose();
+        }
+
+        base.Dispose(disposing);
+    }
+
+    private void UpdatePageName(IVisualizerPage? page)
+    {
+        _pageNameLabel.Text = page?.GetType().Name ?? string.Empty;
+    }
+
+    private void PositionPageNamePanel()
+    {
+        _pageNamePanel.Location = new Point(12, Math.Max(12, _canvas.ClientSize.Height - _pageNamePanel.Height - 12));
+        _pageNamePanel.BringToFront();
+    }
+
+    private static Bitmap CreateCopyIcon()
+    {
+        var bitmap = new Bitmap(16, 16);
+        using var graphics = Graphics.FromImage(bitmap);
+        graphics.SmoothingMode = SmoothingMode.AntiAlias;
+        graphics.Clear(Color.Transparent);
+
+        using var shadowPen = new Pen(Color.FromArgb(160, 160, 160), 1.3f);
+        using var frontPen = new Pen(Color.FromArgb(110, 110, 110), 1.3f);
+
+        graphics.DrawRectangle(shadowPen, 5, 2, 7, 9);
+        graphics.DrawRectangle(frontPen, 3, 5, 7, 9);
+        return bitmap;
     }
 
     private void OnPointerDown(SKPoint pt)
