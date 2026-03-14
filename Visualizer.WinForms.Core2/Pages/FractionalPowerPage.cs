@@ -451,7 +451,7 @@ public class FractionalPowerPage : IVisualizerPage
             Text = "Exponent",
             AutoSize = true,
             Location = new Point(10, 10),
-            Font = new Font("Arial", 9f, FontStyle.Bold),
+            Font = new Font(VisualStyle.UiFontFamily, 9f, FontStyle.Bold),
         };
 
         _exponentCombo = new ComboBox
@@ -473,7 +473,7 @@ public class FractionalPowerPage : IVisualizerPage
             Text = "Branch Rule",
             AutoSize = true,
             Location = new Point(110, 10),
-            Font = new Font("Arial", 9f, FontStyle.Bold),
+            Font = new Font(VisualStyle.UiFontFamily, 9f, FontStyle.Bold),
         };
 
         _branchCombo = new ComboBox
@@ -495,7 +495,7 @@ public class FractionalPowerPage : IVisualizerPage
             Text = "Animate Orbit",
             AutoSize = true,
             Location = new Point(10, 72),
-            Font = new Font("Arial", 9f, FontStyle.Regular),
+            Font = new Font(VisualStyle.UiFontFamily, 9f, FontStyle.Regular),
         };
         _animateCheck.CheckedChanged += (_, _) =>
         {
@@ -511,7 +511,7 @@ public class FractionalPowerPage : IVisualizerPage
             AutoSize = false,
             Location = new Point(10, 92),
             Size = new Size(292, 28),
-            Font = new Font("Arial", 8f, FontStyle.Regular),
+            Font = new Font(VisualStyle.UiFontFamily, 8f, FontStyle.Regular),
             ForeColor = Color.FromArgb(105, 105, 105),
         };
 

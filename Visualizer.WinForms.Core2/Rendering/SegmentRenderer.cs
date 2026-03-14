@@ -118,16 +118,7 @@ public class SegmentRenderer : IDisposable
 
             string imagLabelZero = FormatValue(segment.Imaginary, isImaginary: true);
             string realLabelZero = FormatValue(segment.Real, isImaginary: false);
-            if (isH)
-            {
-                canvas.DrawText(imagLabelZero, imagPx.X, imagPx.Y + 28, _labelPaint);
-                canvas.DrawText(realLabelZero, realPx.X, realPx.Y + 46, _labelPaint);
-            }
-            else
-            {
-                canvas.DrawText(imagLabelZero, imagPx.X - 22, imagPx.Y + 7, _labelRightPaint);
-                canvas.DrawText(realLabelZero, realPx.X - 22, realPx.Y + 25, _labelRightPaint);
-            }
+            DrawEndpointLabels(canvas, imagPx, realPx, imagLabelZero, realLabelZero, true);
 
             if (!string.IsNullOrEmpty(segment.Label))
             {
@@ -171,16 +162,8 @@ public class SegmentRenderer : IDisposable
 
         // --- 5. Labels ---
         string imagLabel = FormatValue(segment.Imaginary, isImaginary: true);
-        if (isH)
-            canvas.DrawText(imagLabel, imagPx.X, imagPx.Y + 28, _labelPaint);
-        else
-            canvas.DrawText(imagLabel, imagPx.X - 22, imagPx.Y + 7, _labelRightPaint);
-
         string realLabel = FormatValue(segment.Real, isImaginary: false);
-        if (isH)
-            canvas.DrawText(realLabel, realPx.X, realPx.Y + 28, _labelPaint);
-        else
-            canvas.DrawText(realLabel, realPx.X - 22, realPx.Y + 7, _labelRightPaint);
+        DrawEndpointLabels(canvas, imagPx, realPx, imagLabel, realLabel, false);
 
         if (!string.IsNullOrEmpty(segment.Label))
         {
@@ -194,6 +177,62 @@ public class SegmentRenderer : IDisposable
     {
         canvas.DrawLine(point.X, point.Y - 10f, point.X, point.Y + 10f, _solidPaint);
         canvas.DrawCircle(point, VisualStyle.DotRadius, _dotPaint);
+    }
+
+    private void DrawEndpointLabels(
+        SKCanvas canvas,
+        SKPoint imagPx,
+        SKPoint realPx,
+        string imagLabel,
+        string realLabel,
+        bool zeroLength)
+    {
+        bool isH = _orientation == SegmentOrientation.Horizontal;
+        if (isH)
+        {
+            float imagX = imagPx.X;
+            float realX = realPx.X;
+            float imagY = imagPx.Y + 28f;
+            float realY = zeroLength ? realPx.Y + 46f : realPx.Y + 28f;
+
+            if (!zeroLength)
+            {
+                float imagWidth = _labelPaint.MeasureText(imagLabel);
+                float realWidth = _labelPaint.MeasureText(realLabel);
+                float minGap = (imagWidth + realWidth) * 0.5f + 12f;
+                float currentGap = MathF.Abs(realX - imagX);
+                if (currentGap < minGap)
+                {
+                    float center = (imagX + realX) * 0.5f;
+                    imagX = center - minGap * 0.5f;
+                    realX = center + minGap * 0.5f;
+                }
+            }
+
+            canvas.DrawText(imagLabel, imagX, imagY, _labelPaint);
+            canvas.DrawText(realLabel, realX, realY, _labelPaint);
+            return;
+        }
+
+        float imagXVertical = imagPx.X - 22f;
+        float realXVertical = realPx.X - 22f;
+        float imagYVertical = imagPx.Y + 7f;
+        float realYVertical = zeroLength ? realPx.Y + 25f : realPx.Y + 7f;
+
+        if (!zeroLength)
+        {
+            const float minVerticalGap = 18f;
+            float currentGap = MathF.Abs(realYVertical - imagYVertical);
+            if (currentGap < minVerticalGap)
+            {
+                float center = (imagYVertical + realYVertical) * 0.5f;
+                imagYVertical = center - minVerticalGap * 0.5f;
+                realYVertical = center + minVerticalGap * 0.5f;
+            }
+        }
+
+        canvas.DrawText(imagLabel, imagXVertical, imagYVertical, _labelRightPaint);
+        canvas.DrawText(realLabel, realXVertical, realYVertical, _labelRightPaint);
     }
 
     /// <summary>Hit-test a pixel point against this segment's drag zones.</summary>
@@ -230,10 +269,20 @@ public class SegmentRenderer : IDisposable
     private static string FormatValue(float val, bool isImaginary)
     {
         float rounded = MathF.Round(val * 10) / 10;
+        if (MathF.Abs(rounded) < 0.05f)
+        {
+            rounded = 0f;
+        }
+
         if (isImaginary)
         {
             // Imaginary axis is positive-left, so negate for display
             float display = -rounded;
+            if (MathF.Abs(display) < 0.05f)
+            {
+                display = 0f;
+            }
+
             string sign = display >= 0 ? "+" : "";
             return $"{sign}{display}i";
         }

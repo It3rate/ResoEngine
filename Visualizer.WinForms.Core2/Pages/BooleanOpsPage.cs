@@ -85,13 +85,27 @@ public class BooleanOpsPage : IVisualizerPage
         Color = new SKColor(80, 80, 80),
         IsAntialias = true
     };
+    private readonly SKPaint _headingPaint = new()
+    {
+        Color = new SKColor(45, 45, 45),
+        TextSize = 23f,
+        Typeface = SKTypeface.FromFamilyName(VisualStyle.FontFamily, SKFontStyle.Bold),
+        IsAntialias = true,
+    };
+    private readonly SKPaint _bodyPaint = new()
+    {
+        Color = new SKColor(92, 92, 92),
+        TextSize = 14f,
+        Typeface = SKTypeface.FromFamilyName(VisualStyle.FontFamily, SKFontStyle.Normal),
+        IsAntialias = true,
+    };
 
     public void Init(CoordinateSystem coords, HitTestEngine hitTest, SkiaCanvas canvas)
     {
         _coords = coords;
 
         coords.OriginX = coords.Width / 2;
-        coords.OriginY = 130;
+        coords.OriginY = 232;
 
         _rendererA = new SegmentRenderer(coords, SegmentOrientation.Horizontal, SegmentColors.Red, crossPosition: InputAY);
         _rendererB = new SegmentRenderer(coords, SegmentOrientation.Horizontal, SegmentColors.Blue, crossPosition: InputBY);
@@ -111,6 +125,16 @@ public class BooleanOpsPage : IVisualizerPage
         {
             return;
         }
+
+        canvas.DrawText("Boolean Operations", 34f, 42f, _headingPaint);
+        float subtitleY = 68f;
+        PageChrome.DrawWrappedText(
+            canvas,
+            "Drag the two input intervals at the top. The rows below show common boolean-style interval operations using the current A and B segments.",
+            34f,
+            ref subtitleY,
+            560f,
+            _bodyPaint);
 
         SyncInputsFromDisplay();
         ComputeResults();
@@ -214,6 +238,8 @@ public class BooleanOpsPage : IVisualizerPage
         Destroy();
         _separatorPaint.Dispose();
         _labelPaint.Dispose();
+        _headingPaint.Dispose();
+        _bodyPaint.Dispose();
         _originFillPaint.Dispose();
         _originStrokePaint.Dispose();
         _originDotPaint.Dispose();

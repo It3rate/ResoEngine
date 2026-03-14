@@ -131,6 +131,20 @@ public class ParallelBooleanGalleryPage : IVisualizerPage
         Color = new SKColor(198, 198, 198),
         IsAntialias = true,
     };
+    private readonly SKPaint _headingPaint = new()
+    {
+        Color = new SKColor(45, 45, 45),
+        TextSize = 23f,
+        Typeface = SKTypeface.FromFamilyName(VisualStyle.FontFamily, SKFontStyle.Bold),
+        IsAntialias = true,
+    };
+    private readonly SKPaint _bodyPaint = new()
+    {
+        Color = new SKColor(92, 92, 92),
+        TextSize = 14f,
+        Typeface = SKTypeface.FromFamilyName(VisualStyle.FontFamily, SKFontStyle.Normal),
+        IsAntialias = true,
+    };
 
     private const float InputAY = 2.0f;
     private const float InputBY = 0.5f;
@@ -141,7 +155,7 @@ public class ParallelBooleanGalleryPage : IVisualizerPage
     {
         _coords = coords;
         coords.OriginX = coords.Width / 2;
-        coords.OriginY = 170;
+        coords.OriginY = 214;
 
         _rendererA = new SegmentRenderer(coords, SegmentOrientation.Horizontal, SegmentColors.Red, crossPosition: InputAY);
         _rendererB = new SegmentRenderer(coords, SegmentOrientation.Horizontal, SegmentColors.Blue, crossPosition: InputBY);
@@ -156,6 +170,16 @@ public class ParallelBooleanGalleryPage : IVisualizerPage
         {
             return;
         }
+
+        canvas.DrawText("Parallel Boolean Gallery", 34f, 42f, _headingPaint);
+        float subtitleY = 68f;
+        PageChrome.DrawWrappedText(
+            canvas,
+            "Drag the two parallel segments above. The tiles below show how each boolean rule reads along the shared framed line, including overlap, separation, and mirrored continuity.",
+            34f,
+            ref subtitleY,
+            560f,
+            _bodyPaint);
 
         var geometry = new AreaDisplayGeometry(_axisA.Axis.Pin(_axisB.Axis));
         DrawTopComponentField(canvas, geometry);
@@ -183,7 +207,7 @@ public class ParallelBooleanGalleryPage : IVisualizerPage
             return;
         }
 
-        const float top = 246f;
+        const float top = 286f;
         const float left = 28f;
         const float gapX = 14f;
         const float gapY = 12f;
@@ -457,6 +481,8 @@ public class ParallelBooleanGalleryPage : IVisualizerPage
         _activeRegionBorderPaint.Dispose();
         _zeroBarPaint.Dispose();
         _topRegionBorderPaint.Dispose();
+        _headingPaint.Dispose();
+        _bodyPaint.Dispose();
     }
 
     private SKPoint GetZeroCenterPixel()

@@ -92,6 +92,20 @@ public class OrthogonalAxesPage : IVisualizerPage
         Color = new SKColor(195, 195, 195, 230),
         IsAntialias = true,
     };
+    private readonly SKPaint _headingPaint = new()
+    {
+        Color = new SKColor(45, 45, 45),
+        TextSize = 23f,
+        Typeface = SKTypeface.FromFamilyName(VisualStyle.FontFamily, SKFontStyle.Bold),
+        IsAntialias = true,
+    };
+    private readonly SKPaint _bodyPaint = new()
+    {
+        Color = new SKColor(92, 92, 92),
+        TextSize = 14f,
+        Typeface = SKTypeface.FromFamilyName(VisualStyle.FontFamily, SKFontStyle.Normal),
+        IsAntialias = true,
+    };
 
     public void Init(CoordinateSystem coords, HitTestEngine hitTest, SkiaCanvas canvas)
     {
@@ -99,7 +113,7 @@ public class OrthogonalAxesPage : IVisualizerPage
         _canvasHost = canvas;
 
         coords.OriginX = coords.Width / 2;
-        coords.OriginY = coords.Height / 2;
+        coords.OriginY = coords.Height / 2 + 38f;
 
         _gridRenderer = new GridRenderer(coords);
         _rendererA = new SegmentRenderer(coords, SegmentOrientation.Horizontal, SegmentColors.Red, crossPosition: 0);
@@ -121,6 +135,16 @@ public class OrthogonalAxesPage : IVisualizerPage
 
         SyncInputsFromDisplay();
         var area = _axisA.Axis.Pin(_axisB.Axis);
+
+        canvas.DrawText("Orthogonal Axes", 34f, 42f, _headingPaint);
+        float subtitleY = 68f;
+        PageChrome.DrawWrappedText(
+            canvas,
+            "Drag A and B to pin two directed axes into an area. The grid shows the expanded four-quadrant product, and the title above the chart shows the folded total area.",
+            34f,
+            ref subtitleY,
+            560f,
+            _bodyPaint);
 
         _gridRenderer?.Render(canvas, _axisA, _axisB, SegmentColors.Red, SegmentColors.Blue);
         DrawQuadrantValues(canvas, area);
@@ -458,6 +482,8 @@ public class OrthogonalAxesPage : IVisualizerPage
         _areaValueTextPaint.Dispose();
         _areaValueBgPaint.Dispose();
         _areaValueBorderPaint.Dispose();
+        _headingPaint.Dispose();
+        _bodyPaint.Dispose();
         _originFillPaint.Dispose();
         _originStrokePaint.Dispose();
         _originDotPaint.Dispose();

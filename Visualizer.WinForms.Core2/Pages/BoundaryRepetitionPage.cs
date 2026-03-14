@@ -562,7 +562,7 @@ public class BoundaryRepetitionPage : IVisualizerPage
             Text = "Start Probe",
             AutoSize = true,
             Location = new Point(12, 12),
-            Font = new Font("Arial", 9f, FontStyle.Bold),
+            Font = new Font(VisualStyle.UiFontFamily, 9f, FontStyle.Bold),
         };
 
         _probeStartInput = new NumericUpDown
@@ -592,7 +592,7 @@ public class BoundaryRepetitionPage : IVisualizerPage
             Text = "End Probe",
             AutoSize = true,
             Location = new Point(126, 12),
-            Font = new Font("Arial", 9f, FontStyle.Bold),
+            Font = new Font(VisualStyle.UiFontFamily, 9f, FontStyle.Bold),
         };
 
         _probeEndInput = new NumericUpDown
@@ -637,7 +637,7 @@ public class BoundaryRepetitionPage : IVisualizerPage
             AutoSize = false,
             Location = new Point(12, 84),
             Size = new Size(292, 24),
-            Font = new Font("Arial", 8f, FontStyle.Regular),
+            Font = new Font(VisualStyle.UiFontFamily, 8f, FontStyle.Regular),
             ForeColor = Color.FromArgb(105, 105, 105),
         };
 

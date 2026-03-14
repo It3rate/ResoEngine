@@ -56,6 +56,13 @@ public class ContainmentTensionPage : IVisualizerPage
         IsAntialias = true,
     };
 
+    private readonly SKPaint _tensionOverlayPaint = new()
+    {
+        Style = SKPaintStyle.Fill,
+        Color = new SKColor(232, 128, 72, 0),
+        IsAntialias = true,
+    };
+
     private readonly SKPaint _rulerLinePaint = new()
     {
         Style = SKPaintStyle.Stroke,
@@ -152,6 +159,14 @@ public class ContainmentTensionPage : IVisualizerPage
         IsAntialias = true,
     };
 
+    private readonly SKPaint _tensionBandStrokePaint = new()
+    {
+        Style = SKPaintStyle.Stroke,
+        StrokeWidth = 1.2f,
+        Color = new SKColor(214, 117, 63, 176),
+        IsAntialias = true,
+    };
+
     private readonly SKPaint _originFillPaint = new()
     {
         Style = SKPaintStyle.Fill,
@@ -221,13 +236,14 @@ public class ContainmentTensionPage : IVisualizerPage
         float subtitleY = 68f;
         PageChrome.DrawWrappedText(
             canvas,
-            "Drag the parent and child. Flip the parent perspective to reinterpret the child, or change child support to create tension instead of failure.",
+            "Drag the parent and child. Flip the parent perspective to reinterpret the child. The two number boxes change the child's i-side and r-side support, which acts like a resolution/support mismatch and creates tension instead of failure.",
             34f,
             ref subtitleY,
-            430f,
+            560f,
             _bodyPaint);
 
-        DrawGraphFrame(canvas, relation);
+        float tensionScore = CalculateTensionScore(relation);
+        DrawGraphFrame(canvas, relation, tensionScore);
 
         _parentRenderer?.Render(canvas, _parent);
         DrawSegmentLabel(canvas, "Parent Frame", ParentY, SegmentColors.Red);
@@ -236,7 +252,7 @@ public class ContainmentTensionPage : IVisualizerPage
         _contextRenderer?.Render(canvas, _contextualChild);
         DrawSegmentLabel(canvas, "Child In Parent Context", ContextY, SegmentColors.Green);
 
-        DrawRelationCard(canvas, relation, contextual);
+        DrawRelationCard(canvas, relation, contextual, tensionScore);
 
         var originPx = _coords.MathToPixel(0f, 0f);
         float r = VisualStyle.OriginDotRadius;
@@ -286,7 +302,7 @@ public class ContainmentTensionPage : IVisualizerPage
         canvas.DrawText(label, rect.MidX, rect.MidY + 5f, textPaint);
     }
 
-    private void DrawRelationCard(SKCanvas canvas, Containment relation, Axis contextual)
+    private void DrawRelationCard(SKCanvas canvas, Containment relation, Axis contextual, float tensionScore)
     {
         if (_coords == null)
         {
@@ -304,6 +320,7 @@ public class ContainmentTensionPage : IVisualizerPage
 
         DrawWrappedText(canvas, $"Parent perspective: {SelectedPerspective}", x, ref y, rect.Width - 36f, _cardTextPaint);
         DrawWrappedText(canvas, $"Child in context: {FormatAxis(contextual)}", x, ref y, rect.Width - 36f, _cardTextPaint);
+        DrawWrappedText(canvas, $"Display tension score: {tensionScore:0.0}", x, ref y, rect.Width - 36f, _cardTextPaint);
         y += 6f;
         DrawWrappedText(canvas, relation.ToString(), x, ref y, rect.Width - 36f, _cardTextPaint);
         y += 12f;
@@ -337,7 +354,7 @@ public class ContainmentTensionPage : IVisualizerPage
         }
     }
 
-    private void DrawGraphFrame(SKCanvas canvas, Containment relation)
+    private void DrawGraphFrame(SKCanvas canvas, Containment relation, float tensionScore)
     {
         if (_coords == null)
         {
@@ -346,6 +363,7 @@ public class ContainmentTensionPage : IVisualizerPage
 
         GetGraphBounds(out var minValue, out var maxValue, out var outerRect);
         canvas.DrawRoundRect(outerRect, 16f, 16f, _graphFillPaint);
+        DrawLocalizedTensionOverlays(canvas, relation, minValue, maxValue, outerRect, tensionScore);
         canvas.DrawRoundRect(outerRect, 16f, 16f, _graphBorderPaint);
 
         float top = _coords.MathToPixel(0f, ParentY + 0.95f).Y;
@@ -366,6 +384,123 @@ public class ContainmentTensionPage : IVisualizerPage
             _tickTextPaint,
             _tickTextPaint);
     }
+
+    private void DrawLocalizedTensionOverlays(
+        SKCanvas canvas,
+        Containment relation,
+        decimal minValue,
+        decimal maxValue,
+        SKRect outerRect,
+        float tensionScore)
+    {
+        if (_coords == null)
+        {
+            return;
+        }
+
+        var parent = relation.Parent.Element as Axis;
+        var contextualChild = relation.ChildInParentContext as Axis;
+        if (parent is null || contextualChild is null)
+        {
+            return;
+        }
+
+        decimal parentStart = parent.Start.Value;
+        decimal parentEnd = parent.End.Value;
+        decimal childStart = contextualChild.Start.Value;
+        decimal childEnd = contextualChild.End.Value;
+        decimal parentLeft = Math.Min(parentStart, parentEnd);
+        decimal parentRight = Math.Max(parentStart, parentEnd);
+        decimal childLeft = Math.Min(childStart, childEnd);
+        decimal childRight = Math.Max(childStart, childEnd);
+        decimal validSpan = Math.Max(1m, parentRight - parentLeft);
+
+        decimal startOverflow = childLeft < parentLeft ? parentLeft - childLeft : 0m;
+        decimal endOverflow = childRight > parentRight ? childRight - parentRight : 0m;
+
+        decimal startSupportDelta = parent.Recessive.Recessive == 0m
+            ? 0m
+            : Math.Abs(contextualChild.Recessive.Recessive.Value - parent.Recessive.Recessive.Value) / Math.Abs(parent.Recessive.Recessive.Value);
+        decimal endSupportDelta = parent.Dominant.Recessive == 0m
+            ? 0m
+            : Math.Abs(contextualChild.Dominant.Recessive.Value - parent.Dominant.Recessive.Value) / Math.Abs(parent.Dominant.Recessive.Value);
+
+        float startIntensity = Clamp01((float)(startOverflow / validSpan) + (float)startSupportDelta * 0.5f);
+        float endIntensity = Clamp01((float)(endOverflow / validSpan) + (float)endSupportDelta * 0.5f);
+
+        float top = outerRect.Top + 8f;
+        float bottom = outerRect.Bottom - 8f;
+
+        canvas.Save();
+        canvas.ClipRoundRect(new SKRoundRect(outerRect, 16f, 16f), antialias: true);
+
+        if (startIntensity > 0f)
+        {
+            float left = ValueToGraphX(Math.Min(childLeft, parentLeft), minValue, maxValue, outerRect);
+            float right = ValueToGraphX(parentLeft, minValue, maxValue, outerRect);
+            DrawTensionBand(canvas, left, right, top, bottom, startIntensity);
+
+            if (startSupportDelta > 0m)
+            {
+                float markerX = ValueToGraphX(childStart, minValue, maxValue, outerRect);
+                DrawTensionBand(canvas, markerX - 14f, markerX + 14f, top, bottom, Math.Max(0.22f, startIntensity * 0.7f));
+            }
+        }
+
+        if (endIntensity > 0f)
+        {
+            float left = ValueToGraphX(parentRight, minValue, maxValue, outerRect);
+            float right = ValueToGraphX(Math.Max(childRight, parentRight), minValue, maxValue, outerRect);
+            DrawTensionBand(canvas, left, right, top, bottom, endIntensity);
+
+            if (endSupportDelta > 0m)
+            {
+                float markerX = ValueToGraphX(childEnd, minValue, maxValue, outerRect);
+                DrawTensionBand(canvas, markerX - 14f, markerX + 14f, top, bottom, Math.Max(0.22f, endIntensity * 0.7f));
+            }
+        }
+
+        if (startIntensity == 0f && endIntensity == 0f && tensionScore > 0f)
+        {
+            byte alpha = (byte)Math.Clamp(16f + tensionScore * 12f, 0f, 72f);
+            _tensionOverlayPaint.Color = new SKColor(232, 128, 72, alpha);
+            canvas.DrawRoundRect(new SKRect(outerRect.Left + 12f, top, outerRect.Right - 12f, bottom), 12f, 12f, _tensionOverlayPaint);
+        }
+
+        canvas.Restore();
+    }
+
+    private void DrawTensionBand(SKCanvas canvas, float left, float right, float top, float bottom, float intensity)
+    {
+        float clampedLeft = Math.Min(left, right);
+        float clampedRight = Math.Max(left, right);
+        if (clampedRight - clampedLeft < 8f)
+        {
+            float mid = (clampedLeft + clampedRight) * 0.5f;
+            clampedLeft = mid - 4f;
+            clampedRight = mid + 4f;
+        }
+
+        byte alpha = (byte)Math.Clamp(34f + intensity * 110f, 0f, 156f);
+        _tensionOverlayPaint.Color = new SKColor(232, 128, 72, alpha);
+
+        var rect = new SKRect(clampedLeft, top, clampedRight, bottom);
+        canvas.DrawRoundRect(rect, 10f, 10f, _tensionOverlayPaint);
+        canvas.DrawRoundRect(rect, 10f, 10f, _tensionBandStrokePaint);
+    }
+
+    private float ValueToGraphX(decimal value, decimal minValue, decimal maxValue, SKRect outerRect)
+    {
+        if (maxValue == minValue)
+        {
+            return outerRect.MidX;
+        }
+
+        float t = (float)((value - minValue) / (maxValue - minValue));
+        return outerRect.Left + t * outerRect.Width;
+    }
+
+    private static float Clamp01(float value) => Math.Max(0f, Math.Min(1f, value));
 
     private void GetGraphBounds(out decimal minValue, out decimal maxValue, out SKRect outerRect)
     {
@@ -465,7 +600,7 @@ public class ContainmentTensionPage : IVisualizerPage
         _controlsPanel = new Panel
         {
             BackColor = Color.FromArgb(248, 248, 248),
-            Size = new Size(392, 112),
+            Size = new Size(540, 116),
             Anchor = AnchorStyles.Top | AnchorStyles.Right,
         };
         PageChrome.PositionTopRightPanel(_canvasHost, _controlsPanel, 18);
@@ -475,14 +610,14 @@ public class ContainmentTensionPage : IVisualizerPage
             Text = "Parent Perspective",
             AutoSize = true,
             Location = new Point(12, 12),
-            Font = new Font("Arial", 9f, FontStyle.Bold),
+            Font = new Font(VisualStyle.UiFontFamily, 9f, FontStyle.Bold),
         };
 
         _perspectiveCombo = new ComboBox
         {
             DropDownStyle = ComboBoxStyle.DropDownList,
             Location = new Point(12, 32),
-            Width = 130,
+            Width = 146,
         };
         _perspectiveCombo.Items.AddRange(["Dominant", "Opposite"]);
         _perspectiveCombo.SelectedIndex = 0;
@@ -492,15 +627,15 @@ public class ContainmentTensionPage : IVisualizerPage
         {
             Text = "Child i support",
             AutoSize = true,
-            Location = new Point(156, 12),
-            Font = new Font("Arial", 9f, FontStyle.Bold),
+            Location = new Point(198, 12),
+            Font = new Font(VisualStyle.UiFontFamily, 9f, FontStyle.Bold),
         };
 
         _recessiveSupportCombo = new ComboBox
         {
             DropDownStyle = ComboBoxStyle.DropDownList,
-            Location = new Point(156, 32),
-            Width = 76,
+            Location = new Point(198, 32),
+            Width = 110,
         };
         _recessiveSupportCombo.Items.AddRange(["1", "2", "3"]);
         _recessiveSupportCombo.SelectedIndex = 0;
@@ -514,15 +649,15 @@ public class ContainmentTensionPage : IVisualizerPage
         {
             Text = "Child r support",
             AutoSize = true,
-            Location = new Point(224, 12),
-            Font = new Font("Arial", 9f, FontStyle.Bold),
+            Location = new Point(344, 12),
+            Font = new Font(VisualStyle.UiFontFamily, 9f, FontStyle.Bold),
         };
 
         _dominantSupportCombo = new ComboBox
         {
             DropDownStyle = ComboBoxStyle.DropDownList,
-            Location = new Point(224, 32),
-            Width = 76,
+            Location = new Point(344, 32),
+            Width = 110,
         };
         _dominantSupportCombo.Items.AddRange(["1", "2", "3"]);
         _dominantSupportCombo.SelectedIndex = 0;
@@ -534,11 +669,11 @@ public class ContainmentTensionPage : IVisualizerPage
 
         var note = new Label
         {
-            Text = "Drag the child beyond the parent to create range tension. Change either support to create resolution tension.",
+            Text = "Change the support numbers to reinterpret the child's left and right resolution. Range overflow creates boundary tension; support mismatch creates resolution tension.",
             AutoSize = false,
             Location = new Point(12, 66),
-            Size = new Size(364, 34),
-            Font = new Font("Arial", 8f, FontStyle.Regular),
+            Size = new Size(500, 38),
+            Font = new Font(VisualStyle.UiFontFamily, 8f, FontStyle.Regular),
             ForeColor = Color.FromArgb(105, 105, 105),
         };
 
@@ -604,6 +739,55 @@ public class ContainmentTensionPage : IVisualizerPage
         return $"{recessive:0.0}i {sign} {Math.Abs(dominant):0.0}";
     }
 
+    private float CalculateTensionScore(Containment relation)
+    {
+        float score = 0f;
+
+        foreach (var tension in relation.Tensions)
+        {
+            score += tension.Kind switch
+            {
+                ContainmentTensionKind.OutsideExpectedRange => 1.5f,
+                ContainmentTensionKind.ResolutionMismatch => 1.0f,
+                ContainmentTensionKind.PlacementUnderspecified => 0.75f,
+                ContainmentTensionKind.UnsupportedInterpretation => 2.0f,
+                _ => 0.5f,
+            };
+        }
+
+        var parent = relation.Parent.Element as Axis;
+        var child = relation.ChildInParentContext as Axis;
+        if (parent is not null && child is not null)
+        {
+            decimal parentLeft = Math.Min(parent.Start.Value, parent.End.Value);
+            decimal parentRight = Math.Max(parent.Start.Value, parent.End.Value);
+            decimal childLeft = Math.Min(child.Start.Value, child.End.Value);
+            decimal childRight = Math.Max(child.Start.Value, child.End.Value);
+
+            if (childLeft < parentLeft)
+            {
+                score += (float)(parentLeft - childLeft);
+            }
+
+            if (childRight > parentRight)
+            {
+                score += (float)(childRight - parentRight);
+            }
+
+            if (child.Recessive.Recessive != parent.Recessive.Recessive)
+            {
+                score += (float)Math.Abs(child.Recessive.Recessive.Value - parent.Recessive.Recessive.Value) * 0.5f;
+            }
+
+            if (child.Dominant.Recessive != parent.Dominant.Recessive)
+            {
+                score += (float)Math.Abs(child.Dominant.Recessive.Value - parent.Dominant.Recessive.Value) * 0.5f;
+            }
+        }
+
+        return score;
+    }
+
     public bool IsOriginHit(SKPoint pixelPoint)
     {
         if (_coords == null)
@@ -661,5 +845,7 @@ public class ContainmentTensionPage : IVisualizerPage
         _originFillPaint.Dispose();
         _originStrokePaint.Dispose();
         _originDotPaint.Dispose();
+        _tensionOverlayPaint.Dispose();
+        _tensionBandStrokePaint.Dispose();
     }
 }

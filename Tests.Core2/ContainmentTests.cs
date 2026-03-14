@@ -62,6 +62,18 @@ public class ContainmentTests
     }
 
     [Fact]
+    public void AxisContainment_UsesEnvelopeBounds_WhenParentSegmentIsReversed()
+    {
+        var parent = Axis.FromCoordinates((Scalar)7m, (Scalar)(-6.5m)).AsNode();
+        var child = Axis.FromCoordinates((Scalar)2m, (Scalar)(-3.5m));
+
+        var relation = parent.AddChild(child);
+
+        Assert.Equal(child, Assert.IsType<Axis>(relation.ChildInParentContext));
+        Assert.Empty(relation.Tensions);
+    }
+
+    [Fact]
     public void OppositePerspective_IsStoredOnContainmentRelation()
     {
         var parent = new Axis(new Proportion(4, 2), new Proportion(6, 2)).AsNode();

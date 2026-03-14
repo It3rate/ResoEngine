@@ -172,25 +172,25 @@ internal static class ContainmentAnalysis
         List<ContainmentTension> tensions,
         string pathPrefix)
     {
-        decimal parentStart = -parent.Recessive.Fold();
-        decimal parentEnd = parent.Dominant.Fold();
-        decimal childStart = -child.Recessive.Fold();
-        decimal childEnd = child.Dominant.Fold();
+        decimal parentLeft = Math.Min(parent.Start.Value, parent.End.Value);
+        decimal parentRight = Math.Max(parent.Start.Value, parent.End.Value);
+        decimal childLeft = Math.Min(child.Start.Value, child.End.Value);
+        decimal childRight = Math.Max(child.Start.Value, child.End.Value);
 
-        if (childStart < parentStart)
+        if (childLeft < parentLeft)
         {
             tensions.Add(new ContainmentTension(
                 ContainmentTensionKind.OutsideExpectedRange,
                 AppendPath(pathPrefix, "recessive.boundary"),
-                $"Child start boundary {childStart:0.###} falls outside parent start boundary {parentStart:0.###}."));
+                $"Child left boundary {childLeft:0.###} falls outside parent left boundary {parentLeft:0.###}."));
         }
 
-        if (childEnd > parentEnd)
+        if (childRight > parentRight)
         {
             tensions.Add(new ContainmentTension(
                 ContainmentTensionKind.OutsideExpectedRange,
                 AppendPath(pathPrefix, "dominant.boundary"),
-                $"Child end boundary {childEnd:0.###} falls outside parent end boundary {parentEnd:0.###}."));
+                $"Child right boundary {childRight:0.###} falls outside parent right boundary {parentRight:0.###}."));
         }
     }
 

@@ -56,7 +56,7 @@ public class MainForm : Form
             AutoSize = false,
             Location = new Point(10, 5),
             Size = new Size(238, 18),
-            Font = new Font("Arial", 8.5f, FontStyle.Regular),
+            Font = new Font(VisualStyle.UiFontFamily, 8.5f, FontStyle.Regular),
             ForeColor = Color.FromArgb(132, 132, 132),
             TextAlign = ContentAlignment.MiddleLeft,
         };

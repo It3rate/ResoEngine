@@ -119,6 +119,20 @@ public class OrthogonalBooleanGalleryPage : IVisualizerPage
         Color = new SKColor(95, 125, 214, 180),
         IsAntialias = true,
     };
+    private readonly SKPaint _headingPaint = new()
+    {
+        Color = new SKColor(45, 45, 45),
+        TextSize = 23f,
+        Typeface = SKTypeface.FromFamilyName(VisualStyle.FontFamily, SKFontStyle.Bold),
+        IsAntialias = true,
+    };
+    private readonly SKPaint _bodyPaint = new()
+    {
+        Color = new SKColor(92, 92, 92),
+        TextSize = 14f,
+        Typeface = SKTypeface.FromFamilyName(VisualStyle.FontFamily, SKFontStyle.Normal),
+        IsAntialias = true,
+    };
 
     public string Title => "Orthogonal Boolean";
 
@@ -126,7 +140,7 @@ public class OrthogonalBooleanGalleryPage : IVisualizerPage
     {
         _coords = coords;
         coords.OriginX = 240;
-        coords.OriginY = 210;
+        coords.OriginY = 284;
 
         _gridRenderer = new GridRenderer(coords);
         _rendererA = new SegmentRenderer(coords, SegmentOrientation.Horizontal, SegmentColors.Red, 0);
@@ -142,6 +156,16 @@ public class OrthogonalBooleanGalleryPage : IVisualizerPage
         {
             return;
         }
+
+        canvas.DrawText("Orthogonal Boolean Gallery", 34f, 42f, _headingPaint);
+        float subtitleY = 68f;
+        PageChrome.DrawWrappedText(
+            canvas,
+            "Drag the two orthogonal segments above. Each tile below shows one boolean rule over the four quadrant regions created by pinning the axes together.",
+            34f,
+            ref subtitleY,
+            560f,
+            _bodyPaint);
 
         var geometry = new AreaDisplayGeometry(_axisA.Axis.Pin(_axisB.Axis));
         _gridRenderer?.Render(canvas, _axisA, _axisB, SegmentColors.Red, SegmentColors.Blue);
@@ -164,7 +188,7 @@ public class OrthogonalBooleanGalleryPage : IVisualizerPage
             return;
         }
 
-        const float top = 244f;
+        const float top = 322f;
         const float rightPad = 24f;
         const float gapX = 10f;
         const float gapY = 10f;
@@ -407,6 +431,8 @@ public class OrthogonalBooleanGalleryPage : IVisualizerPage
         _activeRegionBorderPaint.Dispose();
         _redStripePaint.Dispose();
         _blueStripePaint.Dispose();
+        _headingPaint.Dispose();
+        _bodyPaint.Dispose();
         _axisGuidePaint.Dispose();
         _originFillPaint.Dispose();
         _originStrokePaint.Dispose();

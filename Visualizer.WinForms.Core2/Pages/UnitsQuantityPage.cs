@@ -193,10 +193,10 @@ public class UnitsQuantityPage : IVisualizerPage
         float subtitleY = 68f;
         PageChrome.DrawWrappedText(
             canvas,
-            "Structure lives in the segment. Unit signatures live beside it and combine independently.",
+            "The top segments are values A and B. The lower cards show what each operation does to the value shape and the unit signature.",
             34f,
             ref subtitleY,
-            430f,
+            560f,
             _bodyPaint);
 
         DrawGraphFrame(canvas);
@@ -257,30 +257,62 @@ public class UnitsQuantityPage : IVisualizerPage
         var rootRect = new SKRect(left, top + cardHeight + gap, left + cardWidth, top + cardHeight * 2f + gap);
         var addRect = new SKRect(left + cardWidth + gap, top + cardHeight + gap, left + cardWidth * 2f + gap, top + cardHeight * 2f + gap);
 
-        DrawQuantityCard(canvas, multiplyRect, "Multiply", product.Value, product.Signature.ToString(), SegmentColors.Green);
+        DrawQuantityCard(
+            canvas,
+            multiplyRect,
+            "Multiply",
+            "A * B",
+            "combined value and combined unit signature",
+            product.Value,
+            product.Signature.ToString(),
+            SegmentColors.Green);
 
         if (squareQuantity.HasValue)
         {
-            DrawQuantityCard(canvas, squareRect, "Square", squareQuantity.Value.Value, squareQuantity.Value.Signature.ToString(), SegmentColors.Orange);
+            DrawQuantityCard(
+                canvas,
+                squareRect,
+                "Square",
+                "A^2",
+                "repeat multiplication of A",
+                squareQuantity.Value.Value,
+                squareQuantity.Value.Signature.ToString(),
+                SegmentColors.Orange);
         }
         else
         {
-            DrawMessageCard(canvas, squareRect, "Square", "No principal power", false);
+            DrawMessageCard(canvas, squareRect, "Square", "A^2", "No principal power", false);
         }
 
         if (rootedQuantity.HasValue)
         {
-            DrawQuantityCard(canvas, rootRect, "Square Root", rootedQuantity.Value.Value, rootedQuantity.Value.Signature.ToString(), SegmentColors.Blue);
+            DrawQuantityCard(
+                canvas,
+                rootRect,
+                "Square Root",
+                "sqrt(A^2)",
+                "principal inverse continuation of the square",
+                rootedQuantity.Value.Value,
+                rootedQuantity.Value.Signature.ToString(),
+                SegmentColors.Blue);
         }
         else
         {
-            DrawMessageCard(canvas, rootRect, "Square Root", "No principal root", false);
+            DrawMessageCard(canvas, rootRect, "Square Root", "sqrt(A^2)", "No principal root", false);
         }
 
         if (sum.Succeeded)
         {
             var quantity = sum.Quantity!.Value;
-            DrawQuantityCard(canvas, addRect, "Add", quantity.Value, quantity.Signature.ToString(), SegmentColors.Purple);
+            DrawQuantityCard(
+                canvas,
+                addRect,
+                "Add",
+                "A + B",
+                "addition only works when signatures match",
+                quantity.Value,
+                quantity.Signature.ToString(),
+                SegmentColors.Purple);
         }
         else
         {
@@ -288,7 +320,7 @@ public class UnitsQuantityPage : IVisualizerPage
             string message = tension is null || string.IsNullOrWhiteSpace(tension.Message)
                 ? "Signature mismatch"
                 : tension.Message;
-            DrawMessageCard(canvas, addRect, "Add / Tension", message, true);
+            DrawMessageCard(canvas, addRect, "Add / Tension", "A + B", message, true);
         }
     }
 
@@ -399,26 +431,38 @@ public class UnitsQuantityPage : IVisualizerPage
         outerRect = new SKRect(_coords.Width * 0.05f, top - 18f, _coords.Width * 0.95f, bottom + 24f);
     }
 
-    private void DrawQuantityCard(SKCanvas canvas, SKRect rect, string title, Axis axis, string signatureText, SegmentColorSet colors)
+    private void DrawQuantityCard(
+        SKCanvas canvas,
+        SKRect rect,
+        string title,
+        string formula,
+        string explanation,
+        Axis axis,
+        string signatureText,
+        SegmentColorSet colors)
     {
         canvas.DrawRoundRect(rect, 14f, 14f, _cardFillPaint);
         canvas.DrawRoundRect(rect, 14f, 14f, _cardBorderPaint);
         canvas.DrawText(title, rect.MidX, rect.Top + 24f, _cardTitlePaint);
+        canvas.DrawText(formula, rect.MidX, rect.Top + 42f, _cardTextPaint);
 
-        var segmentRect = new SKRect(rect.Left + 22f, rect.Top + 38f, rect.Right - 22f, rect.Top + 90f);
+        var segmentRect = new SKRect(rect.Left + 22f, rect.Top + 52f, rect.Right - 22f, rect.Top + 92f);
         DrawMiniAxis(canvas, segmentRect, axis, colors);
 
-        canvas.DrawText(signatureText, rect.MidX, rect.Bottom - 14f, _cardTextPaint);
+        canvas.DrawText($"result {FormatAxis(axis)}", rect.MidX, rect.Bottom - 34f, _cardTextPaint);
+        canvas.DrawText(signatureText, rect.MidX, rect.Bottom - 20f, _cardTextPaint);
+        canvas.DrawText(explanation, rect.MidX, rect.Bottom - 6f, _cardTextPaint);
     }
 
-    private void DrawMessageCard(SKCanvas canvas, SKRect rect, string title, string message, bool tension)
+    private void DrawMessageCard(SKCanvas canvas, SKRect rect, string title, string formula, string message, bool tension)
     {
         canvas.DrawRoundRect(rect, 14f, 14f, _cardFillPaint);
         canvas.DrawRoundRect(rect, 14f, 14f, _cardBorderPaint);
         canvas.DrawText(title, rect.MidX, rect.Top + 24f, _cardTitlePaint);
+        canvas.DrawText(formula, rect.MidX, rect.Top + 42f, _cardTextPaint);
 
         var paint = tension ? _tensionTextPaint : _cardTextPaint;
-        canvas.DrawText(message, rect.MidX, rect.MidY, paint);
+        canvas.DrawText(message, rect.MidX, rect.MidY + 8f, paint);
     }
 
     private void DrawMiniAxis(SKCanvas canvas, SKRect rect, Axis axis, SegmentColorSet colors)
@@ -435,6 +479,34 @@ public class UnitsQuantityPage : IVisualizerPage
 
         canvas.DrawLine(rect.Left, midY, rect.Right, midY, _guidePaint);
         canvas.DrawLine(zeroX, rect.Top + 8f, zeroX, rect.Bottom - 8f, _guidePaint);
+
+        using var leftTextPaint = new SKPaint
+        {
+            Color = _cardTextPaint.Color,
+            TextSize = 11f,
+            Typeface = _cardTextPaint.Typeface,
+            TextAlign = SKTextAlign.Left,
+            IsAntialias = true,
+        };
+        using var centerTextPaint = new SKPaint
+        {
+            Color = _cardTextPaint.Color,
+            TextSize = 11f,
+            Typeface = _cardTextPaint.Typeface,
+            TextAlign = SKTextAlign.Center,
+            IsAntialias = true,
+        };
+        using var rightTextPaint = new SKPaint
+        {
+            Color = _cardTextPaint.Color,
+            TextSize = 11f,
+            Typeface = _cardTextPaint.Typeface,
+            TextAlign = SKTextAlign.Right,
+            IsAntialias = true,
+        };
+        canvas.DrawText($"{min:0.#}", rect.Left, rect.Bottom + 10f, leftTextPaint);
+        canvas.DrawText("0", zeroX, rect.Bottom + 10f, centerTextPaint);
+        canvas.DrawText($"{max:0.#}", rect.Right, rect.Bottom + 10f, rightTextPaint);
 
         using var dashPaint = new SKPaint
         {
@@ -489,7 +561,7 @@ public class UnitsQuantityPage : IVisualizerPage
         _controlsPanel = new Panel
         {
             BackColor = Color.FromArgb(248, 248, 248),
-            Size = new Size(328, 104),
+            Size = new Size(404, 104),
             Anchor = AnchorStyles.Top | AnchorStyles.Right,
         };
         PageChrome.PositionTopRightPanel(_canvasHost, _controlsPanel, 18);
@@ -499,14 +571,14 @@ public class UnitsQuantityPage : IVisualizerPage
             Text = "Unit for A",
             AutoSize = true,
             Location = new Point(12, 12),
-            Font = new Font("Arial", 9f, FontStyle.Bold),
+            Font = new Font(VisualStyle.UiFontFamily, 9f, FontStyle.Bold),
         };
 
         _unitACombo = new ComboBox
         {
             DropDownStyle = ComboBoxStyle.DropDownList,
             Location = new Point(12, 32),
-            Width = 132,
+            Width = 148,
         };
         _unitACombo.Items.AddRange(UnitOptions.All.Select(option => option.Name).ToArray());
         _unitACombo.SelectedIndex = 0;
@@ -516,15 +588,15 @@ public class UnitsQuantityPage : IVisualizerPage
         {
             Text = "Unit for B",
             AutoSize = true,
-            Location = new Point(126, 12),
-            Font = new Font("Arial", 9f, FontStyle.Bold),
+            Location = new Point(210, 12),
+            Font = new Font(VisualStyle.UiFontFamily, 9f, FontStyle.Bold),
         };
 
         _unitBCombo = new ComboBox
         {
             DropDownStyle = ComboBoxStyle.DropDownList,
-            Location = new Point(126, 32),
-            Width = 132,
+            Location = new Point(210, 32),
+            Width = 148,
         };
         _unitBCombo.Items.AddRange(UnitOptions.All.Select(option => option.Name).ToArray());
         _unitBCombo.SelectedIndex = 1;
@@ -535,8 +607,8 @@ public class UnitsQuantityPage : IVisualizerPage
             Text = "Multiply and powers carry signatures. Addition requires them to match.",
             AutoSize = false,
             Location = new Point(12, 64),
-            Size = new Size(300, 28),
-            Font = new Font("Arial", 8f, FontStyle.Regular),
+            Size = new Size(372, 28),
+            Font = new Font(VisualStyle.UiFontFamily, 8f, FontStyle.Regular),
             ForeColor = Color.FromArgb(105, 105, 105),
         };
 
@@ -565,6 +637,8 @@ public class UnitsQuantityPage : IVisualizerPage
 
         return left + (float)((value - min) / (max - min)) * (right - left);
     }
+
+    private static string FormatAxis(Axis axis) => $"{axis.Start:0.#}i + {axis.End:0.#}";
 
     public bool IsOriginHit(SKPoint pixelPoint)
     {
