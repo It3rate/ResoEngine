@@ -196,11 +196,13 @@ public class FractionalPowerPage : IVisualizerPage
             return;
         }
 
-        canvas.DrawText("Fractional Power / Branch", 34f, 42f, _headingPaint);
+        canvas.DrawText("Fractional Powers", 34f, 42f, _headingPaint);
         float subtitleY = 68f;
         PageChrome.DrawWrappedText(
             canvas,
-            "Drag z or animate an orbit. The candidates below come from inverse continuation, with one selected as the principal branch.",
+            "The candidates below come from inverse continuation (eg square root), with one selected as the principal branch.\n" +
+            "This displays the effect of raising a directed segment to a fractional power.\n" +
+            "There can be multiple possible solutions, like how sqrt(4) can be 2 or -2.",
             34f,
             ref subtitleY,
             430f,

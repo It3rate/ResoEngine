@@ -139,8 +139,8 @@ public class OrthogonalBooleanGalleryPage : IVisualizerPage
     public void Init(CoordinateSystem coords, HitTestEngine hitTest, SkiaCanvas canvas)
     {
         _coords = coords;
-        coords.OriginX = 240;
-        coords.OriginY = 284;
+        coords.OriginX = 200;
+        coords.OriginY = 400;
 
         _gridRenderer = new GridRenderer(coords);
         _rendererA = new SegmentRenderer(coords, SegmentOrientation.Horizontal, SegmentColors.Red, 0);
@@ -161,7 +161,8 @@ public class OrthogonalBooleanGalleryPage : IVisualizerPage
         float subtitleY = 68f;
         PageChrome.DrawWrappedText(
             canvas,
-            "Drag the two orthogonal segments above. Each tile below shows one boolean rule over the four quadrant regions created by pinning the axes together.",
+            "Each tile below shows one boolean rule over the four quadrant regions created by pinning the axes together. " +
+            "The calculation is the same whether done with parallel lines or orthogonal one, as shown on the next page.",
             34f,
             ref subtitleY,
             560f,
@@ -188,7 +189,7 @@ public class OrthogonalBooleanGalleryPage : IVisualizerPage
             return;
         }
 
-        const float top = 322f;
+        const float top = 200f;
         const float rightPad = 24f;
         const float gapX = 10f;
         const float gapY = 10f;

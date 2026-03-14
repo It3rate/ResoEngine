@@ -1,4 +1,5 @@
 using Core2.Elements;
+using Core2.Support;
 using ResoEngine.Visualizer.Adapt;
 using ResoEngine.Visualizer.Controls;
 using ResoEngine.Visualizer.Core;
@@ -170,14 +171,14 @@ public class BooleanOpsPage : IVisualizerPage
 
     private static readonly BooleanRow[] Rows =
     [
-        new("AND", AndY, SegmentColors.Green, static (inA, inB) => inA && inB),
-        new("OR", OrY, SegmentColors.Orange, static (inA, inB) => inA || inB),
-        new("NAND", NandY, SegmentColors.Green, static (inA, inB) => !(inA && inB)),
-        new("NOR", NorY, SegmentColors.Orange, static (inA, inB) => !(inA || inB)),
-        new("NOT A", NotAY, SegmentColors.Red, static (inA, inB) => !inA),
-        new("NOT B", NotBY, SegmentColors.Blue, static (inA, inB) => !inB),
-        new("XOR", XorY, SegmentColors.Purple, static (inA, inB) => inA ^ inB),
-        new("XNOR", XnorY, SegmentColors.Purple, static (inA, inB) => !(inA ^ inB)),
+        new("AND", AndY, SegmentColors.Green, AxisBooleanOperation.And),
+        new("OR", OrY, SegmentColors.Orange, AxisBooleanOperation.Or),
+        new("NAND", NandY, SegmentColors.Green, AxisBooleanOperation.Nand),
+        new("NOR", NorY, SegmentColors.Orange, AxisBooleanOperation.Nor),
+        new("NOT A", NotAY, SegmentColors.Red, AxisBooleanOperation.NotA),
+        new("NOT B", NotBY, SegmentColors.Blue, AxisBooleanOperation.NotB),
+        new("XOR", XorY, SegmentColors.Purple, AxisBooleanOperation.Xor),
+        new("XNOR", XnorY, SegmentColors.Purple, AxisBooleanOperation.Xnor),
     ];
 
     public void Init(CoordinateSystem coords, HitTestEngine hitTest, SkiaCanvas canvas)
@@ -271,37 +272,16 @@ public class BooleanOpsPage : IVisualizerPage
 
     private void DrawBooleanRows(SKCanvas canvas, decimal minValue, decimal maxValue, SKRect resultsRect)
     {
-        decimal frameLeft = Math.Min(Math.Min(_axisA.Axis.Start.Value, _axisA.Axis.End.Value), Math.Min(_axisB.Axis.Start.Value, _axisB.Axis.End.Value));
-        decimal frameRight = Math.Max(Math.Max(_axisA.Axis.Start.Value, _axisA.Axis.End.Value), Math.Max(_axisB.Axis.Start.Value, _axisB.Axis.End.Value));
-
-        if (frameRight <= frameLeft)
-        {
-            return;
-        }
-
-        var boundaries = new SortedSet<decimal>
-        {
-            frameLeft,
-            frameRight,
-            _axisA.Axis.Start.Value,
-            _axisA.Axis.End.Value,
-            _axisB.Axis.Start.Value,
-            _axisB.Axis.End.Value,
-        };
-
         foreach (var row in Rows)
         {
             DrawRowBadge(canvas, resultsRect, row.Label, row.Y, row.Colors);
-            DrawBooleanRow(canvas, row, boundaries.ToArray(), frameLeft, frameRight, minValue, maxValue, resultsRect);
+            DrawBooleanRow(canvas, row, minValue, maxValue, resultsRect);
         }
     }
 
     private void DrawBooleanRow(
         SKCanvas canvas,
         BooleanRow row,
-        decimal[] boundaries,
-        decimal frameLeft,
-        decimal frameRight,
         decimal minValue,
         decimal maxValue,
         SKRect resultsRect)
@@ -311,30 +291,21 @@ public class BooleanOpsPage : IVisualizerPage
             return;
         }
 
+        decimal frameLeft = Math.Min(Math.Min(_axisA.Axis.Start.Value, _axisA.Axis.End.Value), Math.Min(_axisB.Axis.Start.Value, _axisB.Axis.End.Value));
+        decimal frameRight = Math.Max(Math.Max(_axisA.Axis.Start.Value, _axisA.Axis.End.Value), Math.Max(_axisB.Axis.Start.Value, _axisB.Axis.End.Value));
+        if (frameRight <= frameLeft)
+        {
+            return;
+        }
+
         float y = _coords.MathToPixel(0f, row.Y).Y;
         float lineLeft = ValueToPixelX(frameLeft, minValue, maxValue, resultsRect);
         float lineRight = ValueToPixelX(frameRight, minValue, maxValue, resultsRect);
         canvas.DrawLine(lineLeft, y, lineRight, y, _rowGuidePaint);
 
-        for (int i = 0; i < boundaries.Length - 1; i++)
+        foreach (var piece in AxisBooleanProjection.Project(_axisA.Axis, _axisB.Axis, row.Operation))
         {
-            decimal start = boundaries[i];
-            decimal end = boundaries[i + 1];
-            if (end <= start)
-            {
-                continue;
-            }
-
-            decimal mid = (start + end) / 2m;
-            bool inA = IsWithin(mid, _axisA.Axis);
-            bool inB = IsWithin(mid, _axisB.Axis);
-
-            if (!row.Evaluate(inA, inB))
-            {
-                continue;
-            }
-
-            DrawIntervalPiece(canvas, row.Colors, row.Y, start, end, minValue, maxValue, resultsRect);
+            DrawIntervalPiece(canvas, row.Colors, row.Y, piece.Segment.Start.Value, piece.Segment.End.Value, minValue, maxValue, resultsRect);
         }
     }
 
@@ -447,13 +418,6 @@ public class BooleanOpsPage : IVisualizerPage
         resultsRect = new SKRect(_coords.Width * 0.05f, resultsTop - 12f, _coords.Width * 0.95f, resultsBottom + 22f);
     }
 
-    private bool IsWithin(decimal value, Axis axis)
-    {
-        decimal left = Math.Min(axis.Start.Value, axis.End.Value);
-        decimal right = Math.Max(axis.Start.Value, axis.End.Value);
-        return value >= left && value <= right;
-    }
-
     private float ValueToPixelX(decimal value, decimal minValue, decimal maxValue, SKRect rect)
     {
         if (maxValue == minValue)
@@ -509,5 +473,5 @@ public class BooleanOpsPage : IVisualizerPage
         _originDotPaint.Dispose();
     }
 
-    private sealed record BooleanRow(string Label, float Y, SegmentColorSet Colors, Func<bool, bool, bool> Evaluate);
+    private sealed record BooleanRow(string Label, float Y, SegmentColorSet Colors, AxisBooleanOperation Operation);
 }
