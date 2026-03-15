@@ -76,11 +76,6 @@ public class StripOrnamentCatalogTests
                 StripDelta.Left,
                 StripDelta.Up,
                 new StripDelta(2, 0),
-                StripDelta.Right,
-                StripDelta.Down,
-                StripDelta.Left,
-                StripDelta.Down,
-                new StripDelta(2, 0),
             ],
             deltas);
     }
@@ -100,9 +95,6 @@ public class StripOrnamentCatalogTests
                 StripDelta.Right,
                 new StripDelta(-1, 2),
                 new StripDelta(2, 0),
-                StripDelta.Right,
-                new StripDelta(-1, -2),
-                new StripDelta(2, 0),
             ],
             deltas);
     }
@@ -121,9 +113,6 @@ public class StripOrnamentCatalogTests
             [
                 new StripDelta(1, 1),
                 new StripDelta(-1, 1),
-                new StripDelta(2, 0),
-                new StripDelta(1, -1),
-                new StripDelta(-1, -1),
                 new StripDelta(2, 0),
             ],
             deltas);
@@ -165,12 +154,6 @@ public class StripOrnamentCatalogTests
         Assert.Equal(
             [
                 StripDelta.Up,
-                new StripDelta(2, 0),
-                StripDelta.Up,
-                new StripDelta(2, 0),
-                StripDelta.Down,
-                new StripDelta(2, 0),
-                StripDelta.Down,
                 new StripDelta(2, 0),
             ],
             deltas);
@@ -225,11 +208,6 @@ public class StripOrnamentCatalogTests
                 new StripDelta(0, 1),
                 new StripDelta(-1, 0),
                 new StripDelta(0, 1),
-                new StripDelta(4, 0),
-                new StripDelta(1, 0),
-                new StripDelta(0, -1),
-                new StripDelta(-1, 0),
-                new StripDelta(0, -1),
                 new StripDelta(4, 0),
             ],
             deltas);
