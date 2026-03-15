@@ -9,6 +9,7 @@
     <RootNamespace>ResoEngine.Visualizer</RootNamespace>
     <AssemblyName>Visualizer.WinForms.Core2</AssemblyName>
     <NoWarn>NU1701</NoWarn>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
 
   <ItemGroup>

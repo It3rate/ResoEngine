@@ -86,6 +86,21 @@ public class GlyphGrowthResolverTests
         Assert.Contains(state.AmbientSignals!, signal => signal.Key.Contains("frame:left", StringComparison.Ordinal));
         Assert.Contains(state.AmbientSignals!, signal => signal.TargetPosition is not null && signal.Position != signal.TargetPosition);
         Assert.True(state.ResidualTension > 0m);
+        Assert.NotNull(state.TensionField);
+    }
+
+    [Fact]
+    public void SeedState_WithSameSeed_IsDeterministic()
+    {
+        var spec = GlyphLetterCatalog.Get("Y");
+        var first = GlyphGrowthState.FromSpec(spec, 12345);
+        var second = GlyphGrowthState.FromSpec(spec, 12345);
+        var third = GlyphGrowthState.FromSpec(spec, 54321);
+
+        Assert.Equal(first.ActiveTips.First().Position, second.ActiveTips.First().Position);
+        Assert.Equal(first.AmbientSignals!.First().Position, second.AmbientSignals!.First().Position);
+        Assert.NotEqual(first.ActiveTips.First().Position, third.ActiveTips.First().Position);
+        Assert.True(first.TensionField!.Sample(spec.Environment.Box.Center).Energy > 0m);
     }
 
     [Fact]

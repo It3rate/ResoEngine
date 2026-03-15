@@ -41,16 +41,22 @@ internal static class GlyphRelaxation
             .Sum();
 
         decimal lastAdjustment = tipAdjustment + junctionAdjustment + carrierAdjustment;
-        decimal residualTension = ComputeResidualTension(state, movedTips, movedJunctions, nextAmbient);
-
-        return state with
+        var provisionalState = state with
         {
             ActiveTips = movedTips,
             Junctions = movedJunctions,
             Carriers = movedCarriers,
             AmbientSignals = nextAmbient,
+        };
+        var field = (state.TensionField ?? GlyphTensionField.CreateSeeded(environment.Box, state.RandomSeed, nextAmbient))
+            .Advance(provisionalState, environment);
+        decimal residualTension = ComputeResidualTension(state, movedTips, movedJunctions, nextAmbient, field);
+
+        return provisionalState with
+        {
             ResidualTension = residualTension,
             LastAdjustment = lastAdjustment,
+            TensionField = field,
         };
     }
 
@@ -141,7 +147,7 @@ internal static class GlyphRelaxation
         IReadOnlyList<GlyphAmbientSignal> ambientSignals)
     {
         GlyphVector field = ComputeVectorField(state, environment, tip.Position, ambientSignals, tip.Key);
-        decimal maxMove = tip.IsActive ? GlyphGrowthDefaults.RelaxationStep * 0.45m : GlyphGrowthDefaults.RelaxationStep * 0.2m;
+        decimal maxMove = tip.IsActive ? GlyphGrowthDefaults.RelaxationStep * 0.06m : GlyphGrowthDefaults.RelaxationStep * 0.18m;
         GlyphVector moved = MovePoint(tip.Position, field, maxMove, environment.Box);
 
         if (!tip.IsActive)
@@ -291,6 +297,15 @@ internal static class GlyphRelaxation
             }
         }
 
+        if (state.TensionField is not null)
+        {
+            var fieldSample = state.TensionField.Sample(point);
+            if (fieldSample.Flow != GlyphVector.Zero)
+            {
+                vector += fieldSample.Flow.Normalize() * (0.28m + fieldSample.Energy * 0.08m);
+            }
+        }
+
         return vector.Normalize();
     }
 
@@ -343,13 +358,19 @@ internal static class GlyphRelaxation
         GlyphGrowthState priorState,
         IReadOnlyList<GlyphTip> movedTips,
         IReadOnlyList<GlyphJunction> movedJunctions,
-        IReadOnlyList<GlyphAmbientSignal> ambientSignals)
+        IReadOnlyList<GlyphAmbientSignal> ambientSignals,
+        GlyphTensionField field)
     {
         decimal ambient = ambientSignals.Sum(signal => signal.Magnitude);
         decimal active = movedTips.Count(tip => tip.IsActive) * 0.4m;
         decimal junctionDrift = priorState.Junctions
             .Zip(movedJunctions, (prior, next) => prior.Position.DistanceTo(next.Position))
             .Sum();
-        return ambient + active + junctionDrift;
+        decimal fieldEnergy = movedTips
+            .Where(tip => tip.IsActive)
+            .Select(tip => field.Sample(tip.Position).Energy)
+            .DefaultIfEmpty(field.Sample(field.Box.Center).Energy)
+            .Average() * 0.25m;
+        return ambient + active + junctionDrift + fieldEnergy;
     }
 }

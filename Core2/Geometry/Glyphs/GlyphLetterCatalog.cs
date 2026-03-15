@@ -52,8 +52,8 @@ public static class GlyphLetterCatalog
             CreateEnvironment(
                 box,
                 [
-                    new GlyphLandmark("V-centerline", GlyphLandmarkKind.Centerline, new GlyphVector(box.MidX, box.Bottom), 0.3m, "Preferred symmetry axis."),
-                    new GlyphLandmark("V-stop", GlyphLandmarkKind.StopPoint, new GlyphVector(box.MidX, box.Bottom), 0.7m, "Lower capture point."),
+                    new GlyphLandmark("V-centerline", GlyphLandmarkKind.Centerline, new GlyphVector(box.MidX, box.Bottom), 0.42m, "Preferred symmetry axis."),
+                    new GlyphLandmark("V-stop", GlyphLandmarkKind.StopPoint, new GlyphVector(box.MidX, box.Bottom), 1.2m, "Lower capture point."),
                 ]),
             [
                 new GlyphSeed("V-left", GlyphSeedKind.Tip, new GlyphVector(31m, 74m), 1m, new GlyphVector(1m, -1m), Note: "Upper left descending arm."),

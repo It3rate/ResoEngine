@@ -443,7 +443,12 @@ public sealed class GlyphGrowthResolver : IDynamicResolver<GlyphGrowthState, Gly
             carriers.ToArray(),
             junctions.Values.OrderBy(junction => junction.Key, StringComparer.Ordinal).ToArray(),
             packets,
-            state.MacroStep + 1);
+            state.MacroStep + 1,
+            state.AmbientSignals,
+            state.ResidualTension,
+            state.LastAdjustment,
+            state.TensionField,
+            state.RandomSeed);
     }
 
     private static IReadOnlyList<TensionPacket> BuildPackets(
@@ -474,7 +479,7 @@ public sealed class GlyphGrowthResolver : IDynamicResolver<GlyphGrowthState, Gly
     }
 
     private static void AddCarrier(
-        ICollection<GlyphCarrier> carriers,
+        IList<GlyphCarrier> carriers,
         string tipKey,
         GlyphVector start,
         GlyphVector end)
@@ -484,6 +489,22 @@ public sealed class GlyphGrowthResolver : IDynamicResolver<GlyphGrowthState, Gly
             return;
         }
 
+        if (carriers.Count > 0)
+        {
+            var previous = carriers[^1];
+            if (previous.Key.StartsWith($"{tipKey}:carrier:", StringComparison.Ordinal) &&
+                previous.End.DistanceTo(start) <= 0.6m &&
+                AreNearlyCollinear(previous.Start, previous.End, end))
+            {
+                carriers[^1] = previous with
+                {
+                    End = end,
+                    Tension = previous.Start.DistanceTo(end),
+                };
+                return;
+            }
+        }
+
         carriers.Add(new GlyphCarrier(
             $"{tipKey}:carrier:{carriers.Count}",
             start,
@@ -491,6 +512,21 @@ public sealed class GlyphGrowthResolver : IDynamicResolver<GlyphGrowthState, Gly
             GlyphCarrierKind.Segment,
             IsCommitted: true,
             Tension: start.DistanceTo(end)));
+    }
+
+    private static bool AreNearlyCollinear(
+        GlyphVector a,
+        GlyphVector b,
+        GlyphVector c)
+    {
+        GlyphVector ab = (b - a).Normalize();
+        GlyphVector bc = (c - b).Normalize();
+        if (ab == GlyphVector.Zero || bc == GlyphVector.Zero)
+        {
+            return false;
+        }
+
+        return ab.Dot(bc) >= 0.992m;
     }
 
     private static void AddOrReplaceJunction(

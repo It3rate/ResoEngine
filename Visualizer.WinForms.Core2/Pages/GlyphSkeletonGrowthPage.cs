@@ -9,6 +9,12 @@ namespace ResoEngine.Visualizer.Pages;
 
 public class GlyphSkeletonGrowthPage : IVisualizerPage
 {
+    private readonly SKPaint _fieldBitmapPaint = new()
+    {
+        IsAntialias = false,
+        FilterQuality = SKFilterQuality.Medium,
+    };
+
     private readonly SKPaint _headingPaint = new()
     {
         Color = new SKColor(45, 45, 45),
@@ -177,9 +183,14 @@ public class GlyphSkeletonGrowthPage : IVisualizerPage
     private Button? _stepButton;
     private Button? _resetButton;
     private NumericUpDown? _maxStepsInput;
+    private NumericUpDown? _seedInput;
+    private CheckBox? _freezeSeedToggle;
+    private SKBitmap? _fieldBitmap;
 
     private string _selectedLetterKey = "Y";
     private bool _isPlaying;
+    private bool _seedInputUpdating;
+    private int _currentSeed = Random.Shared.Next(1, 999_999);
     private DynamicMachine<GlyphGrowthState, GlyphEnvironment, GlyphGrowthEffect>? _machine;
     private DynamicTrace<GlyphGrowthState, GlyphEnvironment, GlyphGrowthEffect>? _trace;
 
@@ -262,9 +273,13 @@ public class GlyphSkeletonGrowthPage : IVisualizerPage
         _stepButton = null;
         _resetButton = null;
         _maxStepsInput = null;
+        _seedInput = null;
+        _freezeSeedToggle = null;
         _machine = null;
         _trace = null;
         _canvasHost = null;
+        _fieldBitmap?.Dispose();
+        _fieldBitmap = null;
     }
 
     public void Dispose()
@@ -279,6 +294,7 @@ public class GlyphSkeletonGrowthPage : IVisualizerPage
         _stageBorderPaint.Dispose();
         _glyphBoxPaint.Dispose();
         _fieldLinePaint.Dispose();
+        _fieldBitmapPaint.Dispose();
         _stopPointPaint.Dispose();
         _branchPointPaint.Dispose();
         _carrierGlowPaint.Dispose();
@@ -291,6 +307,7 @@ public class GlyphSkeletonGrowthPage : IVisualizerPage
         _sectionTitlePaint.Dispose();
         _detailPaint.Dispose();
         _legendSwatchPaint.Dispose();
+        _fieldBitmap?.Dispose();
     }
 
     private void EnsureControls()
@@ -302,7 +319,7 @@ public class GlyphSkeletonGrowthPage : IVisualizerPage
 
         _controlsPanel = new Panel
         {
-            Size = new Size(286, 168),
+            Size = new Size(286, 206),
             BackColor = Color.FromArgb(248, 248, 248),
         };
 
@@ -355,8 +372,62 @@ public class GlyphSkeletonGrowthPage : IVisualizerPage
         };
         _maxStepsInput.ValueChanged += (_, _) => LoadLetter(_selectedLetterKey);
 
+        var seedLabel = new Label
+        {
+            Text = "Seed",
+            Location = new Point(14, 110),
+            Size = new Size(48, 18),
+            Font = new Font(VisualStyle.UiFontFamily, 8.5f, FontStyle.Bold),
+            ForeColor = Color.FromArgb(92, 92, 92),
+        };
+
+        _seedInput = new NumericUpDown
+        {
+            Minimum = 0,
+            Maximum = 999999,
+            Value = _currentSeed,
+            Increment = 1,
+            DecimalPlaces = 0,
+            Location = new Point(62, 107),
+            Size = new Size(78, 24),
+            Font = new Font(VisualStyle.UiFontFamily, 9f, FontStyle.Regular),
+        };
+        _seedInput.ValueChanged += (_, _) =>
+        {
+            if (_seedInputUpdating)
+            {
+                return;
+            }
+
+            _currentSeed = (int)_seedInput.Value;
+            if (_freezeSeedToggle?.Checked == true)
+            {
+                LoadLetter(_selectedLetterKey);
+            }
+        };
+
+        _freezeSeedToggle = new CheckBox
+        {
+            Text = "Freeze seed",
+            AutoSize = true,
+            Location = new Point(154, 109),
+            Font = new Font(VisualStyle.UiFontFamily, 8.5f, FontStyle.Regular),
+            ForeColor = Color.FromArgb(86, 86, 86),
+            Checked = false,
+            BackColor = Color.Transparent,
+        };
+        _freezeSeedToggle.CheckedChanged += (_, _) =>
+        {
+            if (_freezeSeedToggle.Checked)
+            {
+                _currentSeed = (int)(_seedInput?.Value ?? _currentSeed);
+            }
+
+            LoadLetter(_selectedLetterKey);
+        };
+
         _playButton = CreateUiButton("Play", width: 68);
-        _playButton.Location = new Point(14, 118);
+        _playButton.Location = new Point(14, 150);
         _playButton.Click += (_, _) =>
         {
             if (_machine?.IsCompleted == true)
@@ -368,7 +439,7 @@ public class GlyphSkeletonGrowthPage : IVisualizerPage
         };
 
         _stepButton = CreateUiButton("Step", width: 68);
-        _stepButton.Location = new Point(92, 118);
+        _stepButton.Location = new Point(92, 150);
         _stepButton.Click += (_, _) =>
         {
             if (_machine?.IsCompleted == true)
@@ -380,13 +451,16 @@ public class GlyphSkeletonGrowthPage : IVisualizerPage
         };
 
         _resetButton = CreateUiButton("Reset", width: 68);
-        _resetButton.Location = new Point(170, 118);
+        _resetButton.Location = new Point(170, 150);
         _resetButton.Click += (_, _) => LoadLetter(_selectedLetterKey);
 
         _controlsPanel.Controls.Add(title);
         _controlsPanel.Controls.Add(_letterButtonPanel);
         _controlsPanel.Controls.Add(stepsLabel);
         _controlsPanel.Controls.Add(_maxStepsInput);
+        _controlsPanel.Controls.Add(seedLabel);
+        _controlsPanel.Controls.Add(_seedInput);
+        _controlsPanel.Controls.Add(_freezeSeedToggle);
         _controlsPanel.Controls.Add(_playButton);
         _controlsPanel.Controls.Add(_stepButton);
         _controlsPanel.Controls.Add(_resetButton);
@@ -399,7 +473,8 @@ public class GlyphSkeletonGrowthPage : IVisualizerPage
     {
         _selectedLetterKey = letterKey;
         SetPlaying(false);
-        _machine = GlyphGrowthRuntime.CreateMachine(letterKey, (int)(_maxStepsInput?.Value ?? 12m));
+        _currentSeed = ResolveSeedForLoad();
+        _machine = GlyphGrowthRuntime.CreateMachine(letterKey, (int)(_maxStepsInput?.Value ?? 12m), _currentSeed);
         _trace = _machine.Snapshot();
         RefreshLetterButtons();
         UpdateControlState();
@@ -465,7 +540,7 @@ public class GlyphSkeletonGrowthPage : IVisualizerPage
     private void DrawGlyphStage(SKCanvas canvas, SKRect stageRect, GlyphLetterSpec spec, GlyphGrowthState state)
     {
         var mapper = GlyphSceneMapper.Create(stageRect, spec.Environment.Box);
-        DrawFieldWash(canvas, mapper, spec.Environment, state);
+        DrawFieldBitmap(canvas, mapper, state);
         canvas.DrawRect(mapper.BoxRect, _glyphBoxPaint);
 
         DrawLandmarks(canvas, mapper, spec.Environment, state);
@@ -490,85 +565,17 @@ public class GlyphSkeletonGrowthPage : IVisualizerPage
         }
     }
 
-    private void DrawFieldWash(SKCanvas canvas, GlyphSceneMapper mapper, GlyphEnvironment environment, GlyphGrowthState state)
+    private void DrawFieldBitmap(SKCanvas canvas, GlyphSceneMapper mapper, GlyphGrowthState state)
     {
-        int columns = 16;
-        int rows = 18;
-        float cellWidth = mapper.BoxRect.Width / columns;
-        float cellHeight = mapper.BoxRect.Height / rows;
-
-        for (int yIndex = 0; yIndex < rows; yIndex++)
+        if (state.TensionField is null)
         {
-            for (int xIndex = 0; xIndex < columns; xIndex++)
-            {
-                var glyphPoint = new GlyphVector(
-                    environment.Box.Left + environment.Box.Width * ((decimal)xIndex + 0.5m) / columns,
-                    environment.Box.Bottom + environment.Box.Height * ((decimal)yIndex + 0.5m) / rows);
+            return;
+        }
 
-                decimal cool = 0m;
-                decimal warm = 0m;
-
-                foreach (var influence in environment.SampleInfluencesAt(glyphPoint))
-                {
-                    switch (influence.Rule.Kind)
-                    {
-                        case global::Core2.Propagation.CouplingKind.Align:
-                        case global::Core2.Propagation.CouplingKind.Split:
-                        case global::Core2.Propagation.CouplingKind.Grow:
-                            cool += influence.Weight;
-                            break;
-                        case global::Core2.Propagation.CouplingKind.Stop:
-                            warm += influence.Weight;
-                            break;
-                        case global::Core2.Propagation.CouplingKind.Attract:
-                            cool += influence.Weight * 0.45m;
-                            warm += influence.Weight * 0.1m;
-                            break;
-                    }
-                }
-
-                foreach (var signal in state.AmbientSignals ?? [])
-                {
-                    decimal distance = glyphPoint.DistanceTo(signal.Position);
-                    if (distance > signal.Radius || signal.Radius <= 0m)
-                    {
-                        continue;
-                    }
-
-                    decimal weight = signal.Magnitude * (1m - decimal.Clamp(distance / signal.Radius, 0m, 1m));
-                    switch (signal.Kind)
-                    {
-                        case global::Core2.Propagation.CouplingKind.Stop:
-                        case global::Core2.Propagation.CouplingKind.Repel:
-                            warm += weight;
-                            break;
-                        default:
-                            cool += weight;
-                            break;
-                    }
-                }
-
-                int alpha = (int)Math.Round(Math.Clamp((double)((cool + warm) * 42m), 0d, 70d));
-                if (alpha <= 2)
-                {
-                    continue;
-                }
-
-                byte red = (byte)Math.Clamp((int)Math.Round(236 + warm * 22m), 170, 248);
-                byte green = (byte)Math.Clamp((int)Math.Round(244 - warm * 18m + cool * 6m), 188, 248);
-                byte blue = (byte)Math.Clamp((int)Math.Round(247 - warm * 24m + cool * 18m), 188, 252);
-
-                using var wash = new SKPaint
-                {
-                    Style = SKPaintStyle.Fill,
-                    Color = new SKColor(red, green, blue, (byte)alpha),
-                    IsAntialias = true,
-                };
-
-                float left = mapper.BoxRect.Left + xIndex * cellWidth;
-                float top = mapper.BoxRect.Top + (rows - yIndex - 1) * cellHeight;
-                canvas.DrawRect(new SKRect(left, top, left + cellWidth + 0.5f, top + cellHeight + 0.5f), wash);
-            }
+        UpdateFieldBitmap(state.TensionField);
+        if (_fieldBitmap is not null)
+        {
+            canvas.DrawBitmap(_fieldBitmap, mapper.BoxRect, _fieldBitmapPaint);
         }
     }
 
@@ -681,6 +688,7 @@ public class GlyphSkeletonGrowthPage : IVisualizerPage
             $"junctions: {state.Junctions.Count}",
             $"packets: {state.Packets.Count}",
             $"ambient signals: {(state.AmbientSignals?.Count ?? 0)}",
+            $"seed: {state.RandomSeed}",
             $"residual tension: {state.ResidualTension:0.00}",
             $"last adjustment: {state.LastAdjustment:0.00}",
             $"graph nodes: {trace.Graph.Nodes.Count}",
@@ -736,6 +744,59 @@ public class GlyphSkeletonGrowthPage : IVisualizerPage
         _legendSwatchPaint.Color = color;
         canvas.DrawCircle(x + 5f, y - 4f, 5f, _legendSwatchPaint);
         canvas.DrawText(label, x + 18f, y, _detailPaint);
+    }
+
+    private int ResolveSeedForLoad()
+    {
+        if (_freezeSeedToggle?.Checked == true)
+        {
+            return (int)(_seedInput?.Value ?? _currentSeed);
+        }
+
+        int nextSeed = Random.Shared.Next(1, 999_999);
+        _seedInputUpdating = true;
+        if (_seedInput is not null)
+        {
+            _seedInput.Value = nextSeed;
+        }
+
+        _seedInputUpdating = false;
+        return nextSeed;
+    }
+
+    private unsafe void UpdateFieldBitmap(GlyphTensionField field)
+    {
+        if (_fieldBitmap is null || _fieldBitmap.Width != field.Width || _fieldBitmap.Height != field.Height)
+        {
+            _fieldBitmap?.Dispose();
+            _fieldBitmap = new SKBitmap(field.Width, field.Height, SKColorType.Bgra8888, SKAlphaType.Premul);
+        }
+
+        ReadOnlySpan<float> grow = field.GrowChannel.Span;
+        ReadOnlySpan<float> stop = field.StopChannel.Span;
+        ReadOnlySpan<float> branch = field.BranchChannel.Span;
+
+        byte* pixels = (byte*)_fieldBitmap.GetPixels().ToPointer();
+        int rowBytes = _fieldBitmap.RowBytes;
+        for (int y = 0; y < field.Height; y++)
+        {
+            byte* row = pixels + (y * rowBytes);
+            int sourceY = field.Height - 1 - y;
+            for (int x = 0; x < field.Width; x++)
+            {
+                int index = sourceY * field.Width + x;
+                float cool = grow[index];
+                float warm = stop[index];
+                float branchValue = branch[index];
+                float total = cool + warm + branchValue;
+                float alphaFactor = Math.Clamp(total * 1.15f, 0f, 0.9f);
+
+                row[x * 4 + 0] = (byte)Math.Clamp((int)MathF.Round(248f - warm * 56f + cool * 18f + branchValue * 28f), 170, 255);
+                row[x * 4 + 1] = (byte)Math.Clamp((int)MathF.Round(246f - warm * 26f + cool * 38f + branchValue * 12f), 176, 255);
+                row[x * 4 + 2] = (byte)Math.Clamp((int)MathF.Round(244f + warm * 44f - cool * 20f + branchValue * 10f), 176, 255);
+                row[x * 4 + 3] = (byte)Math.Clamp((int)MathF.Round(alphaFactor * 140f), 0, 150);
+            }
+        }
     }
 
     private string ResolveStatus()

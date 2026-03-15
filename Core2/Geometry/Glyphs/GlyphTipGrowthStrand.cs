@@ -24,6 +24,7 @@ public sealed class GlyphTipGrowthStrand : IDynamicStrand<GlyphGrowthState, Glyp
 
             proposals.Add(BuildProposal(
                 context,
+                state,
                 environment,
                 packetMagnitude,
                 new GlyphGrowthEffect(
@@ -38,19 +39,19 @@ public sealed class GlyphTipGrowthStrand : IDynamicStrand<GlyphGrowthState, Glyp
             var splitEffect = TryCreateSplitEffect(state, environment, tip, direction, clamped, step);
             if (splitEffect is not null)
             {
-                proposals.Add(BuildProposal(context, environment, packetMagnitude, splitEffect, splitEffect.TargetPosition));
+                proposals.Add(BuildProposal(context, state, environment, packetMagnitude, splitEffect, splitEffect.TargetPosition));
             }
 
             var joinEffect = TryCreateJoinEffect(state, environment, tip, packetMagnitude);
             if (joinEffect is not null)
             {
-                proposals.Add(BuildProposal(context, environment, packetMagnitude, joinEffect, joinEffect.TargetPosition));
+                proposals.Add(BuildProposal(context, state, environment, packetMagnitude, joinEffect, joinEffect.TargetPosition));
             }
 
             var stopEffect = TryCreateStopEffect(environment, tip, direction, projected, clamped, step);
             if (stopEffect is not null)
             {
-                proposals.Add(BuildProposal(context, environment, packetMagnitude, stopEffect, stopEffect.TargetPosition));
+                proposals.Add(BuildProposal(context, state, environment, packetMagnitude, stopEffect, stopEffect.TargetPosition));
             }
         }
 
@@ -59,13 +60,14 @@ public sealed class GlyphTipGrowthStrand : IDynamicStrand<GlyphGrowthState, Glyp
 
     private DynamicProposal<GlyphGrowthEffect> BuildProposal(
         DynamicStrandContext<GlyphGrowthState, GlyphEnvironment> context,
+        GlyphGrowthState state,
         GlyphEnvironment environment,
         decimal packetMagnitude,
         GlyphGrowthEffect effect,
         GlyphVector projected)
     {
-        var tensions = BuildTensions(environment, effect, projected);
-        decimal score = ComputeScore(environment, effect.Kind, effect.TargetPosition, packetMagnitude);
+        var tensions = BuildTensions(state, environment, effect, projected);
+        decimal score = effect.Score + ComputeScore(state, environment, effect.Kind, effect.TargetPosition, packetMagnitude);
         var scoredEffect = new GlyphGrowthEffect(
             effect.Kind,
             effect.SourceTipKey,
@@ -88,6 +90,7 @@ public sealed class GlyphTipGrowthStrand : IDynamicStrand<GlyphGrowthState, Glyp
     }
 
     private static IReadOnlyList<DynamicTension> BuildTensions(
+        GlyphGrowthState state,
         GlyphEnvironment environment,
         GlyphGrowthEffect effect,
         GlyphVector projected)
@@ -105,6 +108,12 @@ public sealed class GlyphTipGrowthStrand : IDynamicStrand<GlyphGrowthState, Glyp
         if (effect.Kind == GlyphGrowthEffectKind.Grow && stopWeight > 0m)
         {
             tensions.Add(new DynamicTension("StopField", "A stop field is resisting continued growth.", stopWeight));
+        }
+
+        var fieldSample = state.TensionField?.Sample(effect.TargetPosition);
+        if (effect.Kind == GlyphGrowthEffectKind.Grow && fieldSample is GlyphTensionFieldSample sample && sample.Stop > 0.08m)
+        {
+            tensions.Add(new DynamicTension("BitmapStopField", "The ambient bitmap is pushing growth away from this region.", sample.Stop));
         }
 
         return tensions;
@@ -135,7 +144,7 @@ public sealed class GlyphTipGrowthStrand : IDynamicStrand<GlyphGrowthState, Glyp
             preferred = new GlyphVector(0m, 1m);
         }
 
-        GlyphVector bias = preferred;
+        GlyphVector bias = preferred * 2.4m;
         foreach (var landmark in environment.Landmarks)
         {
             GlyphVector delta = landmark.Position - tip.Position;
@@ -147,7 +156,7 @@ public sealed class GlyphTipGrowthStrand : IDynamicStrand<GlyphGrowthState, Glyp
             GlyphVector contribution = landmark.Kind switch
             {
                 GlyphLandmarkKind.BranchPoint => delta.Normalize() * (0.85m * landmark.Strength),
-                GlyphLandmarkKind.StopPoint => delta.Normalize() * (0.6m * landmark.Strength),
+                GlyphLandmarkKind.StopPoint => delta.Normalize() * (1.15m * landmark.Strength),
                 GlyphLandmarkKind.Centerline => new GlyphVector(delta.X, 0m).Normalize() * (0.45m * landmark.Strength),
                 GlyphLandmarkKind.Midline => new GlyphVector(0m, delta.Y).Normalize() * (0.15m * landmark.Strength),
                 GlyphLandmarkKind.Capline => new GlyphVector(0m, delta.Y).Normalize() * (0.28m * landmark.Strength),
@@ -170,15 +179,30 @@ public sealed class GlyphTipGrowthStrand : IDynamicStrand<GlyphGrowthState, Glyp
             bias += signal.Kind switch
             {
                 CouplingKind.Stop or CouplingKind.Repel => delta.Normalize() * (-weight),
+                CouplingKind.Grow when signal.Key.StartsWith(tip.Key, StringComparison.Ordinal) => tip.PreferredDirection.Normalize() * (weight * 0.45m),
+                CouplingKind.Grow => delta.Normalize() * (weight * 0.16m),
+                CouplingKind.Split => delta.Normalize() * (weight * 0.55m),
+                CouplingKind.Join => delta.Normalize() * (weight * 0.38m),
                 CouplingKind.Align => new GlyphVector(environment.Box.MidX - tip.Position.X, 0m).Normalize() * weight,
                 _ => delta.Normalize() * weight,
             };
         }
 
+        if (state.TensionField is not null)
+        {
+            var fieldSample = state.TensionField.Sample(tip.Position);
+            if (fieldSample.Flow != GlyphVector.Zero)
+            {
+                bias += fieldSample.Flow.Normalize() * (0.18m + fieldSample.Branch * 0.08m);
+            }
+
+            bias += tip.PreferredDirection.Normalize() * (fieldSample.Grow * 0.05m);
+        }
+
         decimal leftDistance = tip.Position.X - environment.Box.Left;
         decimal rightDistance = environment.Box.Right - tip.Position.X;
         decimal horizontalGrowth = rightDistance < leftDistance ? 1m : -1m;
-        bias += new GlyphVector(horizontalGrowth, 0m).Normalize() * 0.12m;
+        bias += new GlyphVector(horizontalGrowth, 0m).Normalize() * 0.03m;
 
         foreach (var other in state.ActiveTips.Where(other => other.IsActive && other.Key != tip.Key))
         {
@@ -251,7 +275,7 @@ public sealed class GlyphTipGrowthStrand : IDynamicStrand<GlyphGrowthState, Glyp
             tip.Key,
             branchPoint.Position,
             direction,
-            score: 0m,
+            score: 0.85m + Math.Max(0m, GlyphGrowthDefaults.BranchCaptureRadius - decimal.Min(distance, growTarget.DistanceTo(branchPoint.Position))) / GlyphGrowthDefaults.BranchCaptureRadius,
             junctionKey: branchPoint.Key,
             branches: branches,
             note: "Split at the preferred branch landmark.");
@@ -265,7 +289,18 @@ public sealed class GlyphTipGrowthStrand : IDynamicStrand<GlyphGrowthState, Glyp
     {
         foreach (var other in state.ActiveTips.Where(other => other.IsActive && other.Key != tip.Key))
         {
+            if (!string.IsNullOrEmpty(tip.CarrierKey) &&
+                tip.CarrierKey == other.CarrierKey)
+            {
+                continue;
+            }
+
             decimal distance = tip.Position.DistanceTo(other.Position);
+            if (distance < GlyphGrowthDefaults.Step * 1.75m)
+            {
+                continue;
+            }
+
             var sharedStop = environment.GetLandmarks(GlyphLandmarkKind.StopPoint)
                 .Where(stop =>
                     tip.Position.DistanceTo(stop.Position) <= GlyphGrowthDefaults.JoinCaptureRadius * 2m &&
@@ -286,7 +321,7 @@ public sealed class GlyphTipGrowthStrand : IDynamicStrand<GlyphGrowthState, Glyp
             }
 
             decimal closenessBonus = sharedStop is not null
-                ? packetMagnitude * 0.35m
+                ? packetMagnitude * 1.15m
                 : Math.Max(0m, GlyphGrowthDefaults.JoinCaptureRadius - distance) / GlyphGrowthDefaults.JoinCaptureRadius;
 
             return new GlyphGrowthEffect(
@@ -356,7 +391,7 @@ public sealed class GlyphTipGrowthStrand : IDynamicStrand<GlyphGrowthState, Glyp
                 tip.Key,
                 target.Value,
                 direction,
-                score: 0m,
+                score: target == stopLandmark?.Position ? 0.72m : 0.48m,
                 junctionKey: junctionKey,
                 note: "Terminate growth at a boundary or stop landmark.");
     }
@@ -415,6 +450,7 @@ public sealed class GlyphTipGrowthStrand : IDynamicStrand<GlyphGrowthState, Glyp
             : $"{right}:{left}";
 
     private static decimal ComputeScore(
+        GlyphGrowthState state,
         GlyphEnvironment environment,
         GlyphGrowthEffectKind effectKind,
         GlyphVector target,
@@ -432,6 +468,19 @@ public sealed class GlyphTipGrowthStrand : IDynamicStrand<GlyphGrowthState, Glyp
                 CouplingKind.Join when effectKind == GlyphGrowthEffectKind.Join => influence.Weight,
                 CouplingKind.Stop when effectKind == GlyphGrowthEffectKind.Stop => influence.Weight,
                 CouplingKind.Repel => -influence.Weight,
+                _ => 0m,
+            };
+        }
+
+        if (state.TensionField is not null)
+        {
+            var fieldSample = state.TensionField.Sample(target);
+            score += effectKind switch
+            {
+                GlyphGrowthEffectKind.Grow => fieldSample.Grow * 0.42m - fieldSample.Stop * 0.35m,
+                GlyphGrowthEffectKind.Join => fieldSample.Grow * 0.28m + fieldSample.Branch * 0.1m,
+                GlyphGrowthEffectKind.Split => fieldSample.Branch * 0.58m + fieldSample.Grow * 0.08m,
+                GlyphGrowthEffectKind.Stop => fieldSample.Stop * 0.75m,
                 _ => 0m,
             };
         }

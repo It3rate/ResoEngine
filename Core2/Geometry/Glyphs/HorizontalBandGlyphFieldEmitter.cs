@@ -15,3 +15,4 @@ public sealed record HorizontalBandGlyphFieldEmitter(
     public override decimal SampleAt(GlyphVector point) =>
         ApplyFalloff(Math.Abs(point.Y - Y), Radius);
 }
+ 

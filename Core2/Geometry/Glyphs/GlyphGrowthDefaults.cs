@@ -2,10 +2,10 @@ namespace Core2.Geometry.Glyphs;
 
 public static class GlyphGrowthDefaults
 {
-    public const decimal Step = 0.35m;
-    public const decimal BranchCaptureRadius = 2.4m;
-    public const decimal StopCaptureRadius = 2.6m;
-    public const decimal JoinCaptureRadius = 3.2m;
+    public const decimal Step = 0.60m;
+    public const decimal BranchCaptureRadius = 4.2m;
+    public const decimal StopCaptureRadius = 3.6m;
+    public const decimal JoinCaptureRadius = 5.8m;
     public const decimal BranchAmbiguityThreshold = 0.12m;
     public const decimal PacketDecay = 0.72m;
     public const decimal MinimumPacketMagnitude = 0.05m;
