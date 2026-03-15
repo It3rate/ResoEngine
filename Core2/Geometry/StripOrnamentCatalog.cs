@@ -101,11 +101,6 @@ public static class StripOrnamentCatalog
                         Fire("X0"), Commit(),
                         Fire("Y0"), Commit(),
                         Fire("X1"), Commit(),
-                        Fire("X0"), Commit(),
-                        Fire("Y0"), Commit(),
-                        Fire("X0"), Commit(),
-                        Fire("Y0"), Commit(),
-                        Fire("X1"), Commit(),
                     ]),
             },
             new StripOrnamentPattern(
@@ -129,11 +124,6 @@ public static class StripOrnamentCatalog
                         Fire("X0"),
                         Fire("Y0"), Commit(),
                         Fire("X1"), Commit(),
-                        Fire("X0"), Commit(),
-                        Fire("Y0"),
-                        Fire("X0"),
-                        Fire("Y0"), Commit(),
-                        Fire("X1"), Commit(),
                     ]),
             },
             new StripOrnamentPattern(
@@ -152,11 +142,6 @@ public static class StripOrnamentCatalog
                 Program = Program(
                     equations,
                     [
-                        Fire("X0"),
-                        Fire("Y0"), Commit(),
-                        Fire("X0"),
-                        Fire("Y0"), Commit(),
-                        Fire("X1"), Commit(),
                         Fire("X0"),
                         Fire("Y0"), Commit(),
                         Fire("X0"),
@@ -205,12 +190,6 @@ public static class StripOrnamentCatalog
                 Program = Program(
                     equations,
                     [
-                        Fire("Y0"), Commit(),
-                        Fire("X1"), Commit(),
-                        Fire("Y0"), Commit(),
-                        Fire("X1"), Commit(),
-                        Fire("Y0"), Commit(),
-                        Fire("X1"), Commit(),
                         Fire("Y0"), Commit(),
                         Fire("X1"), Commit(),
                     ]),
