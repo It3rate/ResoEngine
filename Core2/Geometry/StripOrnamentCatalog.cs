@@ -1,12 +1,24 @@
+using Core2.Elements;
+using Core2.Repetition;
+
 namespace Core2.Geometry;
 
 public static class StripOrnamentCatalog
 {
-    private static readonly IReadOnlyList<StripEquationDefinition> SharedEquations =
+    private static readonly IReadOnlyList<StripSegmentDefinition> SharedEquations =
     [
-        new StripEquationDefinition("X0", StripDelta.Right, StripEquationMode.Bounce, 1),
-        new StripEquationDefinition("Y0", StripDelta.Up, StripEquationMode.Bounce, 2),
-        new StripEquationDefinition("XLong", new StripDelta(2, 0), StripEquationMode.Continue, 1),
+        new StripSegmentDefinition(
+            "X0",
+            new AxisTraversalDefinition(Axis.FromCoordinates(Scalar.Zero, Scalar.One), Scalar.One, BoundaryContinuationLaw.ReflectiveBounce),
+            StripDelta.Right),
+        new StripSegmentDefinition(
+            "Y0",
+            new AxisTraversalDefinition(Axis.FromCoordinates(Scalar.Zero, 2), Scalar.One, BoundaryContinuationLaw.ReflectiveBounce),
+            StripDelta.Up),
+        new StripSegmentDefinition(
+            "XLong",
+            new AxisTraversalDefinition(null, 2),
+            StripDelta.Right),
     ];
 
     public static IReadOnlyList<StripOrnamentPattern> GalleryPatterns { get; } =
@@ -37,7 +49,7 @@ public static class StripOrnamentCatalog
         new StripOrnamentPattern(
             "crossbar",
             "Crossbar Lattice",
-            "A short bouncing horizontal equation, a two-step vertical bounce, and a longer rightward carry combine into the repeating crossbar cell.",
+            "The same three segment definitions form the lattice by firing the short horizontal, short vertical, and long horizontal carrier through a full mirrored cell.",
             10,
             8,
             [
@@ -64,7 +76,7 @@ public static class StripOrnamentCatalog
         new StripOrnamentPattern(
             "trapezoid",
             "Trapezoid Wave",
-            "The bounced short equation makes the slanted walls while the long carrier closes the top and bottom rails.",
+            "The same bounced short equations now commit in grouped bursts, so the walls slope while the long carrier closes the top and bottom rails.",
             6,
             9,
             [
@@ -91,8 +103,8 @@ public static class StripOrnamentCatalog
         new StripOrnamentPattern(
             "chevron",
             "Chevron Drift",
-            "Two paired fires of the short horizontal and vertical equations create the pointed chevrons before the longer glide resets the spacing.",
-            3,
+            "Two paired fires of the bounced short equations create the pointed chevrons, and the long carrier spaces the next point cleanly.",
+            6,
             10,
             [
                 SharedX0(),
@@ -118,7 +130,7 @@ public static class StripOrnamentCatalog
         new StripOrnamentPattern(
             "interlock",
             "Interlock",
-            "A primed short equation is switched to continue mode so the lattice can carry one extra horizontal tooth inside each interlocking cell.",
+            "A primed short segment switches from reflective bounce into tension-preserving continuation so the interlocking tooth can carry through the middle of the cell.",
             6,
             8,
             [
@@ -127,7 +139,7 @@ public static class StripOrnamentCatalog
                 SharedXLong(),
             ])
         {
-            CallPattern = "Prelude X0 then Continue; XLong; Y0,Y0; XLong; Y0; X0; Y0",
+            CallPattern = "Prelude X0 then continue-with-tension; XLong; Y0,Y0; XLong; Y0; X0; Y0",
             Program = Program(
                 [
                     Fire("X0"), Commit(),
@@ -146,7 +158,7 @@ public static class StripOrnamentCatalog
         new StripOrnamentPattern(
             "stair",
             "Stair Step",
-            "The vertical bounce fires on its own and the long horizontal carrier follows, producing a clean stepped ascent and descent.",
+            "The vertical bounced segment fires on its own and the long carrier follows, producing a full up-up-down-down stair cycle in one ornament cell.",
             8,
             7,
             [
@@ -187,22 +199,22 @@ public static class StripOrnamentCatalog
     private static StripOrnamentStrand SharedX0() =>
         new(
             "X0",
-            "R, L, R, L, ...",
-            "A one-step horizontal equation that remembers its current facing and bounces on every call.",
+            "frame [0,1] · step +1 · reflect",
+            "A one-step horizontal segment defined on axis [0,1] with reflective bounce. Its facing flips automatically at the frame edge.",
             []);
 
     private static StripOrnamentStrand SharedY0() =>
         new(
             "Y0",
-            "U, U, D, D, ...",
-            "A one-step vertical equation that holds direction for two calls before bouncing.",
+            "frame [0,2] · step +1 · reflect",
+            "A one-step vertical segment defined on axis [0,2] with reflective bounce. It rises twice, then descends twice.",
             []);
 
     private static StripOrnamentStrand SharedXLong() =>
         new(
             "XLong",
-            "2R, 2R, 2R, ...",
-            "A longer horizontal carrier that does not bounce and always continues to the right.",
+            "unbounded · step +2",
+            "A longer horizontal carrier with no active boundary frame, so it continues to the right without wrapping or bouncing.",
             []);
 
     private static StripEquationProgram Program(
@@ -216,6 +228,6 @@ public static class StripOrnamentCatalog
     private static StripEquationCommand Commit() =>
         StripEquationCommand.Commit();
 
-    private static StripEquationCommand SetMode(string equationName, StripEquationMode mode) =>
-        StripEquationCommand.SetMode(equationName, mode);
+    private static StripEquationCommand SetLaw(string equationName, BoundaryContinuationLaw law) =>
+        StripEquationCommand.SetLaw(equationName, law);
 }

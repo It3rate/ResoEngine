@@ -1,6 +1,8 @@
+using Core2.Repetition;
+
 namespace Core2.Geometry;
 
 public sealed record StripEquationProgram(
-    IReadOnlyList<StripEquationDefinition> Equations,
+    IReadOnlyList<StripSegmentDefinition> Equations,
     IReadOnlyList<StripEquationCommand> Loop,
     IReadOnlyList<StripEquationCommand>? Prelude = null);

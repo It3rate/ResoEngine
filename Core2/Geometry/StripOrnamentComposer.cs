@@ -1,3 +1,5 @@
+using Core2.Repetition;
+
 namespace Core2.Geometry;
 
 public static class StripOrnamentComposer
@@ -54,7 +56,7 @@ public static class StripOrnamentComposer
     {
         var runtime = program.Equations.ToDictionary(
             equation => equation.Name,
-            equation => new RuntimeEquation(equation),
+            equation => new RuntimeSegment(equation),
             StringComparer.OrdinalIgnoreCase);
 
         var segments = new List<StripPathEdge>();
@@ -108,14 +110,14 @@ public static class StripOrnamentComposer
 
                         break;
                     }
-                    case StripEquationCommandKind.SetMode:
+                    case StripEquationCommandKind.SetLaw:
                     {
-                        if (command.EquationName is null || command.Mode is null)
+                        if (command.EquationName is null || command.Law is null)
                         {
-                            throw new InvalidOperationException("Mode commands require an equation name and mode.");
+                            throw new InvalidOperationException("Law commands require an equation name and law.");
                         }
 
-                        runtime[command.EquationName].SetMode(command.Mode.Value);
+                        runtime[command.EquationName].SetLaw(command.Law.Value);
                         break;
                     }
                     default:
@@ -125,55 +127,25 @@ public static class StripOrnamentComposer
         }
     }
 
-    private sealed class RuntimeEquation
+    private sealed class RuntimeSegment
     {
-        private readonly StripDelta _delta;
-        private readonly int _holdCount;
-        private int _direction = 1;
-        private int _stepsInDirection;
-        private bool _flipPending;
+        private readonly StripSegmentDefinition _definition;
+        private readonly AxisTraversalState _state;
 
-        public RuntimeEquation(StripEquationDefinition definition)
+        public RuntimeSegment(StripSegmentDefinition definition)
         {
             ArgumentNullException.ThrowIfNull(definition);
 
-            _delta = definition.Delta;
-            _holdCount = Math.Max(1, definition.HoldCount);
-            Mode = definition.Mode;
+            _definition = definition;
+            _state = definition.Traversal.CreateState();
         }
-
-        public StripEquationMode Mode { get; private set; }
 
         public StripDelta Fire()
         {
-            if (_flipPending && Mode == StripEquationMode.Bounce)
-            {
-                _direction *= -1;
-                _flipPending = false;
-                _stepsInDirection = 0;
-            }
-
-            var emitted = new StripDelta(_delta.Dx * _direction, _delta.Dy * _direction);
-            if (Mode == StripEquationMode.Bounce)
-            {
-                _stepsInDirection++;
-                if (_stepsInDirection >= _holdCount)
-                {
-                    _flipPending = true;
-                }
-            }
-
-            return emitted;
+            var step = _state.Fire();
+            return _definition.Project(step.Delta);
         }
 
-        public void SetMode(StripEquationMode mode)
-        {
-            Mode = mode;
-            if (mode != StripEquationMode.Bounce)
-            {
-                _flipPending = false;
-                _stepsInDirection = 0;
-            }
-        }
+        public void SetLaw(BoundaryContinuationLaw law) => _state.SetLaw(law);
     }
 }

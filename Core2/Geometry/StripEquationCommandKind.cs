@@ -4,5 +4,5 @@ public enum StripEquationCommandKind
 {
     Fire,
     Commit,
-    SetMode,
+    SetLaw,
 }
