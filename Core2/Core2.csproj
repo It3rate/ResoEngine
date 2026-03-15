@@ -6,4 +6,8 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
+  <ItemGroup>
+    <Compile Include="Axioms\PropogationProposal.md" />
+  </ItemGroup>
+
 </Project>
