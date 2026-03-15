@@ -202,7 +202,7 @@ public class StripOrnamentGalleryPage : IVisualizerPage
         [
             new EditorSegment(defaults["X0"], "Short horizontal carrier.", SegmentColors.Red),
             new EditorSegment(defaults["Y0"], "Vertical pulse carrier shown horizontally here.", SegmentColors.Blue),
-            new EditorSegment(defaults["XLong"], "Long horizontal carrier.", SegmentColors.Green),
+            new EditorSegment(defaults["X1"], "Long horizontal carrier.", SegmentColors.Green),
         ];
     }
 
@@ -582,7 +582,12 @@ public class StripOrnamentGalleryPage : IVisualizerPage
         public CoordinateSystem Coords { get; }
         public SegmentRenderer? Renderer { get; set; }
         public string Name => Definition.Name;
-        public string BehaviorLabel => Definition.Law == BoundaryContinuationLaw.ReflectiveBounce ? "Reflecting" : "Continuous";
+        public string BehaviorLabel => Definition.Law switch
+        {
+            BoundaryContinuationLaw.ReflectiveBounce => "Reflecting",
+            BoundaryContinuationLaw.PeriodicWrap => "Wrap",
+            _ => "Continuous",
+        };
 
         public StripSegmentDefinition ToDefinition() =>
             new(
@@ -590,7 +595,7 @@ public class StripOrnamentGalleryPage : IVisualizerPage
                 Display.Axis,
                 Definition.Law,
                 Definition.AxisVector,
-                Definition.StepMode,
+                Definition.Step,
                 Definition.UseSegmentAsFrame,
                 Definition.Seed);
 

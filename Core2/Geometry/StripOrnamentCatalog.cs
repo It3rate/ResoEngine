@@ -13,18 +13,20 @@ public static class StripOrnamentCatalog
             "X0",
             Axis.FromCoordinates(Scalar.Zero, Scalar.One),
             BoundaryContinuationLaw.ReflectiveBounce,
-            StripDelta.Right),
+            StripDelta.Right,
+            Scalar.One),
         new StripSegmentDefinition(
             "Y0",
             Axis.FromCoordinates(Scalar.Zero, 2),
             BoundaryContinuationLaw.ReflectiveBounce,
-            StripDelta.Up),
+            StripDelta.Up,
+            Scalar.One),
         new StripSegmentDefinition(
-            "XLong",
+            "X1",
             Axis.FromCoordinates(Scalar.Zero, 2),
             BoundaryContinuationLaw.TensionPreserving,
             StripDelta.Right,
-            StripSegmentStepMode.Span,
+            new Scalar(2m),
             UseSegmentAsFrame: false),
     ];
 
@@ -45,16 +47,16 @@ public static class StripOrnamentCatalog
                 [
                     SharedSegment(byName["X0"], "A short horizontal carrier is defined but not used in this cell."),
                     SharedSegment(byName["Y0"], "The bounced vertical carrier climbs two steps, then descends two steps."),
-                    SharedSegment(byName["XLong"], "The continuous long carrier advances the next square block."),
+                    SharedSegment(byName["X1"], "The continuous long carrier advances the next square block."),
                 ])
             {
-                CallPattern = "Y0, Y0; XLong",
+                CallPattern = "Y0, Y0; X1",
                 Program = Program(
                     equations,
                     [
                         Fire("Y0"),
                         Fire("Y0"), Commit(),
-                        Fire("XLong"), Commit(),
+                        Fire("X1"), Commit(),
                     ]),
             },
             new StripOrnamentPattern(
@@ -66,16 +68,16 @@ public static class StripOrnamentCatalog
                 [
                     SharedSegment(byName["X0"], "A short horizontal carrier is defined but not used in this cell."),
                     SharedSegment(byName["Y0"], "The bounced vertical carrier supplies the alternating rise and fall."),
-                    SharedSegment(byName["XLong"], "The continuous long carrier closes each diagonal stride."),
+                    SharedSegment(byName["X1"], "The continuous long carrier closes each diagonal stride."),
                 ])
             {
-                CallPattern = "Y0, Y0, XLong",
+                CallPattern = "Y0, Y0, X1",
                 Program = Program(
                     equations,
                     [
                         Fire("Y0"),
                         Fire("Y0"),
-                        Fire("XLong"), Commit(),
+                        Fire("X1"), Commit(),
                     ]),
             },
             new StripOrnamentPattern(
@@ -87,10 +89,10 @@ public static class StripOrnamentCatalog
                 [
                     SharedSegment(byName["X0"], "A bounced short horizontal carrier."),
                     SharedSegment(byName["Y0"], "A bounced short vertical carrier."),
-                    SharedSegment(byName["XLong"], "A long horizontal carrier that spaces the next cell."),
+                    SharedSegment(byName["X1"], "A long horizontal carrier that spaces the next cell."),
                 ])
             {
-                CallPattern = "X0, Y0, X0, Y0, XLong, then the mirrored descent before repeating",
+                CallPattern = "X0, Y0, X0, Y0, X1, then the mirrored descent before repeating",
                 Program = Program(
                     equations,
                     [
@@ -98,12 +100,12 @@ public static class StripOrnamentCatalog
                         Fire("Y0"), Commit(),
                         Fire("X0"), Commit(),
                         Fire("Y0"), Commit(),
-                        Fire("XLong"), Commit(),
+                        Fire("X1"), Commit(),
                         Fire("X0"), Commit(),
                         Fire("Y0"), Commit(),
                         Fire("X0"), Commit(),
                         Fire("Y0"), Commit(),
-                        Fire("XLong"), Commit(),
+                        Fire("X1"), Commit(),
                     ]),
             },
             new StripOrnamentPattern(
@@ -115,10 +117,10 @@ public static class StripOrnamentCatalog
                 [
                     SharedSegment(byName["X0"], "A bounced short horizontal carrier."),
                     SharedSegment(byName["Y0"], "A bounced short vertical carrier."),
-                    SharedSegment(byName["XLong"], "A long horizontal carrier that closes the rails."),
+                    SharedSegment(byName["X1"], "A long horizontal carrier that closes the rails."),
                 ])
             {
-                CallPattern = "X0; Y0 + X0 + Y0; XLong, then the mirrored descent half",
+                CallPattern = "X0; Y0 + X0 + Y0; X1, then the mirrored descent half",
                 Program = Program(
                     equations,
                     [
@@ -126,12 +128,12 @@ public static class StripOrnamentCatalog
                         Fire("Y0"),
                         Fire("X0"),
                         Fire("Y0"), Commit(),
-                        Fire("XLong"), Commit(),
+                        Fire("X1"), Commit(),
                         Fire("X0"), Commit(),
                         Fire("Y0"),
                         Fire("X0"),
                         Fire("Y0"), Commit(),
-                        Fire("XLong"), Commit(),
+                        Fire("X1"), Commit(),
                     ]),
             },
             new StripOrnamentPattern(
@@ -143,10 +145,10 @@ public static class StripOrnamentCatalog
                 [
                     SharedSegment(byName["X0"], "A bounced short horizontal carrier."),
                     SharedSegment(byName["Y0"], "A bounced short vertical carrier."),
-                    SharedSegment(byName["XLong"], "A long horizontal carrier that spaces the next point."),
+                    SharedSegment(byName["X1"], "A long horizontal carrier that spaces the next point."),
                 ])
             {
-                CallPattern = "X0 + Y0; X0 + Y0; XLong, then the opposite-slope half",
+                CallPattern = "X0 + Y0; X0 + Y0; X1, then the opposite-slope half",
                 Program = Program(
                     equations,
                     [
@@ -154,12 +156,12 @@ public static class StripOrnamentCatalog
                         Fire("Y0"), Commit(),
                         Fire("X0"),
                         Fire("Y0"), Commit(),
-                        Fire("XLong"), Commit(),
+                        Fire("X1"), Commit(),
                         Fire("X0"),
                         Fire("Y0"), Commit(),
                         Fire("X0"),
                         Fire("Y0"), Commit(),
-                        Fire("XLong"), Commit(),
+                        Fire("X1"), Commit(),
                     ]),
             },
             new StripOrnamentPattern(
@@ -171,10 +173,10 @@ public static class StripOrnamentCatalog
                 [
                     SharedSegment(byName["X0"], "A short horizontal carrier that primes the tooth."),
                     SharedSegment(byName["Y0"], "A bounced vertical carrier that locks the hook in place."),
-                    SharedSegment(byName["XLong"], "A long horizontal carrier that bridges the next tooth."),
+                    SharedSegment(byName["X1"], "A long horizontal carrier that bridges the next tooth."),
                 ])
             {
-                CallPattern = "Prelude X0 then continue+tension; XLong; Y0,Y0; XLong; Y0; X0; Y0",
+                CallPattern = "X0; Y0; X0; Y0; X0; Y0; X1",
                 Program = Program(
                     equations,
                     [
@@ -184,7 +186,7 @@ public static class StripOrnamentCatalog
                     Fire("Y0"), Commit(),
                     Fire("X0"), Commit(),
                     Fire("Y0"), Commit(),
-                    Fire("XLong"), Commit(),
+                    Fire("X1"), Commit(),
                     ]),
             },
             new StripOrnamentPattern(
@@ -196,21 +198,21 @@ public static class StripOrnamentCatalog
                 [
                     SharedSegment(byName["X0"], "The short horizontal carrier is available but unused in this cell."),
                     SharedSegment(byName["Y0"], "A bounced vertical carrier that climbs and descends across the stair."),
-                    SharedSegment(byName["XLong"], "A long horizontal carrier that advances each landing."),
+                    SharedSegment(byName["X1"], "A long horizontal carrier that advances each landing."),
                 ])
             {
-                CallPattern = "Y0; XLong across one full up-up-down-down bounce cycle",
+                CallPattern = "Y0; X1 across one full up-up-down-down bounce cycle",
                 Program = Program(
                     equations,
                     [
                         Fire("Y0"), Commit(),
-                        Fire("XLong"), Commit(),
+                        Fire("X1"), Commit(),
                         Fire("Y0"), Commit(),
-                        Fire("XLong"), Commit(),
+                        Fire("X1"), Commit(),
                         Fire("Y0"), Commit(),
-                        Fire("XLong"), Commit(),
+                        Fire("X1"), Commit(),
                         Fire("Y0"), Commit(),
-                        Fire("XLong"), Commit(),
+                        Fire("X1"), Commit(),
                     ]),
             },
         ];

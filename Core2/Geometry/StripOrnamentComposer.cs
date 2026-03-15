@@ -134,6 +134,12 @@ public static class StripOrnamentComposer
                                 {
                                     visibleStart ??= start;
                                 }
+
+                                if (part.EndsStroke && visibleStart is not null && cursor != visibleStart.Value)
+                                {
+                                    segments.Add(new StripPathEdge(visibleStart.Value, cursor));
+                                    visibleStart = cursor;
+                                }
                             }
                             else
                             {
@@ -187,6 +193,7 @@ public static class StripOrnamentComposer
         private readonly decimal _endCoordinate;
         private readonly int _hiddenDirection;
         private readonly int _visibleDirection;
+        private bool _needsStartJump;
         private decimal _routePosition;
         private int _direction;
         private BoundaryContinuationLaw _law;
@@ -204,19 +211,26 @@ public static class StripOrnamentComposer
             _stepMagnitude = decimal.Abs(definition.ComputeStep().Value);
             _hiddenDirection = Math.Sign(_startCoordinate);
             _visibleDirection = Math.Sign(_endCoordinate - _startCoordinate);
-            _routePosition = 0m;
-            _direction = 1;
+            _direction = Math.Sign(definition.ComputeStep().Value) < 0 ? -1 : 1;
+            _routePosition = _direction < 0 ? _routeLength : 0m;
+            _needsStartJump = _direction < 0 && _routePosition != 0m;
             _law = definition.Law;
         }
 
         public RuntimeMotion Fire()
         {
-            if (_stepMagnitude == 0m)
+            if (_stepMagnitude == 0m && !_needsStartJump)
             {
                 return new RuntimeMotion([]);
             }
 
             var parts = new List<RuntimeMotionPart>();
+            if (_needsStartJump)
+            {
+                AddInvisibleJump(0m, _routePosition, parts);
+                _needsStartJump = false;
+            }
+
             decimal remaining = _stepMagnitude;
 
             while (remaining > 0m)
@@ -238,7 +252,8 @@ public static class StripOrnamentComposer
 
                     decimal travel = Math.Min(remaining, distanceToEdge);
                     decimal next = _routePosition + _direction * travel;
-                    AddRouteMotion(_routePosition, next, parts);
+                    bool endsStroke = remaining > travel && next == edge;
+                    AddRouteMotion(_routePosition, next, parts, endsStroke);
                     _routePosition = next;
                     remaining -= travel;
 
@@ -290,12 +305,12 @@ public static class StripOrnamentComposer
                 remaining = 0m;
             }
 
-            return new RuntimeMotion(parts);
+                return new RuntimeMotion(parts);
         }
 
         public void SetLaw(BoundaryContinuationLaw law) => _law = law;
 
-        private void AddRouteMotion(decimal from, decimal to, List<RuntimeMotionPart> parts)
+        private void AddRouteMotion(decimal from, decimal to, List<RuntimeMotionPart> parts, bool endsStroke = false)
         {
             if (from == to)
             {
@@ -307,8 +322,10 @@ public static class StripOrnamentComposer
                 return;
             }
 
-            foreach (var segment in SplitAtLeadBoundary(from, to))
+            var slices = SplitAtLeadBoundary(from, to).ToArray();
+            for (int index = 0; index < slices.Length; index++)
             {
+                var segment = slices[index];
                 if (segment.From == segment.To)
                 {
                     continue;
@@ -323,7 +340,8 @@ public static class StripOrnamentComposer
 
                 parts.Add(new RuntimeMotionPart(
                     _definition.Project(new Core2.Elements.Scalar(worldTo - worldFrom)),
-                    segment.IsVisible));
+                    segment.IsVisible,
+                    endsStroke && segment.IsVisible && index == slices.Length - 1));
             }
         }
 
@@ -381,6 +399,6 @@ public static class StripOrnamentComposer
     }
 
     private readonly record struct RuntimeMotion(IReadOnlyList<RuntimeMotionPart> Parts);
-    private readonly record struct RuntimeMotionPart(StripDelta Delta, bool IsVisible);
+    private readonly record struct RuntimeMotionPart(StripDelta Delta, bool IsVisible, bool EndsStroke = false);
     private readonly record struct RouteSlice(decimal From, decimal To, bool IsVisible);
 }

@@ -1,3 +1,4 @@
+using Core2.Elements;
 using Core2.Geometry;
 using Core2.Repetition;
 using ResoEngine.Visualizer.Adapt;
@@ -13,7 +14,8 @@ public class StripPatternEditorPage : IVisualizerPage
 {
     private const int MaxColumns = 10;
     private const int MaxPatternSteps = 200;
-    private const float EditorScale = 60f;
+    private const float StepScale = 24f;
+    private const float SpanScale = 44f;
 
     private readonly SKPaint _headingPaint = new()
     {
@@ -105,6 +107,14 @@ public class StripPatternEditorPage : IVisualizerPage
         IsAntialias = true,
     };
 
+    private readonly SKPaint _sectionLabelPaint = new()
+    {
+        Color = new SKColor(104, 104, 104),
+        TextSize = 11f,
+        Typeface = SKTypeface.FromFamilyName(VisualStyle.FontFamily, SKFontStyle.Bold),
+        IsAntialias = true,
+    };
+
     private readonly SKPaint _editorFillPaint = new()
     {
         Style = SKPaintStyle.Fill,
@@ -153,6 +163,38 @@ public class StripPatternEditorPage : IVisualizerPage
         IsAntialias = true,
     };
 
+    private readonly SKPaint _lawButtonFillPaint = new()
+    {
+        Style = SKPaintStyle.Fill,
+        Color = SKColors.White,
+        IsAntialias = true,
+    };
+
+    private readonly SKPaint _lawButtonSelectedPaint = new()
+    {
+        Style = SKPaintStyle.Fill,
+        Color = new SKColor(222, 244, 248),
+        IsAntialias = true,
+    };
+
+    private readonly SKPaint _lawButtonBorderPaint = new()
+    {
+        Style = SKPaintStyle.Stroke,
+        StrokeWidth = 1f,
+        Color = new SKColor(205, 205, 205),
+        IsAntialias = true,
+    };
+
+    private readonly SKPaint _lawIconPaint = new()
+    {
+        Style = SKPaintStyle.Stroke,
+        StrokeWidth = 1.8f,
+        Color = new SKColor(86, 86, 86),
+        StrokeCap = SKStrokeCap.Round,
+        StrokeJoin = SKStrokeJoin.Round,
+        IsAntialias = true,
+    };
+
     private readonly IReadOnlyList<StripOrnamentPattern> _basePatterns = StripOrnamentCatalog.GalleryPatterns;
     private readonly EditorSegment[] _editorSegments;
 
@@ -165,6 +207,7 @@ public class StripPatternEditorPage : IVisualizerPage
     private readonly List<Button> _patternButtons = [];
     private readonly List<Button> _paletteButtons = [];
     private readonly List<Control> _gridColumns = [];
+    private readonly List<LawButtonHit> _lawHitTargets = [];
 
     private int _selectedPatternIndex;
     private List<List<string>> _workingColumns = [];
@@ -179,7 +222,7 @@ public class StripPatternEditorPage : IVisualizerPage
         [
             new EditorSegment(defaults["X0"], "Short horizontal carrier.", SegmentColors.Red),
             new EditorSegment(defaults["Y0"], "Vertical pulse carrier shown horizontally here.", SegmentColors.Blue),
-            new EditorSegment(defaults["XLong"], "Long horizontal carrier.", SegmentColors.Green),
+            new EditorSegment(defaults["X1"], "Long horizontal carrier.", SegmentColors.Green),
         ];
     }
 
@@ -191,6 +234,23 @@ public class StripPatternEditorPage : IVisualizerPage
         EnsureSegmentEditors(hitTest);
         EnsureControls();
         LoadPattern(_selectedPatternIndex);
+    }
+
+    public bool OnPointerDown(SKPoint pixelPoint)
+    {
+        foreach (var hit in _lawHitTargets)
+        {
+            if (!hit.Rect.Contains(pixelPoint.X, pixelPoint.Y))
+            {
+                continue;
+            }
+
+            hit.Editor.SetLaw(hit.Law);
+            _canvasHost?.InvalidateCanvas();
+            return true;
+        }
+
+        return false;
     }
 
     public void Render(SKCanvas canvas)
@@ -241,6 +301,7 @@ public class StripPatternEditorPage : IVisualizerPage
         _patternButtons.Clear();
         _paletteButtons.Clear();
         _gridColumns.Clear();
+        _lawHitTargets.Clear();
 
         foreach (var editor in _editorSegments)
         {
@@ -266,20 +327,27 @@ public class StripPatternEditorPage : IVisualizerPage
         _guidePaint.Dispose();
         _labelPaint.Dispose();
         _mutedPaint.Dispose();
+        _sectionLabelPaint.Dispose();
         _editorFillPaint.Dispose();
         _editorBorderPaint.Dispose();
         _rulerLinePaint.Dispose();
         _zeroPaint.Dispose();
         _tickPaint.Dispose();
         _tickTextPaint.Dispose();
+        _lawButtonFillPaint.Dispose();
+        _lawButtonSelectedPaint.Dispose();
+        _lawButtonBorderPaint.Dispose();
+        _lawIconPaint.Dispose();
     }
 
     private void EnsureSegmentEditors(HitTestEngine hitTest)
     {
         foreach (var editor in _editorSegments)
         {
-            editor.Renderer ??= new SegmentRenderer(editor.Coords, SegmentOrientation.Horizontal, editor.Colors);
-            hitTest.Register(editor.Renderer, editor.Display);
+            editor.SpanRenderer ??= new SegmentRenderer(editor.SpanCoords, SegmentOrientation.Horizontal, editor.Colors);
+            editor.StepRenderer ??= new SegmentRenderer(editor.StepCoords, SegmentOrientation.Horizontal, editor.Colors);
+            hitTest.Register(editor.SpanRenderer, editor.SpanDisplay);
+            hitTest.Register(editor.StepRenderer, editor.StepDisplay);
         }
     }
 
@@ -337,7 +405,7 @@ public class StripPatternEditorPage : IVisualizerPage
             {
                 BackColor = Color.White,
                 BorderStyle = BorderStyle.FixedSingle,
-                AutoScroll = true,
+                AutoScroll = false,
             };
             _canvasHost.Controls.Add(_gridHostPanel);
         }
@@ -448,8 +516,9 @@ public class StripPatternEditorPage : IVisualizerPage
         _gridHostPanel.Controls.Clear();
         _gridColumns.Clear();
 
-        int columnWidth = 91;
         int columnGap = 4;
+        int usableWidth = Math.Max(560, _gridHostPanel.ClientSize.Width - 24);
+        int columnWidth = Math.Max(92, (usableWidth - columnGap * (MaxColumns - 1)) / MaxColumns);
         int x = 12;
         int hostHeight = Math.Max(180, _gridHostPanel.ClientSize.Height - 28);
 
@@ -503,7 +572,7 @@ public class StripPatternEditorPage : IVisualizerPage
             x += columnWidth + columnGap;
         }
 
-        _gridHostPanel.AutoScrollMinSize = new Size(Math.Max(0, _gridHostPanel.ClientSize.Width - 6), 0);
+        _gridHostPanel.AutoScrollMinSize = Size.Empty;
         _gridHostPanel.ResumeLayout();
     }
 
@@ -678,14 +747,16 @@ public class StripPatternEditorPage : IVisualizerPage
 
     private void DrawSegmentEditor(SKCanvas canvas, SKRect editorRect)
     {
+        _lawHitTargets.Clear();
+
         canvas.DrawRoundRect(editorRect, 18f, 18f, _previewFillPaint);
         canvas.DrawRoundRect(editorRect, 18f, 18f, _previewBorderPaint);
-        canvas.DrawText("Shared Segment Controls", editorRect.Left + 18f, editorRect.Top + 24f, _labelPaint);
-        canvas.DrawText("Drag the directed segments to change span, offset, and timing for the selected pattern.", editorRect.Left + 18f, editorRect.Top + 44f, _mutedPaint);
+        //canvas.DrawText("Shared Segment Controls", editorRect.Left + 18f, editorRect.Top + 24f, _labelPaint);
+        //canvas.DrawText("Choose the continuation law, drag the left step carrier, and drag the right span carrier.", editorRect.Left + 18f, editorRect.Top + 44f, _mutedPaint);
 
-        float rowTop = editorRect.Top + 56f;
-        float gap = 8f;
-        float rowHeight = (editorRect.Height - 68f - gap * 2f) / 3f;
+        float rowTop = editorRect.Top + 12f;
+        float gap = 20f;
+        float rowHeight = (editorRect.Height - 40f - gap * 2f) / 3f;
         for (int index = 0; index < _editorSegments.Length; index++)
         {
             float top = rowTop + index * (rowHeight + gap);
@@ -700,16 +771,28 @@ public class StripPatternEditorPage : IVisualizerPage
         canvas.DrawRoundRect(panel, _editorBorderPaint);
 
         float labelX = rowRect.Left + 14f;
-        canvas.DrawText(editor.Name, labelX, rowRect.Top + 22f, _labelPaint);
-        canvas.DrawText(editor.BehaviorLabel, labelX + _labelPaint.MeasureText(editor.Name) + 10f, rowRect.Top + 22f, _mutedPaint);
-        canvas.DrawText(editor.Role, rowRect.Left + 14f, rowRect.Top + 40f, _mutedPaint);
+        canvas.DrawText(editor.Name, labelX, rowRect.Top + 26f, _labelPaint);
 
-        var rulerRect = new SKRect(rowRect.Left + 240f, rowRect.Top + 6f, rowRect.Right - 14f, rowRect.Bottom - 6f);
-        editor.Coords.OriginX = rulerRect.MidX;
-        editor.Coords.OriginY = rulerRect.MidY - 2f;
+        float buttonLeft = rowRect.Left + 40f;
+        float buttonTop = rowRect.Top + 5f;
+        float buttonSize = 32f;
+        float buttonGap = 8f;
+        DrawLawToggleButton(canvas, new SKRect(buttonLeft, buttonTop, buttonLeft + buttonSize, buttonTop + buttonSize), editor, BoundaryContinuationLaw.ReflectiveBounce);
+        DrawLawToggleButton(canvas, new SKRect(buttonLeft + buttonSize + buttonGap, buttonTop, buttonLeft + buttonSize * 2f + buttonGap, buttonTop + buttonSize), editor, BoundaryContinuationLaw.PeriodicWrap);
+        DrawLawToggleButton(canvas, new SKRect(buttonLeft + (buttonSize + buttonGap) * 2f, buttonTop, buttonLeft + buttonSize * 3f + buttonGap * 2f, buttonTop + buttonSize), editor, BoundaryContinuationLaw.TensionPreserving);
 
-        DrawEditorRuler(canvas, rulerRect, editor.Coords);
-        editor.Renderer?.Render(canvas, editor.Display);
+        var stepRect = new SKRect(rowRect.Left + 240f, rowRect.Top + 8f, rowRect.Left + 320f, rowRect.Bottom - 8f);
+        var spanRect = new SKRect(rowRect.Left + 560f, rowRect.Top + 8f, rowRect.Left + 640f, rowRect.Bottom - 8f);
+
+        editor.StepCoords.OriginX = stepRect.MidX;
+        editor.StepCoords.OriginY = stepRect.MidY + 6f;
+        editor.SpanCoords.OriginX = spanRect.MidX;
+        editor.SpanCoords.OriginY = spanRect.MidY + 6f;
+
+        DrawEditorRuler(canvas, stepRect, editor.StepCoords);
+        DrawEditorRuler(canvas, spanRect, editor.SpanCoords);
+        editor.StepRenderer?.Render(canvas, editor.StepDisplay);
+        editor.SpanRenderer?.Render(canvas, editor.SpanDisplay);
     }
 
     private void DrawEditorRuler(SKCanvas canvas, SKRect rect, CoordinateSystem coords)
@@ -726,6 +809,78 @@ public class StripPatternEditorPage : IVisualizerPage
         }
     }
 
+    private void DrawLawToggleButton(SKCanvas canvas, SKRect rect, EditorSegment editor, BoundaryContinuationLaw law)
+    {
+        bool selected = editor.Law == law;
+        using var roundRect = new SKRoundRect(rect, 8f, 8f);
+        canvas.DrawRoundRect(roundRect, selected ? _lawButtonSelectedPaint : _lawButtonFillPaint);
+        canvas.DrawRoundRect(roundRect, _lawButtonBorderPaint);
+        _lawHitTargets.Add(new LawButtonHit(editor, law, rect));
+
+        switch (law)
+        {
+            case BoundaryContinuationLaw.ReflectiveBounce:
+                DrawArrowIcon(canvas, rect, stacked: true, reverseBottom: true);
+                break;
+            case BoundaryContinuationLaw.PeriodicWrap:
+                DrawArrowIcon(canvas, rect, stacked: true, reverseBottom: false);
+                break;
+            case BoundaryContinuationLaw.TensionPreserving:
+                DrawContinuousIcon(canvas, rect);
+                break;
+        }
+    }
+
+    private void DrawArrowIcon(SKCanvas canvas, SKRect rect, bool stacked, bool reverseBottom)
+    {
+        float left = rect.Left + 6f;
+        float right = rect.Right - 6f;
+        if (stacked)
+        {
+            float topY = rect.Top + 10f;
+            float bottomY = rect.Bottom - 10f;
+            DrawArrowLine(canvas, left, right, topY, forward: true);
+            DrawArrowLine(canvas, left, right, bottomY, forward: !reverseBottom);
+            return;
+        }
+
+        float y = rect.MidY;
+        DrawArrowLine(canvas, left, right, y, forward: true);
+    }
+
+    private void DrawContinuousIcon(SKCanvas canvas, SKRect rect)
+    {
+        float left = rect.Left + 5f;
+        float right = rect.Right - 5f;
+        float middle = (left + right) * 0.5f;
+        float y = rect.MidY;
+
+        canvas.DrawLine(left, y, right, y, _lawIconPaint);
+        DrawArrowHead(canvas, middle, y, forward: true, scale: 4f);
+        DrawArrowHead(canvas, right, y, forward: true, scale: 4f);
+    }
+
+    private void DrawArrowLine(SKCanvas canvas, float left, float right, float y, bool forward)
+    {
+        if (forward)
+        {
+            canvas.DrawLine(left, y, right, y, _lawIconPaint);
+            DrawArrowHead(canvas, right, y, forward: true);
+        }
+        else
+        {
+            canvas.DrawLine(right, y, left, y, _lawIconPaint);
+            DrawArrowHead(canvas, left, y, forward: false);
+        }
+    }
+
+    private void DrawArrowHead(SKCanvas canvas, float x, float y, bool forward, float scale = 3.5f)
+    {
+        float signed = forward ? 1f : -1f;
+        canvas.DrawLine(x, y, x - 2.2f * scale * signed, y - scale, _lawIconPaint);
+        canvas.DrawLine(x, y, x - 2.2f * scale * signed, y + scale, _lawIconPaint);
+    }
+
     private void LayoutControls(EditorLayout layout)
     {
         if (_canvasHost is null || _selectorPanel is null || _palettePanel is null || _gridHostPanel is null || _trashButton is null)
@@ -734,16 +889,16 @@ public class StripPatternEditorPage : IVisualizerPage
         }
 
         _selectorPanel.Bounds = ToControlRect(layout.SelectorRect);
-        int buttonHeight = 40;
-        int buttonGap = 10;
+        int buttonHeight = 36;
+        int buttonGap = 8;
         for (int index = 0; index < _patternButtons.Count; index++)
         {
             _patternButtons[index].Bounds = new Rectangle(0, index * (buttonHeight + buttonGap), _selectorPanel.Width, buttonHeight);
         }
 
         _palettePanel.Bounds = ToControlRect(layout.PaletteRect);
-        int tokenWidth = 80;
-        int tokenGap = 12;
+        int tokenWidth = 58;
+        int tokenGap = 8;
         for (int index = 0; index < _paletteButtons.Count; index++)
         {
             _paletteButtons[index].Bounds = new Rectangle(index * (tokenWidth + tokenGap), 0, tokenWidth, _palettePanel.Height);
@@ -774,11 +929,11 @@ public class StripPatternEditorPage : IVisualizerPage
         float cardBottom = 780f;
         var card = new SKRoundRect(new SKRect(cardLeft, cardTop, cardRight, cardBottom), 24f, 24f);
 
-        var selectorRect = new SKRect(cardLeft + 18f, cardTop + 18f, cardLeft + 184f, cardTop + 430f);
-        var previewRect = new SKRect(cardLeft + 198f, cardTop + 18f, cardRight - 18f, cardTop + 170f);
-        var paletteRect = new SKRect(cardLeft + 212f, previewRect.Bottom + 18f, cardLeft + 448f, previewRect.Bottom + 56f);
+        var selectorRect = new SKRect(cardLeft + 18f, cardTop + 18f, cardLeft + 160f, cardTop + 414f);
+        var previewRect = new SKRect(cardLeft + 174f, cardTop + 18f, cardRight - 18f, cardTop + 170f);
+        var paletteRect = new SKRect(cardLeft + 188f, previewRect.Bottom + 18f, cardLeft + 396f, previewRect.Bottom + 56f);
         var trashRect = new SKRect(cardRight - 76f, previewRect.Bottom + 12f, cardRight - 20f, previewRect.Bottom + 50f);
-        var gridRect = new SKRect(cardLeft + 198f, previewRect.Bottom + 64f, cardRight - 18f, cardTop + 430f);
+        var gridRect = new SKRect(cardLeft + 174f, previewRect.Bottom + 64f, cardRight - 18f, cardTop + 430f);
         var editorRect = new SKRect(cardLeft + 18f, cardTop + 452f, cardRight - 18f, cardBottom - 18f);
         return new EditorLayout(card, selectorRect, previewRect, paletteRect, gridRect, trashRect, editorRect);
     }
@@ -854,8 +1009,8 @@ public class StripPatternEditorPage : IVisualizerPage
         button.BackColor = Color.FromArgb(250, 250, 250);
         button.ForeColor = Color.FromArgb(colors.Label.Red, colors.Label.Green, colors.Label.Blue);
         button.FlatAppearance.BorderColor = Color.FromArgb(198, 198, 198);
-        button.Font = new Font(VisualStyle.UiFontFamily, isPalette ? 9f : 8f, FontStyle.Bold);
-        button.Width = isPalette ? 58 : 44;
+        button.Font = new Font(VisualStyle.UiFontFamily, isPalette ? 8.5f : 7.5f, FontStyle.Bold);
+        button.Width = isPalette ? 52 : 38;
         button.Height = 28;
         if (!isPalette)
         {
@@ -918,44 +1073,86 @@ public class StripPatternEditorPage : IVisualizerPage
             Definition = definition;
             Role = role;
             Colors = colors;
-            Display = new AxisDisplayMapper(definition.Segment, definition.Name, 1f);
-            Coords = new CoordinateSystem(scale: EditorScale);
+            SpanDisplay = new AxisDisplayMapper(definition.Segment, string.Empty, 1f);
+            StepDisplay = new StepDisplayMapper(definition.Step, 1f);
+            StepCoords = new CoordinateSystem(scale: StepScale);
+            SpanCoords = new CoordinateSystem(scale: SpanScale);
+            SetDefinition(definition);
         }
 
         public StripSegmentDefinition Definition { get; private set; }
         public string Role { get; }
         public SegmentColorSet Colors { get; }
-        public AxisDisplayMapper Display { get; }
-        public CoordinateSystem Coords { get; }
-        public SegmentRenderer? Renderer { get; set; }
+        public AxisDisplayMapper SpanDisplay { get; }
+        public StepDisplayMapper StepDisplay { get; }
+        public CoordinateSystem StepCoords { get; }
+        public CoordinateSystem SpanCoords { get; }
+        public SegmentRenderer? StepRenderer { get; set; }
+        public SegmentRenderer? SpanRenderer { get; set; }
+        public BoundaryContinuationLaw Law { get; private set; }
         public string Name => Definition.Name;
-        public string BehaviorLabel => Definition.Law == BoundaryContinuationLaw.ReflectiveBounce ? "Reflecting" : "Continuous";
 
         public void SetDefinition(StripSegmentDefinition definition)
         {
             Definition = definition;
-            Display.SetAxis(definition.Segment);
-            Display.Label = definition.Name;
+            Law = definition.Law;
+            SpanDisplay.SetAxis(definition.Segment);
+            StepDisplay.SetStep(definition.Step);
+        }
+
+        public void SetLaw(BoundaryContinuationLaw law)
+        {
+            Law = law;
         }
 
         public StripSegmentDefinition ToDefinition() =>
             new(
                 Definition.Name,
-                Display.Axis,
-                Definition.Law,
+                SpanDisplay.Axis,
+                Law,
                 Definition.AxisVector,
-                Definition.StepMode,
+                StepDisplay.ToScalar(),
                 Definition.UseSegmentAsFrame,
                 Definition.Seed);
 
         public void DisposeRenderer()
         {
-            Renderer?.Dispose();
-            Renderer = null;
+            StepRenderer?.Dispose();
+            StepRenderer = null;
+            SpanRenderer?.Dispose();
+            SpanRenderer = null;
         }
     }
 
     private sealed record EquationTokenDragData(string EquationName, int? SourceColumnIndex, int SourceTokenIndex);
+
+    private sealed class StepDisplayMapper : ISegmentValue, ISegmentDragConfig
+    {
+        public StepDisplayMapper(Scalar step, float snapIncrement)
+        {
+            Label = string.Empty;
+            SnapIncrement = snapIncrement;
+            Real = (float)step.Value;
+        }
+
+        public float Imaginary
+        {
+            get => 0f;
+            set { }
+        }
+
+        public float Real { get; set; }
+
+        public string Label { get; set; }
+
+        public float SnapIncrement { get; }
+
+        public void SetStep(Scalar step) => Real = (float)step.Value;
+
+        public Scalar ToScalar() => new((decimal)Real);
+    }
+
+    private sealed record LawButtonHit(EditorSegment Editor, BoundaryContinuationLaw Law, SKRect Rect);
 
     private sealed record EditorLayout(
         SKRoundRect Card,

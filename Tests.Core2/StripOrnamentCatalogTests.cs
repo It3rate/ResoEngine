@@ -195,18 +195,20 @@ public class StripOrnamentCatalogTests
                 "X0",
                 Axis.FromCoordinates(Scalar.Zero, 1),
                 BoundaryContinuationLaw.ReflectiveBounce,
-                StripDelta.Right),
+                StripDelta.Right,
+                Scalar.One),
             new StripSegmentDefinition(
                 "Y0",
                 Axis.FromCoordinates(Scalar.Zero, 2),
                 BoundaryContinuationLaw.ReflectiveBounce,
-                StripDelta.Up),
+                StripDelta.Up,
+                Scalar.One),
             new StripSegmentDefinition(
-                "XLong",
+                "X1",
                 Axis.FromCoordinates(Scalar.Zero, 4),
                 BoundaryContinuationLaw.TensionPreserving,
                 StripDelta.Right,
-                StripSegmentStepMode.Span,
+                new Scalar(4m),
                 UseSegmentAsFrame: false),
         ];
 
@@ -240,7 +242,8 @@ public class StripOrnamentCatalogTests
             "X0",
             Axis.FromCoordinates(-1, 1),
             BoundaryContinuationLaw.ReflectiveBounce,
-            StripDelta.Right);
+            StripDelta.Right,
+            Scalar.One);
 
         var pattern = new StripOrnamentPattern(
             "lead-in",
@@ -270,7 +273,8 @@ public class StripOrnamentCatalogTests
             "X0",
             Axis.FromCoordinates(-1, 1),
             BoundaryContinuationLaw.ReflectiveBounce,
-            StripDelta.Right);
+            StripDelta.Right,
+            Scalar.One);
 
         var pattern = new StripOrnamentPattern(
             "lead-in",
@@ -300,5 +304,41 @@ public class StripOrnamentCatalogTests
                 StripDelta.Right,
             ],
             deltas);
+    }
+
+    [Fact]
+    public void ReflectiveStep_LongerThanSpan_PreservesBounceVertex()
+    {
+        var definition = new StripSegmentDefinition(
+            "X1",
+            Axis.FromCoordinates(Scalar.Zero, 2),
+            BoundaryContinuationLaw.ReflectiveBounce,
+            StripDelta.Right,
+            new Scalar(3m));
+
+        var pattern = new StripOrnamentPattern(
+            "overshoot",
+            "Overshoot",
+            "Test pattern for reflected overshoot.",
+            1,
+            1,
+            [new StripOrnamentStrand("X1", definition.DescribeTraversal(), "Overshoot test.", [])])
+        {
+            Program = new StripEquationProgram(
+                [definition],
+                [
+                    StripEquationCommand.Fire("X1"), StripEquationCommand.Commit(),
+                ]),
+        };
+
+        var result = StripOrnamentComposer.Compose(pattern, 1);
+
+        Assert.Equal(
+            [
+                new StripPathEdge(new StripPoint(0, 0), new StripPoint(2, 0)),
+                new StripPathEdge(new StripPoint(2, 0), new StripPoint(1, 0)),
+            ],
+            result.Segments);
+        Assert.Equal(new StripPoint(1, 0), result.Cursor);
     }
 }

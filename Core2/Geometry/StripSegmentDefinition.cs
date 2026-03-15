@@ -8,36 +8,25 @@ public sealed record StripSegmentDefinition(
     Axis Segment,
     BoundaryContinuationLaw Law,
     StripDelta AxisVector,
-    StripSegmentStepMode StepMode = StripSegmentStepMode.Unit,
+    Scalar Step,
     bool UseSegmentAsFrame = true,
     Scalar? Seed = null)
 {
     public AxisTraversalDefinition CreateTraversal() =>
         new(
             UseSegmentAsFrame ? Segment : null,
-            ComputeStep(),
+            Step,
             Law,
             Seed ?? Segment.Start);
 
-    public Scalar ComputeStep()
-    {
-        decimal delta = Segment.End.Value - Segment.Start.Value;
-        return StepMode switch
-        {
-            StripSegmentStepMode.Unit when delta > 0m => Scalar.One,
-            StripSegmentStepMode.Unit when delta < 0m => -Scalar.One,
-            StripSegmentStepMode.Unit => Scalar.Zero,
-            StripSegmentStepMode.Span => new Scalar(delta),
-            _ => throw new ArgumentOutOfRangeException(nameof(StepMode), StepMode, null),
-        };
-    }
+    public Scalar ComputeStep() => Step;
 
     public string DescribeTraversal()
     {
         string frameText = UseSegmentAsFrame
             ? $"frame [{Format(Segment.Start)}, {Format(Segment.End)}]"
             : "unbounded";
-        string stepText = $"step {Format(ComputeStep())}";
+        string stepText = $"step {Format(Step)}";
         string lawText = Law switch
         {
             BoundaryContinuationLaw.ReflectiveBounce => "reflect",
