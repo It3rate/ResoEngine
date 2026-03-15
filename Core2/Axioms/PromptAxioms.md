@@ -4,8 +4,8 @@ This file is a consolidated reference-friendly rewrite of the current Core 2 axi
 It matches the content of [PromptAxioms.txt](C:/Users/Robin/source/repos/ResoEngine/Core2/Axioms/PromptAxioms.txt) but is formatted for easier reading.
 The original markdown files in `Core2/Axioms` remain useful and should not be deleted.
 
-Sections I through VII are general Core 2 system axioms.  
-Section VIII is a directed-segment appendix aligned to the current geometry and boolean implementation.
+Parts I through VIII are general Core 2 system axioms.  
+Part IX is a directed-segment appendix aligned to the current geometry and boolean implementation.
 
 ## Part I. Foundations
 
@@ -393,7 +393,61 @@ The framework distinguishes:
 - what it means physically
 - where unresolved information remains
 
-## Part IV. General Branching
+## Part IV. Multiscale Resolution and Layered Readings
+
+### M1. Resolution frame
+A resolution frame defines a grain at which a quantity may be read.
+The frame carries:
+
+- a signature
+- a grain
+- an optional named unit or symbol
+
+### M2. Resolution ladder
+A resolution ladder is an ordered family of resolution frames sharing one signature and descending from coarser grain to finer grain.
+
+### M3. Layered quantity
+A layered quantity is an exact quantity represented as a sum of signed counts across one or more resolution frames.
+
+### M4. Signed digits are allowed
+Resolution counts need not be only nonnegative digits.
+A layered quantity may use signed counts when that representation is structurally useful.
+
+### M5. Exact fold
+Folding a layered quantity means summing all frame-count contributions into one exact quantity in the shared signature.
+
+### M6. Exact decomposition
+A quantity may be decomposed across a resolution ladder into frame counts.
+This creates a place-value-like representation at several grains.
+
+### M7. Coarse reading
+Reading at a chosen frame does not require discarding exact structure.
+The system may compute:
+
+- the raw tick count at that grain
+- the quantized tick count
+- the representative quantity at that grain
+- the residual detail not captured by that reading
+
+### M8. Quantization rule
+A coarse reading depends on a quantization rule such as nearest, floor, ceiling, toward-zero, or away-from-zero.
+
+### M9. Fine detail may collapse to zero
+When a quantity is read in a coarse frame, contributions from finer frames may collapse to zero at that grain even though they remain present in the exact folded quantity.
+
+### M10. Refinement and collapse
+Refinement introduces or preserves finer-frame detail.
+Collapse re-expresses the same quantity at a coarser frame, possibly with residual detail omitted from the representative reading.
+
+### M11. Representative and residual differ
+A representative reading is the quantity expressed at the chosen grain.
+A residual is the remaining exact detail not captured by that representative.
+
+### M12. Current Core 2 scope
+The current implementation begins with scalar quantities paired with unit signatures.
+Higher-structure multiscale readings may be added later.
+
+## Part V. General Branching
 
 ### B1. Branching is general
 A lawful process is not required to remain single-track.
@@ -491,7 +545,7 @@ A computational system requires explicit handling of:
 
 Branching therefore belongs to execution as well as description.
 
-## Part V. Branch Families and Branch Graphs
+## Part VI. Branch Families and Branch Graphs
 
 ### G1. Branch families are local multiplicity events
 A branch family records the valid multiplicity produced by one lawful event.
@@ -544,7 +598,7 @@ A join must be explicit in the graph.
 ### G15. Standalone graph attachment is allowed
 When a result is displayed without full prior history, its graph may attach to an explicit source frontier for standalone use.
 
-## Part VI. Dynamic Execution
+## Part VII. Dynamic Execution
 
 ### D1. Dynamic context has two layers
 A dynamic context consists of:
@@ -607,7 +661,7 @@ A dynamic system may stop by:
 
 The stop condition is part of the dynamic law.
 
-## Part VII. Traversal and Stateful Carriers
+## Part VIII. Traversal and Stateful Carriers
 
 ### T1. Traversal is stateful
 A traversal is not memoryless.
@@ -670,7 +724,7 @@ Their combined visible effect then constitutes one grouped step or tick.
 ### T15. Stateful carriers make repetition executable
 The same carrier may reflect, wrap, continue, delay, or leave gaps without changing identity, because its current state is part of what the carrier is.
 
-## Part VIII. Directed Segment Boolean Rules
+## Part IX. Directed Segment Boolean Rules
 
 ### S1. Boolean segment results require a frame
 Boolean occupancy on directed segments is evaluated inside a common frame.
@@ -743,6 +797,15 @@ A reflective carrier on `[0, 2]` with unit step advances across two ticks before
 A carrier on `[-1, 1]` may first reposition silently to `-1` and then draw to `1`.
 On later firings, that silent-plus-visible structure remains part of the same equation.
 
+### E8. Multiscale decomposition
+`109 miles` may be decomposed as `1 x 100-mile + 9 x 1-mile`.
+
+### E9. Signed digits
+The signed-digit form `1, 0, -2` in base `10` folds to `98`.
+
+### E10. Coarse reading
+Reading `101 miles` at the `100-mile` frame may yield the representative `100 miles` with residual `1 mile`.
+
 ## Key Glossary
 
 **Branch family**  
@@ -774,3 +837,18 @@ A stateful carrier driven by a step, a continuation law, and possibly a frame an
 
 **Hidden lead**  
 Under path interpretation, the non-drawing portion of a carrier that repositions the cursor before the visible span.
+
+**Resolution frame**  
+A grain-bearing reading frame for a shared unit signature.
+
+**Resolution ladder**  
+An ordered family of coarser-to-finer resolution frames.
+
+**Layered quantity**  
+An exact quantity represented across more than one resolution frame.
+
+**Representative reading**  
+The quantity reported at the active grain after quantization.
+
+**Residual**  
+The exact detail not captured by the representative reading at that grain.
