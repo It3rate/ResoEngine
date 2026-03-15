@@ -158,6 +158,28 @@ public sealed class GlyphTipGrowthStrand : IDynamicStrand<GlyphGrowthState, Glyp
             bias += contribution;
         }
 
+        foreach (var signal in (state.AmbientSignals ?? []).Where(signal => signal.Position.DistanceTo(tip.Position) <= signal.Radius))
+        {
+            GlyphVector delta = signal.Position - tip.Position;
+            if (delta == GlyphVector.Zero)
+            {
+                continue;
+            }
+
+            decimal weight = signal.Magnitude * (1m - decimal.Clamp(tip.Position.DistanceTo(signal.Position) / signal.Radius, 0m, 1m));
+            bias += signal.Kind switch
+            {
+                CouplingKind.Stop or CouplingKind.Repel => delta.Normalize() * (-weight),
+                CouplingKind.Align => new GlyphVector(environment.Box.MidX - tip.Position.X, 0m).Normalize() * weight,
+                _ => delta.Normalize() * weight,
+            };
+        }
+
+        decimal leftDistance = tip.Position.X - environment.Box.Left;
+        decimal rightDistance = environment.Box.Right - tip.Position.X;
+        decimal horizontalGrowth = rightDistance < leftDistance ? 1m : -1m;
+        bias += new GlyphVector(horizontalGrowth, 0m).Normalize() * 0.12m;
+
         foreach (var other in state.ActiveTips.Where(other => other.IsActive && other.Key != tip.Key))
         {
             decimal distance = tip.Position.DistanceTo(other.Position);

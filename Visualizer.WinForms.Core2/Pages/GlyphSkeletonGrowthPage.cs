@@ -345,8 +345,8 @@ public class GlyphSkeletonGrowthPage : IVisualizerPage
         _maxStepsInput = new NumericUpDown
         {
             Minimum = 4,
-            Maximum = 30,
-            Value = 12,
+            Maximum = 60,
+            Value = (decimal)GlyphGrowthDefaults.DefaultMaxSteps,
             Increment = 1,
             DecimalPlaces = 0,
             Location = new Point(110, 79),
@@ -465,6 +465,7 @@ public class GlyphSkeletonGrowthPage : IVisualizerPage
     private void DrawGlyphStage(SKCanvas canvas, SKRect stageRect, GlyphLetterSpec spec, GlyphGrowthState state)
     {
         var mapper = GlyphSceneMapper.Create(stageRect, spec.Environment.Box);
+        DrawFieldWash(canvas, mapper, spec.Environment, state);
         canvas.DrawRect(mapper.BoxRect, _glyphBoxPaint);
 
         DrawLandmarks(canvas, mapper, spec.Environment);
@@ -486,6 +487,88 @@ public class GlyphSkeletonGrowthPage : IVisualizerPage
         foreach (var tip in state.ActiveTips)
         {
             DrawTip(canvas, mapper, tip);
+        }
+    }
+
+    private void DrawFieldWash(SKCanvas canvas, GlyphSceneMapper mapper, GlyphEnvironment environment, GlyphGrowthState state)
+    {
+        int columns = 16;
+        int rows = 18;
+        float cellWidth = mapper.BoxRect.Width / columns;
+        float cellHeight = mapper.BoxRect.Height / rows;
+
+        for (int yIndex = 0; yIndex < rows; yIndex++)
+        {
+            for (int xIndex = 0; xIndex < columns; xIndex++)
+            {
+                var glyphPoint = new GlyphVector(
+                    environment.Box.Left + environment.Box.Width * ((decimal)xIndex + 0.5m) / columns,
+                    environment.Box.Bottom + environment.Box.Height * ((decimal)yIndex + 0.5m) / rows);
+
+                decimal cool = 0m;
+                decimal warm = 0m;
+
+                foreach (var influence in environment.SampleInfluencesAt(glyphPoint))
+                {
+                    switch (influence.Rule.Kind)
+                    {
+                        case global::Core2.Propagation.CouplingKind.Align:
+                        case global::Core2.Propagation.CouplingKind.Split:
+                        case global::Core2.Propagation.CouplingKind.Grow:
+                            cool += influence.Weight;
+                            break;
+                        case global::Core2.Propagation.CouplingKind.Stop:
+                            warm += influence.Weight;
+                            break;
+                        case global::Core2.Propagation.CouplingKind.Attract:
+                            cool += influence.Weight * 0.45m;
+                            warm += influence.Weight * 0.1m;
+                            break;
+                    }
+                }
+
+                foreach (var signal in state.AmbientSignals ?? [])
+                {
+                    decimal distance = glyphPoint.DistanceTo(signal.Position);
+                    if (distance > signal.Radius || signal.Radius <= 0m)
+                    {
+                        continue;
+                    }
+
+                    decimal weight = signal.Magnitude * (1m - decimal.Clamp(distance / signal.Radius, 0m, 1m));
+                    switch (signal.Kind)
+                    {
+                        case global::Core2.Propagation.CouplingKind.Stop:
+                        case global::Core2.Propagation.CouplingKind.Repel:
+                            warm += weight;
+                            break;
+                        default:
+                            cool += weight;
+                            break;
+                    }
+                }
+
+                int alpha = (int)Math.Round(Math.Clamp((double)((cool + warm) * 42m), 0d, 70d));
+                if (alpha <= 2)
+                {
+                    continue;
+                }
+
+                byte red = (byte)Math.Clamp((int)Math.Round(236 + warm * 22m), 170, 248);
+                byte green = (byte)Math.Clamp((int)Math.Round(244 - warm * 18m + cool * 6m), 188, 248);
+                byte blue = (byte)Math.Clamp((int)Math.Round(247 - warm * 24m + cool * 18m), 188, 252);
+
+                using var wash = new SKPaint
+                {
+                    Style = SKPaintStyle.Fill,
+                    Color = new SKColor(red, green, blue, (byte)alpha),
+                    IsAntialias = true,
+                };
+
+                float left = mapper.BoxRect.Left + xIndex * cellWidth;
+                float top = mapper.BoxRect.Top + (rows - yIndex - 1) * cellHeight;
+                canvas.DrawRect(new SKRect(left, top, left + cellWidth + 0.5f, top + cellHeight + 0.5f), wash);
+            }
         }
     }
 
@@ -594,6 +677,9 @@ public class GlyphSkeletonGrowthPage : IVisualizerPage
             $"carriers: {state.Carriers.Count}",
             $"junctions: {state.Junctions.Count}",
             $"packets: {state.Packets.Count}",
+            $"ambient signals: {(state.AmbientSignals?.Count ?? 0)}",
+            $"residual tension: {state.ResidualTension:0.00}",
+            $"last adjustment: {state.LastAdjustment:0.00}",
             $"graph nodes: {trace.Graph.Nodes.Count}",
             $"frontier: {trace.CurrentContexts.Count}",
             $"status: {ResolveStatus()}",
@@ -617,6 +703,8 @@ public class GlyphSkeletonGrowthPage : IVisualizerPage
         DrawLegendRow(canvas, x, y, new SKColor(214, 133, 96), "terminal or stop capture");
         y += 20f;
         DrawLegendRow(canvas, x, y, new SKColor(96, 207, 214), "propagating tension glow");
+        y += 20f;
+        DrawLegendRow(canvas, x, y, new SKColor(214, 234, 244), "frame and ambient field wash");
 
         var activeTips = state.ActiveTips
             .Where(tip => tip.IsActive)
@@ -657,6 +745,11 @@ public class GlyphSkeletonGrowthPage : IVisualizerPage
         if (_machine?.IsCompleted == true)
         {
             return "settled";
+        }
+
+        if ((_trace?.SelectedContext?.State.ResidualTension ?? 0m) > GlyphGrowthDefaults.ResidualTensionThreshold)
+        {
+            return "relaxing";
         }
 
         return "paused";

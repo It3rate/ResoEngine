@@ -73,8 +73,29 @@ public sealed class GlyphGrowthResolver : IDynamicResolver<GlyphGrowthState, Gly
         IReadOnlyList<DynamicProposal<GlyphGrowthEffect>> proposals)
     {
         var context = frontier.Context;
-        if (proposals.Count == 0 || !context.State.HasActiveTips)
+        if (proposals.Count == 0)
         {
+            if (GlyphRelaxation.NeedsRelaxation(context.State))
+            {
+                var relaxed = GlyphRelaxation.Relax(context.State, context.Environment, []);
+                var relaxedMember = new BranchMember<DynamicContext<GlyphGrowthState, GlyphEnvironment>>(
+                    BranchId.New(),
+                    new DynamicContext<GlyphGrowthState, GlyphEnvironment>(relaxed, context.Environment),
+                    [frontier.NodeId],
+                    []);
+
+                return new ContextResolution(
+                    DynamicResolutionKind.Commit,
+                    BranchFamily<DynamicContext<GlyphGrowthState, GlyphEnvironment>>.FromMembers(
+                        BranchOrigin.Continuation,
+                        BranchSemantics.Mixed,
+                        BranchDirection.Forward,
+                        [relaxedMember],
+                        BranchSelection.Principal(relaxedMember.Id)),
+                    [],
+                    []);
+            }
+
             return ContextResolution.Empty;
         }
 
@@ -103,6 +124,7 @@ public sealed class GlyphGrowthResolver : IDynamicResolver<GlyphGrowthState, Gly
         }
 
         var nextState = ApplyProposals(context.State, context.Environment, selected.Values);
+        nextState = GlyphRelaxation.Relax(nextState, context.Environment, selected.Values.ToArray());
         var member = new BranchMember<DynamicContext<GlyphGrowthState, GlyphEnvironment>>(
             BranchId.New(),
             new DynamicContext<GlyphGrowthState, GlyphEnvironment>(nextState, context.Environment),
@@ -195,6 +217,7 @@ public sealed class GlyphGrowthResolver : IDynamicResolver<GlyphGrowthState, Gly
             var proposals = selected.ToDictionary(entry => entry.Key, entry => entry.Value, StringComparer.Ordinal);
             proposals[tipKey] = alternative;
             var nextState = ApplyProposals(context.State, context.Environment, proposals.Values);
+            nextState = GlyphRelaxation.Relax(nextState, context.Environment, proposals.Values.ToArray());
             members.Add(new BranchMember<DynamicContext<GlyphGrowthState, GlyphEnvironment>>(
                 BranchId.New(),
                 new DynamicContext<GlyphGrowthState, GlyphEnvironment>(nextState, context.Environment),

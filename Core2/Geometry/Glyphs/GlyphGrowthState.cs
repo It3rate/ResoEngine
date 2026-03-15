@@ -8,7 +8,10 @@ public sealed record GlyphGrowthState(
     IReadOnlyList<GlyphCarrier> Carriers,
     IReadOnlyList<GlyphJunction> Junctions,
     IReadOnlyList<TensionPacket> Packets,
-    int MacroStep)
+    int MacroStep,
+    IReadOnlyList<GlyphAmbientSignal>? AmbientSignals = null,
+    decimal ResidualTension = 0m,
+    decimal LastAdjustment = 0m)
 {
     public bool HasActiveTips => ActiveTips.Any(tip => tip.IsActive);
 
@@ -50,6 +53,74 @@ public sealed record GlyphGrowthState(
                 seed.Energy))
             .ToArray();
 
-        return new GlyphGrowthState(spec.Key, tips, [], junctions, packets, 0);
+        var ambientSignals = spec.Environment.Landmarks
+            .Select(landmark => new GlyphAmbientSignal(
+                landmark.Key,
+                landmark.Position,
+                landmark.Kind switch
+                {
+                    GlyphLandmarkKind.BranchPoint => CouplingKind.Split,
+                    GlyphLandmarkKind.StopPoint => CouplingKind.Stop,
+                    GlyphLandmarkKind.Centerline => CouplingKind.Align,
+                    _ => CouplingKind.Attract,
+                },
+                landmark.Strength * 0.55m,
+                landmark.Kind switch
+                {
+                    GlyphLandmarkKind.Centerline => spec.Environment.Box.Width * 0.22m,
+                    GlyphLandmarkKind.Midline => spec.Environment.Box.Width * 0.18m,
+                    GlyphLandmarkKind.Capline => spec.Environment.Box.Width * 0.18m,
+                    GlyphLandmarkKind.Baseline => spec.Environment.Box.Width * 0.16m,
+                    _ => GlyphGrowthDefaults.JoinCaptureRadius,
+                },
+                0,
+                landmark.Note))
+            .Concat(
+            [
+                new GlyphAmbientSignal(
+                    $"{spec.Key}:frame:left",
+                    new GlyphVector(spec.Environment.Box.Left, spec.Environment.Box.MidY),
+                    CouplingKind.Grow,
+                    0.28m,
+                    spec.Environment.Box.Width * 0.32m,
+                    0,
+                    "Frame growth pressure from the left wall."),
+                new GlyphAmbientSignal(
+                    $"{spec.Key}:frame:right",
+                    new GlyphVector(spec.Environment.Box.Right, spec.Environment.Box.MidY),
+                    CouplingKind.Grow,
+                    0.28m,
+                    spec.Environment.Box.Width * 0.32m,
+                    0,
+                    "Frame growth pressure from the right wall."),
+                new GlyphAmbientSignal(
+                    $"{spec.Key}:frame:cap",
+                    new GlyphVector(spec.Environment.Box.MidX, spec.Environment.Box.Top),
+                    CouplingKind.Stop,
+                    0.22m,
+                    spec.Environment.Box.Width * 0.26m,
+                    0,
+                    "Cap boundary signal."),
+                new GlyphAmbientSignal(
+                    $"{spec.Key}:frame:baseline",
+                    new GlyphVector(spec.Environment.Box.MidX, spec.Environment.Box.Bottom),
+                    CouplingKind.Stop,
+                    0.18m,
+                    spec.Environment.Box.Width * 0.24m,
+                    0,
+                    "Baseline boundary signal."),
+            ])
+            .ToArray();
+
+        return new GlyphGrowthState(
+            spec.Key,
+            tips,
+            [],
+            junctions,
+            packets,
+            0,
+            ambientSignals,
+            ambientSignals.Sum(signal => signal.Magnitude),
+            0m);
     }
 }

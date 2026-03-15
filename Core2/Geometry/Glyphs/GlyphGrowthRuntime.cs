@@ -9,7 +9,7 @@ public static class GlyphGrowthRuntime
 
     public static DynamicMachine<GlyphGrowthState, GlyphEnvironment, GlyphGrowthEffect> CreateMachine(
         string letterKey,
-        int maxSteps = 12)
+        int maxSteps = GlyphGrowthDefaults.DefaultMaxSteps)
     {
         var spec = GlyphLetterCatalog.Get(letterKey);
         return CreateMachine(spec, maxSteps);
@@ -17,7 +17,7 @@ public static class GlyphGrowthRuntime
 
     public static DynamicMachine<GlyphGrowthState, GlyphEnvironment, GlyphGrowthEffect> CreateMachine(
         GlyphLetterSpec spec,
-        int maxSteps = 12) =>
+        int maxSteps = GlyphGrowthDefaults.DefaultMaxSteps) =>
         new(
             new DynamicContext<GlyphGrowthState, GlyphEnvironment>(
                 GlyphGrowthState.FromSpec(spec),

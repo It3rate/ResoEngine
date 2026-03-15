@@ -19,7 +19,15 @@ public sealed class GlyphGrowthConvergencePolicy : IConvergencePolicy<GlyphGrowt
             return true;
         }
 
-        return state.Frontier.Count > 0 &&
-            state.Frontier.All(frontier => !frontier.Context.State.HasActiveTips);
+        if (state.Frontier.Count == 0)
+        {
+            return true;
+        }
+
+        return state.Frontier.All(frontier =>
+            !frontier.Context.State.HasActiveTips &&
+            frontier.Context.State.ResidualTension <= GlyphGrowthDefaults.ResidualTensionThreshold &&
+            frontier.Context.State.LastAdjustment <= GlyphGrowthDefaults.RelaxationThreshold &&
+            (frontier.Context.State.AmbientSignals?.Count ?? 0) == 0);
     }
 }
