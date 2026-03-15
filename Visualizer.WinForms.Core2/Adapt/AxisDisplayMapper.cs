@@ -8,16 +8,18 @@ namespace ResoEngine.Visualizer.Adapt;
 /// It does not own display-state copies; it projects from the Axis on demand and
 /// writes drag changes back into the referenced Axis using its current supports.
 /// </summary>
-public sealed class AxisDisplayMapper : ISegmentValue
+public sealed class AxisDisplayMapper : ISegmentValue, ISegmentDragConfig
 {
-    public AxisDisplayMapper(Axis axis, string label = "")
+    public AxisDisplayMapper(Axis axis, string label = "", float snapIncrement = 0.5f)
     {
         Axis = axis;
         Label = label;
+        SnapIncrement = snapIncrement;
     }
 
     public Axis Axis { get; private set; }
     public string Label { get; set; }
+    public float SnapIncrement { get; }
 
     public float Imaginary
     {

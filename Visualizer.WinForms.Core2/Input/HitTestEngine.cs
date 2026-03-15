@@ -26,7 +26,7 @@ public class HitTestEngine
             var (renderer, segment) = _targets[i];
             var zone = renderer.HitTest(pixelPoint, segment);
             if (zone.HasValue)
-                return new DragTarget(segment, zone.Value, renderer.GetSegmentOrientation());
+                return new DragTarget(segment, zone.Value, renderer.GetSegmentOrientation(), renderer.Scale);
         }
         return null;
     }

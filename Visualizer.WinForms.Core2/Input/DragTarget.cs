@@ -6,4 +6,5 @@ namespace ResoEngine.Visualizer.Input;
 public record DragTarget(
     ISegmentValue Segment,
     DragZone Zone,
-    Rendering.SegmentOrientation Axis);
+    Rendering.SegmentOrientation Axis,
+    float Scale);

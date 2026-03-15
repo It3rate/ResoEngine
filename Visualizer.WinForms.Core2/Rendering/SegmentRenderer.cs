@@ -173,6 +173,8 @@ public class SegmentRenderer : IDisposable
         }
     }
 
+    public float Scale => _coords.Scale;
+
     private void DrawNoDirectionMarker(SKCanvas canvas, SKPoint point)
     {
         canvas.DrawLine(point.X, point.Y - 10f, point.X, point.Y + 10f, _solidPaint);

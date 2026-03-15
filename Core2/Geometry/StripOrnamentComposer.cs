@@ -4,6 +4,30 @@ namespace Core2.Geometry;
 
 public static class StripOrnamentComposer
 {
+    public static StripOrnamentResult ComposeToWidth(
+        StripOrnamentPattern pattern,
+        int minimumWidth,
+        int maxSteps = 200)
+    {
+        ArgumentNullException.ThrowIfNull(pattern);
+
+        int boundedWidth = Math.Max(0, minimumWidth);
+        int stepBudget = Math.Max(1, maxSteps);
+        int maxRepeats = Math.Max(1, stepBudget / Math.Max(1, pattern.StepsPerRepeat));
+
+        StripOrnamentResult? latest = null;
+        for (int repeats = 1; repeats <= maxRepeats; repeats++)
+        {
+            latest = Compose(pattern, repeats);
+            if (latest.HorizontalSpan >= boundedWidth)
+            {
+                return latest;
+            }
+        }
+
+        return latest ?? Compose(pattern, 1);
+    }
+
     public static StripOrnamentResult Compose(StripOrnamentPattern pattern, int repeats)
     {
         ArgumentNullException.ThrowIfNull(pattern);
@@ -131,17 +155,25 @@ public static class StripOrnamentComposer
     {
         private readonly StripSegmentDefinition _definition;
         private readonly AxisTraversalState _state;
+        private bool _needsLeadIn;
 
         public RuntimeSegment(StripSegmentDefinition definition)
         {
             ArgumentNullException.ThrowIfNull(definition);
 
             _definition = definition;
-            _state = definition.Traversal.CreateState();
+            _state = definition.CreateTraversal().CreateState();
+            _needsLeadIn = !_definition.Segment.Start.IsZero;
         }
 
         public StripDelta Fire()
         {
+            if (_needsLeadIn)
+            {
+                _needsLeadIn = false;
+                return _definition.Project(_definition.Segment.Start);
+            }
+
             var step = _state.Fire();
             return _definition.Project(step.Delta);
         }

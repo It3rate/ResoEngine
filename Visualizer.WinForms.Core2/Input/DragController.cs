@@ -7,7 +7,6 @@ namespace ResoEngine.Visualizer.Input;
 
 public class DragController
 {
-    private readonly CoordinateSystem _coords;
     private readonly HitTestEngine _hitTest;
     private readonly float _snapIncrement;
 
@@ -19,7 +18,6 @@ public class DragController
     public DragController(CoordinateSystem coords, HitTestEngine hitTest,
                           float snapIncrement = 0.5f)
     {
-        _coords = coords;
         _hitTest = hitTest;
         _snapIncrement = snapIncrement;
     }
@@ -59,22 +57,22 @@ public class DragController
         if (_active.Axis == SegmentOrientation.Horizontal) dy = 0;
         if (_active.Axis == SegmentOrientation.Vertical) dx = 0;
 
-        float mx = dx / _coords.Scale;
-        float my = -dy / _coords.Scale;
+        float mx = dx / _active.Scale;
+        float my = -dy / _active.Scale;
         float delta = _active.Axis == SegmentOrientation.Horizontal ? mx : my;
 
         var seg = _active.Segment;
         switch (_active.Zone)
         {
             case DragZone.Dot:
-                seg.Imaginary = Snap(_lastSegPosImaginary + delta);
+                seg.Imaginary = Snap(seg, _lastSegPosImaginary + delta);
                 break;
             case DragZone.Arrow:
-                seg.Real = Snap(_lastSegPosReal + delta);
+                seg.Real = Snap(seg, _lastSegPosReal + delta);
                 break;
             case DragZone.Bar:
-                seg.Imaginary = Snap(_lastSegPosImaginary + delta);
-                seg.Real = Snap(_lastSegPosReal + delta);
+                seg.Imaginary = Snap(seg, _lastSegPosImaginary + delta);
+                seg.Real = Snap(seg, _lastSegPosReal + delta);
                 break;
         }
 
@@ -91,6 +89,9 @@ public class DragController
 
     public bool IsDragging => _active != null;
 
-    private float Snap(float val) =>
-        MathF.Round(val / _snapIncrement) * _snapIncrement;
+    private float Snap(ISegmentValue segment, float val)
+    {
+        float increment = segment is ISegmentDragConfig config ? config.SnapIncrement : _snapIncrement;
+        return MathF.Round(val / increment) * increment;
+    }
 }

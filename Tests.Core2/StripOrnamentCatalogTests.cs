@@ -1,4 +1,6 @@
 using Core2.Geometry;
+using Core2.Elements;
+using Core2.Repetition;
 
 namespace Tests.Core2;
 
@@ -38,7 +40,7 @@ public class StripOrnamentCatalogTests
             .ToArray();
 
         Assert.Equal(
-            [StripDelta.Up, StripDelta.Right, StripDelta.Right, StripDelta.Down, StripDelta.Right, StripDelta.Right],
+            [new StripDelta(0, 2), new StripDelta(2, 0)],
             deltas);
     }
 
@@ -53,7 +55,7 @@ public class StripOrnamentCatalogTests
             .ToArray();
 
         Assert.Equal(
-            [StripDelta.UpRight, StripDelta.DownRight, StripDelta.UpRight, StripDelta.DownRight],
+            [new StripDelta(2, 2), new StripDelta(2, -2)],
             deltas);
     }
 
@@ -169,6 +171,103 @@ public class StripOrnamentCatalogTests
                 new StripDelta(2, 0),
                 StripDelta.Down,
                 new StripDelta(2, 0),
+            ],
+            deltas);
+    }
+
+    [Fact]
+    public void ComposeToWidth_UsesWholeCyclesUntilHorizontalSpanIsReached()
+    {
+        var pattern = StripOrnamentCatalog.GalleryPatterns.Single(item => item.Key == "zigzag");
+        var result = StripOrnamentComposer.ComposeToWidth(pattern, minimumWidth: 5, maxSteps: 20);
+
+        Assert.Equal(3, result.RepeatCount);
+        Assert.True(result.HorizontalSpan >= 5);
+    }
+
+    [Fact]
+    public void CreateGalleryPatterns_UsesProvidedSegmentDefinitions()
+    {
+        StripSegmentDefinition[] definitions =
+        [
+            new StripSegmentDefinition(
+                "X0",
+                Axis.FromCoordinates(Scalar.Zero, 1),
+                BoundaryContinuationLaw.ReflectiveBounce,
+                StripDelta.Right),
+            new StripSegmentDefinition(
+                "Y0",
+                Axis.FromCoordinates(Scalar.Zero, 2),
+                BoundaryContinuationLaw.ReflectiveBounce,
+                StripDelta.Up),
+            new StripSegmentDefinition(
+                "XLong",
+                Axis.FromCoordinates(Scalar.Zero, 4),
+                BoundaryContinuationLaw.TensionPreserving,
+                StripDelta.Right,
+                StripSegmentStepMode.Span,
+                UseSegmentAsFrame: false),
+        ];
+
+        var pattern = StripOrnamentCatalog.CreateGalleryPatterns(definitions).Single(item => item.Key == "crossbar");
+        var result = StripOrnamentComposer.Compose(pattern, 1);
+
+        var deltas = result.Segments
+            .Select(segment => new StripDelta(segment.End.X - segment.Start.X, segment.End.Y - segment.Start.Y))
+            .ToArray();
+
+        Assert.Equal(
+            [
+                new StripDelta(1, 0),
+                new StripDelta(0, 1),
+                new StripDelta(-1, 0),
+                new StripDelta(0, 1),
+                new StripDelta(4, 0),
+                new StripDelta(1, 0),
+                new StripDelta(0, -1),
+                new StripDelta(-1, 0),
+                new StripDelta(0, -1),
+                new StripDelta(4, 0),
+            ],
+            deltas);
+    }
+
+    [Fact]
+    public void NonZeroSegmentStart_ProducesLeadInBeforeTraversal()
+    {
+        var definition = new StripSegmentDefinition(
+            "X0",
+            Axis.FromCoordinates(-1, 1),
+            BoundaryContinuationLaw.ReflectiveBounce,
+            StripDelta.Right);
+
+        var pattern = new StripOrnamentPattern(
+            "lead-in",
+            "Lead In",
+            "Test pattern for non-zero starts.",
+            3,
+            1,
+            [new StripOrnamentStrand("X0", definition.DescribeTraversal(), "Lead-in test.", [])])
+        {
+            Program = new StripEquationProgram(
+                [definition],
+                [
+                    StripEquationCommand.Fire("X0"), StripEquationCommand.Commit(),
+                    StripEquationCommand.Fire("X0"), StripEquationCommand.Commit(),
+                    StripEquationCommand.Fire("X0"), StripEquationCommand.Commit(),
+                ]),
+        };
+
+        var result = StripOrnamentComposer.Compose(pattern, 1);
+        var deltas = result.Segments
+            .Select(segment => new StripDelta(segment.End.X - segment.Start.X, segment.End.Y - segment.Start.Y))
+            .ToArray();
+
+        Assert.Equal(
+            [
+                StripDelta.Left,
+                StripDelta.Right,
+                StripDelta.Right,
             ],
             deltas);
     }
