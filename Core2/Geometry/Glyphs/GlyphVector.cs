@@ -4,6 +4,8 @@ public readonly record struct GlyphVector(decimal X, decimal Y)
 {
     public static GlyphVector Zero { get; } = new(0m, 0m);
 
+    public decimal Length => DistanceTo(Zero);
+
     public decimal LengthSquared => X * X + Y * Y;
 
     public decimal DistanceTo(GlyphVector other)
@@ -15,7 +17,7 @@ public readonly record struct GlyphVector(decimal X, decimal Y)
 
     public GlyphVector Normalize()
     {
-        decimal length = DistanceTo(Zero);
+        decimal length = Length;
         if (length == 0m)
         {
             return Zero;
@@ -23,6 +25,8 @@ public readonly record struct GlyphVector(decimal X, decimal Y)
 
         return new GlyphVector(X / length, Y / length);
     }
+
+    public decimal Dot(GlyphVector other) => X * other.X + Y * other.Y;
 
     public static GlyphVector operator +(GlyphVector left, GlyphVector right) =>
         new(left.X + right.X, left.Y + right.Y);

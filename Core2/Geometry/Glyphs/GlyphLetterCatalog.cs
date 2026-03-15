@@ -142,6 +142,38 @@ public static class GlyphLetterCatalog
                 Note: "Baseline stop field."),
         };
 
+        foreach (var landmark in landmarks)
+        {
+            switch (landmark.Kind)
+            {
+                case GlyphLandmarkKind.BranchPoint:
+                    emitters.Add(new PointGlyphFieldEmitter(
+                        $"{landmark.Key}-field",
+                        landmark.Position,
+                        GlyphGrowthDefaults.BranchCaptureRadius,
+                        [
+                            new CouplingRule(CouplingKind.Split, landmark.Strength, GlyphGrowthDefaults.BranchCaptureRadius, Channel: "branch"),
+                            new CouplingRule(CouplingKind.Attract, landmark.Strength * 0.35m, GlyphGrowthDefaults.BranchCaptureRadius, Channel: "branch"),
+                        ],
+                        BaseStrength: 1m,
+                        Note: "Branch encouragement field."));
+                    break;
+
+                case GlyphLandmarkKind.StopPoint:
+                    emitters.Add(new PointGlyphFieldEmitter(
+                        $"{landmark.Key}-field",
+                        landmark.Position,
+                        GlyphGrowthDefaults.JoinCaptureRadius,
+                        [
+                            new CouplingRule(CouplingKind.Stop, landmark.Strength, GlyphGrowthDefaults.JoinCaptureRadius, Channel: "stop"),
+                            new CouplingRule(CouplingKind.Join, landmark.Strength * 0.65m, GlyphGrowthDefaults.JoinCaptureRadius, Channel: "join"),
+                        ],
+                        BaseStrength: 1m,
+                        Note: "Terminal capture field."));
+                    break;
+            }
+        }
+
         return new GlyphEnvironment(box, landmarks.ToArray(), emitters, []);
     }
 }
