@@ -40,8 +40,8 @@ public static class GlyphLetterCatalog
                     new GlyphLandmark("Y-right-stop", GlyphLandmarkKind.StopPoint, new GlyphVector(76m, box.Top), 0.4m, "Upper right stop."),
                 ]),
             [
-                new GlyphSeed("Y-trunk", GlyphSeedKind.Tip, new GlyphVector(box.MidX, box.Bottom), 1m, new GlyphVector(0m, 1m), Note: "Initial upward trunk seed."),
-                new GlyphSeed("Y-branch-zone", GlyphSeedKind.Junction, new GlyphVector(box.MidX, 58m), 0.7m, Note: "Preferred branch attractor."),
+                new GlyphSeed("Y-trunk", GlyphSeedKind.Tip, new GlyphVector(box.MidX, 21m), 1m, new GlyphVector(0m, 1m), Note: "Initial upward trunk seed."),
+                new GlyphSeed("Y-branch-zone", GlyphSeedKind.Junction, new GlyphVector(box.MidX, 46m), 0.7m, Note: "Early branch attractor."),
             ]);
 
     private static GlyphLetterSpec CreateV(GlyphBox box) =>
@@ -56,8 +56,8 @@ public static class GlyphLetterCatalog
                     new GlyphLandmark("V-stop", GlyphLandmarkKind.StopPoint, new GlyphVector(box.MidX, box.Bottom), 0.7m, "Lower capture point."),
                 ]),
             [
-                new GlyphSeed("V-left", GlyphSeedKind.Tip, new GlyphVector(18m, box.Top), 1m, new GlyphVector(1m, -1m), Note: "Upper left descending arm."),
-                new GlyphSeed("V-right", GlyphSeedKind.Tip, new GlyphVector(82m, box.Top), 1m, new GlyphVector(-1m, -1m), Note: "Upper right descending arm."),
+                new GlyphSeed("V-left", GlyphSeedKind.Tip, new GlyphVector(31m, 74m), 1m, new GlyphVector(1m, -1m), Note: "Upper left descending arm."),
+                new GlyphSeed("V-right", GlyphSeedKind.Tip, new GlyphVector(69m, 74m), 1m, new GlyphVector(-1m, -1m), Note: "Upper right descending arm."),
             ]);
 
     private static GlyphLetterSpec CreateT(GlyphBox box) =>
@@ -74,9 +74,9 @@ public static class GlyphLetterCatalog
                     new GlyphLandmark("T-right-stop", GlyphLandmarkKind.StopPoint, new GlyphVector(84m, box.Top), 0.45m, "Right top terminal."),
                 ]),
             [
-                new GlyphSeed("T-bar-left", GlyphSeedKind.Tip, new GlyphVector(box.MidX, box.Top), 1m, new GlyphVector(-1m, 0m), Note: "Left top bar expansion."),
-                new GlyphSeed("T-bar-right", GlyphSeedKind.Tip, new GlyphVector(box.MidX, box.Top), 1m, new GlyphVector(1m, 0m), Note: "Right top bar expansion."),
-                new GlyphSeed("T-stem", GlyphSeedKind.Tip, new GlyphVector(box.MidX, box.Top), 1m, new GlyphVector(0m, -1m), Note: "Center stem descent."),
+                new GlyphSeed("T-bar-left", GlyphSeedKind.Tip, new GlyphVector(box.MidX, 76m), 1m, new GlyphVector(-1m, 0m), Note: "Left top bar expansion."),
+                new GlyphSeed("T-bar-right", GlyphSeedKind.Tip, new GlyphVector(box.MidX, 76m), 1m, new GlyphVector(1m, 0m), Note: "Right top bar expansion."),
+                new GlyphSeed("T-stem", GlyphSeedKind.Tip, new GlyphVector(box.MidX, 76m), 1m, new GlyphVector(0m, -1m), Note: "Center stem descent."),
             ]);
 
     private static GlyphLetterSpec CreateO(GlyphBox box) =>
@@ -91,8 +91,8 @@ public static class GlyphLetterCatalog
                     new GlyphLandmark("O-midline", GlyphLandmarkKind.Midline, new GlyphVector(box.MidX, box.MidY), 0.25m, "Vertical balance."),
                 ]),
             [
-                new GlyphSeed("O-top", GlyphSeedKind.Tip, new GlyphVector(box.MidX, box.Top), 1m, new GlyphVector(1m, 0m), Note: "Upper orbital seed."),
-                new GlyphSeed("O-bottom", GlyphSeedKind.Tip, new GlyphVector(box.MidX, box.Bottom), 1m, new GlyphVector(-1m, 0m), Note: "Lower orbital seed."),
+                new GlyphSeed("O-top", GlyphSeedKind.Tip, new GlyphVector(box.MidX, 68m), 1m, new GlyphVector(1m, 0m), Note: "Upper orbital seed."),
+                new GlyphSeed("O-bottom", GlyphSeedKind.Tip, new GlyphVector(box.MidX, 32m), 1m, new GlyphVector(-1m, 0m), Note: "Lower orbital seed."),
             ]);
 
     private static GlyphEnvironment CreateEnvironment(

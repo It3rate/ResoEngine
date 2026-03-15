@@ -24,6 +24,11 @@ public sealed class GlyphGrowthConvergencePolicy : IConvergencePolicy<GlyphGrowt
             return true;
         }
 
+        if (state.Steps.Count < GlyphGrowthDefaults.MinimumSettleSteps)
+        {
+            return false;
+        }
+
         return state.Frontier.All(frontier =>
             !frontier.Context.State.HasActiveTips &&
             frontier.Context.State.ResidualTension <= GlyphGrowthDefaults.ResidualTensionThreshold &&

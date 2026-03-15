@@ -8,5 +8,7 @@ public sealed record GlyphAmbientSignal(
     CouplingKind Kind,
     decimal Magnitude,
     decimal Radius,
+    GlyphVector? TargetPosition = null,
+    decimal Drift = 0m,
     int Age = 0,
     string? Note = null);

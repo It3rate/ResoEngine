@@ -67,7 +67,7 @@ public class GlyphSkeletonGrowthPage : IVisualizerPage
     {
         Style = SKPaintStyle.Stroke,
         StrokeWidth = 1f,
-        Color = new SKColor(202, 212, 224),
+        Color = new SKColor(208, 216, 226, 115),
         PathEffect = SKPathEffect.CreateDash([5f, 5f], 0f),
         IsAntialias = true,
     };
@@ -187,7 +187,7 @@ public class GlyphSkeletonGrowthPage : IVisualizerPage
     {
         _timer = new System.Windows.Forms.Timer
         {
-            Interval = 420,
+            Interval = 33,
         };
         _timer.Tick += (_, _) =>
         {
@@ -345,7 +345,7 @@ public class GlyphSkeletonGrowthPage : IVisualizerPage
         _maxStepsInput = new NumericUpDown
         {
             Minimum = 4,
-            Maximum = 60,
+            Maximum = 600,
             Value = (decimal)GlyphGrowthDefaults.DefaultMaxSteps,
             Increment = 1,
             DecimalPlaces = 0,
@@ -468,7 +468,7 @@ public class GlyphSkeletonGrowthPage : IVisualizerPage
         DrawFieldWash(canvas, mapper, spec.Environment, state);
         canvas.DrawRect(mapper.BoxRect, _glyphBoxPaint);
 
-        DrawLandmarks(canvas, mapper, spec.Environment);
+        DrawLandmarks(canvas, mapper, spec.Environment, state);
         DrawPacketGlow(canvas, mapper, state);
 
         foreach (var carrier in state.Carriers)
@@ -572,7 +572,7 @@ public class GlyphSkeletonGrowthPage : IVisualizerPage
         }
     }
 
-    private void DrawLandmarks(SKCanvas canvas, GlyphSceneMapper mapper, GlyphEnvironment environment)
+    private void DrawLandmarks(SKCanvas canvas, GlyphSceneMapper mapper, GlyphEnvironment environment, GlyphGrowthState state)
     {
         foreach (var landmark in environment.Landmarks)
         {
@@ -595,18 +595,21 @@ public class GlyphSkeletonGrowthPage : IVisualizerPage
                         break;
                     }
                 case GlyphLandmarkKind.BranchPoint:
-                    {
-                        var point = mapper.Map(landmark.Position);
-                        canvas.DrawCircle(point, 5f, _branchPointPaint);
-                        break;
-                    }
                 case GlyphLandmarkKind.StopPoint:
-                    {
-                        var point = mapper.Map(landmark.Position);
-                        canvas.DrawCircle(point, 5f, _stopPointPaint);
-                        break;
-                    }
+                    break;
             }
+        }
+
+        foreach (var signal in (state.AmbientSignals ?? [])
+            .Where(signal => signal.TargetPosition is not null)
+            .Take(10))
+        {
+            var point = mapper.Map(signal.Position);
+            float radius = 3.5f + MathF.Min(4f, (float)signal.Magnitude * 6f);
+            var paint = signal.Kind == global::Core2.Propagation.CouplingKind.Stop
+                ? _stopPointPaint
+                : _branchPointPaint;
+            canvas.DrawCircle(point, radius, paint);
         }
     }
 

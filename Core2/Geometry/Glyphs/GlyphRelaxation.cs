@@ -18,13 +18,8 @@ internal static class GlyphRelaxation
         var priorAmbient = (state.AmbientSignals ?? []).ToList();
         var leaked = CreateLeakedSignals(acceptedProposals);
         var nextAmbient = priorAmbient
-            .Select(signal => signal with
-            {
-                Magnitude = signal.Magnitude * GlyphGrowthDefaults.AmbientDecay,
-                Radius = signal.Radius * GlyphGrowthDefaults.AmbientSpread,
-                Age = signal.Age + 1,
-            })
-            .Where(signal => signal.Magnitude >= GlyphGrowthDefaults.MinimumAmbientMagnitude && signal.Age <= 12)
+            .Select(signal => AdvanceSignal(signal, environment.Box))
+            .Where(signal => signal.Magnitude >= GlyphGrowthDefaults.MinimumAmbientMagnitude && signal.Age <= GlyphGrowthDefaults.MaximumAmbientAge)
             .Concat(leaked)
             .ToArray();
 
@@ -79,6 +74,8 @@ internal static class GlyphRelaxation
                 },
                 Math.Max(0.06m, proposal.Weight * 0.18m),
                 effect.Kind == GlyphGrowthEffectKind.Grow ? 14m : 18m,
+                null,
+                0m,
                 0,
                 effect.Note));
 
@@ -95,12 +92,46 @@ internal static class GlyphRelaxation
                     },
                     Math.Max(0.05m, tension.Magnitude * 0.24m),
                     16m,
+                    null,
+                    0m,
                     0,
                     tension.Message));
             }
         }
 
         return signals;
+    }
+
+    private static GlyphAmbientSignal AdvanceSignal(
+        GlyphAmbientSignal signal,
+        GlyphBox box)
+    {
+        GlyphVector nextPosition = signal.Position;
+        if (signal.TargetPosition is GlyphVector target && signal.Drift > 0m)
+        {
+            GlyphVector delta = target - signal.Position;
+            decimal distance = delta.Length;
+            if (distance <= signal.Drift)
+            {
+                nextPosition = target;
+            }
+            else if (distance > 0m)
+            {
+                nextPosition = signal.Position + (delta.Normalize() * signal.Drift);
+            }
+        }
+
+        nextPosition = new GlyphVector(
+            decimal.Clamp(nextPosition.X, box.Left, box.Right),
+            decimal.Clamp(nextPosition.Y, box.Bottom, box.Top));
+
+        return signal with
+        {
+            Position = nextPosition,
+            Magnitude = signal.Magnitude * GlyphGrowthDefaults.AmbientDecay,
+            Radius = signal.Radius * GlyphGrowthDefaults.AmbientSpread,
+            Age = signal.Age + 1,
+        };
     }
 
     private static GlyphTip MoveTip(

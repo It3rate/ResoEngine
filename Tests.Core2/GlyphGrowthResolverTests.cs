@@ -13,7 +13,7 @@ public class GlyphGrowthResolverTests
         var state = new GlyphGrowthState(
             "Y",
             [
-                new GlyphTip("Y-trunk", new GlyphVector(spec.Environment.Box.MidX, 52m), new GlyphVector(0m, 1m))
+                new GlyphTip("Y-trunk", new GlyphVector(spec.Environment.Box.MidX, 57.4m), new GlyphVector(0m, 1m))
             ],
             [],
             [],
@@ -38,7 +38,7 @@ public class GlyphGrowthResolverTests
         var state = new GlyphGrowthState(
             "T",
             [
-                new GlyphTip("T-stem", new GlyphVector(spec.Environment.Box.MidX, 6m), new GlyphVector(0m, -1m))
+                new GlyphTip("T-stem", new GlyphVector(spec.Environment.Box.MidX, 2.1m), new GlyphVector(0m, -1m))
             ],
             [],
             [],
@@ -59,15 +59,19 @@ public class GlyphGrowthResolverTests
     [Fact]
     public void GrowthRuntime_Y_SplitsIntoTwoActiveTips()
     {
-        var machine = GlyphGrowthRuntime.CreateMachine("Y", maxSteps: 6);
+        var machine = GlyphGrowthRuntime.CreateMachine("Y", maxSteps: GlyphGrowthDefaults.DefaultMaxSteps);
 
-        while (machine.StepCount < 5 && machine.Step())
+        while (machine.Step())
         {
+            var current = machine.Snapshot().SelectedContext!.State;
+            if (current.Junctions.Any(junction => junction.Kind == GlyphJunctionKind.Split))
+            {
+                break;
+            }
         }
 
         var state = machine.Snapshot().SelectedContext!.State;
 
-        Assert.Equal(5, state.MacroStep);
         Assert.Contains(state.Junctions, junction => junction.Kind == GlyphJunctionKind.Split);
         Assert.Equal(2, state.ActiveTips.Count(tip => tip.IsActive));
     }
@@ -80,6 +84,7 @@ public class GlyphGrowthResolverTests
         Assert.NotNull(state.AmbientSignals);
         Assert.NotEmpty(state.AmbientSignals!);
         Assert.Contains(state.AmbientSignals!, signal => signal.Key.Contains("frame:left", StringComparison.Ordinal));
+        Assert.Contains(state.AmbientSignals!, signal => signal.TargetPosition is not null && signal.Position != signal.TargetPosition);
         Assert.True(state.ResidualTension > 0m);
     }
 
@@ -107,7 +112,7 @@ public class GlyphGrowthResolverTests
             [],
             [],
             3,
-            [new GlyphAmbientSignal("ambient", new GlyphVector(58m, 60m), global::Core2.Propagation.CouplingKind.Attract, 0.4m, 18m)],
+            [new GlyphAmbientSignal("ambient", new GlyphVector(58m, 60m), global::Core2.Propagation.CouplingKind.Attract, 0.4m, 18m, new GlyphVector(52m, 56m), 0.5m)],
             0.6m,
             0.4m);
         var environment = GlyphLetterCatalog.Get("Y").Environment;
@@ -127,6 +132,9 @@ public class GlyphGrowthResolverTests
         Assert.Equal(DynamicResolutionKind.Commit, resolution.Kind);
         Assert.Single(resolution.Outcomes.Members);
         Assert.True(resolution.Outcomes.SelectedValue!.State.LastAdjustment > 0m);
+        Assert.NotEqual(
+            new GlyphVector(58m, 60m),
+            resolution.Outcomes.SelectedValue!.State.AmbientSignals!.Single().Position);
     }
 
     [Fact]
