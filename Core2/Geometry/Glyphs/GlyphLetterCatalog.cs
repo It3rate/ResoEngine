@@ -70,9 +70,12 @@ public static class GlyphLetterCatalog
                 [
                     new GlyphLandmark("T-cap", GlyphLandmarkKind.Capline, new GlyphVector(box.MidX, box.Top), 0.45m, "Upper cap alignment."),
                     new GlyphLandmark("T-centerline", GlyphLandmarkKind.Centerline, new GlyphVector(box.MidX, box.MidY), 0.4m, "Centered stem alignment."),
+                    new GlyphLandmark("T-left-stop", GlyphLandmarkKind.StopPoint, new GlyphVector(16m, box.Top), 0.45m, "Left top terminal."),
+                    new GlyphLandmark("T-right-stop", GlyphLandmarkKind.StopPoint, new GlyphVector(84m, box.Top), 0.45m, "Right top terminal."),
                 ]),
             [
-                new GlyphSeed("T-bar", GlyphSeedKind.Tip, new GlyphVector(box.MidX, box.Top), 1m, new GlyphVector(1m, 0m), Note: "Top bar expansion."),
+                new GlyphSeed("T-bar-left", GlyphSeedKind.Tip, new GlyphVector(box.MidX, box.Top), 1m, new GlyphVector(-1m, 0m), Note: "Left top bar expansion."),
+                new GlyphSeed("T-bar-right", GlyphSeedKind.Tip, new GlyphVector(box.MidX, box.Top), 1m, new GlyphVector(1m, 0m), Note: "Right top bar expansion."),
                 new GlyphSeed("T-stem", GlyphSeedKind.Tip, new GlyphVector(box.MidX, box.Top), 1m, new GlyphVector(0m, -1m), Note: "Center stem descent."),
             ]);
 
