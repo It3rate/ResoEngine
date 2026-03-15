@@ -141,12 +141,13 @@ public class StripOrnamentCatalogTests
 
         Assert.Equal(
             [
-                new StripDelta(3, 0),
-                new StripDelta(0, 2),
-                new StripDelta(2, 0),
-                new StripDelta(0, -1),
                 StripDelta.Right,
-                new StripDelta(0, -1),
+                StripDelta.Up,
+                StripDelta.Left,
+                StripDelta.Up,
+                StripDelta.Right,
+                StripDelta.Down,
+                new StripDelta(2, 0),
             ],
             deltas);
     }
@@ -233,7 +234,37 @@ public class StripOrnamentCatalogTests
     }
 
     [Fact]
-    public void NonZeroSegmentStart_ProducesLeadInBeforeTraversal()
+    public void NonZeroSegmentStart_RepositionsWithoutDrawing()
+    {
+        var definition = new StripSegmentDefinition(
+            "X0",
+            Axis.FromCoordinates(-1, 1),
+            BoundaryContinuationLaw.ReflectiveBounce,
+            StripDelta.Right);
+
+        var pattern = new StripOrnamentPattern(
+            "lead-in",
+            "Lead In",
+            "Test pattern for non-zero starts.",
+            1,
+            1,
+            [new StripOrnamentStrand("X0", definition.DescribeTraversal(), "Lead-in test.", [])])
+        {
+            Program = new StripEquationProgram(
+                [definition],
+                [
+                    StripEquationCommand.Fire("X0"), StripEquationCommand.Commit(),
+                ]),
+        };
+
+        var result = StripOrnamentComposer.Compose(pattern, 1);
+
+        Assert.Empty(result.Segments);
+        Assert.Equal(new StripPoint(-1, 0), result.Cursor);
+    }
+
+    [Fact]
+    public void NonZeroSegmentStart_DrawsOnlyAfterSilentLeadIn()
     {
         var definition = new StripSegmentDefinition(
             "X0",
@@ -265,7 +296,6 @@ public class StripOrnamentCatalogTests
 
         Assert.Equal(
             [
-                StripDelta.Left,
                 StripDelta.Right,
                 StripDelta.Right,
             ],

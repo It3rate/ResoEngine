@@ -86,6 +86,7 @@ public static class StripOrnamentComposer
         var segments = new List<StripPathEdge>();
         var cursor = new StripPoint(0, 0);
         var committed = cursor;
+        StripPoint? visibleStart = null;
         int minX = 0;
         int maxX = 0;
         int minY = 0;
@@ -117,21 +118,45 @@ public static class StripOrnamentComposer
                             throw new InvalidOperationException("Fire commands require an equation name.");
                         }
 
-                        cursor += runtime[command.EquationName].Fire();
-                        minX = Math.Min(minX, cursor.X);
-                        maxX = Math.Max(maxX, cursor.X);
-                        minY = Math.Min(minY, cursor.Y);
-                        maxY = Math.Max(maxY, cursor.Y);
+                        var motion = runtime[command.EquationName].Fire();
+                        foreach (var part in motion.Parts)
+                        {
+                            var start = cursor;
+                            cursor += part.Delta;
+                            minX = Math.Min(minX, cursor.X);
+                            maxX = Math.Max(maxX, cursor.X);
+                            minY = Math.Min(minY, cursor.Y);
+                            maxY = Math.Max(maxY, cursor.Y);
+
+                            if (part.IsVisible)
+                            {
+                                if (cursor != start)
+                                {
+                                    visibleStart ??= start;
+                                }
+                            }
+                            else
+                            {
+                                if (visibleStart is not null && start != visibleStart.Value)
+                                {
+                                    segments.Add(new StripPathEdge(visibleStart.Value, start));
+                                }
+
+                                visibleStart = null;
+                            }
+                        }
+
                         break;
                     }
                     case StripEquationCommandKind.Commit:
                     {
-                        if (cursor != committed)
+                        if (visibleStart is not null && cursor != visibleStart.Value)
                         {
-                            segments.Add(new StripPathEdge(committed, cursor));
-                            committed = cursor;
+                            segments.Add(new StripPathEdge(visibleStart.Value, cursor));
                         }
 
+                        committed = cursor;
+                        visibleStart = null;
                         break;
                     }
                     case StripEquationCommandKind.SetLaw:
@@ -154,30 +179,208 @@ public static class StripOrnamentComposer
     private sealed class RuntimeSegment
     {
         private readonly StripSegmentDefinition _definition;
-        private readonly AxisTraversalState _state;
-        private bool _needsLeadIn;
+        private readonly decimal _leadLength;
+        private readonly decimal _visibleLength;
+        private readonly decimal _routeLength;
+        private readonly decimal _stepMagnitude;
+        private readonly decimal _startCoordinate;
+        private readonly decimal _endCoordinate;
+        private readonly int _hiddenDirection;
+        private readonly int _visibleDirection;
+        private decimal _routePosition;
+        private int _direction;
+        private BoundaryContinuationLaw _law;
 
         public RuntimeSegment(StripSegmentDefinition definition)
         {
             ArgumentNullException.ThrowIfNull(definition);
 
             _definition = definition;
-            _state = definition.CreateTraversal().CreateState();
-            _needsLeadIn = !_definition.Segment.Start.IsZero;
+            _startCoordinate = definition.Segment.Start.Value;
+            _endCoordinate = definition.Segment.End.Value;
+            _leadLength = decimal.Abs(_startCoordinate);
+            _visibleLength = decimal.Abs(_endCoordinate - _startCoordinate);
+            _routeLength = _leadLength + _visibleLength;
+            _stepMagnitude = decimal.Abs(definition.ComputeStep().Value);
+            _hiddenDirection = Math.Sign(_startCoordinate);
+            _visibleDirection = Math.Sign(_endCoordinate - _startCoordinate);
+            _routePosition = 0m;
+            _direction = 1;
+            _law = definition.Law;
         }
 
-        public StripDelta Fire()
+        public RuntimeMotion Fire()
         {
-            if (_needsLeadIn)
+            if (_stepMagnitude == 0m)
             {
-                _needsLeadIn = false;
-                return _definition.Project(_definition.Segment.Start);
+                return new RuntimeMotion([]);
             }
 
-            var step = _state.Fire();
-            return _definition.Project(step.Delta);
+            var parts = new List<RuntimeMotionPart>();
+            decimal remaining = _stepMagnitude;
+
+            while (remaining > 0m)
+            {
+                if (_law == BoundaryContinuationLaw.ReflectiveBounce)
+                {
+                    if (_routeLength == 0m)
+                    {
+                        break;
+                    }
+
+                    decimal edge = _direction > 0 ? _routeLength : 0m;
+                    decimal distanceToEdge = decimal.Abs(edge - _routePosition);
+                    if (distanceToEdge == 0m)
+                    {
+                        _direction *= -1;
+                        continue;
+                    }
+
+                    decimal travel = Math.Min(remaining, distanceToEdge);
+                    decimal next = _routePosition + _direction * travel;
+                    AddRouteMotion(_routePosition, next, parts);
+                    _routePosition = next;
+                    remaining -= travel;
+
+                    if (remaining > 0m && _routePosition == edge)
+                    {
+                        _direction *= -1;
+                    }
+
+                    continue;
+                }
+
+                if (_law == BoundaryContinuationLaw.PeriodicWrap)
+                {
+                    if (_routeLength == 0m)
+                    {
+                        break;
+                    }
+
+                    decimal edge = _direction > 0 ? _routeLength : 0m;
+                    decimal distanceToEdge = decimal.Abs(edge - _routePosition);
+                    decimal travel = Math.Min(remaining, distanceToEdge);
+                    decimal next = _routePosition + _direction * travel;
+                    AddRouteMotion(_routePosition, next, parts);
+                    _routePosition = next;
+                    remaining -= travel;
+
+                    if (remaining > 0m && _routePosition == edge)
+                    {
+                        decimal wrapped = _direction > 0 ? 0m : _routeLength;
+                        AddInvisibleJump(_routePosition, wrapped, parts);
+                        _routePosition = wrapped;
+                    }
+
+                    continue;
+                }
+
+                if (_law == BoundaryContinuationLaw.Clamp)
+                {
+                    decimal next = decimal.Clamp(_routePosition + remaining, 0m, _routeLength);
+                    AddRouteMotion(_routePosition, next, parts);
+                    _routePosition = next;
+                    remaining = 0m;
+                    continue;
+                }
+
+                decimal continued = _routePosition + remaining;
+                AddRouteMotion(_routePosition, continued, parts);
+                _routePosition = continued;
+                remaining = 0m;
+            }
+
+            return new RuntimeMotion(parts);
         }
 
-        public void SetLaw(BoundaryContinuationLaw law) => _state.SetLaw(law);
+        public void SetLaw(BoundaryContinuationLaw law) => _law = law;
+
+        private void AddRouteMotion(decimal from, decimal to, List<RuntimeMotionPart> parts)
+        {
+            if (from == to)
+            {
+                return;
+            }
+
+            if (_routeLength == 0m)
+            {
+                return;
+            }
+
+            foreach (var segment in SplitAtLeadBoundary(from, to))
+            {
+                if (segment.From == segment.To)
+                {
+                    continue;
+                }
+
+                decimal worldFrom = MapRouteToWorld(segment.From);
+                decimal worldTo = MapRouteToWorld(segment.To);
+                if (worldFrom == worldTo)
+                {
+                    continue;
+                }
+
+                parts.Add(new RuntimeMotionPart(
+                    _definition.Project(new Core2.Elements.Scalar(worldTo - worldFrom)),
+                    segment.IsVisible));
+            }
+        }
+
+        private void AddInvisibleJump(decimal from, decimal to, List<RuntimeMotionPart> parts)
+        {
+            decimal worldFrom = MapRouteToWorld(from);
+            decimal worldTo = MapRouteToWorld(to);
+            if (worldFrom == worldTo)
+            {
+                return;
+            }
+
+            parts.Add(new RuntimeMotionPart(
+                _definition.Project(new Core2.Elements.Scalar(worldTo - worldFrom)),
+                IsVisible: false));
+        }
+
+        private IEnumerable<RouteSlice> SplitAtLeadBoundary(decimal from, decimal to)
+        {
+            bool ascending = to > from;
+            decimal low = ascending ? from : to;
+            decimal high = ascending ? to : from;
+
+            if (_leadLength <= low || _leadLength >= high)
+            {
+                yield return new RouteSlice(from, to, IsVisibleFor(from, to));
+                yield break;
+            }
+
+            yield return new RouteSlice(from, _leadLength, IsVisibleFor(from, _leadLength));
+            yield return new RouteSlice(_leadLength, to, IsVisibleFor(_leadLength, to));
+        }
+
+        private bool IsVisibleFor(decimal from, decimal to)
+        {
+            decimal midpoint = (from + to) * 0.5m;
+            return midpoint >= _leadLength && _visibleLength > 0m;
+        }
+
+        private decimal MapRouteToWorld(decimal route)
+        {
+            if (route <= _leadLength)
+            {
+                return _hiddenDirection * route;
+            }
+
+            if (_visibleLength == 0m)
+            {
+                return _startCoordinate;
+            }
+
+            decimal beyondVisibleStart = route - _leadLength;
+            return _startCoordinate + _visibleDirection * beyondVisibleStart;
+        }
     }
+
+    private readonly record struct RuntimeMotion(IReadOnlyList<RuntimeMotionPart> Parts);
+    private readonly record struct RuntimeMotionPart(StripDelta Delta, bool IsVisible);
+    private readonly record struct RouteSlice(decimal From, decimal To, bool IsVisible);
 }
