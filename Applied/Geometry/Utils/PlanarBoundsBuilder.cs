@@ -26,9 +26,9 @@ public sealed class PlanarBoundsBuilder
 
     private void Include(Scalar x, Scalar y)
     {
-        _minX = _minX is null || x.Value < _minX.Value.Value ? x : _minX.Value;
-        _maxX = _maxX is null || x.Value > _maxX.Value.Value ? x : _maxX.Value;
-        _minY = _minY is null || y.Value < _minY.Value.Value ? y : _minY.Value;
-        _maxY = _maxY is null || y.Value > _maxY.Value.Value ? y : _maxY.Value;
+        _minX = _minX is null ? x : Scalar.Min(_minX.Value, x);
+        _maxX = _maxX is null ? x : Scalar.Max(_maxX.Value, x);
+        _minY = _minY is null ? y : Scalar.Min(_minY.Value, y);
+        _maxY = _maxY is null ? y : Scalar.Max(_maxY.Value, y);
     }
 }

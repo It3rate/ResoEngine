@@ -71,7 +71,10 @@ public class AxisTests
         Assert.Equal(new Scalar(-1.5m), axis.Left);
         Assert.Equal(new Scalar(2.5m), axis.Right);
         Assert.Equal(new Scalar(4.0m), axis.Span);
+        Assert.Equal(new Scalar(0.5m), axis.Midpoint);
         Assert.False(axis.IsEmptyInterval);
+        Assert.True(axis.Contains(new Scalar(0.5m)));
+        Assert.False(axis.Contains(new Scalar(3m)));
     }
 
     [Fact]

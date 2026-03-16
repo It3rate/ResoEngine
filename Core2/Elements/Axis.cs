@@ -46,13 +46,14 @@ public sealed record Axis(Proportion Recessive, Proportion Dominant, AxisBasis B
 
     public Scalar Start => -Recessive.Fold();
     public Scalar End => Dominant.Fold();
-    public Scalar Left => Start.Value <= End.Value ? Start : End;
-    public Scalar Right => Start.Value <= End.Value ? End : Start;
+    public Scalar Left => Start <= End ? Start : End;
+    public Scalar Right => Start <= End ? End : Start;
     public Scalar Span => End - Start;
+    public Scalar Midpoint => (Start + End) / new Scalar(2m);
     public bool IsDegenerate => Start == End;
     public bool HasExtent => !IsDegenerate;
     public bool IsEmptyInterval => IsDegenerate;
-    public bool PointsRight => End.Value >= Start.Value;
+    public bool PointsRight => End >= Start;
 
     public static Axis FromCoordinates(
         Scalar start,
@@ -128,9 +129,9 @@ public sealed record Axis(Proportion Recessive, Proportion Dominant, AxisBasis B
 
     public bool TryIntersect(Axis other, out Axis intersection)
     {
-        var left = Max(Left, other.Left);
-        var right = Min(Right, other.Right);
-        if (left.Value > right.Value)
+        var left = Scalar.Max(Left, other.Left);
+        var right = Scalar.Min(Right, other.Right);
+        if (left > right)
         {
             intersection = Zero;
             return false;
@@ -145,9 +146,11 @@ public sealed record Axis(Proportion Recessive, Proportion Dominant, AxisBasis B
     /// This is not a split-preserving boolean OR; use Boolean(...) for that.
     /// </summary>
     public Axis Envelope(Axis other) =>
-        WithBounds(Min(Left, other.Left), Max(Right, other.Right));
+        WithBounds(Scalar.Min(Left, other.Left), Scalar.Max(Right, other.Right));
 
     public Axis Union(Axis other) => Envelope(other);
+
+    public bool Contains(Scalar value) => value >= Left && value <= Right;
 
     public AxisBooleanResult Boolean(
         Axis other,
@@ -176,10 +179,6 @@ public sealed record Axis(Proportion Recessive, Proportion Dominant, AxisBasis B
     public Proportion Fold() => Recessive * Dominant;
 
     public override string ToString() => $"[{Recessive}]i + [{Dominant}]";
-
-    private static Scalar Min(Scalar left, Scalar right) => left.Value <= right.Value ? left : right;
-
-    private static Scalar Max(Scalar left, Scalar right) => left.Value >= right.Value ? left : right;
 
     private sealed class AxisArithmetic : IArithmetic<Axis>
     {

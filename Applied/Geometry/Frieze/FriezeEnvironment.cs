@@ -19,8 +19,7 @@ public sealed record FriezeEnvironment(
 
     public bool ContainsY(int y) => ContainsY(new Scalar(y));
 
-    public bool ContainsY(Scalar y) =>
-        y.Value >= VerticalBounds.Left.Value && y.Value <= VerticalBounds.Right.Value;
+    public bool ContainsY(Scalar y) => VerticalBounds.Contains(y);
 
     public FriezeEnvironment WithAddedEdges(IEnumerable<PlanarPathEdge> edges)
     {

@@ -7,7 +7,7 @@ namespace Core2.Elements;
 /// Degree 0: a plain scalar with implicit unit 1.000...
 /// This is the non-resolution value layer that sits below Proportion.
 /// </summary>
-public readonly record struct Scalar(decimal Value) : IElement
+public readonly record struct Scalar(decimal Value) : IElement, IComparable<Scalar>, IComparable
 {
     public static Scalar Zero => new(0m);
     public static Scalar One => new(1m);
@@ -17,6 +17,9 @@ public readonly record struct Scalar(decimal Value) : IElement
     internal static IArithmetic<Scalar> Arithmetic { get; } = new ScalarArithmetic();
 
     public bool IsZero => Value == 0m;
+    public bool IsPositive => Value > 0m;
+    public bool IsNegative => Value < 0m;
+    public int Sign => Math.Sign(Value);
     public int Degree => 0;
 
     public static implicit operator Scalar(int value) => new(value);
@@ -31,6 +34,10 @@ public readonly record struct Scalar(decimal Value) : IElement
     public static Scalar operator -(Scalar value) => new(-value.Value);
     public static Scalar operator -(Scalar left, Scalar right) => new(left.Value - right.Value);
     public static Scalar operator *(Scalar left, Scalar right) => new(left.Value * right.Value);
+    public static bool operator <(Scalar left, Scalar right) => left.Value < right.Value;
+    public static bool operator <=(Scalar left, Scalar right) => left.Value <= right.Value;
+    public static bool operator >(Scalar left, Scalar right) => left.Value > right.Value;
+    public static bool operator >=(Scalar left, Scalar right) => left.Value >= right.Value;
 
     public static Scalar operator /(Scalar left, Scalar right)
     {
@@ -58,6 +65,18 @@ public readonly record struct Scalar(decimal Value) : IElement
         InverseContinuationRule rule = InverseContinuationRule.Principal,
         Scalar? reference = null) =>
         PowerEngine.Pow(this, exponent, rule, reference);
+
+    public Scalar Abs() => new(decimal.Abs(Value));
+
+    public Scalar Clamp(Scalar min, Scalar max) => new(decimal.Clamp(Value, min.Value, max.Value));
+
+    public int CompareTo(Scalar other) => Value.CompareTo(other.Value);
+
+    public int CompareTo(object? obj) => obj is Scalar other ? CompareTo(other) : 1;
+
+    public static Scalar Min(Scalar left, Scalar right) => left <= right ? left : right;
+
+    public static Scalar Max(Scalar left, Scalar right) => left >= right ? left : right;
 
     public override string ToString() => Value switch
     {

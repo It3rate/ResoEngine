@@ -26,7 +26,7 @@ public sealed class FriezePathResolver : IDynamicResolver<FriezePathState, Friez
         bool verticalVisible = input.Proposals.Any(proposal => proposal.Effect.Delta.Dy != 0 && proposal.Effect.IsVisible);
 
         var candidates = BuildCandidates(incoming, netDelta, horizontalVisible, verticalVisible);
-        decimal bestScore = candidates.Min(candidate => candidate.Score);
+        Scalar bestScore = candidates.Min(candidate => candidate.Score);
         var viable = candidates
             .Where(candidate => candidate.Score == bestScore)
             .OrderBy(candidate => candidate.PreferencePenalty)
@@ -70,7 +70,7 @@ public sealed class FriezePathResolver : IDynamicResolver<FriezePathState, Friez
         var candidates = new List<FriezeCandidate>();
         if (netDelta.IsZero)
         {
-            candidates.Add(Commit(incoming, [], 0m, "No net movement; state preserved."));
+            candidates.Add(Commit(incoming, [], Scalar.Zero, "No net movement; state preserved."));
             return candidates;
         }
 
@@ -83,39 +83,39 @@ public sealed class FriezePathResolver : IDynamicResolver<FriezePathState, Friez
 
         if (netDelta.Dx != 0)
         {
-            candidates.Add(Commit(incoming, [new PlanarTraversalMotion(new PlanarOffset(netDelta.Horizontal, Proportion.Zero), horizontalVisible)], 0m, "Horizontal continuation."));
+            candidates.Add(Commit(incoming, [new PlanarTraversalMotion(new PlanarOffset(netDelta.Horizontal, Proportion.Zero), horizontalVisible)], Scalar.Zero, "Horizontal continuation."));
             return candidates;
         }
 
-        candidates.Add(Commit(incoming, [new PlanarTraversalMotion(new PlanarOffset(Proportion.Zero, netDelta.Vertical), verticalVisible)], 0m, "Vertical continuation."));
+        candidates.Add(Commit(incoming, [new PlanarTraversalMotion(new PlanarOffset(Proportion.Zero, netDelta.Vertical), verticalVisible)], Scalar.Zero, "Vertical continuation."));
         return candidates;
     }
 
-    private static decimal CornerPenalty(Scalar vertical, bool horizontalFirst)
+    private static Scalar CornerPenalty(Scalar vertical, bool horizontalFirst)
     {
-        if (vertical.Value > 0m)
+        if (vertical > Scalar.Zero)
         {
-            return horizontalFirst ? 0.25m : 0m;
+            return horizontalFirst ? new Scalar(0.25m) : Scalar.Zero;
         }
 
-        if (vertical.Value < 0m)
+        if (vertical < Scalar.Zero)
         {
-            return horizontalFirst ? 0m : 0.25m;
+            return horizontalFirst ? Scalar.Zero : new Scalar(0.25m);
         }
 
-        return 0m;
+        return Scalar.Zero;
     }
 
     private static FriezeCandidate Commit(
         DynamicContext<FriezePathState, FriezeEnvironment> incoming,
         IReadOnlyList<PlanarTraversalMotion> sequence,
-        decimal preferencePenalty,
+        Scalar preferencePenalty,
         string note)
     {
         var cursor = incoming.State.Cursor;
         var edges = new List<PlanarPathEdge>();
         var tensions = new List<DynamicTension>();
-        decimal score = preferencePenalty;
+        Scalar score = preferencePenalty;
 
         foreach (var motion in sequence)
         {
@@ -133,7 +133,7 @@ public sealed class FriezePathResolver : IDynamicResolver<FriezePathState, Friez
                     "VerticalBounds",
                     $"Move to y={next.Y} exceeds frieze bounds [{incoming.Environment.MinY}, {incoming.Environment.MaxY}].",
                     10m));
-                score += 10m;
+                score += new Scalar(10m);
             }
 
             if (incoming.Environment.Contains(edge))
@@ -142,7 +142,7 @@ public sealed class FriezePathResolver : IDynamicResolver<FriezePathState, Friez
                     "EdgeReuse",
                     $"Segment {edge.Start} -> {edge.End} was already occupied.",
                     3m));
-                score += 3m;
+                score += new Scalar(3m);
             }
 
             if (motion.IsVisible)
@@ -170,7 +170,7 @@ public sealed class FriezePathResolver : IDynamicResolver<FriezePathState, Friez
     private sealed record FriezeCandidate(
         DynamicContext<FriezePathState, FriezeEnvironment> Context,
         IReadOnlyList<DynamicTension> Tensions,
-        decimal Score,
-        decimal PreferencePenalty,
+        Scalar Score,
+        Scalar PreferencePenalty,
         string Note);
 }

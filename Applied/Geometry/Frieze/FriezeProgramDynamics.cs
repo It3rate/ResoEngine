@@ -186,18 +186,19 @@ public static class FriezeProgramDynamics
 
     private static FriezeEnvironment CreateEnvironment(IReadOnlyList<PlanarSegmentDefinition> equations)
     {
-        decimal min = 0m;
-        decimal max = 0m;
+        Scalar min = Scalar.Zero;
+        Scalar max = Scalar.Zero;
 
         foreach (var equation in equations.Where(equation => equation.AxisVector.Dy != 0))
         {
-            decimal start = equation.Segment.Start.Value * equation.AxisVector.Dy;
-            decimal end = equation.Segment.End.Value * equation.AxisVector.Dy;
-            min = Math.Min(min, Math.Min(start, end));
-            max = Math.Max(max, Math.Max(start, end));
+            Scalar projection = equation.AxisVector.Vertical.Fold();
+            Scalar start = equation.Segment.Start * projection;
+            Scalar end = equation.Segment.End * projection;
+            min = Scalar.Min(min, Scalar.Min(start, end));
+            max = Scalar.Max(max, Scalar.Max(start, end));
         }
 
-        return FriezeEnvironment.Create((int)min, (int)max);
+        return FriezeEnvironment.Create(PlanarValueConverter.ToInt(min), PlanarValueConverter.ToInt(max));
     }
 
     private static IReadOnlyList<DynamicFrontierContext<FriezePathState, FriezeEnvironment>> GetFrontier(
