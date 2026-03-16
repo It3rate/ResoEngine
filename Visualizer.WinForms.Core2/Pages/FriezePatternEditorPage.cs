@@ -1112,7 +1112,7 @@ public class FriezePatternEditorPage : IVisualizerPage
                 SpanDisplay.Axis,
                 Law,
                 Definition.AxisVector,
-                StepDisplay.ToScalar(),
+                StepDisplay.ToProportion(),
                 Definition.UseSegmentAsFrame,
                 Definition.Seed);
 
@@ -1129,11 +1129,11 @@ public class FriezePatternEditorPage : IVisualizerPage
 
     private sealed class StepDisplayMapper : ISegmentValue, ISegmentDragConfig
     {
-        public StepDisplayMapper(Scalar step, float snapIncrement)
+        public StepDisplayMapper(Proportion step, float snapIncrement)
         {
             Label = string.Empty;
             SnapIncrement = snapIncrement;
-            Real = (float)step.Value;
+            Real = (float)step.Fold().Value;
         }
 
         public float Imaginary
@@ -1148,9 +1148,9 @@ public class FriezePatternEditorPage : IVisualizerPage
 
         public float SnapIncrement { get; }
 
-        public void SetStep(Scalar step) => Real = (float)step.Value;
+        public void SetStep(Proportion step) => Real = (float)step.Fold().Value;
 
-        public Scalar ToScalar() => new((decimal)Real);
+        public Proportion ToProportion() => new Proportion((long)Math.Round(Real, MidpointRounding.AwayFromZero));
     }
 
     private sealed record LawButtonHit(EditorSegment Editor, BoundaryContinuationLaw Law, SKRect Rect);

@@ -12,22 +12,22 @@ public static class FriezeCatalog
     [
         new PlanarSegmentDefinition(
             "X0",
-            Axis.FromCoordinates(Scalar.Zero, Scalar.One),
+            Axis.FromCoordinates(Proportion.Zero, Proportion.One),
             BoundaryContinuationLaw.ReflectiveBounce,
             PlanarOffset.Right,
-            Scalar.One),
+            Proportion.One),
         new PlanarSegmentDefinition(
             "Y0",
-            Axis.FromCoordinates(Scalar.Zero, 2),
+            Axis.FromCoordinates(Proportion.Zero, new Proportion(2)),
             BoundaryContinuationLaw.ReflectiveBounce,
             PlanarOffset.Up,
-            Scalar.One),
+            Proportion.One),
         new PlanarSegmentDefinition(
             "X1",
-            Axis.FromCoordinates(Scalar.Zero, 2),
+            Axis.FromCoordinates(Proportion.Zero, new Proportion(2)),
             BoundaryContinuationLaw.TensionPreserving,
             PlanarOffset.Right,
-            new Scalar(2m),
+            new Proportion(2),
             UseSegmentAsFrame: false),
     ];
 

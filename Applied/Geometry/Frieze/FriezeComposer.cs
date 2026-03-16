@@ -66,7 +66,7 @@ public static class FriezeComposer
             bounds.Include(cursor);
         }
 
-        return new FriezeResult(pattern, new Scalar(repeats), segments, cursor, bounds.Build());
+        return new FriezeResult(pattern, new Proportion(repeats), segments, cursor, bounds.Build());
     }
 
     private static FriezeResult ComposeFromProgram(
@@ -92,7 +92,7 @@ public static class FriezeComposer
             Execute(program.Loop);
         }
 
-        return new FriezeResult(pattern, new Scalar(repeats), segments, committed, bounds.Build());
+        return new FriezeResult(pattern, new Proportion(repeats), segments, committed, bounds.Build());
 
         void Execute(IReadOnlyList<EquationCommand>? commands)
         {

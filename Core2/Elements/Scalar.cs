@@ -60,6 +60,8 @@ public readonly record struct Scalar(decimal Value) : IElement, IComparable<Scal
         Scalar? reference = null) =>
         InverseContinuationEngine.InverseContinue(this, degree, rule, reference);
 
+    public Proportion Pin(Scalar support) => new(this, support, true);
+
     public PowerResult<Scalar> TryPow(
         Proportion exponent,
         InverseContinuationRule rule = InverseContinuationRule.Principal,

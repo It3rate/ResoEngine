@@ -8,23 +8,23 @@ public sealed record PlanarSegmentDefinition(
     Axis Segment,
     BoundaryContinuationLaw Law,
     PlanarOffset AxisVector,
-    Scalar Step,
+    Proportion Step,
     bool UseSegmentAsFrame = true,
-    Scalar? Seed = null)
+    Proportion? Seed = null)
 {
     public AxisTraversalDefinition CreateTraversal() =>
         new(
             UseSegmentAsFrame ? Segment : null,
-            Step,
+            Step.Fold(),
             Law,
-            Seed ?? Segment.Start);
+            Seed?.Fold() ?? Segment.Start);
 
-    public Scalar ComputeStep() => Step;
+    public Proportion ComputeStep() => Step;
 
     public string DescribeTraversal()
     {
         string frameText = UseSegmentAsFrame
-            ? $"frame [{Format(Segment.Start)}, {Format(Segment.End)}]"
+            ? $"frame [{Format(Segment.StartCoordinate)}, {Format(Segment.EndCoordinate)}]"
             : "unbounded";
         string stepText = $"step {Format(Step)}";
         string lawText = Law switch
@@ -40,13 +40,10 @@ public sealed record PlanarSegmentDefinition(
     }
 
     public PlanarOffset Project(Scalar delta)
-    {
-        int amount = PlanarValueConverter.ToInt(delta);
-        return new PlanarOffset(AxisVector.Dx * amount, AxisVector.Dy * amount);
-    }
+        => Project(delta.Pin(Scalar.One));
 
-    private static string Format(Scalar value) =>
-        value.Value == decimal.Truncate(value.Value)
-            ? value.Value.ToString("0")
-            : value.Value.ToString("0.##");
+    public PlanarOffset Project(Proportion delta) => AxisVector * delta;
+
+    private static string Format(Proportion value) =>
+        value.Recessive == Scalar.One ? value.Dominant.ToString() : value.ToString();
 }

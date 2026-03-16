@@ -5,7 +5,7 @@ namespace Applied.Geometry.Frieze;
 
 public sealed record FriezeResult(
     FriezePattern Pattern,
-    Scalar RepeatCountValue,
+    Proportion RepeatCountValue,
     IReadOnlyList<PlanarPathEdge> Segments,
     PlanarPoint Cursor,
     Area Bounds)
@@ -21,7 +21,7 @@ public sealed record FriezeResult(
         int maxY)
         : this(
             pattern,
-            new Scalar(repeatCount),
+            new Proportion(repeatCount),
             segments,
             cursor,
             new Area(Axis.FromCoordinates(minX, maxX), Axis.FromCoordinates(minY, maxY)))

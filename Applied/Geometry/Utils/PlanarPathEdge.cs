@@ -14,7 +14,7 @@ public readonly record struct PlanarPathEdge(PlanarPoint Start, PlanarPoint End)
 
     private static int Compare(PlanarPoint left, PlanarPoint right)
     {
-        int x = left.X.CompareTo(right.X);
-        return x != 0 ? x : left.Y.CompareTo(right.Y);
+        int x = left.Horizontal.CompareTo(right.Horizontal);
+        return x != 0 ? x : left.Vertical.CompareTo(right.Vertical);
     }
 }

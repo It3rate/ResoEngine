@@ -4,31 +4,31 @@ namespace Applied.Geometry.Utils;
 
 public sealed class PlanarBoundsBuilder
 {
-    private Scalar? _minX;
-    private Scalar? _maxX;
-    private Scalar? _minY;
-    private Scalar? _maxY;
+    private Proportion? _minX;
+    private Proportion? _maxX;
+    private Proportion? _minY;
+    private Proportion? _maxY;
 
     public void Include(PlanarPoint point) =>
-        Include(point.Horizontal.Fold(), point.Vertical.Fold());
+        Include(point.Horizontal, point.Vertical);
 
     public Area Build()
     {
-        Scalar minX = _minX ?? Scalar.Zero;
-        Scalar maxX = _maxX ?? Scalar.Zero;
-        Scalar minY = _minY ?? Scalar.Zero;
-        Scalar maxY = _maxY ?? Scalar.Zero;
+        Proportion minX = _minX ?? Proportion.Zero;
+        Proportion maxX = _maxX ?? Proportion.Zero;
+        Proportion minY = _minY ?? Proportion.Zero;
+        Proportion maxY = _maxY ?? Proportion.Zero;
 
         return new Area(
             Axis.FromCoordinates(minX, maxX),
             Axis.FromCoordinates(minY, maxY));
     }
 
-    private void Include(Scalar x, Scalar y)
+    private void Include(Proportion x, Proportion y)
     {
-        _minX = _minX is null ? x : Scalar.Min(_minX.Value, x);
-        _maxX = _maxX is null ? x : Scalar.Max(_maxX.Value, x);
-        _minY = _minY is null ? y : Scalar.Min(_minY.Value, y);
-        _maxY = _maxY is null ? y : Scalar.Max(_maxY.Value, y);
+        _minX = _minX is null ? x : Proportion.Min(_minX, x);
+        _maxX = _maxX is null ? x : Proportion.Max(_maxX, x);
+        _minY = _minY is null ? y : Proportion.Min(_minY, y);
+        _maxY = _maxY is null ? y : Proportion.Max(_maxY, y);
     }
 }

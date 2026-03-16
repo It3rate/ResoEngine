@@ -173,7 +173,7 @@ public static class FriezeProgramDynamics
         var nextState = new FriezePathState(
             cursor,
             incoming.State.Segments.Concat(edges).ToArray(),
-            incoming.State.MacroStepValue + Scalar.One);
+            incoming.State.MacroStepValue + Proportion.One);
         var nextEnvironment = incoming.Environment.WithAddedEdges(edges);
 
         return (
@@ -186,19 +186,19 @@ public static class FriezeProgramDynamics
 
     private static FriezeEnvironment CreateEnvironment(IReadOnlyList<PlanarSegmentDefinition> equations)
     {
-        Scalar min = Scalar.Zero;
-        Scalar max = Scalar.Zero;
+        Proportion min = Proportion.Zero;
+        Proportion max = Proportion.Zero;
 
-        foreach (var equation in equations.Where(equation => equation.AxisVector.Dy != 0))
+        foreach (var equation in equations.Where(equation => !equation.AxisVector.Vertical.IsZero))
         {
-            Scalar projection = equation.AxisVector.Vertical.Fold();
-            Scalar start = equation.Segment.Start * projection;
-            Scalar end = equation.Segment.End * projection;
-            min = Scalar.Min(min, Scalar.Min(start, end));
-            max = Scalar.Max(max, Scalar.Max(start, end));
+            Proportion projection = equation.AxisVector.Vertical;
+            Proportion start = equation.Segment.StartCoordinate * projection;
+            Proportion end = equation.Segment.EndCoordinate * projection;
+            min = Proportion.Min(min, Proportion.Min(start, end));
+            max = Proportion.Max(max, Proportion.Max(start, end));
         }
 
-        return FriezeEnvironment.Create(PlanarValueConverter.ToInt(min), PlanarValueConverter.ToInt(max));
+        return FriezeEnvironment.Create(min, max);
     }
 
     private static IReadOnlyList<DynamicFrontierContext<FriezePathState, FriezeEnvironment>> GetFrontier(

@@ -44,6 +44,9 @@ public sealed record Axis(Proportion Recessive, Proportion Dominant, AxisBasis B
 
     private AlgebraTable<Proportion> Table => Basis == AxisBasis.SplitComplex ? SplitComplexTable : ComplexTable;
 
+    public Proportion StartCoordinate => -Recessive;
+    public Proportion EndCoordinate => Dominant;
+    public Proportion CoordinateSpan => EndCoordinate - StartCoordinate;
     public Scalar Start => -Recessive.Fold();
     public Scalar End => Dominant.Fold();
     public Scalar Left => Start <= End ? Start : End;
@@ -56,18 +59,20 @@ public sealed record Axis(Proportion Recessive, Proportion Dominant, AxisBasis B
     public bool PointsRight => End >= Start;
 
     public static Axis FromCoordinates(
+        Proportion start,
+        Proportion end,
+        AxisBasis basis = AxisBasis.Complex) =>
+        new(-start, end, basis);
+
+    public static Axis FromCoordinates(
         Scalar start,
         Scalar end,
         Scalar? recessiveSupport = null,
         Scalar? dominantSupport = null,
         AxisBasis basis = AxisBasis.Complex) =>
         new(
-            Proportion.FromRecessiveDominant(
-                recessiveSupport ?? Scalar.One,
-                (-start) * (recessiveSupport ?? Scalar.One)),
-            Proportion.FromRecessiveDominant(
-                dominantSupport ?? Scalar.One,
-                end * (dominantSupport ?? Scalar.One)),
+            ((-start) * (recessiveSupport ?? Scalar.One)).Pin(recessiveSupport ?? Scalar.One),
+            (end * (dominantSupport ?? Scalar.One)).Pin(dominantSupport ?? Scalar.One),
             basis);
 
     public Axis WithCoordinates(Scalar start, Scalar end) =>
@@ -151,6 +156,8 @@ public sealed record Axis(Proportion Recessive, Proportion Dominant, AxisBasis B
     public Axis Union(Axis other) => Envelope(other);
 
     public bool Contains(Scalar value) => value >= Left && value <= Right;
+
+    public bool Contains(Proportion value) => Contains(value.Fold());
 
     public AxisBooleanResult Boolean(
         Axis other,

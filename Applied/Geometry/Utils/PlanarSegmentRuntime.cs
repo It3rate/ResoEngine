@@ -7,16 +7,17 @@ public sealed class PlanarSegmentRuntime
 {
     private readonly PlanarSegmentDefinition _definition;
     private readonly Axis _routeCarrier;
-    private readonly Scalar _leadLength;
-    private readonly Scalar _visibleLength;
-    private readonly Scalar _routeLength;
-    private readonly Scalar _stepMagnitude;
-    private readonly Scalar _startCoordinate;
-    private readonly Scalar _endCoordinate;
+    private readonly Proportion _leadLength;
+    private readonly Proportion _visibleLength;
+    private readonly Proportion _routeLength;
+    private readonly Proportion _stepMagnitude;
+    private readonly Proportion _startCoordinate;
+    private readonly Proportion _endCoordinate;
+    private readonly Proportion _visibleSpan;
     private readonly int _hiddenDirection;
     private readonly int _visibleDirection;
     private bool _needsStartJump;
-    private Scalar _routePosition;
+    private Proportion _routePosition;
     private int _direction;
     private BoundaryContinuationLaw _law;
 
@@ -25,17 +26,18 @@ public sealed class PlanarSegmentRuntime
         ArgumentNullException.ThrowIfNull(definition);
 
         _definition = definition;
-        _startCoordinate = definition.Segment.Start;
-        _endCoordinate = definition.Segment.End;
+        _startCoordinate = definition.Segment.StartCoordinate;
+        _endCoordinate = definition.Segment.EndCoordinate;
+        _visibleSpan = definition.Segment.CoordinateSpan;
         _leadLength = _startCoordinate.Abs();
-        _visibleLength = (_endCoordinate - _startCoordinate).Abs();
+        _visibleLength = _visibleSpan.Abs();
         _routeLength = _leadLength + _visibleLength;
-        _routeCarrier = Axis.FromCoordinates(Scalar.Zero, _routeLength);
+        _routeCarrier = Axis.FromCoordinates(Proportion.Zero, _routeLength);
         _stepMagnitude = definition.ComputeStep().Abs();
         _hiddenDirection = _startCoordinate.Sign;
-        _visibleDirection = (_endCoordinate - _startCoordinate).Sign;
+        _visibleDirection = _visibleSpan.Sign;
         _direction = definition.ComputeStep().Sign < 0 ? -1 : 1;
-        _routePosition = _direction < 0 ? _routeLength : Scalar.Zero;
+        _routePosition = _direction < 0 ? _routeLength : Proportion.Zero;
         _needsStartJump = _direction < 0 && !_routePosition.IsZero;
         _law = definition.Law;
     }
@@ -50,13 +52,13 @@ public sealed class PlanarSegmentRuntime
         var parts = new List<PlanarTraversalMotion>();
         if (_needsStartJump)
         {
-            AddInvisibleJump(Scalar.Zero, _routePosition, parts);
+            AddInvisibleJump(Proportion.Zero, _routePosition, parts);
             _needsStartJump = false;
         }
 
-        Scalar remaining = _stepMagnitude;
+        Proportion remaining = _stepMagnitude;
 
-        while (remaining > Scalar.Zero)
+        while (remaining > Proportion.Zero)
         {
             if (_law == BoundaryContinuationLaw.ReflectiveBounce)
             {
@@ -65,16 +67,16 @@ public sealed class PlanarSegmentRuntime
                     break;
                 }
 
-                Scalar edge = _direction > 0 ? _routeCarrier.Right : _routeCarrier.Left;
-                Scalar distanceToEdge = (edge - _routePosition).Abs();
+                Proportion edge = _direction > 0 ? _routeCarrier.EndCoordinate : _routeCarrier.StartCoordinate;
+                Proportion distanceToEdge = (edge - _routePosition).Abs();
                 if (distanceToEdge.IsZero)
                 {
                     _direction *= -1;
                     continue;
                 }
 
-                Scalar travel = Scalar.Min(remaining, distanceToEdge);
-                Scalar next = _direction > 0
+                Proportion travel = Proportion.Min(remaining, distanceToEdge);
+                Proportion next = _direction > 0
                     ? _routePosition + travel
                     : _routePosition - travel;
                 bool endsStroke = remaining > travel && next == edge;
@@ -82,7 +84,7 @@ public sealed class PlanarSegmentRuntime
                 _routePosition = next;
                 remaining -= travel;
 
-                if (remaining > Scalar.Zero && _routePosition == edge)
+                if (remaining > Proportion.Zero && _routePosition == edge)
                 {
                     _direction *= -1;
                 }
@@ -97,19 +99,19 @@ public sealed class PlanarSegmentRuntime
                     break;
                 }
 
-                Scalar edge = _direction > 0 ? _routeCarrier.Right : _routeCarrier.Left;
-                Scalar distanceToEdge = (edge - _routePosition).Abs();
-                Scalar travel = Scalar.Min(remaining, distanceToEdge);
-                Scalar next = _direction > 0
+                Proportion edge = _direction > 0 ? _routeCarrier.EndCoordinate : _routeCarrier.StartCoordinate;
+                Proportion distanceToEdge = (edge - _routePosition).Abs();
+                Proportion travel = Proportion.Min(remaining, distanceToEdge);
+                Proportion next = _direction > 0
                     ? _routePosition + travel
                     : _routePosition - travel;
                 AddRouteMotion(_routePosition, next, parts);
                 _routePosition = next;
                 remaining -= travel;
 
-                if (remaining > Scalar.Zero && _routePosition == edge)
+                if (remaining > Proportion.Zero && _routePosition == edge)
                 {
-                    Scalar wrapped = _direction > 0 ? _routeCarrier.Left : _routeCarrier.Right;
+                    Proportion wrapped = _direction > 0 ? _routeCarrier.StartCoordinate : _routeCarrier.EndCoordinate;
                     AddInvisibleJump(_routePosition, wrapped, parts);
                     _routePosition = wrapped;
                 }
@@ -119,22 +121,22 @@ public sealed class PlanarSegmentRuntime
 
             if (_law == BoundaryContinuationLaw.Clamp)
             {
-                Scalar unclamped = _direction > 0
+                Proportion unclamped = _direction > 0
                     ? _routePosition + remaining
                     : _routePosition - remaining;
-                Scalar next = unclamped.Clamp(_routeCarrier.Left, _routeCarrier.Right);
+                Proportion next = ClampToRoute(unclamped);
                 AddRouteMotion(_routePosition, next, parts);
                 _routePosition = next;
-                remaining = Scalar.Zero;
+                remaining = Proportion.Zero;
                 continue;
             }
 
-            Scalar continued = _direction > 0
+            Proportion continued = _direction > 0
                 ? _routePosition + remaining
                 : _routePosition - remaining;
             AddRouteMotion(_routePosition, continued, parts);
             _routePosition = continued;
-            remaining = Scalar.Zero;
+            remaining = Proportion.Zero;
         }
 
         return new PlanarTraversalEmission(parts);
@@ -142,7 +144,7 @@ public sealed class PlanarSegmentRuntime
 
     public void SetLaw(BoundaryContinuationLaw law) => _law = law;
 
-    private void AddRouteMotion(Scalar from, Scalar to, List<PlanarTraversalMotion> parts, bool endsStroke = false)
+    private void AddRouteMotion(Proportion from, Proportion to, List<PlanarTraversalMotion> parts, bool endsStroke = false)
     {
         if (from == to || _routeLength.IsZero)
         {
@@ -152,30 +154,30 @@ public sealed class PlanarSegmentRuntime
         var slices = SplitAtLeadBoundary(from, to).ToArray();
         for (int index = 0; index < slices.Length; index++)
         {
-            var segment = slices[index];
-            if (segment.From == segment.To)
-                {
-                    continue;
-                }
-
-                Scalar worldFrom = MapRouteToWorld(segment.From);
-                Scalar worldTo = MapRouteToWorld(segment.To);
-                if (worldFrom == worldTo)
-                {
-                    continue;
-                }
-
-                parts.Add(new PlanarTraversalMotion(
-                    _definition.Project(worldTo - worldFrom),
-                    segment.IsVisible,
-                    endsStroke && segment.IsVisible && index == slices.Length - 1));
+            var slice = slices[index];
+            if (slice.Route.IsDegenerate)
+            {
+                continue;
             }
+
+            Proportion worldFrom = MapRouteToWorld(slice.Route.StartCoordinate);
+            Proportion worldTo = MapRouteToWorld(slice.Route.EndCoordinate);
+            if (worldFrom == worldTo)
+            {
+                continue;
+            }
+
+            parts.Add(new PlanarTraversalMotion(
+                _definition.Project(worldTo - worldFrom),
+                slice.IsVisible,
+                endsStroke && slice.IsVisible && index == slices.Length - 1));
+        }
     }
 
-    private void AddInvisibleJump(Scalar from, Scalar to, List<PlanarTraversalMotion> parts)
+    private void AddInvisibleJump(Proportion from, Proportion to, List<PlanarTraversalMotion> parts)
     {
-        Scalar worldFrom = MapRouteToWorld(from);
-        Scalar worldTo = MapRouteToWorld(to);
+        Proportion worldFrom = MapRouteToWorld(from);
+        Proportion worldTo = MapRouteToWorld(to);
         if (worldFrom == worldTo)
         {
             return;
@@ -185,29 +187,38 @@ public sealed class PlanarSegmentRuntime
             _definition.Project(worldTo - worldFrom)));
     }
 
-    private IEnumerable<RouteSlice> SplitAtLeadBoundary(Scalar from, Scalar to)
+    private IEnumerable<RouteSlice> SplitAtLeadBoundary(Proportion from, Proportion to)
     {
         bool ascending = to > from;
-        Scalar low = ascending ? from : to;
-        Scalar high = ascending ? to : from;
+        Proportion low = ascending ? from : to;
+        Proportion high = ascending ? to : from;
 
         if (_leadLength <= low || _leadLength >= high)
         {
-            yield return new RouteSlice(from, to, IsVisibleFor(from, to));
+            var route = Axis.FromCoordinates(from, to);
+            yield return new RouteSlice(route, IsVisibleFor(route));
             yield break;
         }
 
-        yield return new RouteSlice(from, _leadLength, IsVisibleFor(from, _leadLength));
-        yield return new RouteSlice(_leadLength, to, IsVisibleFor(_leadLength, to));
+        var leadSlice = Axis.FromCoordinates(from, _leadLength);
+        yield return new RouteSlice(leadSlice, IsVisibleFor(leadSlice));
+
+        var visibleSlice = Axis.FromCoordinates(_leadLength, to);
+        yield return new RouteSlice(visibleSlice, IsVisibleFor(visibleSlice));
     }
 
-    private bool IsVisibleFor(Scalar from, Scalar to)
+    private bool IsVisibleFor(Axis routeSegment)
     {
-        Scalar midpoint = Axis.FromCoordinates(from, to).Midpoint;
-        return midpoint >= _leadLength && !_visibleLength.IsZero;
+        if (_visibleLength.IsZero)
+        {
+            return false;
+        }
+
+        return routeSegment.StartCoordinate >= _leadLength &&
+               routeSegment.EndCoordinate >= _leadLength;
     }
 
-    private Scalar MapRouteToWorld(Scalar route)
+    private Proportion MapRouteToWorld(Proportion route)
     {
         if (route <= _leadLength)
         {
@@ -219,12 +230,27 @@ public sealed class PlanarSegmentRuntime
             return _startCoordinate;
         }
 
-        Scalar beyondVisibleStart = route - _leadLength;
+        Proportion beyondVisibleStart = route - _leadLength;
         return _startCoordinate + ApplyDirection(beyondVisibleStart, _visibleDirection);
     }
 
-    private static Scalar ApplyDirection(Scalar magnitude, int direction) =>
+    private Proportion ClampToRoute(Proportion value)
+    {
+        if (value < _routeCarrier.StartCoordinate)
+        {
+            return _routeCarrier.StartCoordinate;
+        }
+
+        if (value > _routeCarrier.EndCoordinate)
+        {
+            return _routeCarrier.EndCoordinate;
+        }
+
+        return value;
+    }
+
+    private static Proportion ApplyDirection(Proportion magnitude, int direction) =>
         direction < 0 ? -magnitude : magnitude;
 
-    private readonly record struct RouteSlice(Scalar From, Scalar To, bool IsVisible);
+    private readonly record struct RouteSlice(Axis Route, bool IsVisible);
 }

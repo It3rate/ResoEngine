@@ -22,11 +22,11 @@ public sealed class FriezePathResolver : IDynamicResolver<FriezePathState, Friez
         PlanarOffset netDelta = input.Proposals
             .Select(proposal => proposal.Effect.Delta)
             .Aggregate(PlanarOffset.Zero, static (sum, delta) => sum + delta);
-        bool horizontalVisible = input.Proposals.Any(proposal => proposal.Effect.Delta.Dx != 0 && proposal.Effect.IsVisible);
-        bool verticalVisible = input.Proposals.Any(proposal => proposal.Effect.Delta.Dy != 0 && proposal.Effect.IsVisible);
+        bool horizontalVisible = input.Proposals.Any(proposal => !proposal.Effect.Delta.Horizontal.IsZero && proposal.Effect.IsVisible);
+        bool verticalVisible = input.Proposals.Any(proposal => !proposal.Effect.Delta.Vertical.IsZero && proposal.Effect.IsVisible);
 
         var candidates = BuildCandidates(incoming, netDelta, horizontalVisible, verticalVisible);
-        Scalar bestScore = candidates.Min(candidate => candidate.Score);
+        Proportion bestScore = candidates.Select(candidate => candidate.Score).Aggregate(Proportion.Min);
         var viable = candidates
             .Where(candidate => candidate.Score == bestScore)
             .OrderBy(candidate => candidate.PreferencePenalty)
@@ -70,57 +70,57 @@ public sealed class FriezePathResolver : IDynamicResolver<FriezePathState, Friez
         var candidates = new List<FriezeCandidate>();
         if (netDelta.IsZero)
         {
-            candidates.Add(Commit(incoming, [], Scalar.Zero, "No net movement; state preserved."));
+            candidates.Add(Commit(incoming, [], Proportion.Zero, "No net movement; state preserved."));
             return candidates;
         }
 
-        if (netDelta.Dx != 0 && netDelta.Dy != 0)
+        if (!netDelta.Horizontal.IsZero && !netDelta.Vertical.IsZero)
         {
-            candidates.Add(Commit(incoming, [new PlanarTraversalMotion(new PlanarOffset(netDelta.Horizontal, Proportion.Zero), horizontalVisible), new PlanarTraversalMotion(new PlanarOffset(Proportion.Zero, netDelta.Vertical), verticalVisible)], CornerPenalty(netDelta.Vertical.Fold(), horizontalFirst: true), "Horizontal-first corner."));
-            candidates.Add(Commit(incoming, [new PlanarTraversalMotion(new PlanarOffset(Proportion.Zero, netDelta.Vertical), verticalVisible), new PlanarTraversalMotion(new PlanarOffset(netDelta.Horizontal, Proportion.Zero), horizontalVisible)], CornerPenalty(netDelta.Vertical.Fold(), horizontalFirst: false), "Vertical-first corner."));
+            candidates.Add(Commit(incoming, [new PlanarTraversalMotion(new PlanarOffset(netDelta.Horizontal, Proportion.Zero), horizontalVisible), new PlanarTraversalMotion(new PlanarOffset(Proportion.Zero, netDelta.Vertical), verticalVisible)], CornerPenalty(netDelta.Vertical, horizontalFirst: true), "Horizontal-first corner."));
+            candidates.Add(Commit(incoming, [new PlanarTraversalMotion(new PlanarOffset(Proportion.Zero, netDelta.Vertical), verticalVisible), new PlanarTraversalMotion(new PlanarOffset(netDelta.Horizontal, Proportion.Zero), horizontalVisible)], CornerPenalty(netDelta.Vertical, horizontalFirst: false), "Vertical-first corner."));
             return candidates;
         }
 
-        if (netDelta.Dx != 0)
+        if (!netDelta.Horizontal.IsZero)
         {
-            candidates.Add(Commit(incoming, [new PlanarTraversalMotion(new PlanarOffset(netDelta.Horizontal, Proportion.Zero), horizontalVisible)], Scalar.Zero, "Horizontal continuation."));
+            candidates.Add(Commit(incoming, [new PlanarTraversalMotion(new PlanarOffset(netDelta.Horizontal, Proportion.Zero), horizontalVisible)], Proportion.Zero, "Horizontal continuation."));
             return candidates;
         }
 
-        candidates.Add(Commit(incoming, [new PlanarTraversalMotion(new PlanarOffset(Proportion.Zero, netDelta.Vertical), verticalVisible)], Scalar.Zero, "Vertical continuation."));
+        candidates.Add(Commit(incoming, [new PlanarTraversalMotion(new PlanarOffset(Proportion.Zero, netDelta.Vertical), verticalVisible)], Proportion.Zero, "Vertical continuation."));
         return candidates;
     }
 
-    private static Scalar CornerPenalty(Scalar vertical, bool horizontalFirst)
+    private static Proportion CornerPenalty(Proportion vertical, bool horizontalFirst)
     {
-        if (vertical > Scalar.Zero)
+        if (vertical > Proportion.Zero)
         {
-            return horizontalFirst ? new Scalar(0.25m) : Scalar.Zero;
+            return horizontalFirst ? new Proportion(1, 4) : Proportion.Zero;
         }
 
-        if (vertical < Scalar.Zero)
+        if (vertical < Proportion.Zero)
         {
-            return horizontalFirst ? Scalar.Zero : new Scalar(0.25m);
+            return horizontalFirst ? Proportion.Zero : new Proportion(1, 4);
         }
 
-        return Scalar.Zero;
+        return Proportion.Zero;
     }
 
     private static FriezeCandidate Commit(
         DynamicContext<FriezePathState, FriezeEnvironment> incoming,
         IReadOnlyList<PlanarTraversalMotion> sequence,
-        Scalar preferencePenalty,
+        Proportion preferencePenalty,
         string note)
     {
         var cursor = incoming.State.Cursor;
         var edges = new List<PlanarPathEdge>();
         var tensions = new List<DynamicTension>();
-        Scalar score = preferencePenalty;
+        Proportion score = preferencePenalty;
 
         foreach (var motion in sequence)
         {
             var delta = motion.Delta;
-            if (delta.Dx == 0 && delta.Dy == 0)
+            if (delta.IsZero)
             {
                 continue;
             }
@@ -133,7 +133,7 @@ public sealed class FriezePathResolver : IDynamicResolver<FriezePathState, Friez
                     "VerticalBounds",
                     $"Move to y={next.Y} exceeds frieze bounds [{incoming.Environment.MinY}, {incoming.Environment.MaxY}].",
                     10m));
-                score += new Scalar(10m);
+                score += new Proportion(10);
             }
 
             if (incoming.Environment.Contains(edge))
@@ -142,7 +142,7 @@ public sealed class FriezePathResolver : IDynamicResolver<FriezePathState, Friez
                     "EdgeReuse",
                     $"Segment {edge.Start} -> {edge.End} was already occupied.",
                     3m));
-                score += new Scalar(3m);
+                score += new Proportion(3);
             }
 
             if (motion.IsVisible)
@@ -156,7 +156,7 @@ public sealed class FriezePathResolver : IDynamicResolver<FriezePathState, Friez
         var nextState = new FriezePathState(
             cursor,
             incoming.State.Segments.Concat(edges).ToArray(),
-            incoming.State.MacroStepValue + Scalar.One);
+            incoming.State.MacroStepValue + Proportion.One);
 
         var nextEnvironment = incoming.Environment.WithAddedEdges(edges);
         return new FriezeCandidate(
@@ -170,7 +170,7 @@ public sealed class FriezePathResolver : IDynamicResolver<FriezePathState, Friez
     private sealed record FriezeCandidate(
         DynamicContext<FriezePathState, FriezeEnvironment> Context,
         IReadOnlyList<DynamicTension> Tensions,
-        Scalar Score,
-        Scalar PreferencePenalty,
+        Proportion Score,
+        Proportion PreferencePenalty,
         string Note);
 }

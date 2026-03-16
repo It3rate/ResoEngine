@@ -73,4 +73,23 @@ public class ProportionTests
 
         Assert.Equal(new Scalar(decimal.MaxValue), proportion.Fold());
     }
+
+    [Fact]
+    public void ComparisonAndAbs_WorkInProportionSpace()
+    {
+        var negative = new Proportion(-3, 2);
+        var positive = new Proportion(1, 4);
+
+        Assert.True(negative < positive);
+        Assert.Equal(new Proportion(3, 2), negative.Abs());
+        Assert.Equal(new Proportion(1, 4), Proportion.Min(positive, new Proportion(2, 3)));
+    }
+
+    [Fact]
+    public void ScalarPin_RaisesDegreeIntoAProportion()
+    {
+        var proportion = new Scalar(5).Pin(new Scalar(2));
+
+        Assert.Equal(new Proportion(5, 2), proportion);
+    }
 }

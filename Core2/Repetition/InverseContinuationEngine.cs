@@ -77,7 +77,7 @@ public static class InverseContinuationEngine
         {
             foreach (var recessiveRoot in denominator.Candidates)
             {
-                candidates.Add(Proportion.FromScalars(dominantRoot, recessiveRoot));
+                candidates.Add(dominantRoot.Pin(recessiveRoot));
             }
         }
 

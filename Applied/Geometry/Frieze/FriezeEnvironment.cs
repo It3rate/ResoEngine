@@ -10,16 +10,21 @@ public sealed record FriezeEnvironment(
     public static FriezeEnvironment Create(int minY, int maxY) =>
         new(Axis.FromCoordinates(minY, maxY), new HashSet<PlanarPathEdge>());
 
+    public static FriezeEnvironment Create(Proportion minY, Proportion maxY) =>
+        new(Axis.FromCoordinates(minY, maxY), new HashSet<PlanarPathEdge>());
+
     public int MinY => PlanarValueConverter.ToInt(VerticalBounds.Left);
     public int MaxY => PlanarValueConverter.ToInt(VerticalBounds.Right);
 
     public bool Contains(PlanarPathEdge edge) => OccupiedEdges.Contains(edge.Normalize());
 
-    public bool Contains(PlanarPoint point) => ContainsY(point.Vertical.Fold());
+    public bool Contains(PlanarPoint point) => ContainsY(point.Vertical);
 
     public bool ContainsY(int y) => ContainsY(new Scalar(y));
 
     public bool ContainsY(Scalar y) => VerticalBounds.Contains(y);
+
+    public bool ContainsY(Proportion y) => VerticalBounds.Contains(y);
 
     public FriezeEnvironment WithAddedEdges(IEnumerable<PlanarPathEdge> edges)
     {

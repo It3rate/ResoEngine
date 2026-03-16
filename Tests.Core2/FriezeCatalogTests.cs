@@ -194,22 +194,22 @@ public class FriezeCatalogTests
         [
             new PlanarSegmentDefinition(
                 "X0",
-                Axis.FromCoordinates(Scalar.Zero, 1),
+                Axis.FromCoordinates(Proportion.Zero, Proportion.One),
                 BoundaryContinuationLaw.ReflectiveBounce,
                 PlanarOffset.Right,
-                Scalar.One),
+                Proportion.One),
             new PlanarSegmentDefinition(
                 "Y0",
-                Axis.FromCoordinates(Scalar.Zero, 2),
+                Axis.FromCoordinates(Proportion.Zero, new Proportion(2)),
                 BoundaryContinuationLaw.ReflectiveBounce,
                 PlanarOffset.Up,
-                Scalar.One),
+                Proportion.One),
             new PlanarSegmentDefinition(
                 "X1",
-                Axis.FromCoordinates(Scalar.Zero, 4),
+                Axis.FromCoordinates(Proportion.Zero, new Proportion(4)),
                 BoundaryContinuationLaw.TensionPreserving,
                 PlanarOffset.Right,
-                new Scalar(4m),
+                new Proportion(4),
                 UseSegmentAsFrame: false),
         ];
 
@@ -241,10 +241,10 @@ public class FriezeCatalogTests
     {
         var definition = new PlanarSegmentDefinition(
             "X0",
-            Axis.FromCoordinates(-1, 1),
+            Axis.FromCoordinates(new Proportion(-1), Proportion.One),
             BoundaryContinuationLaw.ReflectiveBounce,
             PlanarOffset.Right,
-            Scalar.One);
+            Proportion.One);
 
         var pattern = new FriezePattern(
             "lead-in",
@@ -272,10 +272,10 @@ public class FriezeCatalogTests
     {
         var definition = new PlanarSegmentDefinition(
             "X0",
-            Axis.FromCoordinates(-1, 1),
+            Axis.FromCoordinates(new Proportion(-1), Proportion.One),
             BoundaryContinuationLaw.ReflectiveBounce,
             PlanarOffset.Right,
-            Scalar.One);
+            Proportion.One);
 
         var pattern = new FriezePattern(
             "lead-in",
@@ -312,10 +312,10 @@ public class FriezeCatalogTests
     {
         var definition = new PlanarSegmentDefinition(
             "X1",
-            Axis.FromCoordinates(Scalar.Zero, 2),
+            Axis.FromCoordinates(Proportion.Zero, new Proportion(2)),
             BoundaryContinuationLaw.ReflectiveBounce,
             PlanarOffset.Right,
-            new Scalar(3m));
+            new Proportion(3));
 
         var pattern = new FriezePattern(
             "overshoot",

@@ -28,10 +28,15 @@ public readonly record struct PlanarOffset(ElementGroup<Proportion> Components)
     public Proportion Vertical => Components[1];
     public int Dx => PlanarValueConverter.ToInt(Horizontal);
     public int Dy => PlanarValueConverter.ToInt(Vertical);
-    public bool IsZero => Dx == 0 && Dy == 0;
+    public bool IsZero => Horizontal.IsZero && Vertical.IsZero;
 
     public static PlanarOffset operator +(PlanarOffset left, PlanarOffset right) =>
         new(left.Horizontal + right.Horizontal, left.Vertical + right.Vertical);
+
+    public static PlanarOffset operator *(PlanarOffset offset, Proportion scale) =>
+        new(offset.Horizontal * scale, offset.Vertical * scale);
+
+    public static PlanarOffset operator *(Proportion scale, PlanarOffset offset) => offset * scale;
 
     public bool Equals(PlanarOffset other) =>
         Horizontal == other.Horizontal && Vertical == other.Vertical;

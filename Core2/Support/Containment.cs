@@ -122,7 +122,7 @@ internal static class ContainmentAnalysis
 
         var normalized = child switch
         {
-            Scalar scalar => Proportion.FromRecessiveDominant(parent.Recessive, scalar),
+            Scalar scalar => scalar.Pin(parent.Recessive),
             Proportion proportion => proportion,
             _ => throw new InvalidOperationException("Unreachable child normalization."),
         };
@@ -340,7 +340,7 @@ internal static class ContainmentAnalysis
         metrics.Add(new ContainmentTensionMeasure(
             kind,
             path,
-            Proportion.FromRecessiveDominant((Scalar)denominator, (Scalar)numerator),
+            ((Scalar)numerator).Pin((Scalar)denominator),
             basis));
     }
 
