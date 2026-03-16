@@ -1,5 +1,5 @@
+using Applied.Geometry.Frieze;
 using Core2.Elements;
-using Core2.Geometry;
 using Core2.Repetition;
 using ResoEngine.Visualizer.Adapt;
 using ResoEngine.Visualizer.Controls;

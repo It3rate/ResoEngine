@@ -1,5 +1,6 @@
+using Applied.Geometry.Frieze;
+using Applied.Geometry.Utils;
 using Core2.Elements;
-using Core2.Geometry;
 using Core2.Repetition;
 using ResoEngine.Visualizer.Adapt;
 using ResoEngine.Visualizer.Controls;
@@ -651,7 +652,7 @@ public class StripPatternEditorPage : IVisualizerPage
     {
         var basePattern = _basePatterns[_selectedPatternIndex];
         var equations = _editorSegments.Select(editor => editor.ToDefinition()).ToArray();
-        var loop = new List<StripEquationCommand>();
+        var loop = new List<EquationCommand>();
         int lastActiveColumn = _workingColumns.FindLastIndex(column => column.Count > 0);
         if (lastActiveColumn < 0)
         {
@@ -663,10 +664,10 @@ public class StripPatternEditorPage : IVisualizerPage
             var column = _workingColumns[columnIndex];
             foreach (var equationName in column)
             {
-                loop.Add(StripEquationCommand.Fire(equationName));
+                loop.Add(EquationCommand.Fire(equationName));
             }
 
-            loop.Add(StripEquationCommand.Commit());
+            loop.Add(EquationCommand.Commit());
         }
 
         var program = new StripEquationProgram(
@@ -967,10 +968,10 @@ public class StripPatternEditorPage : IVisualizerPage
         {
             switch (command.Kind)
             {
-                case StripEquationCommandKind.Fire when command.EquationName is not null:
+                case CommandKind.Fire when command.EquationName is not null:
                     current.Add(command.EquationName);
                     break;
-                case StripEquationCommandKind.Commit:
+                case CommandKind.Commit:
                     columns.Add(current);
                     current = [];
                     break;

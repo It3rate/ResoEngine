@@ -1,6 +1,7 @@
-using Core2.Geometry;
 using Core2.Elements;
 using Core2.Repetition;
+using Applied.Geometry.Utils;
+using Applied.Geometry.Frieze;
 
 namespace Tests.Core2;
 
@@ -36,11 +37,11 @@ public class StripOrnamentCatalogTests
         var result = StripOrnamentComposer.Compose(pattern, 1);
 
         var deltas = result.Segments
-            .Select(segment => new StripDelta(segment.End.X - segment.Start.X, segment.End.Y - segment.Start.Y))
+            .Select(segment => new Directions2D(segment.End.X - segment.Start.X, segment.End.Y - segment.Start.Y))
             .ToArray();
 
         Assert.Equal(
-            [new StripDelta(0, 2), new StripDelta(2, 0)],
+            [new Directions2D(0, 2), new Directions2D(2, 0)],
             deltas);
     }
 
@@ -51,11 +52,11 @@ public class StripOrnamentCatalogTests
         var result = StripOrnamentComposer.Compose(pattern, 2);
 
         var deltas = result.Segments
-            .Select(segment => new StripDelta(segment.End.X - segment.Start.X, segment.End.Y - segment.Start.Y))
+            .Select(segment => new Directions2D(segment.End.X - segment.Start.X, segment.End.Y - segment.Start.Y))
             .ToArray();
 
         Assert.Equal(
-            [new StripDelta(2, 2), new StripDelta(2, -2)],
+            [new Directions2D(2, 2), new Directions2D(2, -2)],
             deltas);
     }
 
@@ -66,21 +67,21 @@ public class StripOrnamentCatalogTests
         var result = StripOrnamentComposer.Compose(pattern, 1);
 
         var deltas = result.Segments
-            .Select(segment => new StripDelta(segment.End.X - segment.Start.X, segment.End.Y - segment.Start.Y))
+            .Select(segment => new Directions2D(segment.End.X - segment.Start.X, segment.End.Y - segment.Start.Y))
             .ToArray();
 
         Assert.Equal(
             [
-                StripDelta.Right,
-                StripDelta.Up,
-                StripDelta.Left,
-                StripDelta.Up,
-                new StripDelta(2, 0),
-                StripDelta.Right,
-                StripDelta.Down,
-                StripDelta.Left,
-                StripDelta.Down,
-                new StripDelta(2, 0),
+                Directions2D.Right,
+                Directions2D.Up,
+                Directions2D.Left,
+                Directions2D.Up,
+                new Directions2D(2, 0),
+                Directions2D.Right,
+                Directions2D.Down,
+                Directions2D.Left,
+                Directions2D.Down,
+                new Directions2D(2, 0),
             ],
             deltas);
     }
@@ -92,17 +93,17 @@ public class StripOrnamentCatalogTests
         var result = StripOrnamentComposer.Compose(pattern, 1);
 
         var deltas = result.Segments
-            .Select(segment => new StripDelta(segment.End.X - segment.Start.X, segment.End.Y - segment.Start.Y))
+            .Select(segment => new Directions2D(segment.End.X - segment.Start.X, segment.End.Y - segment.Start.Y))
             .ToArray();
 
         Assert.Equal(
             [
-                StripDelta.Right,
-                new StripDelta(-1, 2),
-                new StripDelta(2, 0),
-                StripDelta.Right,
-                new StripDelta(-1, -2),
-                new StripDelta(2, 0),
+                Directions2D.Right,
+                new Directions2D(-1, 2),
+                new Directions2D(2, 0),
+                Directions2D.Right,
+                new Directions2D(-1, -2),
+                new Directions2D(2, 0),
             ],
             deltas);
     }
@@ -114,17 +115,17 @@ public class StripOrnamentCatalogTests
         var result = StripOrnamentComposer.Compose(pattern, 1);
 
         var deltas = result.Segments
-            .Select(segment => new StripDelta(segment.End.X - segment.Start.X, segment.End.Y - segment.Start.Y))
+            .Select(segment => new Directions2D(segment.End.X - segment.Start.X, segment.End.Y - segment.Start.Y))
             .ToArray();
 
         Assert.Equal(
             [
-                new StripDelta(1, 1),
-                new StripDelta(-1, 1),
-                new StripDelta(2, 0),
-                new StripDelta(1, -1),
-                new StripDelta(-1, -1),
-                new StripDelta(2, 0),
+                new Directions2D(1, 1),
+                new Directions2D(-1, 1),
+                new Directions2D(2, 0),
+                new Directions2D(1, -1),
+                new Directions2D(-1, -1),
+                new Directions2D(2, 0),
             ],
             deltas);
     }
@@ -136,18 +137,18 @@ public class StripOrnamentCatalogTests
         var result = StripOrnamentComposer.Compose(pattern, 1);
 
         var deltas = result.Segments
-            .Select(segment => new StripDelta(segment.End.X - segment.Start.X, segment.End.Y - segment.Start.Y))
+            .Select(segment => new Directions2D(segment.End.X - segment.Start.X, segment.End.Y - segment.Start.Y))
             .ToArray();
 
         Assert.Equal(
             [
-                StripDelta.Right,
-                StripDelta.Up,
-                StripDelta.Left,
-                StripDelta.Up,
-                StripDelta.Right,
-                StripDelta.Down,
-                new StripDelta(2, 0),
+                Directions2D.Right,
+                Directions2D.Up,
+                Directions2D.Left,
+                Directions2D.Up,
+                Directions2D.Right,
+                Directions2D.Down,
+                new Directions2D(2, 0),
             ],
             deltas);
     }
@@ -159,19 +160,19 @@ public class StripOrnamentCatalogTests
         var result = StripOrnamentComposer.Compose(pattern, 1);
 
         var deltas = result.Segments
-            .Select(segment => new StripDelta(segment.End.X - segment.Start.X, segment.End.Y - segment.Start.Y))
+            .Select(segment => new Directions2D(segment.End.X - segment.Start.X, segment.End.Y - segment.Start.Y))
             .ToArray();
 
         Assert.Equal(
             [
-                StripDelta.Up,
-                new StripDelta(2, 0),
-                StripDelta.Up,
-                new StripDelta(2, 0),
-                StripDelta.Down,
-                new StripDelta(2, 0),
-                StripDelta.Down,
-                new StripDelta(2, 0),
+                Directions2D.Up,
+                new Directions2D(2, 0),
+                Directions2D.Up,
+                new Directions2D(2, 0),
+                Directions2D.Down,
+                new Directions2D(2, 0),
+                Directions2D.Down,
+                new Directions2D(2, 0),
             ],
             deltas);
     }
@@ -195,19 +196,19 @@ public class StripOrnamentCatalogTests
                 "X0",
                 Axis.FromCoordinates(Scalar.Zero, 1),
                 BoundaryContinuationLaw.ReflectiveBounce,
-                StripDelta.Right,
+                Directions2D.Right,
                 Scalar.One),
             new StripSegmentDefinition(
                 "Y0",
                 Axis.FromCoordinates(Scalar.Zero, 2),
                 BoundaryContinuationLaw.ReflectiveBounce,
-                StripDelta.Up,
+                Directions2D.Up,
                 Scalar.One),
             new StripSegmentDefinition(
                 "X1",
                 Axis.FromCoordinates(Scalar.Zero, 4),
                 BoundaryContinuationLaw.TensionPreserving,
-                StripDelta.Right,
+                Directions2D.Right,
                 new Scalar(4m),
                 UseSegmentAsFrame: false),
         ];
@@ -216,21 +217,21 @@ public class StripOrnamentCatalogTests
         var result = StripOrnamentComposer.Compose(pattern, 1);
 
         var deltas = result.Segments
-            .Select(segment => new StripDelta(segment.End.X - segment.Start.X, segment.End.Y - segment.Start.Y))
+            .Select(segment => new Directions2D(segment.End.X - segment.Start.X, segment.End.Y - segment.Start.Y))
             .ToArray();
 
         Assert.Equal(
             [
-                new StripDelta(1, 0),
-                new StripDelta(0, 1),
-                new StripDelta(-1, 0),
-                new StripDelta(0, 1),
-                new StripDelta(4, 0),
-                new StripDelta(1, 0),
-                new StripDelta(0, -1),
-                new StripDelta(-1, 0),
-                new StripDelta(0, -1),
-                new StripDelta(4, 0),
+                new Directions2D(1, 0),
+                new Directions2D(0, 1),
+                new Directions2D(-1, 0),
+                new Directions2D(0, 1),
+                new Directions2D(4, 0),
+                new Directions2D(1, 0),
+                new Directions2D(0, -1),
+                new Directions2D(-1, 0),
+                new Directions2D(0, -1),
+                new Directions2D(4, 0),
             ],
             deltas);
     }
@@ -242,7 +243,7 @@ public class StripOrnamentCatalogTests
             "X0",
             Axis.FromCoordinates(-1, 1),
             BoundaryContinuationLaw.ReflectiveBounce,
-            StripDelta.Right,
+            Directions2D.Right,
             Scalar.One);
 
         var pattern = new StripOrnamentPattern(
@@ -256,7 +257,7 @@ public class StripOrnamentCatalogTests
             Program = new StripEquationProgram(
                 [definition],
                 [
-                    StripEquationCommand.Fire("X0"), StripEquationCommand.Commit(),
+                    EquationCommand.Fire("X0"), EquationCommand.Commit(),
                 ]),
         };
 
@@ -273,7 +274,7 @@ public class StripOrnamentCatalogTests
             "X0",
             Axis.FromCoordinates(-1, 1),
             BoundaryContinuationLaw.ReflectiveBounce,
-            StripDelta.Right,
+            Directions2D.Right,
             Scalar.One);
 
         var pattern = new StripOrnamentPattern(
@@ -287,21 +288,21 @@ public class StripOrnamentCatalogTests
             Program = new StripEquationProgram(
                 [definition],
                 [
-                    StripEquationCommand.Fire("X0"), StripEquationCommand.Commit(),
-                    StripEquationCommand.Fire("X0"), StripEquationCommand.Commit(),
-                    StripEquationCommand.Fire("X0"), StripEquationCommand.Commit(),
+                    EquationCommand.Fire("X0"), EquationCommand.Commit(),
+                    EquationCommand.Fire("X0"), EquationCommand.Commit(),
+                    EquationCommand.Fire("X0"), EquationCommand.Commit(),
                 ]),
         };
 
         var result = StripOrnamentComposer.Compose(pattern, 1);
         var deltas = result.Segments
-            .Select(segment => new StripDelta(segment.End.X - segment.Start.X, segment.End.Y - segment.Start.Y))
+            .Select(segment => new Directions2D(segment.End.X - segment.Start.X, segment.End.Y - segment.Start.Y))
             .ToArray();
 
         Assert.Equal(
             [
-                StripDelta.Right,
-                StripDelta.Right,
+                Directions2D.Right,
+                Directions2D.Right,
             ],
             deltas);
     }
@@ -313,7 +314,7 @@ public class StripOrnamentCatalogTests
             "X1",
             Axis.FromCoordinates(Scalar.Zero, 2),
             BoundaryContinuationLaw.ReflectiveBounce,
-            StripDelta.Right,
+            Directions2D.Right,
             new Scalar(3m));
 
         var pattern = new StripOrnamentPattern(
@@ -327,7 +328,7 @@ public class StripOrnamentCatalogTests
             Program = new StripEquationProgram(
                 [definition],
                 [
-                    StripEquationCommand.Fire("X1"), StripEquationCommand.Commit(),
+                    EquationCommand.Fire("X1"), EquationCommand.Commit(),
                 ]),
         };
 

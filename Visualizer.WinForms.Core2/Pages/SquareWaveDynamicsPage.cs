@@ -1,5 +1,6 @@
+using Applied.Geometry.Frieze;
+using Applied.Geometry.Utils;
 using Core2.Dynamic;
-using Core2.Geometry;
 using ResoEngine.Visualizer.Controls;
 using ResoEngine.Visualizer.Core;
 using ResoEngine.Visualizer.Input;
@@ -88,7 +89,7 @@ public class SquareWaveDynamicsPage : IVisualizerPage
     private SkiaCanvas? _canvasHost;
     private Panel? _controlsPanel;
     private NumericUpDown? _stepInput;
-    private DynamicTrace<StripPathState, StripEnvironment, StripEffect>? _trace;
+    private DynamicTrace<StripPathState, StripEnvironment, Orientation2D>? _trace;
     private int _cachedSteps = -1;
 
     public string Title => "Square Wave Dynamics";
@@ -290,7 +291,7 @@ public class SquareWaveDynamicsPage : IVisualizerPage
     private void DrawSummary(
         SKCanvas canvas,
         SKRect rect,
-        DynamicTrace<StripPathState, StripEnvironment, StripEffect> trace)
+        DynamicTrace<StripPathState, StripEnvironment, Orientation2D> trace)
     {
         string summary =
             $"steps {_cachedSteps}   ·   segments {trace.SelectedContext!.State.Segments.Count}   ·   " +

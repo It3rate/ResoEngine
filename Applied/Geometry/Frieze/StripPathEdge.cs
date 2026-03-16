@@ -1,4 +1,4 @@
-namespace Core2.Geometry;
+namespace Applied.Geometry.Frieze;
 
 public readonly record struct StripPathEdge(StripPoint Start, StripPoint End)
 {

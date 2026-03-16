@@ -1,7 +1,8 @@
+using Applied.Geometry.Utils;
 using Core2.Elements;
 using Core2.Repetition;
 
-namespace Core2.Geometry;
+namespace Applied.Geometry.Frieze;
 
 public static class StripOrnamentCatalog
 {
@@ -13,19 +14,19 @@ public static class StripOrnamentCatalog
             "X0",
             Axis.FromCoordinates(Scalar.Zero, Scalar.One),
             BoundaryContinuationLaw.ReflectiveBounce,
-            StripDelta.Right,
+            Directions2D.Right,
             Scalar.One),
         new StripSegmentDefinition(
             "Y0",
             Axis.FromCoordinates(Scalar.Zero, 2),
             BoundaryContinuationLaw.ReflectiveBounce,
-            StripDelta.Up,
+            Directions2D.Up,
             Scalar.One),
         new StripSegmentDefinition(
             "X1",
             Axis.FromCoordinates(Scalar.Zero, 2),
             BoundaryContinuationLaw.TensionPreserving,
-            StripDelta.Right,
+            Directions2D.Right,
             new Scalar(2m),
             UseSegmentAsFrame: false),
     ];
@@ -202,16 +203,16 @@ public static class StripOrnamentCatalog
 
     private static StripEquationProgram Program(
         IReadOnlyList<StripSegmentDefinition> equations,
-        IReadOnlyList<StripEquationCommand> loop,
-        IReadOnlyList<StripEquationCommand>? prelude = null) =>
+        IReadOnlyList<EquationCommand> loop,
+        IReadOnlyList<EquationCommand>? prelude = null) =>
         new(equations, loop, prelude);
 
-    private static StripEquationCommand Fire(string equationName) =>
-        StripEquationCommand.Fire(equationName);
+    private static EquationCommand Fire(string equationName) =>
+        EquationCommand.Fire(equationName);
 
-    private static StripEquationCommand Commit() =>
-        StripEquationCommand.Commit();
+    private static EquationCommand Commit() =>
+        EquationCommand.Commit();
 
-    private static StripEquationCommand SetLaw(string equationName, BoundaryContinuationLaw law) =>
-        StripEquationCommand.SetLaw(equationName, law);
+    private static EquationCommand SetLaw(string equationName, BoundaryContinuationLaw law) =>
+        EquationCommand.SetLaw(equationName, law);
 }

@@ -1,13 +1,14 @@
+using Applied.Geometry.Utils;
 using Core2.Elements;
 using Core2.Repetition;
 
-namespace Core2.Geometry;
+namespace Applied.Geometry.Frieze;
 
 public sealed record StripSegmentDefinition(
     string Name,
     Axis Segment,
     BoundaryContinuationLaw Law,
-    StripDelta AxisVector,
+    Directions2D AxisVector,
     Scalar Step,
     bool UseSegmentAsFrame = true,
     Scalar? Seed = null)
@@ -39,10 +40,10 @@ public sealed record StripSegmentDefinition(
         return $"{frameText} · {stepText} · {lawText}";
     }
 
-    public StripDelta Project(Scalar delta)
+    public Directions2D Project(Scalar delta)
     {
         int amount = decimal.ToInt32(decimal.Round(delta.Value, 0, MidpointRounding.AwayFromZero));
-        return new StripDelta(AxisVector.Dx * amount, AxisVector.Dy * amount);
+        return new Directions2D(AxisVector.Dx * amount, AxisVector.Dy * amount);
     }
 
     private static string Format(Scalar value) =>

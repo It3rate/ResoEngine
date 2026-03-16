@@ -1,16 +1,18 @@
-namespace Core2.Geometry;
+using Applied.Geometry.Utils;
+
+namespace Applied.Geometry.Frieze;
 
 public sealed record StripOrnamentStrand(
     string Name,
     string Rhythm,
     string Description,
-    IReadOnlyList<StripDelta> Cycle)
+    IReadOnlyList<Directions2D> Cycle)
 {
-    public StripDelta DeltaAt(int stepIndex)
+    public Directions2D DeltaAt(int stepIndex)
     {
         if (Cycle.Count == 0)
         {
-            return StripDelta.Zero;
+            return Directions2D.Zero;
         }
 
         int index = ((stepIndex % Cycle.Count) + Cycle.Count) % Cycle.Count;

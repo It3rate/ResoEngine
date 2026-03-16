@@ -1,24 +1,25 @@
+using Applied.Geometry.Utils;
 using Core2.Branching;
 using Core2.Dynamic;
 
-namespace Core2.Geometry;
+namespace Applied.Geometry.Frieze;
 
-public sealed class StripPathResolver : IDynamicResolver<StripPathState, StripEnvironment, StripEffect>
+public sealed class StripPathResolver : IDynamicResolver<StripPathState, StripEnvironment, Orientation2D>
 {
-    public DynamicResolution<StripPathState, StripEnvironment, StripEffect> Resolve(
-        DynamicResolutionInput<StripPathState, StripEnvironment, StripEffect> input)
+    public DynamicResolution<StripPathState, StripEnvironment, Orientation2D> Resolve(
+        DynamicResolutionInput<StripPathState, StripEnvironment, Orientation2D> input)
     {
         if (input.Frontier.Count == 0)
         {
-            return DynamicResolution<StripPathState, StripEnvironment, StripEffect>.Defer(
+            return DynamicResolution<StripPathState, StripEnvironment, Orientation2D>.Defer(
                 input.Proposals,
                 [new DynamicTension("EmptyFrontier", "No active contexts remain to resolve.")],
                 "Dynamic strip execution has no active frontier.");
         }
 
         var incoming = input.Frontier[0].Context;
-        int horizontal = input.Proposals.Sum(proposal => proposal.Effect.HorizontalDelta);
-        int vertical = input.Proposals.Sum(proposal => proposal.Effect.VerticalDelta);
+        int horizontal = input.Proposals.Sum(proposal => proposal.Effect.Horizontal);
+        int vertical = input.Proposals.Sum(proposal => proposal.Effect.Vertical);
 
         var candidates = BuildCandidates(incoming, horizontal, vertical);
         decimal bestScore = candidates.Min(candidate => candidate.Score);
@@ -48,7 +49,7 @@ public sealed class StripPathResolver : IDynamicResolver<StripPathState, StripEn
             ? DynamicResolutionKind.Branch
             : DynamicResolutionKind.Commit;
 
-        return DynamicResolution<StripPathState, StripEnvironment, StripEffect>.FromFamily(
+        return DynamicResolution<StripPathState, StripEnvironment, Orientation2D>.FromFamily(
             kind,
             outcomes,
             input.Proposals,
@@ -70,18 +71,18 @@ public sealed class StripPathResolver : IDynamicResolver<StripPathState, StripEn
 
         if (horizontal != 0 && vertical != 0)
         {
-            candidates.Add(Commit(incoming, [new StripDelta(horizontal, 0), new StripDelta(0, vertical)], CornerPenalty(vertical, horizontalFirst: true), "Horizontal-first corner."));
-            candidates.Add(Commit(incoming, [new StripDelta(0, vertical), new StripDelta(horizontal, 0)], CornerPenalty(vertical, horizontalFirst: false), "Vertical-first corner."));
+            candidates.Add(Commit(incoming, [new Directions2D(horizontal, 0), new Directions2D(0, vertical)], CornerPenalty(vertical, horizontalFirst: true), "Horizontal-first corner."));
+            candidates.Add(Commit(incoming, [new Directions2D(0, vertical), new Directions2D(horizontal, 0)], CornerPenalty(vertical, horizontalFirst: false), "Vertical-first corner."));
             return candidates;
         }
 
         if (horizontal != 0)
         {
-            candidates.Add(Commit(incoming, [new StripDelta(horizontal, 0)], 0m, "Horizontal continuation."));
+            candidates.Add(Commit(incoming, [new Directions2D(horizontal, 0)], 0m, "Horizontal continuation."));
             return candidates;
         }
 
-        candidates.Add(Commit(incoming, [new StripDelta(0, vertical)], 0m, "Vertical continuation."));
+        candidates.Add(Commit(incoming, [new Directions2D(0, vertical)], 0m, "Vertical continuation."));
         return candidates;
     }
 
@@ -102,7 +103,7 @@ public sealed class StripPathResolver : IDynamicResolver<StripPathState, StripEn
 
     private static StripCandidate Commit(
         DynamicContext<StripPathState, StripEnvironment> incoming,
-        IReadOnlyList<StripDelta> sequence,
+        IReadOnlyList<Directions2D> sequence,
         decimal preferencePenalty,
         string note)
     {

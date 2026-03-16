@@ -1,3 +1,4 @@
+using Applied.Geometry.Frieze;
 using Core2.Geometry;
 
 namespace Tests.Core2;

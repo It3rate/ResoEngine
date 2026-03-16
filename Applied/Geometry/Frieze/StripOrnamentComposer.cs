@@ -1,6 +1,7 @@
+using Applied.Geometry.Utils;
 using Core2.Repetition;
 
-namespace Core2.Geometry;
+namespace Applied.Geometry.Frieze;
 
 public static class StripOrnamentComposer
 {
@@ -49,7 +50,7 @@ public static class StripOrnamentComposer
 
         for (int step = 0; step < pattern.TotalSteps(repeats); step++)
         {
-            var delta = StripDelta.Zero;
+            var delta = Directions2D.Zero;
             foreach (var strand in pattern.Strands)
             {
                 delta += strand.DeltaAt(step);
@@ -100,7 +101,7 @@ public static class StripOrnamentComposer
 
         return new StripOrnamentResult(pattern, repeats, segments, committed, minX, maxX, minY, maxY);
 
-        void Execute(IReadOnlyList<StripEquationCommand>? commands)
+        void Execute(IReadOnlyList<EquationCommand>? commands)
         {
             if (commands is null)
             {
@@ -111,7 +112,7 @@ public static class StripOrnamentComposer
             {
                 switch (command.Kind)
                 {
-                    case StripEquationCommandKind.Fire:
+                    case CommandKind.Fire:
                     {
                         if (command.EquationName is null)
                         {
@@ -154,7 +155,7 @@ public static class StripOrnamentComposer
 
                         break;
                     }
-                    case StripEquationCommandKind.Commit:
+                    case CommandKind.Commit:
                     {
                         if (visibleStart is not null && cursor != visibleStart.Value)
                         {
@@ -165,7 +166,7 @@ public static class StripOrnamentComposer
                         visibleStart = null;
                         break;
                     }
-                    case StripEquationCommandKind.SetLaw:
+                    case CommandKind.SetLaw:
                     {
                         if (command.EquationName is null || command.Law is null)
                         {
@@ -399,6 +400,6 @@ public static class StripOrnamentComposer
     }
 
     private readonly record struct RuntimeMotion(IReadOnlyList<RuntimeMotionPart> Parts);
-    private readonly record struct RuntimeMotionPart(StripDelta Delta, bool IsVisible, bool EndsStroke = false);
+    private readonly record struct RuntimeMotionPart(Directions2D Delta, bool IsVisible, bool EndsStroke = false);
     private readonly record struct RouteSlice(decimal From, decimal To, bool IsVisible);
 }
