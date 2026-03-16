@@ -365,3 +365,5 @@ MigrationBackup/
 
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
+/.codex_pdf_render
+/.codex_tmp_segment_math.txt
