@@ -1,7 +1,6 @@
 <Solution>
+  <Project Path="Applied/Applied.csproj" Id="4da92b62-e67f-4b23-838c-3ee6688433b0" />
   <Project Path="Core2/Core2.csproj" />
   <Project Path="Tests.Core2/Tests.Core2.csproj" />
-  <Project Path="Visualizer.WinForms.Core2/Visualizer.WinForms.Core2.csproj">
-    <Build Solution="Debug|*" Project="true" />
-  </Project>
+  <Project Path="Visualizer.WinForms.Core2/Visualizer.WinForms.Core2.csproj" />
 </Solution>
