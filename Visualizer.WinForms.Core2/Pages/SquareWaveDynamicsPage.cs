@@ -89,7 +89,7 @@ public class SquareWaveDynamicsPage : IVisualizerPage
     private SkiaCanvas? _canvasHost;
     private Panel? _controlsPanel;
     private NumericUpDown? _stepInput;
-    private DynamicTrace<FriezePathState, FriezeEnvironment, PlanarTraversalMotion>? _trace;
+    private DynamicTrace<FriezePathState, FriezeEnvironment, PlanarTraversalEmission>? _trace;
     private int _cachedSteps = -1;
 
     public string Title => "Square Wave Dynamics";
@@ -109,8 +109,8 @@ public class SquareWaveDynamicsPage : IVisualizerPage
         float subtitleY = 68f;
         PageChrome.DrawWrappedText(
             canvas,
-            "Three simple strands run in parallel: steady rightward drift, a vertical pulse, and a backtrack pulse that cancels drift on rise and fall steps.\n" +
-            "The dynamic resolver commits the combined result as a path, preserving the whole process as executable Core 2 structure rather than a closed-form answer.",
+            "This view now runs the same square-wave frieze program used elsewhere in Applied.Geometry.\n" +
+            "Each tick fires one equation, reads the current segment route in Core 2 coordinates, and emits either hidden travel or visible stroke from that route.",
             34f,
             ref subtitleY,
             640f,
@@ -130,7 +130,7 @@ public class SquareWaveDynamicsPage : IVisualizerPage
         DrawFriezeGuides(canvas, card.Rect);
         DrawResolvedPath(canvas, card.Rect, _trace.SelectedContext.State);
         DrawSummary(canvas, card.Rect, _trace);
-        DrawStrandLegend(canvas, new SKRect(34f, 584f, 860f, 860f));
+        DrawProgramLegend(canvas, new SKRect(34f, 584f, 860f, 860f));
     }
 
     public void Destroy()
@@ -228,10 +228,12 @@ public class SquareWaveDynamicsPage : IVisualizerPage
     {
         float left = rect.Left + 36f;
         float right = rect.Right - 36f;
-        float topLane = rect.Top + 118f;
-        float bottomLane = rect.Bottom - 110f;
+        float topLane = rect.Top + 98f;
+        float midLane = rect.MidY;
+        float bottomLane = rect.Bottom - 98f;
 
         canvas.DrawLine(left, topLane, right, topLane, _guidePaint);
+        canvas.DrawLine(left, midLane, right, midLane, _guidePaint);
         canvas.DrawLine(left, bottomLane, right, bottomLane, _guidePaint);
     }
 
@@ -291,7 +293,7 @@ public class SquareWaveDynamicsPage : IVisualizerPage
     private void DrawSummary(
         SKCanvas canvas,
         SKRect rect,
-        DynamicTrace<FriezePathState, FriezeEnvironment, PlanarTraversalMotion> trace)
+        DynamicTrace<FriezePathState, FriezeEnvironment, PlanarTraversalEmission> trace)
     {
         string summary =
             $"steps {_cachedSteps}   ·   segments {trace.SelectedContext!.State.Segments.Count}   ·   " +
@@ -301,16 +303,17 @@ public class SquareWaveDynamicsPage : IVisualizerPage
         canvas.DrawText(summary, rect.Left + 60f, rect.Bottom - 48f, _cardBodyPaint);
     }
 
-    private void DrawStrandLegend(SKCanvas canvas, SKRect rect)
+    private void DrawProgramLegend(SKCanvas canvas, SKRect rect)
     {
-        canvas.DrawText("Active Strands", rect.Left, rect.Top + 18f, _headingPaint);
+        var pattern = FriezeCatalog.GalleryPatterns.Single(item => item.Key == "square-wave");
+        canvas.DrawText("Program View", rect.Left, rect.Top + 18f, _headingPaint);
 
         float y = rect.Top + 48f;
-        DrawLegendRow(canvas, y, "Advance", "+1 horizontal every step");
+        DrawLegendRow(canvas, y, "Call Cycle", pattern.CallPattern ?? "Y0, Y0; X1");
         y += 34f;
-        DrawLegendRow(canvas, y, "Vertical", "up, pause, pause, down, pause, pause");
+        DrawLegendRow(canvas, y, "Y0", "Reflective vertical segment from 0 to 2, fired twice per cell.");
         y += 34f;
-        DrawLegendRow(canvas, y, "Backtrack", "-1 horizontal on rise/fall pulses to create vertical edges");
+        DrawLegendRow(canvas, y, "X1", "Continuous horizontal segment from 0 to 2, fired once per cell.");
     }
 
     private void DrawLegendRow(SKCanvas canvas, float y, string title, string detail)

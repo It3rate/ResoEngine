@@ -19,13 +19,13 @@ public class SquareWaveDynamicsTests
         Assert.Equal(12, state.MacroStep);
 
         Assert.Equal(new PlanarPathEdge(new PlanarPoint(0, 0), new PlanarPoint(0, 1)), state.Segments[0]);
-        Assert.Equal(new PlanarPathEdge(new PlanarPoint(0, 1), new PlanarPoint(1, 1)), state.Segments[1]);
-        Assert.Equal(new PlanarPathEdge(new PlanarPoint(1, 1), new PlanarPoint(2, 1)), state.Segments[2]);
-        Assert.Equal(new PlanarPathEdge(new PlanarPoint(2, 1), new PlanarPoint(2, 0)), state.Segments[3]);
-        Assert.Equal(new PlanarPathEdge(new PlanarPoint(2, 0), new PlanarPoint(3, 0)), state.Segments[4]);
-        Assert.Equal(new PlanarPathEdge(new PlanarPoint(3, 0), new PlanarPoint(4, 0)), state.Segments[5]);
+        Assert.Equal(new PlanarPathEdge(new PlanarPoint(0, 1), new PlanarPoint(0, 2)), state.Segments[1]);
+        Assert.Equal(new PlanarPathEdge(new PlanarPoint(0, 2), new PlanarPoint(2, 2)), state.Segments[2]);
+        Assert.Equal(new PlanarPathEdge(new PlanarPoint(2, 2), new PlanarPoint(2, 1)), state.Segments[3]);
+        Assert.Equal(new PlanarPathEdge(new PlanarPoint(2, 1), new PlanarPoint(2, 0)), state.Segments[4]);
+        Assert.Equal(new PlanarPathEdge(new PlanarPoint(2, 0), new PlanarPoint(4, 0)), state.Segments[5]);
         Assert.Equal(new PlanarPathEdge(new PlanarPoint(4, 0), new PlanarPoint(4, 1)), state.Segments[6]);
-        Assert.Equal(new PlanarPathEdge(new PlanarPoint(4, 1), new PlanarPoint(5, 1)), state.Segments[7]);
+        Assert.Equal(new PlanarPathEdge(new PlanarPoint(4, 1), new PlanarPoint(4, 2)), state.Segments[7]);
     }
 
     [Fact]
@@ -36,8 +36,8 @@ public class SquareWaveDynamicsTests
         var state = trace.SelectedContext!.State;
         Assert.All(state.Segments, edge =>
         {
-            Assert.InRange(edge.Start.Y, 0, 1);
-            Assert.InRange(edge.End.Y, 0, 1);
+            Assert.InRange(edge.Start.Y, 0, 2);
+            Assert.InRange(edge.End.Y, 0, 2);
         });
 
         Assert.All(trace.Steps, step => Assert.DoesNotContain(step.Resolution.Tensions, tension => tension.Kind == "VerticalBounds"));
