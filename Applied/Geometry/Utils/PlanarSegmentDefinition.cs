@@ -15,9 +15,9 @@ public sealed record PlanarSegmentDefinition(
     public AxisTraversalDefinition CreateTraversal() =>
         new(
             UseSegmentAsFrame ? Segment : null,
-            Step.Fold(),
+            Step,
             Law,
-            Seed?.Fold() ?? Segment.Start);
+            Seed ?? Segment.StartCoordinate);
 
     public Proportion ComputeStep() => Step;
 
@@ -38,9 +38,6 @@ public sealed record PlanarSegmentDefinition(
 
         return $"{frameText} | {stepText} | {lawText}";
     }
-
-    public PlanarOffset Project(Scalar delta)
-        => Project(delta.Pin(Scalar.One));
 
     public PlanarOffset Project(Proportion delta) => AxisVector * delta;
 

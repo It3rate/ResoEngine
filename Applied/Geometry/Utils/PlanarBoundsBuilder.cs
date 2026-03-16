@@ -4,31 +4,21 @@ namespace Applied.Geometry.Utils;
 
 public sealed class PlanarBoundsBuilder
 {
-    private Proportion? _minX;
-    private Proportion? _maxX;
-    private Proportion? _minY;
-    private Proportion? _maxY;
+    private Area? _bounds;
 
-    public void Include(PlanarPoint point) =>
-        Include(point.Horizontal, point.Vertical);
-
-    public Area Build()
+    public void Include(PlanarPoint point)
     {
-        Proportion minX = _minX ?? Proportion.Zero;
-        Proportion maxX = _maxX ?? Proportion.Zero;
-        Proportion minY = _minY ?? Proportion.Zero;
-        Proportion maxY = _maxY ?? Proportion.Zero;
+        var pointBounds = new Area(
+            Axis.FromCoordinates(point.Horizontal, point.Horizontal),
+            Axis.FromCoordinates(point.Vertical, point.Vertical));
 
-        return new Area(
-            Axis.FromCoordinates(minX, maxX),
-            Axis.FromCoordinates(minY, maxY));
+        _bounds = _bounds is null
+            ? pointBounds
+            : _bounds.Envelope(pointBounds);
     }
 
-    private void Include(Proportion x, Proportion y)
-    {
-        _minX = _minX is null ? x : Proportion.Min(_minX, x);
-        _maxX = _maxX is null ? x : Proportion.Max(_maxX, x);
-        _minY = _minY is null ? y : Proportion.Min(_minY, y);
-        _maxY = _maxY is null ? y : Proportion.Max(_maxY, y);
-    }
+    public Area Build() =>
+        _bounds ?? new Area(
+            Axis.FromCoordinates(Proportion.Zero, Proportion.Zero),
+            Axis.FromCoordinates(Proportion.Zero, Proportion.Zero));
 }

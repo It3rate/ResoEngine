@@ -86,89 +86,79 @@ public static class FriezeComposer
         var bounds = new PlanarBoundsBuilder();
         bounds.Include(cursor);
 
-        Execute(program.Prelude);
-        for (int repeat = 0; repeat < repeats; repeat++)
+        foreach (var command in program.EnumerateCommands(repeats))
         {
-            Execute(program.Loop);
+            Execute(command);
         }
 
         return new FriezeResult(pattern, new Proportion(repeats), segments, committed, bounds.Build());
 
-        void Execute(IReadOnlyList<EquationCommand>? commands)
+        void Execute(EquationCommand command)
         {
-            if (commands is null)
+            switch (command.Kind)
             {
-                return;
-            }
-
-            foreach (var command in commands)
-            {
-                switch (command.Kind)
+                case CommandKind.Fire:
                 {
-                    case CommandKind.Fire:
+                    if (command.EquationName is null)
                     {
-                        if (command.EquationName is null)
-                        {
-                            throw new InvalidOperationException("Fire commands require an equation name.");
-                        }
+                        throw new InvalidOperationException("Fire commands require an equation name.");
+                    }
 
-                        var emission = runtime[command.EquationName].Fire();
-                        foreach (var part in emission.Parts)
-                        {
-                            var start = cursor;
-                            cursor += part.Delta;
-                            bounds.Include(cursor);
+                    foreach (var part in runtime[command.EquationName].IterateFire())
+                    {
+                        var start = cursor;
+                        cursor += part.Delta;
+                        bounds.Include(cursor);
 
-                            if (part.IsVisible)
+                        if (part.IsVisible)
+                        {
+                            if (cursor != start)
                             {
-                                if (cursor != start)
-                                {
-                                    visibleStart ??= start;
-                                }
-
-                                if (part.EndsStroke && visibleStart is not null && cursor != visibleStart.Value)
-                                {
-                                    segments.Add(new PlanarPathEdge(visibleStart.Value, cursor));
-                                    visibleStart = cursor;
-                                }
+                                visibleStart ??= start;
                             }
-                            else
-                            {
-                                if (visibleStart is not null && start != visibleStart.Value)
-                                {
-                                    segments.Add(new PlanarPathEdge(visibleStart.Value, start));
-                                }
 
-                                visibleStart = null;
+                            if (part.EndsStroke && visibleStart is not null && cursor != visibleStart.Value)
+                            {
+                                segments.Add(new PlanarPathEdge(visibleStart.Value, cursor));
+                                visibleStart = cursor;
                             }
                         }
-
-                        break;
-                    }
-                    case CommandKind.Commit:
-                    {
-                        if (visibleStart is not null && cursor != visibleStart.Value)
+                        else
                         {
-                            segments.Add(new PlanarPathEdge(visibleStart.Value, cursor));
-                        }
+                            if (visibleStart is not null && start != visibleStart.Value)
+                            {
+                                segments.Add(new PlanarPathEdge(visibleStart.Value, start));
+                            }
 
-                        committed = cursor;
-                        visibleStart = null;
-                        break;
-                    }
-                    case CommandKind.SetLaw:
-                    {
-                        if (command.EquationName is null || command.Law is null)
-                        {
-                            throw new InvalidOperationException("Law commands require an equation name and law.");
+                            visibleStart = null;
                         }
-
-                        runtime[command.EquationName].SetLaw(command.Law.Value);
-                        break;
                     }
-                    default:
-                        throw new InvalidOperationException($"Unsupported equation command {command.Kind}.");
+
+                    break;
                 }
+                case CommandKind.Commit:
+                {
+                    if (visibleStart is not null && cursor != visibleStart.Value)
+                    {
+                        segments.Add(new PlanarPathEdge(visibleStart.Value, cursor));
+                    }
+
+                    committed = cursor;
+                    visibleStart = null;
+                    break;
+                }
+                case CommandKind.SetLaw:
+                {
+                    if (command.EquationName is null || command.Law is null)
+                    {
+                        throw new InvalidOperationException("Law commands require an equation name and law.");
+                    }
+
+                    runtime[command.EquationName].SetLaw(command.Law.Value);
+                    break;
+                }
+                default:
+                    throw new InvalidOperationException($"Unsupported equation command {command.Kind}.");
             }
         }
     }

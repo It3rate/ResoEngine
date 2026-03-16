@@ -410,8 +410,8 @@ public class BoundaryRepetitionPage : IVisualizerPage
             canvas.DrawLine(zeroX, midY - 18f, zeroX, midY + 18f, _baselinePaint);
         }
 
-        decimal displayedStart = startResult.HasTension ? decimal.Clamp(probeStart, minFrame, maxFrame) : startResult.Value;
-        decimal displayedEnd = endResult.HasTension ? decimal.Clamp(probeEnd, minFrame, maxFrame) : endResult.Value;
+        decimal displayedStart = startResult.HasTension ? decimal.Clamp(probeStart, minFrame, maxFrame) : startResult.Value.Fold().Value;
+        decimal displayedEnd = endResult.HasTension ? decimal.Clamp(probeEnd, minFrame, maxFrame) : endResult.Value.Fold().Value;
 
         float startX = Map(displayedStart, minFrame, maxFrame, frameLeft, frameRight);
         float endX = Map(displayedEnd, minFrame, maxFrame, frameLeft, frameRight);
@@ -450,7 +450,11 @@ public class BoundaryRepetitionPage : IVisualizerPage
             canvas.DrawPath(mappedPath, endPaint);
         }
 
-        canvas.DrawText($"start -> {startResult.Value:0.0}    end -> {endResult.Value:0.0}", rect.MidX, rect.Top + 98f, _cardTextPaint);
+        canvas.DrawText(
+            $"start -> {startResult.Value.Fold().Value:0.0}    end -> {endResult.Value.Fold().Value:0.0}",
+            rect.MidX,
+            rect.Top + 98f,
+            _cardTextPaint);
 
         if (law == BoundaryContinuationLaw.TensionPreserving)
         {

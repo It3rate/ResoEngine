@@ -35,10 +35,27 @@ public static class FriezeProgramDynamics
         var steps = new List<DynamicStep<FriezePathState, FriezeEnvironment, PlanarTraversalEmission>>();
         int executedFires = 0;
 
-        Execute(pattern.Program.Prelude);
-        while (executedFires < fireSteps)
+        foreach (var command in pattern.Program.Prelude ?? [])
         {
-            Execute(pattern.Program.Loop);
+            if (executedFires >= fireSteps)
+            {
+                break;
+            }
+
+            Execute(command);
+        }
+
+        if (executedFires < fireSteps)
+        {
+            foreach (var command in pattern.Program.EnumerateLoopForever())
+            {
+                if (executedFires >= fireSteps)
+                {
+                    break;
+                }
+
+                Execute(command);
+            }
         }
 
         return new DynamicTrace<FriezePathState, FriezeEnvironment, PlanarTraversalEmission>(
@@ -46,47 +63,34 @@ public static class FriezeProgramDynamics
             steps,
             graphBuilder.Build());
 
-        void Execute(IReadOnlyList<EquationCommand>? commands)
+        void Execute(EquationCommand command)
         {
-            if (commands is null)
+            switch (command.Kind)
             {
-                return;
-            }
-
-            foreach (var command in commands)
-            {
-                if (executedFires >= fireSteps)
+                case CommandKind.SetLaw:
                 {
-                    return;
-                }
+                    if (command.EquationName is null || command.Law is null)
+                    {
+                        throw new InvalidOperationException("Law commands require an equation name and law.");
+                    }
 
-                switch (command.Kind)
+                    runtime[command.EquationName].SetLaw(command.Law.Value);
+                    break;
+                }
+                case CommandKind.Commit:
+                    break;
+                case CommandKind.Fire:
                 {
-                    case CommandKind.SetLaw:
+                    if (command.EquationName is null)
                     {
-                        if (command.EquationName is null || command.Law is null)
-                        {
-                            throw new InvalidOperationException("Law commands require an equation name and law.");
-                        }
-
-                        runtime[command.EquationName].SetLaw(command.Law.Value);
-                        break;
+                        throw new InvalidOperationException("Fire commands require an equation name.");
                     }
-                    case CommandKind.Commit:
-                        break;
-                    case CommandKind.Fire:
-                    {
-                        if (command.EquationName is null)
-                        {
-                            throw new InvalidOperationException("Fire commands require an equation name.");
-                        }
 
-                        ExecuteFire(command.EquationName);
-                        break;
-                    }
-                    default:
-                        throw new InvalidOperationException($"Unsupported equation command {command.Kind}.");
+                    ExecuteFire(command.EquationName);
+                    break;
                 }
+                default:
+                    throw new InvalidOperationException($"Unsupported equation command {command.Kind}.");
             }
         }
 

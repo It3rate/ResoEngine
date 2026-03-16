@@ -69,10 +69,25 @@ public static class InverseContinuationEngine
                 ]);
         }
 
-        List<Proportion> candidates = [new(dominantRoot, recessiveRoot)];
+        List<long> dominantRoots = [dominantRoot];
         if (degree % 2 == 0 && dominantRoot != 0)
         {
-            candidates.Add(new Proportion(-dominantRoot, recessiveRoot));
+            dominantRoots.Add(-dominantRoot);
+        }
+
+        List<long> recessiveRoots = [recessiveRoot];
+        if (degree % 2 == 0 && recessiveRoot != 0)
+        {
+            recessiveRoots.Add(-recessiveRoot);
+        }
+
+        List<Proportion> candidates = [];
+        foreach (long candidateDominant in dominantRoots)
+        {
+            foreach (long candidateRecessive in recessiveRoots)
+            {
+                candidates.Add(new Proportion(candidateDominant, candidateRecessive));
+            }
         }
 
         candidates = DistinctBy(candidates, candidate => (candidate.Dominant, candidate.Recessive)).ToList();

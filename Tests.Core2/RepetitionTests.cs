@@ -48,15 +48,15 @@ public class RepetitionTests
     {
         var frame = Axis.FromCoordinates(0, 10);
 
-        var wrapped = frame.Continue(new Scalar(11), BoundaryContinuationLaw.PeriodicWrap);
-        var reflected = frame.Continue(new Scalar(11), BoundaryContinuationLaw.ReflectiveBounce);
-        var clamped = frame.Continue(new Scalar(11), BoundaryContinuationLaw.Clamp);
-        var preserved = frame.Continue(new Scalar(11), BoundaryContinuationLaw.TensionPreserving);
+        var wrapped = frame.Continue(new Proportion(11), BoundaryContinuationLaw.PeriodicWrap);
+        var reflected = frame.Continue(new Proportion(11), BoundaryContinuationLaw.ReflectiveBounce);
+        var clamped = frame.Continue(new Proportion(11), BoundaryContinuationLaw.Clamp);
+        var preserved = frame.Continue(new Proportion(11), BoundaryContinuationLaw.TensionPreserving);
 
-        Assert.Equal(1m, wrapped.Value);
-        Assert.Equal(9m, reflected.Value);
-        Assert.Equal(10m, clamped.Value);
-        Assert.Equal(11m, preserved.Value);
+        Assert.Equal(new Proportion(1), wrapped.Value);
+        Assert.Equal(new Proportion(9), reflected.Value);
+        Assert.Equal(new Proportion(10), clamped.Value);
+        Assert.Equal(new Proportion(11), preserved.Value);
         Assert.Contains(preserved.Tensions, tension => tension.Kind == RepetitionTensionKind.BoundaryExceeded);
     }
 
@@ -65,11 +65,11 @@ public class RepetitionTests
     {
         var frame = Axis.FromCoordinates(0, 5);
 
-        var wrappedPositive = frame.Continue(new Scalar(15), BoundaryContinuationLaw.PeriodicWrap);
-        var wrappedNegative = frame.Continue(new Scalar(-2), BoundaryContinuationLaw.PeriodicWrap);
+        var wrappedPositive = frame.Continue(new Proportion(15), BoundaryContinuationLaw.PeriodicWrap);
+        var wrappedNegative = frame.Continue(new Proportion(-2), BoundaryContinuationLaw.PeriodicWrap);
 
-        Assert.Equal(0m, wrappedPositive.Value);
-        Assert.Equal(3m, wrappedNegative.Value);
+        Assert.Equal(Proportion.Zero, wrappedPositive.Value);
+        Assert.Equal(new Proportion(3), wrappedNegative.Value);
     }
 
     [Fact]
@@ -77,12 +77,43 @@ public class RepetitionTests
     {
         var frame = Axis.FromCoordinates(0, 5);
 
-        var reflectedPositive = frame.Continue(new Scalar(15), BoundaryContinuationLaw.ReflectiveBounce);
-        var reflectedOver = frame.Continue(new Scalar(17), BoundaryContinuationLaw.ReflectiveBounce);
-        var reflectedNegative = frame.Continue(new Scalar(-2), BoundaryContinuationLaw.ReflectiveBounce);
+        var reflectedPositive = frame.Continue(new Proportion(15), BoundaryContinuationLaw.ReflectiveBounce);
+        var reflectedOver = frame.Continue(new Proportion(17), BoundaryContinuationLaw.ReflectiveBounce);
+        var reflectedNegative = frame.Continue(new Proportion(-2), BoundaryContinuationLaw.ReflectiveBounce);
 
-        Assert.Equal(5m, reflectedPositive.Value);
-        Assert.Equal(3m, reflectedOver.Value);
-        Assert.Equal(2m, reflectedNegative.Value);
+        Assert.Equal(new Proportion(5), reflectedPositive.Value);
+        Assert.Equal(new Proportion(3), reflectedOver.Value);
+        Assert.Equal(new Proportion(2), reflectedNegative.Value);
+    }
+
+    [Fact]
+    public void AxisTraversal_EnumeratesReflectionAndWrapAsExactStepSequences()
+    {
+        var reflective = new AxisTraversalDefinition(
+            Axis.FromCoordinates(Proportion.Zero, new Proportion(2)),
+            new Proportion(3),
+            BoundaryContinuationLaw.ReflectiveBounce,
+            Proportion.Zero).CreateState();
+
+        var reflectiveParts = reflective.EnumerateFire().ToArray();
+
+        Assert.Equal(
+            [Axis.FromCoordinates(Proportion.Zero, new Proportion(2)), Axis.FromCoordinates(new Proportion(2), Proportion.One)],
+            reflectiveParts.Select(part => part.Segment).ToArray());
+        Assert.True(reflectiveParts[0].BreakAfter);
+        Assert.Equal(new Proportion(1), reflective.Value);
+
+        var wrapped = new AxisTraversalDefinition(
+            Axis.FromCoordinates(Proportion.Zero, new Proportion(2)),
+            new Proportion(5),
+            BoundaryContinuationLaw.PeriodicWrap,
+            Proportion.Zero).CreateState();
+
+        var wrappedParts = wrapped.EnumerateFire().ToArray();
+
+        Assert.Equal(
+            [Axis.FromCoordinates(Proportion.Zero, new Proportion(2)), Axis.FromCoordinates(Proportion.Zero, new Proportion(2)), Axis.FromCoordinates(Proportion.Zero, Proportion.One)],
+            wrappedParts.Select(part => part.Segment).ToArray());
+        Assert.Equal(new Proportion(1), wrapped.Value);
     }
 }

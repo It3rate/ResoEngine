@@ -1,5 +1,6 @@
 using Core2.Repetition;
 using ResoEngine.Core2.Support;
+using System.Numerics;
 
 namespace Core2.Elements;
 
@@ -108,7 +109,9 @@ public sealed record Proportion : IElement, IComparable<Proportion>, IComparable
             return Fold().CompareTo(other.Fold());
         }
 
-        return ((decimal)Dominant * other.Recessive).CompareTo((decimal)other.Dominant * Recessive);
+        BigInteger left = (BigInteger)Dominant * other.Recessive;
+        BigInteger right = (BigInteger)other.Dominant * Recessive;
+        return left.CompareTo(right);
     }
 
     public int CompareTo(object? obj) => obj is Proportion other ? CompareTo(other) : 1;

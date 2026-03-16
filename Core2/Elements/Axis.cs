@@ -47,16 +47,19 @@ public sealed record Axis(Proportion Recessive, Proportion Dominant, AxisBasis B
     public Proportion StartCoordinate => -Recessive;
     public Proportion EndCoordinate => Dominant;
     public Proportion CoordinateSpan => EndCoordinate - StartCoordinate;
+    public Proportion LeftCoordinate => StartCoordinate <= EndCoordinate ? StartCoordinate : EndCoordinate;
+    public Proportion RightCoordinate => StartCoordinate <= EndCoordinate ? EndCoordinate : StartCoordinate;
+    public Proportion MidpointCoordinate => (StartCoordinate + EndCoordinate) / new Proportion(2);
     public Scalar Start => -Recessive.Fold();
     public Scalar End => Dominant.Fold();
-    public Scalar Left => Start <= End ? Start : End;
-    public Scalar Right => Start <= End ? End : Start;
-    public Scalar Span => End - Start;
-    public Scalar Midpoint => (Start + End) / new Scalar(2m);
-    public bool IsDegenerate => Start == End;
+    public Scalar Left => LeftCoordinate.Fold();
+    public Scalar Right => RightCoordinate.Fold();
+    public Scalar Span => CoordinateSpan.Fold();
+    public Scalar Midpoint => MidpointCoordinate.Fold();
+    public bool IsDegenerate => StartCoordinate == EndCoordinate;
     public bool HasExtent => !IsDegenerate;
     public bool IsEmptyInterval => IsDegenerate;
-    public bool PointsRight => End >= Start;
+    public bool PointsRight => EndCoordinate >= StartCoordinate;
 
     public static Axis FromCoordinates(
         Proportion start,
@@ -78,7 +81,13 @@ public sealed record Axis(Proportion Recessive, Proportion Dominant, AxisBasis B
     public Axis WithCoordinates(Scalar start, Scalar end) =>
         FromCoordinates(start, end, new Scalar(Recessive.Recessive), new Scalar(Dominant.Recessive), Basis);
 
+    public Axis WithCoordinates(Proportion start, Proportion end) =>
+        FromCoordinates(start, end, Basis);
+
     internal Axis WithBounds(Scalar left, Scalar right) =>
+        PointsRight ? WithCoordinates(left, right) : WithCoordinates(right, left);
+
+    internal Axis WithBounds(Proportion left, Proportion right) =>
         PointsRight ? WithCoordinates(left, right) : WithCoordinates(right, left);
 
     internal bool HasCompatibleCarrier(Axis other) =>
@@ -134,8 +143,8 @@ public sealed record Axis(Proportion Recessive, Proportion Dominant, AxisBasis B
 
     public bool TryIntersect(Axis other, out Axis intersection)
     {
-        var left = Scalar.Max(Left, other.Left);
-        var right = Scalar.Min(Right, other.Right);
+        var left = Proportion.Max(LeftCoordinate, other.LeftCoordinate);
+        var right = Proportion.Min(RightCoordinate, other.RightCoordinate);
         if (left > right)
         {
             intersection = Zero;
@@ -151,13 +160,15 @@ public sealed record Axis(Proportion Recessive, Proportion Dominant, AxisBasis B
     /// This is not a split-preserving boolean OR; use Boolean(...) for that.
     /// </summary>
     public Axis Envelope(Axis other) =>
-        WithBounds(Scalar.Min(Left, other.Left), Scalar.Max(Right, other.Right));
+        WithBounds(
+            Proportion.Min(LeftCoordinate, other.LeftCoordinate),
+            Proportion.Max(RightCoordinate, other.RightCoordinate));
 
     public Axis Union(Axis other) => Envelope(other);
 
-    public bool Contains(Scalar value) => value >= Left && value <= Right;
+    public bool Contains(Scalar value) => Contains(value.AsProportion());
 
-    public bool Contains(Proportion value) => Contains(value.Fold());
+    public bool Contains(Proportion value) => value >= LeftCoordinate && value <= RightCoordinate;
 
     public AxisBooleanResult Boolean(
         Axis other,
@@ -166,6 +177,9 @@ public sealed record Axis(Proportion Recessive, Proportion Dominant, AxisBasis B
         AxisBooleanProjection.Resolve(this, other, operation, frame);
 
     public BoundaryContinuationResult Continue(Scalar value, BoundaryContinuationLaw law) =>
+        BoundaryContinuation.Continue(this, value, law);
+
+    public BoundaryContinuationResult Continue(Proportion value, BoundaryContinuationLaw law) =>
         BoundaryContinuation.Continue(this, value, law);
 
     public static Axis operator +(Axis left, Axis right) =>

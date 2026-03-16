@@ -91,9 +91,10 @@
 21. **Scalar Inverse Continuation** At degree 0, inverse continuation is minimal and often collapses immediately to ordinary arithmetic ambiguity. Example: `x^2 = 4` admits `2` and `-2`.  
       
 22. **Proportion Inverse Continuation** At degree 1, inverse continuation acts on dominant amount and recessive support. A preferred rule is:  
-      
-- preserve positive recessive support when possible  
-- allow dominant sign to carry the variation  
+    
+- preserve the full candidate set, including negative or zero recessive support when lawfully generated  
+- allow principal display to prefer positive recessive support when a single representative is required  
+- do not silently move a recessive sign into the dominant side merely to relieve tension  
 - rise to a higher degree if no valid continuation exists within proportion alone  
 23. **Axis Inverse Continuation** At degree 2, inverse continuation acts on oriented values. Selection may depend on:  
 - perspective  

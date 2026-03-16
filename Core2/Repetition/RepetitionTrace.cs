@@ -1,3 +1,5 @@
+using Core2.Elements;
+
 namespace Core2.Repetition;
 
 /// <summary>
@@ -13,7 +15,7 @@ public sealed record RepetitionTrace<T>(
 }
 
 public readonly record struct BoundaryContinuationResult(
-    decimal Value,
+    Proportion Value,
     IReadOnlyList<RepetitionTension> Tensions)
 {
     public bool HasTension => Tensions.Count > 0;

@@ -283,8 +283,9 @@ At higher degrees, inverse continuation generally becomes more ambiguous because
 ### R20. Preferred inverse-continuation behavior by degree
 For `Proportion`:
 
-- preserve positive recessive support when possible
-- allow dominant sign to carry variation
+- preserve the full lawful candidate set, including negative or zero recessive support when generated
+- allow principal display to prefer positive recessive support when a single representative is required
+- do not silently move a recessive sign into the dominant side merely to relieve tension
 - rise to a higher degree if proportion alone cannot support the continuation
 
 For `Axis`:
