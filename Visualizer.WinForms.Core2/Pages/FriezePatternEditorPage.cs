@@ -11,7 +11,7 @@ using SkiaSharp;
 
 namespace ResoEngine.Visualizer.Pages;
 
-public class StripPatternEditorPage : IVisualizerPage
+public class FriezePatternEditorPage : IVisualizerPage
 {
     private const int MaxColumns = 10;
     private const int MaxPatternSteps = 200;
@@ -196,7 +196,7 @@ public class StripPatternEditorPage : IVisualizerPage
         IsAntialias = true,
     };
 
-    private readonly IReadOnlyList<StripOrnamentPattern> _basePatterns = StripOrnamentCatalog.GalleryPatterns;
+    private readonly IReadOnlyList<FriezePattern> _basePatterns = FriezeCatalog.GalleryPatterns;
     private readonly EditorSegment[] _editorSegments;
 
     private SkiaCanvas? _canvasHost;
@@ -213,9 +213,9 @@ public class StripPatternEditorPage : IVisualizerPage
     private int _selectedPatternIndex;
     private List<List<string>> _workingColumns = [];
 
-    public StripPatternEditorPage()
+    public FriezePatternEditorPage()
     {
-        var defaults = StripOrnamentCatalog.CreateDefaultSegments().ToDictionary(
+        var defaults = FriezeCatalog.CreateDefaultSegments().ToDictionary(
             definition => definition.Name,
             StringComparer.OrdinalIgnoreCase);
 
@@ -227,7 +227,7 @@ public class StripPatternEditorPage : IVisualizerPage
         ];
     }
 
-    public string Title => "Strip Pattern Editor";
+    public string Title => "Frieze Pattern Editor";
 
     public void Init(CoordinateSystem coords, HitTestEngine hitTest, SkiaCanvas canvas)
     {
@@ -264,7 +264,7 @@ public class StripPatternEditorPage : IVisualizerPage
         var layout = ComputeLayout();
         LayoutControls(layout);
 
-        canvas.DrawText("Strip Pattern Editor", 34f, 42f, _headingPaint);
+        canvas.DrawText("Frieze Pattern Editor", 34f, 42f, _headingPaint);
         float subtitleY = 68f;
         PageChrome.DrawWrappedText(
             canvas,
@@ -449,9 +449,9 @@ public class StripPatternEditorPage : IVisualizerPage
     {
         _selectedPatternIndex = Math.Clamp(patternIndex, 0, _basePatterns.Count - 1);
         var pattern = _basePatterns[_selectedPatternIndex];
-        var equations = pattern.Program?.Equations ?? StripOrnamentCatalog.CreateDefaultSegments();
+        var equations = pattern.Program?.Equations ?? FriezeCatalog.CreateDefaultSegments();
         var byName = equations.ToDictionary(equation => equation.Name, StringComparer.OrdinalIgnoreCase);
-        var defaults = StripOrnamentCatalog.CreateDefaultSegments().ToDictionary(
+        var defaults = FriezeCatalog.CreateDefaultSegments().ToDictionary(
             definition => definition.Name,
             StringComparer.OrdinalIgnoreCase);
 
@@ -648,7 +648,7 @@ public class StripPatternEditorPage : IVisualizerPage
         return token;
     }
 
-    private StripOrnamentPattern BuildCurrentPattern()
+    private FriezePattern BuildCurrentPattern()
     {
         var basePattern = _basePatterns[_selectedPatternIndex];
         var equations = _editorSegments.Select(editor => editor.ToDefinition()).ToArray();
@@ -670,7 +670,7 @@ public class StripPatternEditorPage : IVisualizerPage
             loop.Add(EquationCommand.Commit());
         }
 
-        var program = new StripEquationProgram(
+        var program = new EquationProgram(
             equations,
             loop,
             basePattern.Program?.Prelude);
@@ -686,7 +686,7 @@ public class StripPatternEditorPage : IVisualizerPage
     {
         var pattern = BuildCurrentPattern();
         int minimumWidth = Math.Max(8, (int)MathF.Floor((rect.Width - 36f) / 16f));
-        var result = StripOrnamentComposer.ComposeToWidth(pattern, minimumWidth, MaxPatternSteps);
+        var result = FriezeComposer.ComposeToWidth(pattern, minimumWidth, MaxPatternSteps);
         int activeTickCount = Math.Max(1, _workingColumns.FindLastIndex(column => column.Count > 0) + 1);
 
         canvas.DrawText(pattern.DisplayName, rect.Left + 18f, rect.Top + 26f, _headingPaint);
@@ -700,7 +700,7 @@ public class StripPatternEditorPage : IVisualizerPage
         DrawPath(canvas, pathRect, result);
     }
 
-    private void DrawPath(SKCanvas canvas, SKRect rect, StripOrnamentResult result)
+    private void DrawPath(SKCanvas canvas, SKRect rect, FriezeResult result)
     {
         if (result.Segments.Count == 0)
         {
@@ -720,7 +720,7 @@ public class StripPatternEditorPage : IVisualizerPage
 
         canvas.DrawLine(rect.Left, originY, rect.Right, originY, _guidePaint);
 
-        SKPoint Map(StripPoint point) =>
+        SKPoint Map(PlanarPoint point) =>
             new(originX + point.X * scale, originY - point.Y * scale);
 
         using var path = new SKPath();
@@ -955,7 +955,7 @@ public class StripPatternEditorPage : IVisualizerPage
             Math.Max(1, (int)Math.Round(logicalRect.Height * scaleY)));
     }
 
-    private static List<List<string>> ExtractColumns(StripEquationProgram? program)
+    private static List<List<string>> ExtractColumns(EquationProgram? program)
     {
         var columns = new List<List<string>>();
         if (program is null)
@@ -1069,7 +1069,7 @@ public class StripPatternEditorPage : IVisualizerPage
 
     private sealed class EditorSegment
     {
-        public EditorSegment(StripSegmentDefinition definition, string role, SegmentColorSet colors)
+        public EditorSegment(PlanarSegmentDefinition definition, string role, SegmentColorSet colors)
         {
             Definition = definition;
             Role = role;
@@ -1081,7 +1081,7 @@ public class StripPatternEditorPage : IVisualizerPage
             SetDefinition(definition);
         }
 
-        public StripSegmentDefinition Definition { get; private set; }
+        public PlanarSegmentDefinition Definition { get; private set; }
         public string Role { get; }
         public SegmentColorSet Colors { get; }
         public AxisDisplayMapper SpanDisplay { get; }
@@ -1093,7 +1093,7 @@ public class StripPatternEditorPage : IVisualizerPage
         public BoundaryContinuationLaw Law { get; private set; }
         public string Name => Definition.Name;
 
-        public void SetDefinition(StripSegmentDefinition definition)
+        public void SetDefinition(PlanarSegmentDefinition definition)
         {
             Definition = definition;
             Law = definition.Law;
@@ -1106,7 +1106,7 @@ public class StripPatternEditorPage : IVisualizerPage
             Law = law;
         }
 
-        public StripSegmentDefinition ToDefinition() =>
+        public PlanarSegmentDefinition ToDefinition() =>
             new(
                 Definition.Name,
                 SpanDisplay.Axis,

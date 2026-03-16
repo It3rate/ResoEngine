@@ -2,17 +2,17 @@ using Applied.Geometry.Utils;
 
 namespace Applied.Geometry.Frieze;
 
-public sealed record StripOrnamentStrand(
+public sealed record FriezeStrand(
     string Name,
     string Rhythm,
     string Description,
-    IReadOnlyList<Directions2D> Cycle)
+    IReadOnlyList<PlanarOffset> Cycle)
 {
-    public Directions2D DeltaAt(int stepIndex)
+    public PlanarOffset DeltaAt(int stepIndex)
     {
         if (Cycle.Count == 0)
         {
-            return Directions2D.Zero;
+            return PlanarOffset.Zero;
         }
 
         int index = ((stepIndex % Cycle.Count) + Cycle.Count) % Cycle.Count;

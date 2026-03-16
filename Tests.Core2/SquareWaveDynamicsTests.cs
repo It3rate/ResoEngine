@@ -1,5 +1,5 @@
 using Applied.Geometry.Frieze;
-using Core2.Geometry;
+using Applied.Geometry.Utils;
 
 namespace Tests.Core2;
 
@@ -14,22 +14,22 @@ public class SquareWaveDynamicsTests
         Assert.NotNull(trace.SelectedContext);
 
         var state = trace.SelectedContext!.State;
-        Assert.Equal(new StripPoint(8, 0), state.Cursor);
+        Assert.Equal(new PlanarPoint(8, 0), state.Cursor);
         Assert.Equal(12, state.Segments.Count);
         Assert.Equal(12, state.MacroStep);
 
-        Assert.Equal(new StripPathEdge(new StripPoint(0, 0), new StripPoint(0, 1)), state.Segments[0]);
-        Assert.Equal(new StripPathEdge(new StripPoint(0, 1), new StripPoint(1, 1)), state.Segments[1]);
-        Assert.Equal(new StripPathEdge(new StripPoint(1, 1), new StripPoint(2, 1)), state.Segments[2]);
-        Assert.Equal(new StripPathEdge(new StripPoint(2, 1), new StripPoint(2, 0)), state.Segments[3]);
-        Assert.Equal(new StripPathEdge(new StripPoint(2, 0), new StripPoint(3, 0)), state.Segments[4]);
-        Assert.Equal(new StripPathEdge(new StripPoint(3, 0), new StripPoint(4, 0)), state.Segments[5]);
-        Assert.Equal(new StripPathEdge(new StripPoint(4, 0), new StripPoint(4, 1)), state.Segments[6]);
-        Assert.Equal(new StripPathEdge(new StripPoint(4, 1), new StripPoint(5, 1)), state.Segments[7]);
+        Assert.Equal(new PlanarPathEdge(new PlanarPoint(0, 0), new PlanarPoint(0, 1)), state.Segments[0]);
+        Assert.Equal(new PlanarPathEdge(new PlanarPoint(0, 1), new PlanarPoint(1, 1)), state.Segments[1]);
+        Assert.Equal(new PlanarPathEdge(new PlanarPoint(1, 1), new PlanarPoint(2, 1)), state.Segments[2]);
+        Assert.Equal(new PlanarPathEdge(new PlanarPoint(2, 1), new PlanarPoint(2, 0)), state.Segments[3]);
+        Assert.Equal(new PlanarPathEdge(new PlanarPoint(2, 0), new PlanarPoint(3, 0)), state.Segments[4]);
+        Assert.Equal(new PlanarPathEdge(new PlanarPoint(3, 0), new PlanarPoint(4, 0)), state.Segments[5]);
+        Assert.Equal(new PlanarPathEdge(new PlanarPoint(4, 0), new PlanarPoint(4, 1)), state.Segments[6]);
+        Assert.Equal(new PlanarPathEdge(new PlanarPoint(4, 1), new PlanarPoint(5, 1)), state.Segments[7]);
     }
 
     [Fact]
-    public void SquareWaveDynamics_KeepsThePathInsideTheStrip()
+    public void SquareWaveDynamics_KeepsThePathInsideTheFrieze()
     {
         var trace = SquareWaveDynamics.Run(18);
 

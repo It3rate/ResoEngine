@@ -4,42 +4,42 @@ using Core2.Repetition;
 
 namespace Applied.Geometry.Frieze;
 
-public static class StripOrnamentCatalog
+public static class FriezeCatalog
 {
-    public static IReadOnlyList<StripOrnamentPattern> GalleryPatterns { get; } = CreateGalleryPatterns();
+    public static IReadOnlyList<FriezePattern> GalleryPatterns { get; } = CreateGalleryPatterns();
 
-    public static IReadOnlyList<StripSegmentDefinition> CreateDefaultSegments() =>
+    public static IReadOnlyList<PlanarSegmentDefinition> CreateDefaultSegments() =>
     [
-        new StripSegmentDefinition(
+        new PlanarSegmentDefinition(
             "X0",
             Axis.FromCoordinates(Scalar.Zero, Scalar.One),
             BoundaryContinuationLaw.ReflectiveBounce,
-            Directions2D.Right,
+            PlanarOffset.Right,
             Scalar.One),
-        new StripSegmentDefinition(
+        new PlanarSegmentDefinition(
             "Y0",
             Axis.FromCoordinates(Scalar.Zero, 2),
             BoundaryContinuationLaw.ReflectiveBounce,
-            Directions2D.Up,
+            PlanarOffset.Up,
             Scalar.One),
-        new StripSegmentDefinition(
+        new PlanarSegmentDefinition(
             "X1",
             Axis.FromCoordinates(Scalar.Zero, 2),
             BoundaryContinuationLaw.TensionPreserving,
-            Directions2D.Right,
+            PlanarOffset.Right,
             new Scalar(2m),
             UseSegmentAsFrame: false),
     ];
 
-    public static IReadOnlyList<StripOrnamentPattern> CreateGalleryPatterns(
-        IReadOnlyList<StripSegmentDefinition>? sharedEquations = null)
+    public static IReadOnlyList<FriezePattern> CreateGalleryPatterns(
+        IReadOnlyList<PlanarSegmentDefinition>? sharedEquations = null)
     {
         var equations = (sharedEquations ?? CreateDefaultSegments()).ToArray();
         var byName = equations.ToDictionary(equation => equation.Name, StringComparer.OrdinalIgnoreCase);
 
         return
         [
-            new StripOrnamentPattern(
+            new FriezePattern(
                 "square-wave",
                 "Square Wave",
                 "Two bounced vertical pulses commit into a rise or drop, and the long continuous carrier advances the next square step.",
@@ -60,7 +60,7 @@ public static class StripOrnamentCatalog
                         Fire("X1"), Commit(),
                     ]),
             },
-            new StripOrnamentPattern(
+            new FriezePattern(
                 "zigzag",
                 "Zigzag",
                 "The same vertical bounce is now committed together with the long carrier, so each cell resolves as a diagonal instead of a square corner.",
@@ -81,7 +81,7 @@ public static class StripOrnamentCatalog
                         Fire("X1"), Commit(),
                     ]),
             },
-            new StripOrnamentPattern(
+            new FriezePattern(
                 "crossbar",
                 "Crossbar Lattice",
                 "The same three segment definitions form the lattice by firing the short horizontal, short vertical, and long horizontal carrier through a full mirrored cell.",
@@ -104,7 +104,7 @@ public static class StripOrnamentCatalog
                         Fire("X1"), Commit(),
                     ]),
             },
-            new StripOrnamentPattern(
+            new FriezePattern(
                 "trapezoid",
                 "Trapezoid Wave",
                 "The same bounced short equations now commit in grouped bursts, so the walls slope while the long carrier closes the top and bottom rails.",
@@ -127,7 +127,7 @@ public static class StripOrnamentCatalog
                         Fire("X1"), Commit(),
                     ]),
             },
-            new StripOrnamentPattern(
+            new FriezePattern(
                 "chevron",
                 "Chevron Drift",
                 "Two paired fires of the bounced short equations create the pointed chevrons, and the long carrier spaces the next point cleanly.",
@@ -150,7 +150,7 @@ public static class StripOrnamentCatalog
                         Fire("X1"), Commit(),
                     ]),
             },
-            new StripOrnamentPattern(
+            new FriezePattern(
                 "interlock",
                 "Interlock",
                 "A primed short carrier switches into tension-preserving continuation so the tooth can pass through the middle of the cell before the next lock.",
@@ -175,7 +175,7 @@ public static class StripOrnamentCatalog
                     Fire("X1"), Commit(),
                     ]),
             },
-            new StripOrnamentPattern(
+            new FriezePattern(
                 "stair",
                 "Stair Step",
                 "The vertical bounced segment fires on its own and the long carrier follows, producing a full up-up-down-down stair cycle in one ornament cell.",
@@ -198,11 +198,11 @@ public static class StripOrnamentCatalog
         ];
     }
 
-    private static StripOrnamentStrand SharedSegment(StripSegmentDefinition definition, string description) =>
+    private static FriezeStrand SharedSegment(PlanarSegmentDefinition definition, string description) =>
         new(definition.Name, definition.DescribeTraversal(), description, []);
 
-    private static StripEquationProgram Program(
-        IReadOnlyList<StripSegmentDefinition> equations,
+    private static EquationProgram Program(
+        IReadOnlyList<PlanarSegmentDefinition> equations,
         IReadOnlyList<EquationCommand> loop,
         IReadOnlyList<EquationCommand>? prelude = null) =>
         new(equations, loop, prelude);

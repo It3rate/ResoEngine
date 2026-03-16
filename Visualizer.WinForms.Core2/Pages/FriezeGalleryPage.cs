@@ -1,4 +1,5 @@
 using Applied.Geometry.Frieze;
+using Applied.Geometry.Utils;
 using Core2.Elements;
 using Core2.Repetition;
 using ResoEngine.Visualizer.Adapt;
@@ -10,7 +11,7 @@ using SkiaSharp;
 
 namespace ResoEngine.Visualizer.Pages;
 
-public class StripOrnamentGalleryPage : IVisualizerPage
+public class FriezeGalleryPage : IVisualizerPage
 {
     private const int MaxPatternSteps = 200;
     private const float EditorScale = 60f;
@@ -188,13 +189,13 @@ public class StripOrnamentGalleryPage : IVisualizerPage
     private readonly EditorSegment[] _editorSegments;
 
     private SkiaCanvas? _canvasHost;
-    private IReadOnlyList<RenderedStrip>? _results;
+    private IReadOnlyList<RenderedFrieze>? _results;
     private int? _activeIndex;
     private SKRect _resetButtonRect;
 
-    public StripOrnamentGalleryPage()
+    public FriezeGalleryPage()
     {
-        var defaults = StripOrnamentCatalog.CreateDefaultSegments().ToDictionary(
+        var defaults = FriezeCatalog.CreateDefaultSegments().ToDictionary(
             definition => definition.Name,
             StringComparer.OrdinalIgnoreCase);
 
@@ -206,7 +207,7 @@ public class StripOrnamentGalleryPage : IVisualizerPage
         ];
     }
 
-    public string Title => "Strip Ornament Gallery";
+    public string Title => "Frieze Gallery";
 
     public void Init(CoordinateSystem coords, HitTestEngine hitTest, SkiaCanvas canvas)
     {
@@ -217,7 +218,7 @@ public class StripOrnamentGalleryPage : IVisualizerPage
 
     public void Render(SKCanvas canvas)
     {
-        canvas.DrawText("Strip Ornament Gallery", 34f, 42f, _headingPaint);
+        canvas.DrawText("Frieze Gallery", 34f, 42f, _headingPaint);
         float subtitleY = 68f;
         PageChrome.DrawWrappedText(
             canvas,
@@ -240,7 +241,7 @@ public class StripOrnamentGalleryPage : IVisualizerPage
 
         for (int index = 0; index < _results.Count; index++)
         {
-            DrawStripRow(canvas, layout.RowRects[index], _results[index], index == _activeIndex);
+            DrawFriezeRow(canvas, layout.RowRects[index], _results[index], index == _activeIndex);
         }
 
         DrawEditorPanel(canvas, layout, SelectedResult());
@@ -340,12 +341,12 @@ public class StripOrnamentGalleryPage : IVisualizerPage
     private void RefreshResults(GalleryLayout layout)
     {
         var definitions = _editorSegments.Select(editor => editor.ToDefinition()).ToArray();
-        var patterns = StripOrnamentCatalog.CreateGalleryPatterns(definitions);
+        var patterns = FriezeCatalog.CreateGalleryPatterns(definitions);
         float stripWidth = Math.Max(1f, layout.RowRects[0].Width - 202f);
         float rowHeight = layout.RowRects[0].Height;
 
         _results = patterns
-            .Select(pattern => BuildRenderedStrip(pattern, stripWidth, rowHeight))
+            .Select(pattern => BuildRenderedFrieze(pattern, stripWidth, rowHeight))
             .ToArray();
 
         if (_activeIndex is null && _results.Count > 0)
@@ -358,22 +359,22 @@ public class StripOrnamentGalleryPage : IVisualizerPage
         }
     }
 
-    private RenderedStrip BuildRenderedStrip(StripOrnamentPattern pattern, float stripWidth, float rowHeight)
+    private RenderedFrieze BuildRenderedFrieze(FriezePattern pattern, float stripWidth, float rowHeight)
     {
-        var preview = StripOrnamentComposer.Compose(pattern, 1);
-        float previewScale = ComputeStripScale(rowHeight, preview);
+        var preview = FriezeComposer.Compose(pattern, 1);
+        float previewScale = ComputeFriezeScale(rowHeight, preview);
         int targetWidth = Math.Max(1, (int)MathF.Floor((stripWidth - 12f) / previewScale));
-        var result = StripOrnamentComposer.ComposeToWidth(pattern, targetWidth, MaxPatternSteps);
-        return new RenderedStrip(result, ComputeStripScale(rowHeight, result));
+        var result = FriezeComposer.ComposeToWidth(pattern, targetWidth, MaxPatternSteps);
+        return new RenderedFrieze(result, ComputeFriezeScale(rowHeight, result));
     }
 
-    private static float ComputeStripScale(float rowHeight, StripOrnamentResult result)
+    private static float ComputeFriezeScale(float rowHeight, FriezeResult result)
     {
         float verticalUnits = Math.Max(2f, result.VerticalSpan + 2f);
         return Math.Max(1f, MathF.Min(18f, (rowHeight - 14f) / verticalUnits));
     }
 
-    private RenderedStrip SelectedResult()
+    private RenderedFrieze SelectedResult()
     {
         if (_results is null || _results.Count == 0)
         {
@@ -396,11 +397,11 @@ public class StripOrnamentGalleryPage : IVisualizerPage
         float rowsTop = cardTop + 12f;
         float rowsBottom = cardBottom - editorHeight - 22f;
         float rowGap = 8f;
-        float availableHeight = rowsBottom - rowsTop - rowGap * (StripOrnamentCatalog.GalleryPatterns.Count - 1);
-        float rowHeight = availableHeight / StripOrnamentCatalog.GalleryPatterns.Count;
+        float availableHeight = rowsBottom - rowsTop - rowGap * (FriezeCatalog.GalleryPatterns.Count - 1);
+        float rowHeight = availableHeight / FriezeCatalog.GalleryPatterns.Count;
 
-        var rowRects = new List<SKRect>(StripOrnamentCatalog.GalleryPatterns.Count);
-        for (int index = 0; index < StripOrnamentCatalog.GalleryPatterns.Count; index++)
+        var rowRects = new List<SKRect>(FriezeCatalog.GalleryPatterns.Count);
+        for (int index = 0; index < FriezeCatalog.GalleryPatterns.Count; index++)
         {
             float top = rowsTop + index * (rowHeight + rowGap);
             rowRects.Add(new SKRect(cardLeft + 20f, top, cardRight - 20f, top + rowHeight));
@@ -422,7 +423,7 @@ public class StripOrnamentGalleryPage : IVisualizerPage
         return new GalleryLayout(card, rowRects, editorRect, editorRows, _resetButtonRect);
     }
 
-    private void DrawStripRow(SKCanvas canvas, SKRect rowRect, RenderedStrip rendered, bool isActive)
+    private void DrawFriezeRow(SKCanvas canvas, SKRect rowRect, RenderedFrieze rendered, bool isActive)
     {
         if (isActive)
         {
@@ -444,7 +445,7 @@ public class StripOrnamentGalleryPage : IVisualizerPage
         DrawPath(canvas, stripRect, rendered);
     }
 
-    private void DrawPath(SKCanvas canvas, SKRect rect, RenderedStrip rendered)
+    private void DrawPath(SKCanvas canvas, SKRect rect, RenderedFrieze rendered)
     {
         var result = rendered.Result;
         if (result.Segments.Count == 0)
@@ -466,7 +467,7 @@ public class StripOrnamentGalleryPage : IVisualizerPage
 
         canvas.DrawLine(rect.Left, originY, rect.Right, originY, _stripGuidePaint);
 
-        SKPoint Map(StripPoint point) =>
+        SKPoint Map(PlanarPoint point) =>
             new(originX + point.X * scale, originY - point.Y * scale);
 
         using var path = new SKPath();
@@ -492,7 +493,7 @@ public class StripOrnamentGalleryPage : IVisualizerPage
         canvas.DrawPath(path, _pathPaint);
     }
 
-    private void DrawEditorPanel(SKCanvas canvas, GalleryLayout layout, RenderedStrip selected)
+    private void DrawEditorPanel(SKCanvas canvas, GalleryLayout layout, RenderedFrieze selected)
     {
         canvas.DrawLine(layout.EditorRect.Left, layout.EditorRect.Top - 12f, layout.EditorRect.Right, layout.EditorRect.Top - 12f, _dividerPaint);
 
@@ -564,7 +565,7 @@ public class StripOrnamentGalleryPage : IVisualizerPage
 
     private sealed class EditorSegment
     {
-        public EditorSegment(StripSegmentDefinition definition, string role, SegmentColorSet colors)
+        public EditorSegment(PlanarSegmentDefinition definition, string role, SegmentColorSet colors)
         {
             Definition = definition;
             DefaultAxis = definition.Segment;
@@ -574,7 +575,7 @@ public class StripOrnamentGalleryPage : IVisualizerPage
             Coords = new CoordinateSystem(scale: EditorScale);
         }
 
-        public StripSegmentDefinition Definition { get; }
+        public PlanarSegmentDefinition Definition { get; }
         public Axis DefaultAxis { get; }
         public string Role { get; }
         public SegmentColorSet Colors { get; }
@@ -589,7 +590,7 @@ public class StripOrnamentGalleryPage : IVisualizerPage
             _ => "Continuous",
         };
 
-        public StripSegmentDefinition ToDefinition() =>
+        public PlanarSegmentDefinition ToDefinition() =>
             new(
                 Definition.Name,
                 Display.Axis,
@@ -608,7 +609,7 @@ public class StripOrnamentGalleryPage : IVisualizerPage
         }
     }
 
-    private sealed record RenderedStrip(StripOrnamentResult Result, float Scale);
+    private sealed record RenderedFrieze(FriezeResult Result, float Scale);
 
     private sealed record GalleryLayout(
         SKRoundRect Card,

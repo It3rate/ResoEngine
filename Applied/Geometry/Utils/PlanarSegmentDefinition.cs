@@ -1,14 +1,13 @@
-using Applied.Geometry.Utils;
 using Core2.Elements;
 using Core2.Repetition;
 
-namespace Applied.Geometry.Frieze;
+namespace Applied.Geometry.Utils;
 
-public sealed record StripSegmentDefinition(
+public sealed record PlanarSegmentDefinition(
     string Name,
     Axis Segment,
     BoundaryContinuationLaw Law,
-    Directions2D AxisVector,
+    PlanarOffset AxisVector,
     Scalar Step,
     bool UseSegmentAsFrame = true,
     Scalar? Seed = null)
@@ -37,13 +36,13 @@ public sealed record StripSegmentDefinition(
             _ => Law.ToString(),
         };
 
-        return $"{frameText} · {stepText} · {lawText}";
+        return $"{frameText} | {stepText} | {lawText}";
     }
 
-    public Directions2D Project(Scalar delta)
+    public PlanarOffset Project(Scalar delta)
     {
-        int amount = decimal.ToInt32(decimal.Round(delta.Value, 0, MidpointRounding.AwayFromZero));
-        return new Directions2D(AxisVector.Dx * amount, AxisVector.Dy * amount);
+        int amount = PlanarValueConverter.ToInt(delta);
+        return new PlanarOffset(AxisVector.Dx * amount, AxisVector.Dy * amount);
     }
 
     private static string Format(Scalar value) =>

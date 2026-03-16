@@ -1,12 +1,13 @@
 using Applied.Geometry.Utils;
+using Core2.Elements;
 using Core2.Repetition;
 
 namespace Applied.Geometry.Frieze;
 
-public static class StripOrnamentComposer
+public static class FriezeComposer
 {
-    public static StripOrnamentResult ComposeToWidth(
-        StripOrnamentPattern pattern,
+    public static FriezeResult ComposeToWidth(
+        FriezePattern pattern,
         int minimumWidth,
         int maxSteps = 200)
     {
@@ -16,7 +17,7 @@ public static class StripOrnamentComposer
         int stepBudget = Math.Max(1, maxSteps);
         int maxRepeats = Math.Max(1, stepBudget / Math.Max(1, pattern.StepsPerRepeat));
 
-        StripOrnamentResult? latest = null;
+        FriezeResult? latest = null;
         for (int repeats = 1; repeats <= maxRepeats; repeats++)
         {
             latest = Compose(pattern, repeats);
@@ -29,7 +30,7 @@ public static class StripOrnamentComposer
         return latest ?? Compose(pattern, 1);
     }
 
-    public static StripOrnamentResult Compose(StripOrnamentPattern pattern, int repeats)
+    public static FriezeResult Compose(FriezePattern pattern, int repeats)
     {
         ArgumentNullException.ThrowIfNull(pattern);
         ArgumentOutOfRangeException.ThrowIfNegative(repeats);
@@ -39,18 +40,16 @@ public static class StripOrnamentComposer
             : ComposeFromProgram(pattern, repeats, pattern.Program);
     }
 
-    private static StripOrnamentResult ComposeFromStrands(StripOrnamentPattern pattern, int repeats)
+    private static FriezeResult ComposeFromStrands(FriezePattern pattern, int repeats)
     {
-        var segments = new List<StripPathEdge>();
-        var cursor = new StripPoint(0, 0);
-        int minX = 0;
-        int maxX = 0;
-        int minY = 0;
-        int maxY = 0;
+        var segments = new List<PlanarPathEdge>();
+        var cursor = new PlanarPoint(0, 0);
+        var bounds = new PlanarBoundsBuilder();
+        bounds.Include(cursor);
 
         for (int step = 0; step < pattern.TotalSteps(repeats); step++)
         {
-            var delta = Directions2D.Zero;
+            var delta = PlanarOffset.Zero;
             foreach (var strand in pattern.Strands)
             {
                 delta += strand.DeltaAt(step);
@@ -62,36 +61,30 @@ public static class StripOrnamentComposer
             }
 
             var next = cursor + delta;
-            segments.Add(new StripPathEdge(cursor, next));
+            segments.Add(new PlanarPathEdge(cursor, next));
             cursor = next;
-
-            minX = Math.Min(minX, cursor.X);
-            maxX = Math.Max(maxX, cursor.X);
-            minY = Math.Min(minY, cursor.Y);
-            maxY = Math.Max(maxY, cursor.Y);
+            bounds.Include(cursor);
         }
 
-        return new StripOrnamentResult(pattern, repeats, segments, cursor, minX, maxX, minY, maxY);
+        return new FriezeResult(pattern, new Scalar(repeats), segments, cursor, bounds.Build());
     }
 
-    private static StripOrnamentResult ComposeFromProgram(
-        StripOrnamentPattern pattern,
+    private static FriezeResult ComposeFromProgram(
+        FriezePattern pattern,
         int repeats,
-        StripEquationProgram program)
+        EquationProgram program)
     {
         var runtime = program.Equations.ToDictionary(
             equation => equation.Name,
             equation => new RuntimeSegment(equation),
             StringComparer.OrdinalIgnoreCase);
 
-        var segments = new List<StripPathEdge>();
-        var cursor = new StripPoint(0, 0);
+        var segments = new List<PlanarPathEdge>();
+        var cursor = new PlanarPoint(0, 0);
         var committed = cursor;
-        StripPoint? visibleStart = null;
-        int minX = 0;
-        int maxX = 0;
-        int minY = 0;
-        int maxY = 0;
+        PlanarPoint? visibleStart = null;
+        var bounds = new PlanarBoundsBuilder();
+        bounds.Include(cursor);
 
         Execute(program.Prelude);
         for (int repeat = 0; repeat < repeats; repeat++)
@@ -99,7 +92,7 @@ public static class StripOrnamentComposer
             Execute(program.Loop);
         }
 
-        return new StripOrnamentResult(pattern, repeats, segments, committed, minX, maxX, minY, maxY);
+        return new FriezeResult(pattern, new Scalar(repeats), segments, committed, bounds.Build());
 
         void Execute(IReadOnlyList<EquationCommand>? commands)
         {
@@ -124,10 +117,7 @@ public static class StripOrnamentComposer
                         {
                             var start = cursor;
                             cursor += part.Delta;
-                            minX = Math.Min(minX, cursor.X);
-                            maxX = Math.Max(maxX, cursor.X);
-                            minY = Math.Min(minY, cursor.Y);
-                            maxY = Math.Max(maxY, cursor.Y);
+                            bounds.Include(cursor);
 
                             if (part.IsVisible)
                             {
@@ -138,7 +128,7 @@ public static class StripOrnamentComposer
 
                                 if (part.EndsStroke && visibleStart is not null && cursor != visibleStart.Value)
                                 {
-                                    segments.Add(new StripPathEdge(visibleStart.Value, cursor));
+                                    segments.Add(new PlanarPathEdge(visibleStart.Value, cursor));
                                     visibleStart = cursor;
                                 }
                             }
@@ -146,7 +136,7 @@ public static class StripOrnamentComposer
                             {
                                 if (visibleStart is not null && start != visibleStart.Value)
                                 {
-                                    segments.Add(new StripPathEdge(visibleStart.Value, start));
+                                    segments.Add(new PlanarPathEdge(visibleStart.Value, start));
                                 }
 
                                 visibleStart = null;
@@ -159,7 +149,7 @@ public static class StripOrnamentComposer
                     {
                         if (visibleStart is not null && cursor != visibleStart.Value)
                         {
-                            segments.Add(new StripPathEdge(visibleStart.Value, cursor));
+                            segments.Add(new PlanarPathEdge(visibleStart.Value, cursor));
                         }
 
                         committed = cursor;
@@ -185,7 +175,7 @@ public static class StripOrnamentComposer
 
     private sealed class RuntimeSegment
     {
-        private readonly StripSegmentDefinition _definition;
+        private readonly PlanarSegmentDefinition _definition;
         private readonly decimal _leadLength;
         private readonly decimal _visibleLength;
         private readonly decimal _routeLength;
@@ -199,7 +189,7 @@ public static class StripOrnamentComposer
         private int _direction;
         private BoundaryContinuationLaw _law;
 
-        public RuntimeSegment(StripSegmentDefinition definition)
+        public RuntimeSegment(PlanarSegmentDefinition definition)
         {
             ArgumentNullException.ThrowIfNull(definition);
 
@@ -400,6 +390,6 @@ public static class StripOrnamentComposer
     }
 
     private readonly record struct RuntimeMotion(IReadOnlyList<RuntimeMotionPart> Parts);
-    private readonly record struct RuntimeMotionPart(Directions2D Delta, bool IsVisible, bool EndsStroke = false);
+    private readonly record struct RuntimeMotionPart(PlanarOffset Delta, bool IsVisible, bool EndsStroke = false);
     private readonly record struct RouteSlice(decimal From, decimal To, bool IsVisible);
 }

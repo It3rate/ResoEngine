@@ -89,7 +89,7 @@ public class SquareWaveDynamicsPage : IVisualizerPage
     private SkiaCanvas? _canvasHost;
     private Panel? _controlsPanel;
     private NumericUpDown? _stepInput;
-    private DynamicTrace<StripPathState, StripEnvironment, Orientation2D>? _trace;
+    private DynamicTrace<FriezePathState, FriezeEnvironment, PlanarTraversalMotion>? _trace;
     private int _cachedSteps = -1;
 
     public string Title => "Square Wave Dynamics";
@@ -127,7 +127,7 @@ public class SquareWaveDynamicsPage : IVisualizerPage
         canvas.DrawRoundRect(card, _cardBorderPaint);
         canvas.DrawText("Resolved Path", 60f, 254f, _cardTitlePaint);
 
-        DrawStripGuides(canvas, card.Rect);
+        DrawFriezeGuides(canvas, card.Rect);
         DrawResolvedPath(canvas, card.Rect, _trace.SelectedContext.State);
         DrawSummary(canvas, card.Rect, _trace);
         DrawStrandLegend(canvas, new SKRect(34f, 584f, 860f, 860f));
@@ -224,7 +224,7 @@ public class SquareWaveDynamicsPage : IVisualizerPage
         _cachedSteps = steps;
     }
 
-    private void DrawStripGuides(SKCanvas canvas, SKRect rect)
+    private void DrawFriezeGuides(SKCanvas canvas, SKRect rect)
     {
         float left = rect.Left + 36f;
         float right = rect.Right - 36f;
@@ -235,7 +235,7 @@ public class SquareWaveDynamicsPage : IVisualizerPage
         canvas.DrawLine(left, bottomLane, right, bottomLane, _guidePaint);
     }
 
-    private void DrawResolvedPath(SKCanvas canvas, SKRect rect, StripPathState state)
+    private void DrawResolvedPath(SKCanvas canvas, SKRect rect, FriezePathState state)
     {
         if (state.Segments.Count == 0)
         {
@@ -258,7 +258,7 @@ public class SquareWaveDynamicsPage : IVisualizerPage
         float xPad = ((innerRight - innerLeft) - width * scale) * 0.5f;
         float yPad = ((innerBottom - innerTop) - Math.Max(1f, height) * scale) * 0.5f;
 
-        SKPoint Map(StripPoint point)
+        SKPoint Map(PlanarPoint point)
         {
             float x = innerLeft + xPad + (point.X - minX) * scale;
             float y = innerBottom - yPad - (point.Y - minY) * scale;
@@ -291,7 +291,7 @@ public class SquareWaveDynamicsPage : IVisualizerPage
     private void DrawSummary(
         SKCanvas canvas,
         SKRect rect,
-        DynamicTrace<StripPathState, StripEnvironment, Orientation2D> trace)
+        DynamicTrace<FriezePathState, FriezeEnvironment, PlanarTraversalMotion> trace)
     {
         string summary =
             $"steps {_cachedSteps}   ·   segments {trace.SelectedContext!.State.Segments.Count}   ·   " +

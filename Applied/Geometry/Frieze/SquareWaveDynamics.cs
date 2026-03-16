@@ -1,27 +1,69 @@
 using Applied.Geometry.Utils;
 using Core2.Dynamic;
-using Applied.Geometry;
+using Core2.Elements;
+using Core2.Repetition;
 
 namespace Applied.Geometry.Frieze;
 
 public static class SquareWaveDynamics
 {
-    public static DynamicTrace<StripPathState, StripEnvironment, Orientation2D> Run(int steps)
+    public static DynamicTrace<FriezePathState, FriezeEnvironment, PlanarTraversalMotion> Run(int steps)
     {
         ArgumentOutOfRangeException.ThrowIfNegative(steps);
 
-        var seed = new DynamicContext<StripPathState, StripEnvironment>(
-            StripPathState.Origin,
-            StripEnvironment.Create(0, 1));
+        var seed = new DynamicContext<FriezePathState, FriezeEnvironment>(
+            FriezePathState.Origin,
+            FriezeEnvironment.Create(0, 1));
 
-        var runner = new DynamicRunner<StripPathState, StripEnvironment, Orientation2D>(
+        PlanarSegmentDefinition advance =
+            new(
+                "AdvanceRight",
+                Axis.FromCoordinates(Scalar.Zero, Scalar.One),
+                BoundaryContinuationLaw.TensionPreserving,
+                PlanarOffset.Right,
+                Scalar.One,
+                UseSegmentAsFrame: false);
+
+        PlanarSegmentDefinition verticalPulse =
+            new(
+                "VerticalPulse",
+                Axis.FromCoordinates(Scalar.Zero, Scalar.One),
+                BoundaryContinuationLaw.ReflectiveBounce,
+                PlanarOffset.Up,
+                Scalar.One);
+
+        PlanarSegmentDefinition backtrack =
+            new(
+                "BacktrackPulse",
+                Axis.FromCoordinates(Scalar.Zero, Scalar.One),
+                BoundaryContinuationLaw.TensionPreserving,
+                PlanarOffset.Right,
+                new Scalar(-1m),
+                UseSegmentAsFrame: false);
+
+        var runner = new DynamicRunner<FriezePathState, FriezeEnvironment, PlanarTraversalMotion>(
             [
-                new AdvanceRightStrand(),
-                new VerticalPulseStrand(),
-                new BacktrackPulseStrand(),
+                new ScheduledPlanarSegmentStrand<FriezePathState, FriezeEnvironment>(
+                    "AdvanceRight",
+                    advance,
+                    activePhases: Enumerable.Range(0, 6),
+                    period: 6,
+                    note: "Advance one unit to the right."),
+                new ScheduledPlanarSegmentStrand<FriezePathState, FriezeEnvironment>(
+                    "VerticalPulse",
+                    verticalPulse,
+                    activePhases: [0, 3],
+                    period: 6,
+                    note: "Pulse vertically through the reflected carrier."),
+                new ScheduledPlanarSegmentStrand<FriezePathState, FriezeEnvironment>(
+                    "BacktrackPulse",
+                    backtrack,
+                    activePhases: [0, 3],
+                    period: 6,
+                    note: "Cancel the first horizontal move of the cycle."),
             ],
-            new StripPathResolver(),
-            new FixedStepConvergencePolicy<StripPathState, StripEnvironment, Orientation2D>(steps));
+            new FriezePathResolver(),
+            new FixedStepConvergencePolicy<FriezePathState, FriezeEnvironment, PlanarTraversalMotion>(steps));
 
         return runner.Run(seed);
     }
