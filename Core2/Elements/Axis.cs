@@ -10,7 +10,8 @@ namespace Core2.Elements;
 /// dominant amount over recessive support. Together that gives four scalar degrees:
 /// recessive amount/support and dominant amount/support.
 /// </summary>
-public sealed record Axis(Proportion Recessive, Proportion Dominant, AxisBasis Basis = AxisBasis.Complex) : IElement
+public sealed record Axis(Proportion Recessive, Proportion Dominant, AxisBasis Basis = AxisBasis.Complex)
+    : IElement, IPinnedElement<Proportion, Proportion>
 {
     private static readonly AlgebraTable<Proportion> ComplexTable = new(Proportion.Arithmetic);
     private static readonly AlgebraTable<Proportion> SplitComplexTable = new(
@@ -43,6 +44,11 @@ public sealed record Axis(Proportion Recessive, Proportion Dominant, AxisBasis B
         new(pair.Recessive, pair.Dominant, basis);
 
     private AlgebraTable<Proportion> Table => Basis == AxisBasis.SplitComplex ? SplitComplexTable : ComplexTable;
+    public PinRelation Relation => PinRelation.CollinearOpposed;
+    Proportion IPinnedElement<Proportion, Proportion>.RecessiveElement => Recessive;
+    Proportion IPinnedElement<Proportion, Proportion>.DominantElement => Dominant;
+    IElement IPinnedElement.RecessiveElement => Recessive;
+    IElement IPinnedElement.DominantElement => Dominant;
 
     public Proportion StartCoordinate => -Recessive;
     public Proportion EndCoordinate => Dominant;
@@ -121,6 +127,9 @@ public sealed record Axis(Proportion Recessive, Proportion Dominant, AxisBasis B
         FromPair(Table.ProjectDominantIntoRecessive(Recessive, Dominant), Basis);
 
     public Area Pin(Axis other) => new(this, other);
+
+    public PinnedPair<Proportion, Proportion> AsPinnedPair() =>
+        new(Recessive, Dominant, Relation);
 
     public InverseContinuationResult<Axis> InverseContinue(
         int degree,

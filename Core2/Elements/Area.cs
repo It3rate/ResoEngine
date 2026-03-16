@@ -8,7 +8,8 @@ namespace Core2.Elements;
 /// Degree 3: an expanded 2D structure built from two pinned axes.
 /// The structure itself is two-dimensional, but when it folds it becomes a 1D Axis value.
 /// </summary>
-public sealed record Area(Axis Recessive, Axis Dominant) : IElement
+public sealed record Area(Axis Recessive, Axis Dominant)
+    : IElement, IPinnedElement<Axis, Axis>
 {
     private static readonly AlgebraTable<Axis> Table = new(Axis.Arithmetic);
 
@@ -16,6 +17,11 @@ public sealed record Area(Axis Recessive, Axis Dominant) : IElement
     public static Area One => new(Axis.One, Axis.One);
     public int Degree => 3;
     public AxisBasis Basis => Recessive.Basis;
+    public PinRelation Relation => PinRelation.OrthogonalDirect;
+    Axis IPinnedElement<Axis, Axis>.RecessiveElement => Recessive;
+    Axis IPinnedElement<Axis, Axis>.DominantElement => Dominant;
+    IElement IPinnedElement.RecessiveElement => Recessive;
+    IElement IPinnedElement.DominantElement => Dominant;
     public AreaQuadrants Quadrants => Expand();
     public Axis Value => Fold();
     internal static IArithmetic<Area> Arithmetic { get; } = new AreaArithmetic();
@@ -99,6 +105,12 @@ public sealed record Area(Axis Recessive, Axis Dominant) : IElement
     }
 
     public Axis Fold() => Expand().Fold();
+
+    public PinnedPair<Axis, Axis> AsPinnedPair() =>
+        new(Recessive, Dominant, Relation);
+
+    public PinnedPair<Area, Area> Pin(Area other, PinRelation relation) =>
+        new(this, other, relation);
 
     public override string ToString() => $"<{Recessive}> x <{Dominant}> => {Fold()}";
 
