@@ -56,34 +56,28 @@ public static class InverseContinuationEngine
             return InvalidDegree<Proportion>(degree);
         }
 
-        var numerator = InverseContinue(value.Dominant, degree, rule, reference?.Dominant);
-        var denominator = InverseContinue(value.Recessive, degree, rule, reference?.Recessive);
-        List<InverseContinuationTension> tensions = [.. numerator.Tensions, .. denominator.Tensions];
-
-        if (!numerator.Succeeded || !denominator.Succeeded)
+        if (!TryExactIntegerRoot(value.Dominant, degree, out long dominantRoot) ||
+            !TryExactIntegerRoot(value.Recessive, degree, out long recessiveRoot))
         {
-            if (tensions.Count == 0)
-            {
-                tensions.Add(new InverseContinuationTension(
-                    InverseContinuationTensionKind.NoCandidates,
-                    $"No proportion inverse continuation candidates exist for degree {degree} and value {value}."));
-            }
-
-            return new InverseContinuationResult<Proportion>([], null, tensions);
+            return new InverseContinuationResult<Proportion>(
+                [],
+                null,
+                [
+                    new InverseContinuationTension(
+                        InverseContinuationTensionKind.NoCandidates,
+                        $"No exact proportion inverse continuation candidates exist for degree {degree} and value {value}.")
+                ]);
         }
 
-        List<Proportion> candidates = [];
-        foreach (var dominantRoot in numerator.Candidates)
+        List<Proportion> candidates = [new(dominantRoot, recessiveRoot)];
+        if (degree % 2 == 0 && dominantRoot != 0)
         {
-            foreach (var recessiveRoot in denominator.Candidates)
-            {
-                candidates.Add(dominantRoot.Pin(recessiveRoot));
-            }
+            candidates.Add(new Proportion(-dominantRoot, recessiveRoot));
         }
 
-        candidates = DistinctBy(candidates, candidate => (candidate.Dominant.Value, candidate.Recessive.Value)).ToList();
+        candidates = DistinctBy(candidates, candidate => (candidate.Dominant, candidate.Recessive)).ToList();
         Proportion principal = SelectProportionPrincipal(candidates, rule, reference);
-        return new InverseContinuationResult<Proportion>(candidates, principal, tensions);
+        return new InverseContinuationResult<Proportion>(candidates, principal, []);
     }
 
     public static InverseContinuationResult<Axis> InverseContinue(
@@ -225,18 +219,18 @@ public static class InverseContinuationEngine
         return rule switch
         {
             InverseContinuationRule.Principal => candidates
-                .OrderByDescending(candidate => candidate.Recessive.Value > 0m)
-                .ThenByDescending(candidate => candidate.Dominant.Value)
+                .OrderByDescending(candidate => candidate.Recessive > 0)
+                .ThenByDescending(candidate => candidate.Dominant)
                 .First(),
             InverseContinuationRule.PreferPositiveDominant => candidates
-                .OrderByDescending(candidate => candidate.Dominant.Value > 0m)
-                .ThenByDescending(candidate => candidate.Recessive.Value > 0m)
-                .ThenByDescending(candidate => candidate.Dominant.Value)
+                .OrderByDescending(candidate => candidate.Dominant > 0)
+                .ThenByDescending(candidate => candidate.Recessive > 0)
+                .ThenByDescending(candidate => candidate.Dominant)
                 .First(),
             InverseContinuationRule.NearestToReference when reference is not null => candidates
                 .MinBy(candidate =>
-                    Math.Abs(candidate.Dominant.Value - reference.Dominant.Value) +
-                    Math.Abs(candidate.Recessive.Value - reference.Recessive.Value))!,
+                    Math.Abs(candidate.Dominant - reference.Dominant) +
+                    Math.Abs(candidate.Recessive - reference.Recessive))!,
             _ => candidates[0],
         };
     }
@@ -303,4 +297,54 @@ public static class InverseContinuationEngine
 
     private static double ClampNearZero(double value) =>
         Math.Abs(value) < 1e-9d ? 0d : value;
+
+    private static bool TryExactIntegerRoot(long value, int degree, out long root)
+    {
+        if (value == 0)
+        {
+            root = 0;
+            return true;
+        }
+
+        if (value < 0 && degree % 2 == 0)
+        {
+            root = 0;
+            return false;
+        }
+
+        if (value == long.MinValue)
+        {
+            root = 0;
+            return false;
+        }
+
+        bool negative = value < 0;
+        long target = Math.Abs(value);
+        long low = 0;
+        long high = target;
+
+        while (low <= high)
+        {
+            long mid = low + ((high - low) / 2);
+            BigInteger power = BigInteger.Pow(new BigInteger(mid), degree);
+
+            if (power == target)
+            {
+                root = negative ? -mid : mid;
+                return true;
+            }
+
+            if (power < target)
+            {
+                low = mid + 1;
+            }
+            else
+            {
+                high = mid - 1;
+            }
+        }
+
+        root = 0;
+        return false;
+    }
 }

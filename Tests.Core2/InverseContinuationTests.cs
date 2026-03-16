@@ -27,8 +27,6 @@ public class InverseContinuationTests
         Assert.Equal(new Proportion(2, 3), result.PrincipalCandidate);
         Assert.Contains(result.Candidates, candidate => candidate == new Proportion(2, 3));
         Assert.Contains(result.Candidates, candidate => candidate == new Proportion(-2, 3));
-        Assert.Contains(result.Candidates, candidate => candidate == new Proportion(2, -3));
-        Assert.Contains(result.Candidates, candidate => candidate == new Proportion(-2, -3));
     }
 
     [Fact]

@@ -184,11 +184,11 @@ internal static class ContainmentAnalysis
         List<ContainmentTensionMeasure> metrics,
         string pathPrefix)
     {
-        decimal parentLeft = Math.Min(parent.Start.Value, parent.End.Value);
-        decimal parentRight = Math.Max(parent.Start.Value, parent.End.Value);
-        decimal childLeft = Math.Min(child.Start.Value, child.End.Value);
-        decimal childRight = Math.Max(child.Start.Value, child.End.Value);
-        decimal validSpan = parentRight - parentLeft;
+        Proportion parentLeft = Proportion.Min(parent.StartCoordinate, parent.EndCoordinate);
+        Proportion parentRight = Proportion.Max(parent.StartCoordinate, parent.EndCoordinate);
+        Proportion childLeft = Proportion.Min(child.StartCoordinate, child.EndCoordinate);
+        Proportion childRight = Proportion.Max(child.StartCoordinate, child.EndCoordinate);
+        Proportion validSpan = (parentRight - parentLeft).Abs();
 
         if (childLeft < parentLeft)
         {
@@ -196,8 +196,8 @@ internal static class ContainmentAnalysis
             tensions.Add(new ContainmentTension(
                 ContainmentTensionKind.OutsideExpectedRange,
                 path,
-                $"Child left boundary {childLeft:0.###} falls outside parent left boundary {parentLeft:0.###}."));
-            AddMeasure(metrics, ContainmentTensionKind.OutsideExpectedRange, path, parentLeft - childLeft, validSpan, "overflow / valid span");
+                $"Child left boundary {childLeft.Fold():0.###} falls outside parent left boundary {parentLeft.Fold():0.###}."));
+            AddMeasure(metrics, ContainmentTensionKind.OutsideExpectedRange, path, (parentLeft - childLeft).Abs(), validSpan, "overflow / valid span");
         }
 
         if (childRight > parentRight)
@@ -206,8 +206,8 @@ internal static class ContainmentAnalysis
             tensions.Add(new ContainmentTension(
                 ContainmentTensionKind.OutsideExpectedRange,
                 path,
-                $"Child right boundary {childRight:0.###} falls outside parent right boundary {parentRight:0.###}."));
-            AddMeasure(metrics, ContainmentTensionKind.OutsideExpectedRange, path, childRight - parentRight, validSpan, "overflow / valid span");
+                $"Child right boundary {childRight.Fold():0.###} falls outside parent right boundary {parentRight.Fold():0.###}."));
+            AddMeasure(metrics, ContainmentTensionKind.OutsideExpectedRange, path, (childRight - parentRight).Abs(), validSpan, "overflow / valid span");
         }
     }
 
@@ -239,24 +239,22 @@ internal static class ContainmentAnalysis
                 metrics,
                 ContainmentTensionKind.ResolutionMismatch,
                 path,
-                Math.Abs(child.Recessive.Value - parent.Recessive.Value),
-                Math.Abs(parent.Recessive.Value),
+                new Proportion(Math.Abs(child.Recessive - parent.Recessive)),
+                new Proportion(Math.Abs(parent.Recessive)),
                 "support difference / parent support");
         }
 
-        decimal parentValue = parent.Fold();
-        decimal childValue = child.Fold();
-        decimal min = Math.Min(0m, parentValue);
-        decimal max = Math.Max(0m, parentValue);
-        decimal validSpan = max - min;
+        Proportion min = Proportion.Min(Proportion.Zero, parent);
+        Proportion max = Proportion.Max(Proportion.Zero, parent);
+        Proportion validSpan = (max - min).Abs();
 
-        if (childValue < min || childValue > max)
+        if (child < min || child > max)
         {
-            decimal overflow = childValue < min ? min - childValue : childValue - max;
+            Proportion overflow = child < min ? (min - child).Abs() : (child - max).Abs();
             tensions.Add(new ContainmentTension(
                 ContainmentTensionKind.OutsideExpectedRange,
                 path,
-                $"Child value {childValue:0.###} falls outside expected range [{min:0.###}, {max:0.###}]."));
+                $"Child value {child.Fold():0.###} falls outside expected range [{min.Fold():0.###}, {max.Fold():0.###}]."));
             AddMeasure(metrics, ContainmentTensionKind.OutsideExpectedRange, path, overflow, validSpan, "overflow / valid span");
         }
     }
@@ -278,8 +276,8 @@ internal static class ContainmentAnalysis
                 metrics,
                 ContainmentTensionKind.ResolutionMismatch,
                 path,
-                Math.Abs(child.Recessive.Value - parent.Recessive.Value),
-                Math.Abs(parent.Recessive.Value),
+                new Proportion(Math.Abs(child.Recessive - parent.Recessive)),
+                new Proportion(Math.Abs(parent.Recessive)),
                 "support difference / parent support");
         }
     }
@@ -328,11 +326,11 @@ internal static class ContainmentAnalysis
         List<ContainmentTensionMeasure> metrics,
         ContainmentTensionKind kind,
         string path,
-        decimal numerator,
-        decimal denominator,
+        Proportion numerator,
+        Proportion denominator,
         string basis)
     {
-        if (numerator <= 0m)
+        if (numerator.IsZero || numerator.IsNegative)
         {
             return;
         }
@@ -340,7 +338,7 @@ internal static class ContainmentAnalysis
         metrics.Add(new ContainmentTensionMeasure(
             kind,
             path,
-            ((Scalar)numerator).Pin((Scalar)denominator),
+            numerator / denominator,
             basis));
     }
 

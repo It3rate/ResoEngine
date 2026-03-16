@@ -45,5 +45,5 @@ public sealed record PlanarSegmentDefinition(
     public PlanarOffset Project(Proportion delta) => AxisVector * delta;
 
     private static string Format(Proportion value) =>
-        value.Recessive == Scalar.One ? value.Dominant.ToString() : value.ToString();
+        value.Recessive == 1 ? value.Dominant.ToString() : value.ToString();
 }

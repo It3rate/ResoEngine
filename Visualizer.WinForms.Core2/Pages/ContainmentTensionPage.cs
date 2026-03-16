@@ -797,12 +797,12 @@ public class ContainmentTensionPage : IVisualizerPage
 
             if (child.Recessive.Recessive != parent.Recessive.Recessive)
             {
-                score += (float)Math.Abs(child.Recessive.Recessive.Value - parent.Recessive.Recessive.Value) * 0.5f;
+                score += Math.Abs(child.Recessive.Recessive - parent.Recessive.Recessive) * 0.5f;
             }
 
             if (child.Dominant.Recessive != parent.Dominant.Recessive)
             {
-                score += (float)Math.Abs(child.Dominant.Recessive.Value - parent.Dominant.Recessive.Value) * 0.5f;
+                score += Math.Abs(child.Dominant.Recessive - parent.Dominant.Recessive) * 0.5f;
             }
         }
 

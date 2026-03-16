@@ -1,5 +1,6 @@
 using Core2.Repetition;
 using ResoEngine.Core2.Support;
+using System.Numerics;
 
 namespace Core2.Elements;
 
@@ -60,7 +61,34 @@ public readonly record struct Scalar(decimal Value) : IElement, IComparable<Scal
         Scalar? reference = null) =>
         InverseContinuationEngine.InverseContinue(this, degree, rule, reference);
 
-    public Proportion Pin(Scalar support) => new(this, support, true);
+    public long ToLongExact()
+    {
+        if (decimal.Truncate(Value) != Value || Value < long.MinValue || Value > long.MaxValue)
+        {
+            throw new InvalidOperationException($"Scalar value {Value:0.###} cannot be promoted exactly into an integer-backed proportion.");
+        }
+
+        return (long)Value;
+    }
+
+    public Proportion AsProportion(long support = 1)
+    {
+        BigInteger unscaled = GetUnscaledValue(Value);
+        BigInteger denominator = BigInteger.Pow(10, GetScale(Value)) * support;
+        BigInteger numerator = unscaled * support;
+
+        if (numerator < long.MinValue || numerator > long.MaxValue ||
+            denominator < long.MinValue || denominator > long.MaxValue)
+        {
+            throw new OverflowException($"Scalar value {Value:0.###} could not be promoted into a long-backed proportion.");
+        }
+
+        return new Proportion((long)numerator, (long)denominator);
+    }
+
+    public Proportion Pin(Scalar support) => new(ToLongExact(), support.ToLongExact());
+
+    public Proportion Pin(long support) => new(ToLongExact(), support);
 
     public PowerResult<Scalar> TryPow(
         Proportion exponent,
@@ -93,5 +121,18 @@ public readonly record struct Scalar(decimal Value) : IElement, IComparable<Scal
         public Scalar Add(Scalar left, Scalar right) => left + right;
         public Scalar Multiply(Scalar left, Scalar right) => left * right;
         public Scalar Negate(Scalar value) => -value;
+    }
+
+    private static int GetScale(decimal value) => (decimal.GetBits(value)[3] >> 16) & 0x7F;
+
+    private static BigInteger GetUnscaledValue(decimal value)
+    {
+        int[] bits = decimal.GetBits(value);
+        BigInteger unscaled =
+            ((BigInteger)(uint)bits[2] << 64) |
+            ((BigInteger)(uint)bits[1] << 32) |
+            (uint)bits[0];
+
+        return (bits[3] & unchecked((int)0x80000000)) != 0 ? -unscaled : unscaled;
     }
 }

@@ -58,16 +58,15 @@ internal readonly record struct RationalExponent
         return true;
     }
 
-    private static bool TryToInt(Scalar value, out int result)
+    private static bool TryToInt(long value, out int result)
     {
-        decimal raw = value.Value;
-        if (decimal.Truncate(raw) != raw || raw < int.MinValue || raw > int.MaxValue)
+        if (value < int.MinValue || value > int.MaxValue)
         {
             result = default;
             return false;
         }
 
-        result = (int)raw;
+        result = (int)value;
         return true;
     }
 

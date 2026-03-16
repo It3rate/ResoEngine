@@ -96,7 +96,7 @@ public static class PowerEngine
         var branches = ProjectRoots(
             roots.Branches,
             root => RepetitionEngine.RepeatMultiplicative(root, normalized.Numerator).Result,
-            candidate => (candidate.Dominant.Value, candidate.Recessive.Value),
+            candidate => (candidate.Dominant, candidate.Recessive),
             principal);
 
         return new PowerResult<Proportion>(branches, []);
@@ -288,18 +288,18 @@ public static class PowerEngine
         return rule switch
         {
             InverseContinuationRule.Principal => candidates
-                .OrderByDescending(candidate => candidate.Recessive.Value > 0m)
-                .ThenByDescending(candidate => candidate.Dominant.Value)
+                .OrderByDescending(candidate => candidate.Recessive > 0)
+                .ThenByDescending(candidate => candidate.Dominant)
                 .First(),
             InverseContinuationRule.PreferPositiveDominant => candidates
-                .OrderByDescending(candidate => candidate.Dominant.Value > 0m)
-                .ThenByDescending(candidate => candidate.Recessive.Value > 0m)
-                .ThenByDescending(candidate => candidate.Dominant.Value)
+                .OrderByDescending(candidate => candidate.Dominant > 0)
+                .ThenByDescending(candidate => candidate.Recessive > 0)
+                .ThenByDescending(candidate => candidate.Dominant)
                 .First(),
             InverseContinuationRule.NearestToReference when reference is not null => candidates
                 .MinBy(candidate =>
-                    Math.Abs(candidate.Dominant.Value - reference.Dominant.Value) +
-                    Math.Abs(candidate.Recessive.Value - reference.Recessive.Value))!,
+                    Math.Abs(candidate.Dominant - reference.Dominant) +
+                    Math.Abs(candidate.Recessive - reference.Recessive))!,
             _ => candidates[0],
         };
     }

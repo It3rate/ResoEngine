@@ -9,38 +9,39 @@ namespace Core2.Elements;
 /// </summary>
 public sealed record Proportion : IElement, IComparable<Proportion>, IComparable
 {
-    private static readonly AlgebraTable<Scalar> MultiplicationTable = new(
-        Scalar.Arithmetic,
-        [
-            new AlgebraEntry(0, 0, 0, +1),
-            new AlgebraEntry(1, 1, 1, +1),
-        ]);
-
     public static Proportion Zero => new(0);
     public static Proportion One => new(1);
 
     internal static IArithmetic<Proportion> Arithmetic { get; } = new ProportionArithmetic();
 
-    internal Proportion(Scalar numerator, Scalar denominator, bool _)
+    public Proportion(long numerator, long denominator = 1)
     {
         Numerator = numerator;
         Denominator = denominator;
     }
 
-    public Proportion(long numerator, long denominator = 1)
-        : this(new Scalar(numerator), new Scalar(denominator), true)
-    {
-    }
-
-    public Scalar Numerator { get; }
-    public Scalar Denominator { get; }
-    public Scalar Dominant => Numerator;
-    public Scalar Recessive => Denominator;
+    public long Numerator { get; }
+    public long Denominator { get; }
+    public long Dominant => Numerator;
+    public long Recessive => Denominator;
     public int Degree => 1;
 
-    public Scalar Fold() => Dominant / Recessive;
+    public Scalar Fold()
+    {
+        if (Denominator == 0)
+        {
+            if (Numerator == 0)
+            {
+                return Scalar.Zero;
+            }
 
-    public bool IsZero => Dominant.IsZero;
+            return Numerator > 0 ? Scalar.PositiveOverflow : Scalar.NegativeOverflow;
+        }
+
+        return new Scalar((decimal)Numerator / Denominator);
+    }
+
+    public bool IsZero => Dominant == 0;
     public bool IsPositive => CompareTo(Zero) > 0;
     public bool IsNegative => CompareTo(Zero) < 0;
     public int Sign => CompareTo(Zero) switch
@@ -50,7 +51,7 @@ public sealed record Proportion : IElement, IComparable<Proportion>, IComparable
         _ => 0,
     };
 
-    public Proportion Reciprocal() => new(Recessive, Dominant, true);
+    public Proportion Reciprocal() => new(Recessive, Dominant);
 
     public Proportion Mirror() => Reciprocal();
 
@@ -72,23 +73,23 @@ public sealed record Proportion : IElement, IComparable<Proportion>, IComparable
 
     public static Proportion operator +(Proportion left, Proportion right) =>
         new(
-            (left.Dominant * right.Recessive) + (right.Dominant * left.Recessive),
-            left.Recessive * right.Recessive,
-            true);
+            checked((left.Dominant * right.Recessive) + (right.Dominant * left.Recessive)),
+            checked(left.Recessive * right.Recessive));
 
     public static Proportion operator -(Proportion left, Proportion right) => left + (-right);
 
     public static Proportion operator -(Proportion value) =>
-        new(-value.Dominant, value.Recessive, true);
+        new(-value.Dominant, value.Recessive);
 
-    public static Proportion operator *(Proportion left, Proportion right)
-    {
-        var result = MultiplicationTable.Multiply(
-            (left.Recessive, left.Dominant),
-            (right.Recessive, right.Dominant));
+    public static Proportion operator *(Proportion left, Proportion right) =>
+        new(
+            checked(left.Dominant * right.Dominant),
+            checked(left.Recessive * right.Recessive));
 
-        return new(result.Dominant, result.Recessive, true);
-    }
+    public static Proportion operator /(Proportion left, Proportion right) =>
+        new(
+            checked(left.Dominant * right.Recessive),
+            checked(left.Recessive * right.Dominant));
 
     public static bool operator <(Proportion left, Proportion right) => left.CompareTo(right) < 0;
     public static bool operator <=(Proportion left, Proportion right) => left.CompareTo(right) <= 0;
@@ -102,7 +103,12 @@ public sealed record Proportion : IElement, IComparable<Proportion>, IComparable
             return 1;
         }
 
-        return Fold().CompareTo(other.Fold());
+        if (Recessive == 0 || other.Recessive == 0)
+        {
+            return Fold().CompareTo(other.Fold());
+        }
+
+        return ((decimal)Dominant * other.Recessive).CompareTo((decimal)other.Dominant * Recessive);
     }
 
     public int CompareTo(object? obj) => obj is Proportion other ? CompareTo(other) : 1;

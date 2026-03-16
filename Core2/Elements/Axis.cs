@@ -71,12 +71,12 @@ public sealed record Axis(Proportion Recessive, Proportion Dominant, AxisBasis B
         Scalar? dominantSupport = null,
         AxisBasis basis = AxisBasis.Complex) =>
         new(
-            ((-start) * (recessiveSupport ?? Scalar.One)).Pin(recessiveSupport ?? Scalar.One),
-            (end * (dominantSupport ?? Scalar.One)).Pin(dominantSupport ?? Scalar.One),
+            (-start).AsProportion((recessiveSupport ?? Scalar.One).ToLongExact()),
+            end.AsProportion((dominantSupport ?? Scalar.One).ToLongExact()),
             basis);
 
     public Axis WithCoordinates(Scalar start, Scalar end) =>
-        FromCoordinates(start, end, Recessive.Recessive, Dominant.Recessive, Basis);
+        FromCoordinates(start, end, new Scalar(Recessive.Recessive), new Scalar(Dominant.Recessive), Basis);
 
     internal Axis WithBounds(Scalar left, Scalar right) =>
         PointsRight ? WithCoordinates(left, right) : WithCoordinates(right, left);
