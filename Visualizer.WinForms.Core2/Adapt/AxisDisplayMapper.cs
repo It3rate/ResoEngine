@@ -25,20 +25,18 @@ public sealed class AxisDisplayMapper : ISegmentValue, ISegmentDragConfig
     {
         get => ToFloat(Axis.Start);
         set => Axis = Axis.FromCoordinates(
-            (Scalar)(decimal)value,
-            Axis.End,
-            Axis.Recessive.Recessive,
-            Axis.Dominant.Recessive);
+            ToCoordinate(value),
+            Axis.EndCoordinate,
+            Axis.Basis);
     }
 
     public float Real
     {
         get => ToFloat(Axis.End);
         set => Axis = Axis.FromCoordinates(
-            Axis.Start,
-            (Scalar)(decimal)value,
-            Axis.Recessive.Recessive,
-            Axis.Dominant.Recessive);
+            Axis.StartCoordinate,
+            ToCoordinate(value),
+            Axis.Basis);
     }
 
     public void SetAxis(Axis axis)
@@ -48,4 +46,7 @@ public sealed class AxisDisplayMapper : ISegmentValue, ISegmentDragConfig
 
     public static float ToFloat(Scalar value) => (float)(decimal)value;
     public static float ToFloat(Proportion value) => ToFloat(value.Fold());
+
+    private static Proportion ToCoordinate(float value) =>
+        ((Scalar)(decimal)value).AsProportion();
 }

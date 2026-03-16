@@ -74,8 +74,14 @@ public readonly record struct Scalar(decimal Value) : IElement, IComparable<Scal
     public Proportion AsProportion(long support = 1)
     {
         BigInteger unscaled = GetUnscaledValue(Value);
-        BigInteger denominator = BigInteger.Pow(10, GetScale(Value)) * support;
-        BigInteger numerator = unscaled * support;
+        BigInteger exactDenominator = BigInteger.Pow(10, GetScale(Value));
+        BigInteger requestedSupport = new(support);
+        BigInteger sign = requestedSupport.Sign < 0 ? BigInteger.MinusOne : BigInteger.One;
+        BigInteger targetDenominatorMagnitude = Lcm(
+            exactDenominator,
+            BigInteger.Abs(requestedSupport.IsZero ? BigInteger.One : requestedSupport));
+        BigInteger denominator = sign * targetDenominatorMagnitude;
+        BigInteger numerator = unscaled * sign * (targetDenominatorMagnitude / exactDenominator);
 
         if (numerator < long.MinValue || numerator > long.MaxValue ||
             denominator < long.MinValue || denominator > long.MaxValue)
@@ -124,6 +130,16 @@ public readonly record struct Scalar(decimal Value) : IElement, IComparable<Scal
     }
 
     private static int GetScale(decimal value) => (decimal.GetBits(value)[3] >> 16) & 0x7F;
+
+    private static BigInteger Lcm(BigInteger left, BigInteger right)
+    {
+        if (left.IsZero || right.IsZero)
+        {
+            return BigInteger.Zero;
+        }
+
+        return BigInteger.Abs(left / BigInteger.GreatestCommonDivisor(left, right) * right);
+    }
 
     private static BigInteger GetUnscaledValue(decimal value)
     {

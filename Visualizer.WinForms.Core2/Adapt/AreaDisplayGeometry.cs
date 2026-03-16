@@ -15,8 +15,22 @@ public sealed class AreaDisplayGeometry
     }
 
     public Area Area { get; }
-    public Axis Horizontal => Area.Recessive;
-    public Axis Vertical => Area.Dominant;
+    public int? RecessiveCarrierRank => Area.Recessive.PreferredCarrierRank;
+    public int? DominantCarrierRank => Area.Dominant.PreferredCarrierRank;
+    public bool UsesResolvedOrthogonalProjection =>
+        RecessiveCarrierRank.HasValue &&
+        DominantCarrierRank.HasValue &&
+        RecessiveCarrierRank != DominantCarrierRank;
+
+    public Axis Horizontal =>
+        UsesResolvedOrthogonalProjection
+            ? (RecessiveCarrierRank == 0 ? Area.Recessive : Area.Dominant)
+            : Area.Recessive;
+
+    public Axis Vertical =>
+        UsesResolvedOrthogonalProjection
+            ? (RecessiveCarrierRank == 1 ? Area.Recessive : Area.Dominant)
+            : Area.Dominant;
     public AreaQuadrants Quadrants => Area.Quadrants;
 
     public float HorizontalImaginary => ToFloat(Horizontal.Start);

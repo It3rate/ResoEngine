@@ -17,11 +17,13 @@ public sealed record Area(Axis Recessive, Axis Dominant)
     public static Area One => new(Axis.One, Axis.One);
     public int Degree => 3;
     public AxisBasis Basis => Recessive.Basis;
-    public PinRelation Relation => PinRelation.OrthogonalDirect;
+    public PinRelation Relation => PinAxisInterpreter.ResolveAxisPairRelation(Recessive, Dominant);
     Axis IPinnedElement<Axis, Axis>.RecessiveElement => Recessive;
     Axis IPinnedElement<Axis, Axis>.DominantElement => Dominant;
     IElement IPinnedElement.RecessiveElement => Recessive;
     IElement IPinnedElement.DominantElement => Dominant;
+    public bool IsOrthogonal => Relation.IsOrthogonal;
+    public bool IsCollinear => Relation.IsCollinear;
     public AreaQuadrants Quadrants => Expand();
     public Axis Value => Fold();
     internal static IArithmetic<Area> Arithmetic { get; } = new AreaArithmetic();

@@ -131,4 +131,24 @@ public class AxisTests
         Assert.Equal(new Scalar(-2m), intersection.End);
         Assert.False(intersection.PointsRight);
     }
+
+    [Fact]
+    public void FromCoordinates_ReusingExistingSupports_DoesNotCompoundDenominators()
+    {
+        var axis = Axis.FromCoordinates((Scalar)(-0.5m), (Scalar)1m, Scalar.One, Scalar.One);
+
+        for (int iteration = 0; iteration < 8; iteration++)
+        {
+            axis = Axis.FromCoordinates(
+                axis.Start,
+                axis.End,
+                new Scalar(axis.Recessive.Recessive),
+                new Scalar(axis.Dominant.Recessive));
+        }
+
+        Assert.Equal(10, axis.Recessive.Recessive);
+        Assert.Equal(1, axis.Dominant.Recessive);
+        Assert.Equal(new Scalar(-0.5m), axis.Start);
+        Assert.Equal(new Scalar(1m), axis.End);
+    }
 }

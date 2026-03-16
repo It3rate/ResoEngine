@@ -28,6 +28,7 @@ public sealed record Axis(Proportion Recessive, Proportion Dominant, AxisBasis B
     public static Axis I => new(Proportion.One, Proportion.Zero);
     public static Axis NegativeOne => new(Proportion.Zero, -Proportion.One);
     public static Axis NegativeI => new(-Proportion.One, Proportion.Zero);
+    public static Axis PinUnit => new(new Proportion(1, 1), new Proportion(1, 1));
     public int Degree => 2;
 
     internal static IArithmetic<Axis> Arithmetic { get; } = new AxisArithmetic();
@@ -44,11 +45,16 @@ public sealed record Axis(Proportion Recessive, Proportion Dominant, AxisBasis B
         new(pair.Recessive, pair.Dominant, basis);
 
     private AlgebraTable<Proportion> Table => Basis == AxisBasis.SplitComplex ? SplitComplexTable : ComplexTable;
-    public PinRelation Relation => PinRelation.CollinearOpposed;
+    public PinAxisResolution PinResolution => PinAxisInterpreter.Resolve(this);
+    public PinRelation Relation => PinResolution.Relation;
     Proportion IPinnedElement<Proportion, Proportion>.RecessiveElement => Recessive;
     Proportion IPinnedElement<Proportion, Proportion>.DominantElement => Dominant;
     IElement IPinnedElement.RecessiveElement => Recessive;
     IElement IPinnedElement.DominantElement => Dominant;
+    public bool IsSegmentLike => PinResolution.IsDirectedSegment;
+    public bool IsSequentialReinforcement => PinResolution.IsSequentialReinforcement;
+    public bool IsOrthogonalStructure => PinResolution.IsOrthogonal;
+    public int? PreferredCarrierRank => PinResolution.SharedCarrierRank;
 
     public Proportion StartCoordinate => -Recessive;
     public Proportion EndCoordinate => Dominant;

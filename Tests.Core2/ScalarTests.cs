@@ -18,4 +18,15 @@ public class ScalarTests
         Assert.Equal(new Scalar(1.25m), Scalar.Max(negative, positive));
         Assert.Equal(new Scalar(-3.5m), Scalar.Min(negative, positive));
     }
+
+    [Fact]
+    public void Scalar_AsProportion_UsesRequestedSupportWithoutRepeatedScaleGrowth()
+    {
+        var half = new Scalar(0.5m);
+
+        Assert.Equal(new Proportion(5, 10), half.AsProportion());
+        Assert.Equal(new Proportion(5, 10), half.AsProportion(10));
+        Assert.Equal(new Proportion(15, 30), half.AsProportion(3));
+        Assert.Equal(new Proportion(-5, -10), half.AsProportion(-10));
+    }
 }

@@ -91,4 +91,16 @@ public class AreaTests
 
         Assert.Equal(-area, area.FlipPerspective());
     }
+
+    [Fact]
+    public void Area_Relation_IsDerivedFromChildAxisCarriers()
+    {
+        var horizontal = new Axis(new Proportion(3, 1), new Proportion(5, 1));
+        var vertical = new Axis(new Proportion(3, -1), new Proportion(5, -1));
+
+        var area = new Area(horizontal, vertical);
+
+        Assert.Equal(PinRelationMode.Orthogonal, area.Relation.Mode);
+        Assert.True(area.IsOrthogonal);
+    }
 }
