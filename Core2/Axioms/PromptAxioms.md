@@ -5,7 +5,8 @@ It matches the content of [PromptAxioms.txt](C:/Users/Robin/source/repos/ResoEng
 The original markdown files in `Core2/Axioms` remain useful and should not be deleted.
 
 Parts I through VIII are general Core 2 system axioms.  
-Part IX is a directed-segment appendix aligned to the current geometry and boolean implementation.
+Part IX is a directed-segment appendix aligned to the current geometry and boolean implementation.  
+Part X is a provisional pinning-axis appendix aligned to the current Core 2 pinning redesign discussion.
 
 ## Part I. Foundations
 
@@ -769,6 +770,79 @@ When a single overlap segment is requested, the overlap is expressed in the dire
 ### S10. Co-present multiplicity must be preserved
 When boolean evaluation yields multiple surviving pieces, those pieces jointly constitute the result and should not be collapsed unless a later law explicitly folds them.
 
+## Part X. Pinning Axis, Carrier Contradiction, and Rupture
+
+### P1. Pinning is binary
+A pin joins exactly two elements under one relation.
+Higher structures arise by nested binary pinning rather than by one primitive many-way join.
+
+### P2. An axis may serve as a pin descriptor
+An `Axis` may be read not only as a directed interval, but as a descriptor of how two elements are pinned.
+
+### P3. A pin descriptor has four slots
+The pin descriptor carries:
+
+- a recessive unit
+- a recessive value
+- a dominant unit
+- a dominant value
+
+In shorthand these may be read as `i`, `vi`, `u`, and `vu`.
+
+### P4. Unit and value are distinct
+The unit slot determines the natural carrier or orientation of a side.
+The value slot determines extent or motion on that carrier.
+
+### P5. Positive unit preserves native carrier
+If a pin-side unit is positive, that side remains on its current native carrier.
+
+### P6. Negative unit contradicts native carrier
+If a pin-side unit is negative, that side does not merely reverse value.
+It contradicts its current carrier assignment and creates tension unless a lawful lift resolves it.
+
+### P7. Preferred breakout is the smallest lawful orthogonal lift
+When a carrier-contradiction is resolved geometrically, the preferred first breakout is the smallest orthogonal lift available at the current nesting grade.
+This preference is not an absolute decree; phase, glide, branching, or other lifts may also be lawful.
+
+### P8. Value sign acts within the chosen carrier
+After carrier selection or lift, the sign of the value determines motion with or against that carrier's positive direction.
+
+### P9. Same-direction sides yield sequential reinforcement
+If both resolved sides point in the same direction, the result is reinforcement or acceleration-like continuation rather than ordinary opposed-segment behavior.
+
+### P10. Opposed sides yield directed segment structure
+If the resolved sides point against each other on one carrier, the result is directed-segment behavior.
+
+### P11. Orthogonal sides yield area-like structure
+If the resolved sides occupy perpendicular carriers, the result is area-like structure, initially anchored at the pin unless another landmark is specified.
+
+### P12. Zero unit preserves unresolved carrier information
+A unit value of zero is not mere absence.
+It may mark noise, uncertainty, indifference, unmeasured structure, or tension held without committed orientation.
+
+### P13. Pins need not be anchored at zero
+A pin may occur anywhere on a carrier.
+Non-zero pins may act as landmarks, branch points, polyline vertices, curve controls, or local relation changes.
+
+### P14. Nested pinning repeats the same law
+The same binary pinning law applies when pinning `Proportion` to `Proportion`, `Axis` to `Axis`, `Axis` to `Area`, or `Area` to `Area`.
+What changes is the available lift space.
+
+### P15. Available lift depends on grade
+A contradiction resolves into the smallest lawful orthogonal breakout available at the current nesting depth or structural grade.
+In 1D this may produce planar breakout.
+In 2D it may leave the plane.
+In higher grades it may lift again.
+
+### P16. Pinning and folding differ
+Pinning creates structured relation.
+Folding is a later interpretation.
+A pin may remain structurally valid even when its folded reading is deferred or ambiguous.
+
+### P17. Tension must not be normalized away prematurely
+Negative or zero unit information should not be silently moved, normalized, or erased merely to recover a simpler reading.
+Such tension may later drive rupture, branching, curvature, phase offset, or higher-dimensional lift.
+
 ## Key Examples
 
 ### E1. Core opposition cycle
@@ -806,6 +880,18 @@ The signed-digit form `1, 0, -2` in base `10` folds to `98`.
 
 ### E10. Coarse reading
 Reading `101 miles` at the `100-mile` frame may yield the representative `100 miles` with residual `1 mile`.
+
+### E11. Pinning default
+A positive recessive unit and positive dominant unit produce the current straight directed-segment unit.
+
+### E12. Pinning contradiction
+A negative pin-side unit may contradict its native line-carrier and prefer orthogonal lift rather than silent sign normalization.
+
+### E13. Same-direction reinforcement
+Two resolved pin sides pointing in the same direction may act like sequential reinforcement or acceleration.
+
+### E14. Zero-unit hold
+A zero unit may preserve unresolved or noisy carrier information without committing to one orientation.
 
 ## Key Glossary
 
@@ -853,3 +939,12 @@ The quantity reported at the active grain after quantization.
 
 **Residual**  
 The exact detail not captured by the representative reading at that grain.
+
+**Pin descriptor**  
+An `Axis` read as a four-slot descriptor of how two elements are pinned.
+
+**Carrier contradiction**  
+Unit-level information that conflicts with the native carrier assignment of a pin side.
+
+**Orthogonal lift**  
+The preferred smallest geometric breakout used when a carrier contradiction cannot remain on the current carrier.
