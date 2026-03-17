@@ -5,7 +5,8 @@ namespace Applied.Geometry.Utils;
 public sealed record EquationCommand(
     CommandKind Kind,
     string? EquationName = null,
-    BoundaryContinuationLaw? Law = null)
+    BoundaryContinuationLaw? Law = null,
+    BoundaryPinPair? BoundaryPins = null)
 {
     public static EquationCommand Fire(string equationName) =>
         new(CommandKind.Fire, equationName);
@@ -15,4 +16,7 @@ public sealed record EquationCommand(
 
     public static EquationCommand SetLaw(string equationName, BoundaryContinuationLaw law) =>
         new(CommandKind.SetLaw, equationName, law);
+
+    public static EquationCommand SetBoundaryPins(string equationName, BoundaryPinPair boundaryPins) =>
+        new(CommandKind.SetLaw, equationName, BoundaryPins: boundaryPins);
 }

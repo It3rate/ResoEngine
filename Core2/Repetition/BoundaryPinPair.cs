@@ -121,6 +121,26 @@ public sealed class BoundaryPinPair
         return false;
     }
 
+    public BoundaryPinPair Reframe(Axis frame)
+    {
+        ArgumentNullException.ThrowIfNull(frame);
+
+        if (Frame == frame)
+        {
+            return this;
+        }
+
+        if (TrySummarizeLaw(out var law))
+        {
+            return law == BoundaryContinuationLaw.TensionPreserving
+                ? Open(frame)
+                : FromLaw(frame, law);
+        }
+
+        throw new InvalidOperationException(
+            $"Boundary pin pair on frame [{Frame.LeftCoordinate}, {Frame.RightCoordinate}] cannot yet be reframed to [{frame.LeftCoordinate}, {frame.RightCoordinate}] because it has no known summary law.");
+    }
+
     private static void ValidatePinLocation(LocatedPin? pin, Proportion expectedLocation, string parameterName)
     {
         if (pin is null)

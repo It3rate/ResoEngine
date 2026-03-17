@@ -10,14 +10,31 @@ public sealed record PlanarSegmentDefinition(
     PlanarOffset AxisVector,
     Proportion Step,
     bool UseSegmentAsFrame = true,
-    Proportion? Seed = null)
+    Proportion? Seed = null,
+    BoundaryPinPair? BoundaryPins = null)
 {
     public AxisTraversalDefinition CreateTraversal() =>
         new(
             UseSegmentAsFrame ? Segment : null,
             Step,
-            Law,
-            Seed ?? Segment.StartCoordinate);
+            BoundaryLawSummary,
+            Seed ?? Segment.StartCoordinate,
+            UseSegmentAsFrame && BoundaryPins is not null ? ResolveBoundaryPins(Segment) : null);
+
+    public BoundaryContinuationLaw BoundaryLawSummary =>
+        BoundaryPins?.SummaryLaw ?? Law;
+
+    public BoundaryPinPair? ResolveBoundaryPins(Axis frame)
+    {
+        if (BoundaryPins is not null)
+        {
+            return BoundaryPins.Reframe(frame);
+        }
+
+        return Law == BoundaryContinuationLaw.TensionPreserving
+            ? BoundaryPinPair.Open(frame)
+            : BoundaryPinPair.FromLaw(frame, Law);
+    }
 
     public Proportion ComputeStep() => Step;
 
@@ -27,14 +44,16 @@ public sealed record PlanarSegmentDefinition(
             ? $"frame [{Format(Segment.StartCoordinate)}, {Format(Segment.EndCoordinate)}]"
             : "unbounded";
         string stepText = $"step {Format(Step)}";
-        string lawText = Law switch
-        {
-            BoundaryContinuationLaw.ReflectiveBounce => "reflect",
-            BoundaryContinuationLaw.PeriodicWrap => "wrap",
-            BoundaryContinuationLaw.TensionPreserving => "continue+tension",
-            BoundaryContinuationLaw.Clamp => "clamp",
-            _ => Law.ToString(),
-        };
+        string lawText = BoundaryPins is not null && BoundaryPins.SummaryLaw is null
+            ? "custom pins"
+            : BoundaryLawSummary switch
+            {
+                BoundaryContinuationLaw.ReflectiveBounce => "reflect",
+                BoundaryContinuationLaw.PeriodicWrap => "wrap",
+                BoundaryContinuationLaw.TensionPreserving => "continue+tension",
+                BoundaryContinuationLaw.Clamp => "clamp",
+                _ => BoundaryLawSummary.ToString(),
+            };
 
         return $"{frameText} | {stepText} | {lawText}";
     }

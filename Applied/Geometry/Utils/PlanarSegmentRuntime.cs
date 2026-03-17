@@ -8,6 +8,7 @@ public sealed class PlanarSegmentRuntime
     private readonly PlanarSegmentDefinition _definition;
     private readonly Axis _routeCarrier;
     private readonly AxisTraversalState _routeTraversal;
+    private BoundaryPinPair? _boundaryPins;
     private readonly Proportion _leadLength;
     private readonly Proportion _visibleLength;
     private readonly Proportion _routeLength;
@@ -32,11 +33,13 @@ public sealed class PlanarSegmentRuntime
         _visibleDirection = _visibleSpan.Sign;
         Proportion step = definition.ComputeStep();
         Proportion seed = step.Sign < 0 ? _routeLength : Proportion.Zero;
+        _boundaryPins = definition.ResolveBoundaryPins(_routeCarrier);
         _routeTraversal = new AxisTraversalDefinition(
             _routeCarrier,
             step,
-            definition.Law,
-            seed).CreateState();
+            definition.BoundaryLawSummary,
+            seed,
+            _boundaryPins).CreateState();
         _needsStartJump = step.Sign < 0 && !seed.IsZero;
     }
 
@@ -81,7 +84,19 @@ public sealed class PlanarSegmentRuntime
         }
     }
 
-    public void SetLaw(BoundaryContinuationLaw law) => _routeTraversal.SetLaw(law);
+    public void SetLaw(BoundaryContinuationLaw law)
+    {
+        _boundaryPins = law == BoundaryContinuationLaw.TensionPreserving
+            ? BoundaryPinPair.Open(_routeCarrier)
+            : BoundaryPinPair.FromLaw(_routeCarrier, law);
+        _routeTraversal.SetBoundaryPins(_boundaryPins);
+    }
+
+    public void SetBoundaryPins(BoundaryPinPair? boundaryPins)
+    {
+        _boundaryPins = boundaryPins?.Reframe(_routeCarrier) ?? BoundaryPinPair.Open(_routeCarrier);
+        _routeTraversal.SetBoundaryPins(_boundaryPins);
+    }
 
     private IEnumerable<PlanarTraversalMotion> EnumerateRouteMotion(Axis route, bool endsStroke = false)
     {

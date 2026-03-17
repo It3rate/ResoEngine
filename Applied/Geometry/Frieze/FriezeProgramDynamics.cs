@@ -69,9 +69,20 @@ public static class FriezeProgramDynamics
             {
                 case CommandKind.SetLaw:
                 {
-                    if (command.EquationName is null || command.Law is null)
+                    if (command.EquationName is null)
                     {
-                        throw new InvalidOperationException("Law commands require an equation name and law.");
+                        throw new InvalidOperationException("Boundary commands require an equation name.");
+                    }
+
+                    if (command.BoundaryPins is not null)
+                    {
+                        runtime[command.EquationName].SetBoundaryPins(command.BoundaryPins);
+                        break;
+                    }
+
+                    if (command.Law is null)
+                    {
+                        throw new InvalidOperationException("Boundary commands require either explicit pins or a compatibility law.");
                     }
 
                     runtime[command.EquationName].SetLaw(command.Law.Value);

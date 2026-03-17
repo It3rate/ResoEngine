@@ -342,4 +342,50 @@ public class FriezeCatalogTests
             result.Segments);
         Assert.Equal(new PlanarPoint(1, 0), result.Cursor);
     }
+
+    [Fact]
+    public void PlanarSegmentDefinition_CanReframeSummarizedBoundaryPinsOntoRouteCarrier()
+    {
+        var sourceFrame = Axis.FromCoordinates(Proportion.Zero, new Proportion(5));
+        var routeFrame = Axis.FromCoordinates(Proportion.Zero, new Proportion(2));
+        var definition = new PlanarSegmentDefinition(
+            "X1",
+            Axis.FromCoordinates(Proportion.Zero, new Proportion(2)),
+            BoundaryContinuationLaw.TensionPreserving,
+            PlanarOffset.Right,
+            new Proportion(3),
+            BoundaryPins: BoundaryPinPair.FromLaw(sourceFrame, BoundaryContinuationLaw.ReflectiveBounce));
+
+        var pins = definition.ResolveBoundaryPins(routeFrame);
+
+        Assert.NotNull(pins);
+        Assert.Equal(BoundaryContinuationLaw.ReflectiveBounce, pins!.SummaryLaw);
+        Assert.Equal(routeFrame, pins.Frame);
+    }
+
+    [Fact]
+    public void PlanarSegmentRuntime_CanUseExplicitBoundaryPins()
+    {
+        var definition = new PlanarSegmentDefinition(
+            "X1",
+            Axis.FromCoordinates(Proportion.Zero, new Proportion(2)),
+            BoundaryContinuationLaw.TensionPreserving,
+            PlanarOffset.Right,
+            new Proportion(3));
+        var runtime = new PlanarSegmentRuntime(definition);
+        var explicitReflect = BoundaryPinPair.Create(
+            Axis.FromCoordinates(Proportion.Zero, new Proportion(2)),
+            new LocatedPin(Proportion.Zero, Axis.PinUnit, [new PinEgress(Proportion.Zero, +1, name: "Reflect in")], name: "Left reflect"),
+            new LocatedPin(new Proportion(2), Axis.PinUnit, [new PinEgress(new Proportion(2), -1, name: "Reflect in")], name: "Right reflect"));
+
+        runtime.SetBoundaryPins(explicitReflect);
+        var emission = runtime.Fire();
+
+        Assert.Equal(
+            [
+                PlanarTraversalMotion.Visible(new PlanarOffset(2, 0), endsStroke: true),
+                PlanarTraversalMotion.Visible(new PlanarOffset(-1, 0)),
+            ],
+            emission.Parts);
+    }
 }
