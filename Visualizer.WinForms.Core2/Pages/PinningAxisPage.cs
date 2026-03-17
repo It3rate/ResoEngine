@@ -578,6 +578,7 @@ public sealed partial class PinningAxisPage : IVisualizerPage
         }
 
         DrawUnitDisplay(canvas, origin, scale, geometry);
+        DrawAmbiguousValueDisplays(canvas, origin, scale, geometry);
 
         bool sameDirection = geometry.RecessiveRay.HasEndpoint &&
             geometry.DominantRay.HasEndpoint &&
@@ -673,43 +674,117 @@ public sealed partial class PinningAxisPage : IVisualizerPage
 
     private void DrawUnitDisplay(SKCanvas canvas, SKPoint origin, float scale, PinAxisDisplayGeometry geometry)
     {
-        bool recessiveNoise = geometry.Resolution.RecessiveSide.ValueSign == 0 || geometry.Resolution.RecessiveSide.UnitSign == 0;
-        bool dominantNoise = geometry.Resolution.DominantSide.ValueSign == 0 || geometry.Resolution.DominantSide.UnitSign == 0;
-        SKPoint recessiveDisplayBasis = recessiveNoise ? SKPoint.Empty : geometry.RecessiveBasis;
-        SKPoint dominantDisplayBasis = dominantNoise ? SKPoint.Empty : geometry.DominantBasis;
         SKPoint recessiveUnitBasis = GetUnitBasis(geometry.Resolution.RecessiveSide);
         SKPoint dominantUnitBasis = GetUnitBasis(geometry.Resolution.DominantSide);
+        bool recessiveHasUnit = geometry.Resolution.RecessiveSide.UnitSign != 0 && recessiveUnitBasis != SKPoint.Empty;
+        bool dominantHasUnit = geometry.Resolution.DominantSide.UnitSign != 0 && dominantUnitBasis != SKPoint.Empty;
 
         bool showUnitCell =
             ShowCell &&
-            !recessiveNoise &&
-            !dominantNoise &&
-            recessiveDisplayBasis != SKPoint.Empty &&
-            dominantDisplayBasis != SKPoint.Empty &&
-            AreOrthogonal(recessiveDisplayBasis, dominantDisplayBasis);
+            recessiveHasUnit &&
+            dominantHasUnit &&
+            AreOrthogonal(recessiveUnitBasis, dominantUnitBasis);
 
         if (showUnitCell)
         {
-            DrawUnitCell(canvas, origin, scale, recessiveDisplayBasis, dominantDisplayBasis);
+            DrawUnitCell(canvas, origin, scale, recessiveUnitBasis, dominantUnitBasis);
             return;
         }
 
-        if (!recessiveNoise && recessiveDisplayBasis != SKPoint.Empty && recessiveUnitBasis != SKPoint.Empty)
+        if (recessiveHasUnit)
         {
-            SKRect? recessiveRect = GetUnitMarkerRect(origin, scale, recessiveDisplayBasis, recessiveUnitBasis);
+            SKRect? recessiveRect = GetUnitMarkerRect(origin, scale, recessiveUnitBasis, recessiveUnitBasis);
             if (recessiveRect.HasValue)
             {
                 DrawUnitMarker(canvas, recessiveRect.Value, SegmentColors.Red.Solid);
             }
         }
 
-        if (!dominantNoise && dominantDisplayBasis != SKPoint.Empty && dominantUnitBasis != SKPoint.Empty)
+        if (dominantHasUnit)
         {
-            SKRect? dominantRect = GetUnitMarkerRect(origin, scale, dominantDisplayBasis, dominantUnitBasis);
+            SKRect? dominantRect = GetUnitMarkerRect(origin, scale, dominantUnitBasis, dominantUnitBasis);
             if (dominantRect.HasValue)
             {
                 DrawUnitMarker(canvas, dominantRect.Value, SegmentColors.Blue.Solid);
             }
+        }
+    }
+
+    private void DrawAmbiguousValueDisplays(SKCanvas canvas, SKPoint origin, float scale, PinAxisDisplayGeometry geometry)
+    {
+        DrawAmbiguousValueDisplay(canvas, origin, scale, geometry.Resolution.RecessiveSide, geometry.Descriptor.Recessive, SegmentColors.Red.Solid, useCircleTip: true);
+        DrawAmbiguousValueDisplay(canvas, origin, scale, geometry.Resolution.DominantSide, geometry.Descriptor.Dominant, SegmentColors.Blue.Solid, useCircleTip: false);
+    }
+
+    private void DrawAmbiguousValueDisplay(
+        SKCanvas canvas,
+        SKPoint origin,
+        float scale,
+        PinResolvedSide side,
+        Proportion proportion,
+        SKColor color,
+        bool useCircleTip)
+    {
+        if (side.UnitSign != 0 || side.ValueSign == 0)
+        {
+            return;
+        }
+
+        float magnitude = GetMagnitude(proportion);
+        if (magnitude <= 0.0001f)
+        {
+            return;
+        }
+
+        int naturalDirection = side.Role == PinSideRole.Recessive ? -1 : 1;
+        int direction = naturalDirection * side.ValueSign;
+        var nativeEndpoint = side.Role switch
+        {
+            PinSideRole.Recessive => new SKPoint(direction * magnitude, 0f),
+            PinSideRole.Dominant => new SKPoint(direction * magnitude, 0f),
+            _ => SKPoint.Empty,
+        };
+        var orthogonalEndpoint = side.Role switch
+        {
+            PinSideRole.Recessive => new SKPoint(0f, direction * magnitude),
+            PinSideRole.Dominant => new SKPoint(0f, direction * magnitude),
+            _ => SKPoint.Empty,
+        };
+
+        using var linePaint = new SKPaint
+        {
+            Style = SKPaintStyle.Stroke,
+            StrokeWidth = 4f,
+            Color = color.WithAlpha(51),
+            IsAntialias = true,
+            StrokeCap = SKStrokeCap.Round,
+        };
+        using var fillPaint = new SKPaint
+        {
+            Style = SKPaintStyle.Fill,
+            Color = color.WithAlpha(51),
+            IsAntialias = true,
+        };
+
+        DrawGhostRay(canvas, origin, scale, nativeEndpoint, linePaint, fillPaint, useCircleTip);
+        DrawGhostRay(canvas, origin, scale, orthogonalEndpoint, linePaint, fillPaint, useCircleTip);
+    }
+
+    private void DrawGhostRay(SKCanvas canvas, SKPoint origin, float scale, SKPoint logicalEndpoint, SKPaint linePaint, SKPaint fillPaint, bool useCircleTip)
+    {
+        if (logicalEndpoint == SKPoint.Empty)
+        {
+            return;
+        }
+
+        var end = ToPixel(logicalEndpoint, origin, scale);
+        if (useCircleTip)
+        {
+            DrawLineWithCircleEnd(canvas, origin, end, linePaint, fillPaint);
+        }
+        else
+        {
+            DrawArrow(canvas, origin, end, linePaint, fillPaint);
         }
     }
 
@@ -922,8 +997,8 @@ public sealed partial class PinningAxisPage : IVisualizerPage
 
     private string DescribeSceneTitle(Axis axis)
     {
-        bool recessiveNoise = _recessiveValue == 0 || _recessiveUnit == 0;
-        bool dominantNoise = _dominantValue == 0 || _dominantUnit == 0;
+        bool recessiveNoise = _recessiveUnit == 0;
+        bool dominantNoise = _dominantUnit == 0;
         if (recessiveNoise && dominantNoise)
         {
             return "Pure noise";
@@ -975,8 +1050,8 @@ public sealed partial class PinningAxisPage : IVisualizerPage
 
     private void DrawNoiseIndicators(SKCanvas canvas, SKPoint origin)
     {
-        bool recessiveNoise = _recessiveValue == 0 || _recessiveUnit == 0;
-        bool dominantNoise = _dominantValue == 0 || _dominantUnit == 0;
+        bool recessiveNoise = _recessiveUnit == 0;
+        bool dominantNoise = _dominantUnit == 0;
 
         if (!recessiveNoise && !dominantNoise)
         {
@@ -1010,6 +1085,17 @@ public sealed partial class PinningAxisPage : IVisualizerPage
 
     private static bool AreOrthogonal(SKPoint left, SKPoint right) =>
         Math.Abs(left.X * right.X + left.Y * right.Y) < 0.01f;
+
+    private static float GetMagnitude(Proportion value)
+    {
+        decimal folded = value.Fold();
+        if (folded == decimal.MaxValue || folded == decimal.MinValue)
+        {
+            return Math.Abs(value.Dominant);
+        }
+
+        return Math.Abs((float)folded);
+    }
 
     private static SKPoint GetUnitBasis(PinResolvedSide side)
     {
