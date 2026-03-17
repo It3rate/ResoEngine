@@ -34,19 +34,22 @@ public sealed class PinEgress
         Proportion start,
         int directionSign,
         BoundaryPinPair? context = null,
-        string? name = null)
+        string? name = null,
+        bool preservesCurrentContext = true)
     {
         Start = start;
         DirectionSign = Math.Sign(directionSign);
         Context = context;
         Name = name;
+        PreservesCurrentContext = preservesCurrentContext;
     }
 
     public Proportion Start { get; }
     public int DirectionSign { get; }
     public BoundaryPinPair? Context { get; }
     public string? Name { get; }
+    public bool PreservesCurrentContext { get; }
 
     public Axis? Frame => Context?.Frame;
-    public bool IsUnbounded => Context is null;
+    public bool IsUnbounded => Context is null && !PreservesCurrentContext;
 }

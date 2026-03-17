@@ -7,7 +7,8 @@ public sealed record AxisTraversalDefinition(
     Proportion Step,
     BoundaryContinuationLaw Law = BoundaryContinuationLaw.TensionPreserving,
     Proportion? Seed = null,
-    BoundaryPinPair? BoundaryPins = null)
+    BoundaryPinPair? BoundaryPins = null,
+    IReadOnlyList<LocatedPin>? Pins = null)
 {
     public AxisTraversalState CreateState() => new(this, Seed ?? Proportion.Zero);
 

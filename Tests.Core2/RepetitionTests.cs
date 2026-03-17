@@ -185,4 +185,72 @@ public class RepetitionTests
         Assert.Contains(first.Tensions, tension => tension.Kind == RepetitionTensionKind.BoundaryExceeded);
         Assert.Equal(Axis.FromCoordinates(new Proportion(3), new Proportion(6)), second.Segment);
     }
+
+    [Fact]
+    public void AxisTraversal_CanReflectFromAnInteriorPin()
+    {
+        var frame = Axis.FromCoordinates(Proportion.Zero, new Proportion(10));
+        var landmark = new LocatedPin(
+            new Proportion(5),
+            Axis.PinUnit,
+            [new PinEgress(new Proportion(5), -1, name: "Turn back")],
+            name: "Interior reflect");
+
+        var traversal = new AxisTraversalDefinition(
+            frame,
+            new Proportion(7),
+            Seed: Proportion.Zero,
+            Pins: [landmark]).CreateState();
+
+        var parts = traversal.EnumerateFire().ToArray();
+
+        Assert.Equal(
+            [Axis.FromCoordinates(Proportion.Zero, new Proportion(5)), Axis.FromCoordinates(new Proportion(5), new Proportion(3))],
+            parts.Select(part => part.Segment).ToArray());
+        Assert.True(parts[0].BreakAfter);
+        Assert.Equal(new Proportion(3), traversal.Value);
+    }
+
+    [Fact]
+    public void AxisTraversal_CanAbsorbAtAnInteriorPin()
+    {
+        var frame = Axis.FromCoordinates(Proportion.Zero, new Proportion(10));
+        var clamp = new LocatedPin(new Proportion(5), Axis.PinUnit, absorbs: true, name: "Interior clamp");
+
+        var traversal = new AxisTraversalDefinition(
+            frame,
+            new Proportion(7),
+            Seed: Proportion.Zero,
+            Pins: [clamp]).CreateState();
+
+        var step = traversal.Fire();
+
+        Assert.Equal(Axis.FromCoordinates(Proportion.Zero, new Proportion(5)), step.Segment);
+        Assert.Equal(new Proportion(5), traversal.Value);
+    }
+
+    [Fact]
+    public void AxisTraversal_CanShortCircuitToAnotherCarrierPositionFromInteriorPin()
+    {
+        var frame = Axis.FromCoordinates(Proportion.Zero, new Proportion(10));
+        var pin = new LocatedPin(
+            new Proportion(5),
+            Axis.PinUnit,
+            [new PinEgress(new Proportion(8), -1, name: "Attach elsewhere")],
+            name: "Interior attach");
+
+        var traversal = new AxisTraversalDefinition(
+            frame,
+            new Proportion(7),
+            Seed: Proportion.Zero,
+            Pins: [pin]).CreateState();
+
+        var parts = traversal.EnumerateFire().ToArray();
+
+        Assert.Equal(
+            [Axis.FromCoordinates(Proportion.Zero, new Proportion(5)), Axis.FromCoordinates(new Proportion(8), new Proportion(6))],
+            parts.Select(part => part.Segment).ToArray());
+        Assert.True(parts[0].BreakAfter);
+        Assert.Equal(new Proportion(6), traversal.Value);
+    }
 }

@@ -19,4 +19,6 @@ public enum BoundaryContinuationLaw
 public enum RepetitionTensionKind
 {
     BoundaryExceeded,
+    PinStalled,
+    MultipleOutputsDeferred,
 }

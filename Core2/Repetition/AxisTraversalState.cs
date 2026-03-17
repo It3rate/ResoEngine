@@ -6,6 +6,7 @@ public sealed class AxisTraversalState
 {
     private readonly AxisTraversalDefinition _definition;
     private readonly Proportion _stepMagnitude;
+    private readonly IReadOnlyList<LocatedPin> _pins;
     private Axis? _activeFrame;
     private BoundaryPinPair? _boundaryPins;
     private int _direction;
@@ -16,6 +17,7 @@ public sealed class AxisTraversalState
 
         _definition = definition;
         _stepMagnitude = definition.Step.Abs();
+        _pins = definition.Pins ?? [];
         _direction = definition.Step.Sign < 0 ? -1 : 1;
         _activeFrame = definition.Frame ?? definition.BoundaryPins?.Frame;
         _boundaryPins = definition.ResolveBoundaryPins();
@@ -54,7 +56,8 @@ public sealed class AxisTraversalState
             _stepMagnitude,
             _direction,
             _activeFrame,
-            _boundaryPins);
+            _boundaryPins,
+            _pins);
 
         Value = advance.FinalValue;
         _direction = advance.FinalDirection;
