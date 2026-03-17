@@ -34,6 +34,8 @@ public sealed class LandmarkContinuationPage : IVisualizerPage
     private readonly List<FieldLayout> _fieldLayouts = [];
     private readonly List<ButtonLayout> _buttonLayouts = [];
     private readonly List<PinLayout> _pinLayouts = [];
+    private readonly List<CarrierLayout> _carrierLayouts = [];
+    private readonly List<ForceHandleLayout> _forceHandleLayouts = [];
 
     private SceneLayout? _sceneLayout;
     private SKRect _seedRect;
@@ -41,6 +43,7 @@ public sealed class LandmarkContinuationPage : IVisualizerPage
     private string? _activeFieldKey;
     private DragMode _dragMode;
     private int? _dragPinId;
+    private PinSideRole? _dragSideRole;
     private SKPoint _dragPointer;
 
     private readonly List<LandmarkPinModel> _pins = [new(1, 0, 1, 1, 1, 1)];
@@ -274,6 +277,8 @@ public sealed class LandmarkContinuationPage : IVisualizerPage
         _fieldLayouts.Clear();
         _buttonLayouts.Clear();
         _pinLayouts.Clear();
+        _carrierLayouts.Clear();
+        _forceHandleLayouts.Clear();
 
         float width = _coords?.Width ?? 900f;
         float height = _coords?.Height ?? 800f;
@@ -338,6 +343,17 @@ public sealed class LandmarkContinuationPage : IVisualizerPage
             }
         }
 
+        var forceHandle = HitForceHandle(pixelPoint);
+        if (forceHandle != null)
+        {
+            _selectedPinId = forceHandle.PinId;
+            _dragPinId = forceHandle.PinId;
+            _dragSideRole = forceHandle.Side;
+            _dragMode = forceHandle.Side == PinSideRole.Recessive ? DragMode.RecessiveLength : DragMode.DominantLength;
+            _canvasHost?.InvalidateCanvas();
+            return true;
+        }
+
         var pin = HitPin(pixelPoint);
         if (pin != null)
         {
@@ -389,16 +405,25 @@ public sealed class LandmarkContinuationPage : IVisualizerPage
 
             case DragMode.ExistingPin:
                 _dragPointer = pixelPoint;
-                if (_dragPinId is int pinId && TryProjectToCarrier(pixelPoint, out int halfSteps))
+                if (_dragPinId is int pinId && TryProjectToCarrier(pixelPoint, out CarrierProjection projection))
                 {
                     var pin = _pins.FirstOrDefault(candidate => candidate.Id == pinId);
-                    if (pin != null)
+                    if (pin != null && !(projection.Carrier.Kind == CarrierKind.PinSide && projection.Carrier.PinId == pinId))
                     {
-                        pin.LocationHalfSteps = ClampHalfStep(halfSteps, _segmentStartHalfSteps, _segmentEndHalfSteps);
+                        pin.Carrier = projection.Carrier;
+                        pin.LocationHalfSteps = projection.LocationHalfSteps;
                     }
                 }
 
                 _canvasHost.Cursor = _trashRect.Contains(pixelPoint) ? Cursors.Hand : Cursors.SizeWE;
+                _canvasHost.InvalidateCanvas();
+                return;
+
+            case DragMode.RecessiveLength:
+            case DragMode.DominantLength:
+                _dragPointer = pixelPoint;
+                UpdateForceLength(pixelPoint);
+                _canvasHost.Cursor = Cursors.SizeAll;
                 _canvasHost.InvalidateCanvas();
                 return;
 
@@ -434,6 +459,12 @@ public sealed class LandmarkContinuationPage : IVisualizerPage
             return;
         }
 
+        if (HitForceHandle(pixelPoint) != null)
+        {
+            _canvasHost.Cursor = Cursors.SizeAll;
+            return;
+        }
+
         _canvasHost.Cursor = Cursors.Default;
     }
 
@@ -442,9 +473,12 @@ public sealed class LandmarkContinuationPage : IVisualizerPage
         switch (_dragMode)
         {
             case DragMode.NewPin:
-                if (TryProjectToCarrier(pixelPoint, out int halfSteps))
+                if (TryProjectToCarrier(pixelPoint, out CarrierProjection projection))
                 {
-                    var pin = new LandmarkPinModel(_nextPinId++, ClampHalfStep(halfSteps, _segmentStartHalfSteps, _segmentEndHalfSteps), 1, 1, 1, 1);
+                    var pin = new LandmarkPinModel(_nextPinId++, projection.LocationHalfSteps, 1, 1, 1, 1)
+                    {
+                        Carrier = projection.Carrier,
+                    };
                     _pins.Add(pin);
                     _selectedPinId = pin.Id;
                 }
@@ -465,6 +499,7 @@ public sealed class LandmarkContinuationPage : IVisualizerPage
         _activeFieldKey = null;
         _dragMode = DragMode.None;
         _dragPinId = null;
+        _dragSideRole = null;
         if (_canvasHost != null)
         {
             _canvasHost.Cursor = Cursors.Default;
@@ -480,9 +515,12 @@ public sealed class LandmarkContinuationPage : IVisualizerPage
         _fieldLayouts.Clear();
         _buttonLayouts.Clear();
         _pinLayouts.Clear();
+        _carrierLayouts.Clear();
+        _forceHandleLayouts.Clear();
         _activeFieldKey = null;
         _dragMode = DragMode.None;
         _dragPinId = null;
+        _dragSideRole = null;
         _seedRect = SKRect.Empty;
         _trashRect = SKRect.Empty;
     }
@@ -838,26 +876,26 @@ public sealed class LandmarkContinuationPage : IVisualizerPage
             canvas.DrawText(tick.ToString("+0;-0;0"), x, layout.CarrierY + 26f, _tickTextPaint);
         }
 
-        var pinInfos = _pins
-            .Select(pin => BuildRenderInfo(layout, pin))
-            .OrderBy(info => info.Origin.X)
-            .ToList();
+        var pinInfos = BuildRenderInfos(layout);
+        var pinInfoMap = pinInfos.ToDictionary(info => info.Pin.Id);
+        var frameCarrier = new CarrierLayout(CarrierReference.Frame, layout.StartPoint, layout.EndPoint, _segmentEndHalfSteps - _segmentStartHalfSteps);
+        _carrierLayouts.Add(frameCarrier);
 
-        CarrierFlowState flowState = DrawCarrierBaseline(canvas, layout, pinInfos);
+        CarrierSegmentFlowState flowState = DrawCarrierBaseline(canvas, frameCarrier, pinInfos);
 
         foreach (var info in pinInfos.Where(info => info.Pin.Id != _selectedPinId))
         {
-            DrawLandmarkForceLines(canvas, layout, info);
+            DrawLandmarkForceLines(canvas, layout, info, pinInfos, pinInfoMap);
         }
 
         if (pinInfos.FirstOrDefault(info => info.Pin.Id == _selectedPinId) is { } selectedInfo && selectedInfo.Pin is not null)
         {
-            DrawLandmarkForceLines(canvas, layout, selectedInfo);
+            DrawLandmarkForceLines(canvas, layout, selectedInfo, pinInfos, pinInfoMap);
         }
 
         foreach (var info in pinInfos.Where(info => info.Pin.Id != _selectedPinId))
         {
-            DrawPinStructure(canvas, layout.UnitScale, info, showPinTag: false, alpha: SecondaryOverlayAlpha);
+            DrawPinStructure(canvas, layout.UnitScale, info, showPinTag: true, alpha: SecondaryOverlayAlpha);
         }
 
         if (pinInfos.FirstOrDefault(info => info.Pin.Id == _selectedPinId) is { } selectedOverlay && selectedOverlay.Pin is not null)
@@ -868,13 +906,13 @@ public sealed class LandmarkContinuationPage : IVisualizerPage
         DrawEndpointDot(
             canvas,
             layout.StartPoint,
-            flowState.FadeLeft
+            flowState.FadeStart
                 ? new SKColor(_frameEndpointColor.Red, _frameEndpointColor.Green, _frameEndpointColor.Blue, 82)
                 : _frameEndpointColor);
         DrawEndpointArrowhead(
             canvas,
             layout.EndPoint,
-            flowState.FadeRight
+            flowState.FadeEnd
                 ? new SKColor(_frameEndpointColor.Red, _frameEndpointColor.Green, _frameEndpointColor.Blue, 82)
                 : _frameEndpointColor);
 
@@ -931,10 +969,16 @@ public sealed class LandmarkContinuationPage : IVisualizerPage
     private void DrawGhostPin(SKCanvas canvas, SceneLayout layout, SKPoint pointer)
     {
         var ghostDescriptor = new LandmarkPinModel(-1, 0, 1, 1, 1, 1);
-        if (TryProjectToCarrier(pointer, out int halfSteps))
+        if (TryProjectToCarrier(pointer, out CarrierProjection projection))
         {
-            ghostDescriptor.LocationHalfSteps = ClampHalfStep(halfSteps, _segmentStartHalfSteps, _segmentEndHalfSteps);
-            DrawPinStructure(canvas, layout.UnitScale, BuildRenderInfo(layout, ghostDescriptor), showPinTag: false, alpha: 110);
+            ghostDescriptor.Carrier = projection.Carrier;
+            ghostDescriptor.LocationHalfSteps = projection.LocationHalfSteps;
+            DrawPinStructure(
+                canvas,
+                layout.UnitScale,
+                BuildRenderInfo(layout, ghostDescriptor, new Dictionary<int, LandmarkRenderInfo>(), new HashSet<int>()),
+                showPinTag: false,
+                alpha: 110);
             return;
         }
 
@@ -977,6 +1021,18 @@ public sealed class LandmarkContinuationPage : IVisualizerPage
             incoming: false);
 
         DrawNoiseIndicators(canvas, info.Origin, info.Pin, alpha);
+
+        if (info.Pin.Id == _selectedPinId)
+        {
+            using var haloPaint = new SKPaint
+            {
+                Style = SKPaintStyle.Stroke,
+                StrokeWidth = 3f,
+                Color = new SKColor(info.AccentColor.Red, info.AccentColor.Green, info.AccentColor.Blue, 110),
+                IsAntialias = true,
+            };
+            canvas.DrawCircle(info.Origin, VisualStyle.OriginDotRadius + 7f, haloPaint);
+        }
 
         canvas.DrawCircle(info.Origin, VisualStyle.OriginDotRadius, _originFillPaint);
         canvas.DrawCircle(info.Origin, VisualStyle.OriginDotRadius, _originStrokePaint);
@@ -1329,7 +1385,52 @@ public sealed class LandmarkContinuationPage : IVisualizerPage
     {
         foreach (var pin in _pins)
         {
-            pin.LocationHalfSteps = ClampHalfStep(pin.LocationHalfSteps, _segmentStartHalfSteps, _segmentEndHalfSteps);
+            if (pin.Carrier.Kind == CarrierKind.Frame)
+            {
+                pin.LocationHalfSteps = ClampHalfStep(pin.LocationHalfSteps, _segmentStartHalfSteps, _segmentEndHalfSteps);
+            }
+        }
+    }
+
+    private void UpdateForceLength(SKPoint pixelPoint)
+    {
+        if (_dragPinId is not int pinId || _dragSideRole is not PinSideRole sideRole || _sceneLayout is null)
+        {
+            return;
+        }
+
+        var pin = _pins.FirstOrDefault(candidate => candidate.Id == pinId);
+        var carrier = _carrierLayouts.LastOrDefault(layout =>
+            layout.Reference.Kind == CarrierKind.PinSide &&
+            layout.Reference.PinId == pinId &&
+            layout.Reference.Side == sideRole);
+        if (pin is null || carrier is null)
+        {
+            return;
+        }
+
+        SKPoint start = carrier.Start;
+        SKPoint end = carrier.End;
+        float dx = end.X - start.X;
+        float dy = end.Y - start.Y;
+        float length = MathF.Sqrt(dx * dx + dy * dy);
+        if (length < 0.001f)
+        {
+            return;
+        }
+
+        float ux = dx / length;
+        float uy = dy / length;
+        float alongPixels = MathF.Max(0f, (pixelPoint.X - start.X) * ux + (pixelPoint.Y - start.Y) * uy);
+        int halfSteps = Math.Max(1, (int)Math.Round(alongPixels / _sceneLayout.UnitScale * 2f, MidpointRounding.AwayFromZero));
+
+        if (sideRole == PinSideRole.Recessive)
+        {
+            pin.RecessiveLengthHalfSteps = halfSteps;
+        }
+        else
+        {
+            pin.DominantLengthHalfSteps = halfSteps;
         }
     }
 
@@ -1351,23 +1452,53 @@ public sealed class LandmarkContinuationPage : IVisualizerPage
         return (int)Math.Round(value * 2f, MidpointRounding.AwayFromZero);
     }
 
-    private bool TryProjectToCarrier(SKPoint point, out int halfSteps)
+    private bool TryProjectToCarrier(SKPoint point, out CarrierProjection projection)
     {
-        if (_sceneLayout is null)
+        projection = default;
+        if (_sceneLayout is null || _carrierLayouts.Count == 0)
         {
-            halfSteps = 0;
             return false;
         }
 
-        float minX = Math.Min(_sceneLayout.StartPoint.X, _sceneLayout.EndPoint.X) - 10f;
-        float maxX = Math.Max(_sceneLayout.StartPoint.X, _sceneLayout.EndPoint.X) + 10f;
-        if (point.X < minX || point.X > maxX || MathF.Abs(point.Y - _sceneLayout.CarrierY) > 42f)
+        CarrierLayout? bestCarrier = null;
+        float bestDistance = float.MaxValue;
+        float bestT = 0f;
+
+        foreach (var carrier in _carrierLayouts)
         {
-            halfSteps = 0;
+            if (!TryProjectOntoSegment(point, carrier.Start, carrier.End, out float t, out float distance))
+            {
+                continue;
+            }
+
+            if (distance > 22f || distance >= bestDistance)
+            {
+                continue;
+            }
+
+            bestCarrier = carrier;
+            bestDistance = distance;
+            bestT = t;
+        }
+
+        if (bestCarrier is null)
+        {
             return false;
         }
 
-        halfSteps = ClampHalfStep(XToHalfStep(point.X), _segmentStartHalfSteps, _segmentEndHalfSteps);
+        if (bestCarrier.Reference.Kind == CarrierKind.Frame)
+        {
+            float projectedX = bestCarrier.Start.X + (bestCarrier.End.X - bestCarrier.Start.X) * bestT;
+            projection = new CarrierProjection(
+                bestCarrier.Reference,
+                ClampHalfStep(XToHalfStep(projectedX), _segmentStartHalfSteps, _segmentEndHalfSteps));
+            return true;
+        }
+
+        int lengthHalfSteps = Math.Max(1, bestCarrier.LengthHalfSteps);
+        projection = new CarrierProjection(
+            bestCarrier.Reference,
+            Math.Clamp((int)Math.Round(lengthHalfSteps * bestT, MidpointRounding.AwayFromZero), 0, lengthHalfSteps));
         return true;
     }
 
@@ -1395,27 +1526,215 @@ public sealed class LandmarkContinuationPage : IVisualizerPage
     private PinLayout? HitPin(SKPoint pixelPoint) =>
         _pinLayouts.LastOrDefault(layout => layout.Rect.Contains(pixelPoint.X, pixelPoint.Y));
 
+    private ForceHandleLayout? HitForceHandle(SKPoint pixelPoint) =>
+        _forceHandleLayouts.LastOrDefault(layout => layout.Rect.Contains(pixelPoint.X, pixelPoint.Y));
+
     private static int ClampHalfStep(int value, int minValue, int maxValue) =>
         Math.Clamp(value, minValue, maxValue);
 
     private static SKPoint ToPixel(SKPoint logicalPoint, SKPoint origin, float scale) =>
         new(origin.X + logicalPoint.X * scale, origin.Y - logicalPoint.Y * scale);
 
-    private LandmarkRenderInfo BuildRenderInfo(SceneLayout layout, LandmarkPinModel pin)
+    private List<LandmarkRenderInfo> BuildRenderInfos(SceneLayout layout)
     {
-        var geometry = new PinAxisDisplayGeometry(pin.BuildDescriptor());
-        var origin = new SKPoint(ValueToX(pin.LocationHalfSteps / 2f, layout), layout.CarrierY);
-        return new LandmarkRenderInfo(pin, geometry, origin, GetLandmarkAccentColor(pin.Id));
+        var cache = new Dictionary<int, LandmarkRenderInfo>();
+        foreach (var pin in _pins)
+        {
+            _ = BuildRenderInfo(layout, pin, cache, new HashSet<int>());
+        }
+
+        return cache.Values.OrderBy(info => info.Origin.X).ToList();
     }
 
-    private CarrierFlowState DrawCarrierBaseline(SKCanvas canvas, SceneLayout layout, IReadOnlyList<LandmarkRenderInfo> pinInfos)
+    private LandmarkRenderInfo BuildRenderInfo(
+        SceneLayout layout,
+        LandmarkPinModel pin,
+        Dictionary<int, LandmarkRenderInfo> cache,
+        HashSet<int> visiting)
     {
-        canvas.DrawLine(layout.StartPoint, layout.EndPoint, _carrierGhostPaint);
-
-        CarrierFlowState flowState = ComputeCarrierFlowState(layout, pinInfos);
-        if (!flowState.FadeLeft && !flowState.FadeRight)
+        if (cache.TryGetValue(pin.Id, out var cached))
         {
-            canvas.DrawLine(layout.StartPoint, layout.EndPoint, _carrierPaint);
+            return cached;
+        }
+
+        if (!visiting.Add(pin.Id))
+        {
+            return new LandmarkRenderInfo(pin, new PinAxisDisplayGeometry(pin.BuildDescriptor()), new SKPoint(layout.ZeroX, layout.CarrierY), GetLandmarkAccentColor(pin.Id));
+        }
+
+        var geometry = new PinAxisDisplayGeometry(pin.BuildDescriptor());
+        SKPoint origin = ResolvePinOrigin(layout, pin, cache, visiting);
+        var info = new LandmarkRenderInfo(pin, geometry, origin, GetLandmarkAccentColor(pin.Id));
+        cache[pin.Id] = info;
+        visiting.Remove(pin.Id);
+        return info;
+    }
+
+    private SKPoint ResolvePinOrigin(
+        SceneLayout layout,
+        LandmarkPinModel pin,
+        Dictionary<int, LandmarkRenderInfo> cache,
+        HashSet<int> visiting)
+    {
+        if (pin.Carrier.Kind == CarrierKind.Frame)
+        {
+            return new SKPoint(ValueToX(pin.LocationHalfSteps / 2f, layout), layout.CarrierY);
+        }
+
+        var parent = _pins.FirstOrDefault(candidate => candidate.Id == pin.Carrier.PinId);
+        if (parent is null)
+        {
+            return new SKPoint(layout.ZeroX, layout.CarrierY);
+        }
+
+        var parentInfo = BuildRenderInfo(layout, parent, cache, visiting);
+        if (!TryBuildForceCarrier(layout, parentInfo, pin.Carrier.Side, out CarrierLayout carrier))
+        {
+            return parentInfo.Origin;
+        }
+
+        int clamped = Math.Clamp(pin.LocationHalfSteps, 0, Math.Max(1, carrier.LengthHalfSteps));
+        float t = carrier.LengthHalfSteps <= 0 ? 0f : clamped / (float)carrier.LengthHalfSteps;
+        return new SKPoint(
+            carrier.Start.X + (carrier.End.X - carrier.Start.X) * t,
+            carrier.Start.Y + (carrier.End.Y - carrier.Start.Y) * t);
+    }
+
+    private bool TryBuildForceCarrier(SceneLayout layout, LandmarkRenderInfo info, PinSideRole sideRole, out CarrierLayout carrier)
+    {
+        PinResolvedSide side = sideRole == PinSideRole.Recessive
+            ? info.Geometry.Resolution.RecessiveSide
+            : info.Geometry.Resolution.DominantSide;
+        SKPoint displayBasis = sideRole == PinSideRole.Recessive
+            ? info.Geometry.RecessiveBasis
+            : info.Geometry.DominantBasis;
+        if (!ShouldShowForceLine(side))
+        {
+            carrier = default!;
+            return false;
+        }
+
+        SKPoint unitBasis = GetUnitBasis(side);
+        if (unitBasis == SKPoint.Empty || displayBasis == SKPoint.Empty)
+        {
+            carrier = default!;
+            return false;
+        }
+
+        SKPoint start = GetOffsetAnchor(info.Origin, unitBasis, layout.UnitScale);
+        int lengthHalfSteps = GetForceLengthHalfSteps(info.Pin, sideRole);
+        SKPoint end = new(
+            start.X + displayBasis.X * layout.UnitScale * lengthHalfSteps / 2f,
+            start.Y - displayBasis.Y * layout.UnitScale * lengthHalfSteps / 2f);
+        carrier = new CarrierLayout(new CarrierReference(CarrierKind.PinSide, info.Pin.Id, sideRole), start, end, lengthHalfSteps);
+        return true;
+    }
+
+    private bool TryResolveCarrierLayout(
+        SceneLayout layout,
+        CarrierReference reference,
+        IReadOnlyDictionary<int, LandmarkRenderInfo> pinInfoMap,
+        out CarrierLayout carrier)
+    {
+        if (reference.Kind == CarrierKind.Frame)
+        {
+            carrier = new CarrierLayout(reference, layout.StartPoint, layout.EndPoint, _segmentEndHalfSteps - _segmentStartHalfSteps);
+            return true;
+        }
+
+        if (!pinInfoMap.TryGetValue(reference.PinId, out LandmarkRenderInfo? parentInfo))
+        {
+            carrier = default!;
+            return false;
+        }
+
+        return TryBuildForceCarrier(layout, parentInfo, reference.Side, out carrier);
+    }
+
+    private static bool TryProjectOntoSegment(SKPoint point, SKPoint start, SKPoint end, out float t, out float distance)
+    {
+        float dx = end.X - start.X;
+        float dy = end.Y - start.Y;
+        float lengthSquared = dx * dx + dy * dy;
+        if (lengthSquared < 0.001f)
+        {
+            t = 0f;
+            float px = point.X - start.X;
+            float py = point.Y - start.Y;
+            distance = MathF.Sqrt(px * px + py * py);
+            return false;
+        }
+
+        t = ((point.X - start.X) * dx + (point.Y - start.Y) * dy) / lengthSquared;
+        t = Math.Clamp(t, 0f, 1f);
+        float projectedX = start.X + dx * t;
+        float projectedY = start.Y + dy * t;
+        float ddx = point.X - projectedX;
+        float ddy = point.Y - projectedY;
+        distance = MathF.Sqrt(ddx * ddx + ddy * ddy);
+        return true;
+    }
+
+    private static SKPoint PointAlongCarrier(CarrierLayout carrier, float t) =>
+        new(
+            carrier.Start.X + (carrier.End.X - carrier.Start.X) * t,
+            carrier.Start.Y + (carrier.End.Y - carrier.Start.Y) * t);
+
+    private static float ProjectAlongCarrier(CarrierLayout carrier, SKPoint point)
+    {
+        float dx = carrier.End.X - carrier.Start.X;
+        float dy = carrier.End.Y - carrier.Start.Y;
+        float lengthSquared = dx * dx + dy * dy;
+        if (lengthSquared < 0.001f)
+        {
+            return 0f;
+        }
+
+        float t = ((point.X - carrier.Start.X) * dx + (point.Y - carrier.Start.Y) * dy) / lengthSquared;
+        return Math.Clamp(t, 0f, 1f);
+    }
+
+    private static float Distance(SKPoint a, SKPoint b)
+    {
+        float dx = b.X - a.X;
+        float dy = b.Y - a.Y;
+        return MathF.Sqrt(dx * dx + dy * dy);
+    }
+
+    private static int GetCarrierFlowSign(CarrierLayout carrier, PinResolvedSide side, SKPoint displayBasis)
+    {
+        if (!ShouldShowForceLine(side) || displayBasis == SKPoint.Empty)
+        {
+            return 0;
+        }
+
+        float dx = carrier.End.X - carrier.Start.X;
+        float dy = carrier.Start.Y - carrier.End.Y;
+        float length = MathF.Sqrt(dx * dx + dy * dy);
+        if (length < 0.001f)
+        {
+            return 0;
+        }
+
+        float ux = dx / length;
+        float uy = dy / length;
+        float dot = displayBasis.X * ux + displayBasis.Y * uy;
+        if (MathF.Abs(dot) < 0.8f)
+        {
+            return 0;
+        }
+
+        return dot > 0f ? 1 : -1;
+    }
+
+    private CarrierSegmentFlowState DrawCarrierBaseline(SKCanvas canvas, CarrierLayout carrier, IReadOnlyList<LandmarkRenderInfo> pinInfos)
+    {
+        canvas.DrawLine(carrier.Start, carrier.End, _carrierGhostPaint);
+
+        CarrierSegmentFlowState flowState = ComputeCarrierFlowState(carrier, pinInfos);
+        if (!flowState.FadeStart && !flowState.FadeEnd)
+        {
+            canvas.DrawLine(carrier.Start, carrier.End, _carrierPaint);
             return flowState;
         }
 
@@ -1428,20 +1747,20 @@ public sealed class LandmarkContinuationPage : IVisualizerPage
             IsAntialias = true,
         };
 
-        SKPoint activeStart = new(flowState.ActiveLeftX, layout.CarrierY);
-        SKPoint activeEnd = new(flowState.ActiveRightX, layout.CarrierY);
+        SKPoint activeStart = PointAlongCarrier(carrier, flowState.ActiveStartT);
+        SKPoint activeEnd = PointAlongCarrier(carrier, flowState.ActiveEndT);
 
-        if (flowState.FadeLeft)
+        if (flowState.FadeStart)
         {
-            canvas.DrawLine(layout.StartPoint, activeStart, cutoffPaint);
+            canvas.DrawLine(carrier.Start, activeStart, cutoffPaint);
         }
 
-        if (flowState.FadeRight)
+        if (flowState.FadeEnd)
         {
-            canvas.DrawLine(activeEnd, layout.EndPoint, cutoffPaint);
+            canvas.DrawLine(activeEnd, carrier.End, cutoffPaint);
         }
 
-        if (flowState.ActiveLeftX < flowState.ActiveRightX - 0.01f)
+        if (flowState.ActiveStartT < flowState.ActiveEndT - 0.0001f)
         {
             canvas.DrawLine(activeStart, activeEnd, _carrierPaint);
         }
@@ -1449,7 +1768,12 @@ public sealed class LandmarkContinuationPage : IVisualizerPage
         return flowState;
     }
 
-    private void DrawLandmarkForceLines(SKCanvas canvas, SceneLayout layout, LandmarkRenderInfo info)
+    private void DrawLandmarkForceLines(
+        SKCanvas canvas,
+        SceneLayout layout,
+        LandmarkRenderInfo info,
+        IReadOnlyList<LandmarkRenderInfo> pinInfos,
+        IReadOnlyDictionary<int, LandmarkRenderInfo> pinInfoMap)
     {
         DrawLandmarkForceLine(
             canvas,
@@ -1457,14 +1781,18 @@ public sealed class LandmarkContinuationPage : IVisualizerPage
             info.Geometry.Resolution.RecessiveSide,
             info.Geometry.RecessiveBasis,
             incoming: true,
-            layout.UnitScale);
+            layout,
+            pinInfos,
+            pinInfoMap);
         DrawLandmarkForceLine(
             canvas,
             info,
             info.Geometry.Resolution.DominantSide,
             info.Geometry.DominantBasis,
             incoming: false,
-            layout.UnitScale);
+            layout,
+            pinInfos,
+            pinInfoMap);
     }
 
     private void DrawLandmarkForceLine(
@@ -1473,7 +1801,9 @@ public sealed class LandmarkContinuationPage : IVisualizerPage
         PinResolvedSide side,
         SKPoint displayBasis,
         bool incoming,
-        float scale)
+        SceneLayout layout,
+        IReadOnlyList<LandmarkRenderInfo> pinInfos,
+        IReadOnlyDictionary<int, LandmarkRenderInfo> pinInfoMap)
     {
         if (!ShouldShowForceLine(side))
         {
@@ -1486,12 +1816,24 @@ public sealed class LandmarkContinuationPage : IVisualizerPage
             return;
         }
 
+        float scale = layout.UnitScale;
         SKPoint anchor = GetOffsetAnchor(info.Origin, unitBasis, scale);
         SKPoint end = new(
-            anchor.X + displayBasis.X * scale * LandmarkForceLengthUnits,
-            anchor.Y - displayBasis.Y * scale * LandmarkForceLengthUnits);
+            anchor.X + displayBasis.X * scale * GetForceLengthHalfSteps(info.Pin, side.Role) / 2f,
+            anchor.Y - displayBasis.Y * scale * GetForceLengthHalfSteps(info.Pin, side.Role) / 2f);
 
-        byte forceAlpha = IsOpposingTimeline(side) ? (byte)102 : (byte)255;
+        var currentCarrier = new CarrierLayout(new CarrierReference(CarrierKind.PinSide, info.Pin.Id, side.Role), anchor, end, GetForceLengthHalfSteps(info.Pin, side.Role));
+        _carrierLayouts.Add(currentCarrier);
+        _forceHandleLayouts.Add(new ForceHandleLayout(info.Pin.Id, side.Role, new SKRect(end.X - 12f, end.Y - 12f, end.X + 12f, end.Y + 12f)));
+
+        byte forceAlpha = 255;
+        if (TryResolveCarrierLayout(layout, info.Pin.Carrier, pinInfoMap, out CarrierLayout parentCarrier) &&
+            GetCarrierFlowSign(parentCarrier, side, displayBasis) < 0)
+        {
+            forceAlpha = 102;
+        }
+
+        CarrierSegmentFlowState flowState = ComputeCarrierFlowState(currentCarrier, pinInfos);
         using var linePaint = new SKPaint
         {
             Style = SKPaintStyle.Stroke,
@@ -1506,68 +1848,95 @@ public sealed class LandmarkContinuationPage : IVisualizerPage
             Color = WithAlpha(info.AccentColor, forceAlpha),
             IsAntialias = true,
         };
-
-        if (incoming)
+        using var fadedLinePaint = new SKPaint
         {
-            DrawLineWithCircleEnd(canvas, anchor, end, linePaint, fillPaint);
+            Style = SKPaintStyle.Stroke,
+            StrokeWidth = 3.2f,
+            Color = WithAlpha(info.AccentColor, Math.Min(forceAlpha, (byte)102)),
+            StrokeCap = SKStrokeCap.Round,
+            IsAntialias = true,
+        };
+        using var fadedFillPaint = new SKPaint
+        {
+            Style = SKPaintStyle.Fill,
+            Color = WithAlpha(info.AccentColor, Math.Min(forceAlpha, (byte)102)),
+            IsAntialias = true,
+        };
+
+        SKPoint activeStart = PointAlongCarrier(currentCarrier, flowState.ActiveStartT);
+        SKPoint activeEnd = PointAlongCarrier(currentCarrier, flowState.ActiveEndT);
+
+        if (flowState.FadeStart && Distance(currentCarrier.Start, activeStart) > 0.5f)
+        {
+            canvas.DrawLine(currentCarrier.Start, activeStart, fadedLinePaint);
+        }
+
+        if (flowState.FadeEnd)
+        {
+            if (Distance(activeStart, activeEnd) > 0.5f)
+            {
+                canvas.DrawLine(activeStart, activeEnd, linePaint);
+            }
+
+            if (Distance(activeEnd, currentCarrier.End) > 0.5f)
+            {
+                if (incoming)
+                {
+                    DrawLineWithCircleEnd(canvas, activeEnd, currentCarrier.End, fadedLinePaint, fadedFillPaint);
+                }
+                else
+                {
+                    DrawArrow(canvas, activeEnd, currentCarrier.End, fadedLinePaint, fadedFillPaint);
+                }
+            }
         }
         else
         {
-            DrawArrow(canvas, anchor, end, linePaint, fillPaint);
+            if (Distance(activeStart, currentCarrier.End) > 0.5f)
+            {
+                if (incoming)
+                {
+                    DrawLineWithCircleEnd(canvas, activeStart, currentCarrier.End, linePaint, fillPaint);
+                }
+                else
+                {
+                    DrawArrow(canvas, activeStart, currentCarrier.End, linePaint, fillPaint);
+                }
+            }
         }
     }
 
-    private CarrierFlowState ComputeCarrierFlowState(SceneLayout layout, IReadOnlyList<LandmarkRenderInfo> pinInfos)
+    private CarrierSegmentFlowState ComputeCarrierFlowState(CarrierLayout carrier, IReadOnlyList<LandmarkRenderInfo> pinInfos)
     {
-        float activeLeftX = layout.StartPoint.X;
-        float activeRightX = layout.EndPoint.X;
-        bool fadeLeft = false;
-        bool fadeRight = false;
+        float activeStartT = 0f;
+        float activeEndT = 1f;
+        bool fadeStart = false;
+        bool fadeEnd = false;
 
-        foreach (var info in pinInfos)
+        foreach (var info in pinInfos.Where(info => info.Pin.Carrier.Equals(carrier.Reference)))
         {
-            if (IsLeftBlocking(info.Geometry.Resolution.DominantSide))
+            float t = ProjectAlongCarrier(carrier, info.Origin);
+            if (GetCarrierFlowSign(carrier, info.Geometry.Resolution.DominantSide, info.Geometry.DominantBasis) < 0)
             {
-                activeLeftX = MathF.Max(activeLeftX, info.Origin.X);
-                fadeLeft = true;
+                activeStartT = MathF.Max(activeStartT, t);
+                fadeStart = true;
             }
 
-            if (IsRightBlocking(info.Geometry.Resolution.RecessiveSide))
+            if (GetCarrierFlowSign(carrier, info.Geometry.Resolution.RecessiveSide, info.Geometry.RecessiveBasis) < 0)
             {
-                activeRightX = MathF.Min(activeRightX, info.Origin.X);
-                fadeRight = true;
+                activeEndT = MathF.Min(activeEndT, t);
+                fadeEnd = true;
             }
         }
 
-        if (activeRightX < activeLeftX)
+        if (activeEndT < activeStartT)
         {
-            float midpoint = (activeLeftX + activeRightX) * 0.5f;
-            activeLeftX = midpoint;
-            activeRightX = midpoint;
+            float midpoint = (activeStartT + activeEndT) * 0.5f;
+            activeStartT = midpoint;
+            activeEndT = midpoint;
         }
 
-        return new CarrierFlowState(activeLeftX, activeRightX, fadeLeft, fadeRight);
-    }
-
-    private static bool IsLeftBlocking(PinResolvedSide side) =>
-        side.Role == PinSideRole.Dominant && IsOpposingTimeline(side);
-
-    private static bool IsRightBlocking(PinResolvedSide side) =>
-        side.Role == PinSideRole.Recessive && IsOpposingTimeline(side);
-
-    private static bool IsOpposingTimeline(PinResolvedSide side) =>
-        GetCarrierFlowSign(side) < 0;
-
-    private static int GetCarrierFlowSign(PinResolvedSide side)
-    {
-        if (side.CarrierRank != 0 || side.UnitSign == 0 || side.ValueSign == 0 || side.DirectionSign == 0)
-        {
-            return 0;
-        }
-
-        return side.Role == PinSideRole.Recessive
-            ? -side.DirectionSign
-            : side.DirectionSign;
+        return new CarrierSegmentFlowState(activeStartT, activeEndT, fadeStart, fadeEnd);
     }
 
     private static bool ShouldShowForceLine(PinResolvedSide side) =>
@@ -1583,6 +1952,11 @@ public sealed class LandmarkContinuationPage : IVisualizerPage
             origin.X + unitBasis.Y * offset,
             origin.Y + unitBasis.X * offset);
     }
+
+    private static int GetForceLengthHalfSteps(LandmarkPinModel pin, PinSideRole sideRole) =>
+        sideRole == PinSideRole.Recessive
+            ? Math.Max(1, pin.RecessiveLengthHalfSteps)
+            : Math.Max(1, pin.DominantLengthHalfSteps);
 
     private static SKPoint GetUnitBasis(PinResolvedSide side)
     {
@@ -1654,10 +2028,16 @@ public sealed class LandmarkContinuationPage : IVisualizerPage
             RecessiveValue = recessiveValue;
             DominantUnit = dominantUnit;
             DominantValue = dominantValue;
+            Carrier = CarrierReference.Frame;
+            RecessiveLengthHalfSteps = 4;
+            DominantLengthHalfSteps = 4;
         }
 
         public int Id { get; }
+        public CarrierReference Carrier { get; set; }
         public int LocationHalfSteps { get; set; }
+        public int RecessiveLengthHalfSteps { get; set; }
+        public int DominantLengthHalfSteps { get; set; }
         public long RecessiveUnit { get; set; }
         public long RecessiveValue { get; set; }
         public long DominantUnit { get; set; }
@@ -1672,6 +2052,8 @@ public sealed class LandmarkContinuationPage : IVisualizerPage
         SegmentStart,
         SegmentEnd,
         ExistingPin,
+        RecessiveLength,
+        DominantLength,
         NewPin,
     }
 
@@ -1687,17 +2069,43 @@ public sealed class LandmarkContinuationPage : IVisualizerPage
 
     private sealed record PinLayout(int PinId, SKRect Rect);
 
+    private sealed record ForceHandleLayout(int PinId, PinSideRole Side, SKRect Rect);
+
     private sealed record LandmarkRenderInfo(
         LandmarkPinModel Pin,
         PinAxisDisplayGeometry Geometry,
         SKPoint Origin,
         SKColor AccentColor);
 
-    private sealed record CarrierFlowState(
-        float ActiveLeftX,
-        float ActiveRightX,
-        bool FadeLeft,
-        bool FadeRight);
+    private enum CarrierKind
+    {
+        Frame,
+        PinSide,
+    }
+
+    private readonly record struct CarrierReference(
+        CarrierKind Kind,
+        int PinId = 0,
+        PinSideRole Side = PinSideRole.Dominant)
+    {
+        public static CarrierReference Frame => new(CarrierKind.Frame);
+    }
+
+    private readonly record struct CarrierProjection(
+        CarrierReference Carrier,
+        int LocationHalfSteps);
+
+    private sealed record CarrierLayout(
+        CarrierReference Reference,
+        SKPoint Start,
+        SKPoint End,
+        int LengthHalfSteps);
+
+    private sealed record CarrierSegmentFlowState(
+        float ActiveStartT,
+        float ActiveEndT,
+        bool FadeStart,
+        bool FadeEnd);
 
     private sealed record SceneLayout(
         SKRect Rect,

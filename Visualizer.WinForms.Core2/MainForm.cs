@@ -104,18 +104,18 @@ public class MainForm : Form
         _pageManager.CurrentPageChanged += page => UpdatePageName(page);
         _pageManager.AddPage(new PinningAxisPage());
         _pageManager.AddPage(new LandmarkContinuationPage());
+        _pageManager.AddPage(new BoundaryRepetitionPage());
+        _pageManager.AddPage(new SquareWaveDynamicsPage());
+        _pageManager.AddPage(new FriezeGalleryPage());
         _pageManager.AddPage(new FriezePatternEditorPage());
         _pageManager.AddPage(new FriezePinningEditorPage());
-        _pageManager.AddPage(new FriezeGalleryPage());
-        _pageManager.AddPage(new SquareWaveDynamicsPage());
+        _pageManager.AddPage(new ContainmentTensionPage());
         _pageManager.AddPage(new OrthogonalAxesPage());
         _pageManager.AddPage(new BooleanOpsPage());
         _pageManager.AddPage(new OrthogonalBooleanGalleryPage());
         _pageManager.AddPage(new ParallelBooleanGalleryPage());
         _pageManager.AddPage(new FractionalPowerPage());
-        _pageManager.AddPage(new BoundaryRepetitionPage());
         _pageManager.AddPage(new UnitsQuantityPage());
-        _pageManager.AddPage(new ContainmentTensionPage());
     }
 
     protected override void Dispose(bool disposing)
