@@ -199,6 +199,24 @@ internal static class PinBoundaryTraversal
 
         PinEgress egress = pin.PrimaryOutput!;
 
+        if (frame is not null &&
+            frame.IsDegenerate &&
+            egress.Context is null &&
+            egress.PreservesCurrentContext &&
+            egress.Start == edge)
+        {
+            remaining = Proportion.Zero;
+            AppendEncounterTensions(
+                fragments,
+                current,
+                [
+                    new RepetitionTension(
+                        RepetitionTensionKind.PinStalled,
+                        $"Boundary pin '{pin.Name ?? pin.Location.ToString()}' could not advance on degenerate frame [{frame.LeftCoordinate}, {frame.RightCoordinate}].")
+                ]);
+            return;
+        }
+
         if (egress.Context == pins &&
             egress.Start == edge &&
             NormalizeDirection(egress.DirectionSign) == direction)

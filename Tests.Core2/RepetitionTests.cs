@@ -297,4 +297,21 @@ public class RepetitionTests
         Assert.True(parts[0].BreakAfter);
         Assert.Equal(new Proportion(6), traversal.Value);
     }
+
+    [Fact]
+    public void AxisTraversal_DegenerateReflectiveFrame_StopsInsteadOfLooping()
+    {
+        var frame = Axis.FromCoordinates(new Proportion(5), new Proportion(5));
+        var traversal = new AxisTraversalDefinition(
+            frame,
+            new Proportion(2),
+            BoundaryContinuationLaw.ReflectiveBounce,
+            new Proportion(5)).CreateState();
+
+        var step = traversal.Fire();
+
+        Assert.True(step.IsDegenerate);
+        Assert.Equal(new Proportion(5), traversal.Value);
+        Assert.Contains(step.Tensions, tension => tension.Kind == RepetitionTensionKind.PinStalled);
+    }
 }
