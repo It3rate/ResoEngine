@@ -364,6 +364,38 @@ public class FriezeCatalogTests
     }
 
     [Fact]
+    public void PlanarSegmentDefinition_CanReframeCustomBoundaryPinsOntoRouteCarrier()
+    {
+        var sourceFrame = Axis.FromCoordinates(Proportion.Zero, new Proportion(5));
+        var routeFrame = Axis.FromCoordinates(Proportion.Zero, new Proportion(2));
+        var customPins = BoundaryPinPair.Create(
+            sourceFrame,
+            new LocatedPin(Proportion.Zero, Axis.PinUnit, absorbs: true, name: "Left clamp"),
+            new LocatedPin(
+                new Proportion(5),
+                Axis.PinUnit,
+                [new PinEgress(new Proportion(5), -1, name: "Right reflect")],
+                name: "Right reflect"));
+        var definition = new PlanarSegmentDefinition(
+            "X1",
+            Axis.FromCoordinates(Proportion.Zero, new Proportion(2)),
+            BoundaryContinuationLaw.TensionPreserving,
+            PlanarOffset.Right,
+            new Proportion(3),
+            BoundaryPins: customPins);
+
+        var pins = definition.ResolveBoundaryPins(routeFrame);
+
+        Assert.NotNull(pins);
+        Assert.Null(pins!.SummaryLaw);
+        Assert.Equal(routeFrame.LeftCoordinate, pins.LeftPin!.Location);
+        Assert.True(pins.LeftPin.Absorbs);
+        Assert.Equal(routeFrame.RightCoordinate, pins.RightPin!.Location);
+        Assert.Equal(routeFrame.RightCoordinate, pins.RightPin.PrimaryOutput!.Start);
+        Assert.Equal(-1, pins.RightPin.PrimaryOutput.DirectionSign);
+    }
+
+    [Fact]
     public void PlanarSegmentRuntime_CanUseExplicitBoundaryPins()
     {
         var definition = new PlanarSegmentDefinition(

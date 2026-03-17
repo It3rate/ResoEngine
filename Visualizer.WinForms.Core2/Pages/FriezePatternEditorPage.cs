@@ -196,8 +196,18 @@ public class FriezePatternEditorPage : IVisualizerPage
         IsAntialias = true,
     };
 
+    private readonly SKPaint _endpointButtonTextPaint = new()
+    {
+        Color = new SKColor(86, 86, 86),
+        TextSize = 11f,
+        Typeface = SKTypeface.FromFamilyName(VisualStyle.FontFamily, SKFontStyle.Bold),
+        TextAlign = SKTextAlign.Center,
+        IsAntialias = true,
+    };
+
     private readonly IReadOnlyList<FriezePattern> _basePatterns = FriezeCatalog.GalleryPatterns;
     private readonly EditorSegment[] _editorSegments;
+    private readonly bool _useExplicitPins;
 
     private SkiaCanvas? _canvasHost;
     private Panel? _selectorPanel;
@@ -208,26 +218,31 @@ public class FriezePatternEditorPage : IVisualizerPage
     private readonly List<Button> _patternButtons = [];
     private readonly List<Button> _paletteButtons = [];
     private readonly List<Control> _gridColumns = [];
-    private readonly List<LawButtonHit> _lawHitTargets = [];
+    private readonly List<EditorButtonHit> _buttonHitTargets = [];
 
     private int _selectedPatternIndex;
     private List<List<string>> _workingColumns = [];
 
-    public FriezePatternEditorPage()
+    public FriezePatternEditorPage() : this(false)
     {
+    }
+
+    protected FriezePatternEditorPage(bool useExplicitPins)
+    {
+        _useExplicitPins = useExplicitPins;
         var defaults = FriezeCatalog.CreateDefaultSegments().ToDictionary(
             definition => definition.Name,
             StringComparer.OrdinalIgnoreCase);
 
         _editorSegments =
         [
-            new EditorSegment(defaults["X0"], "Short horizontal carrier.", SegmentColors.Red),
-            new EditorSegment(defaults["Y0"], "Vertical pulse carrier shown horizontally here.", SegmentColors.Blue),
-            new EditorSegment(defaults["X1"], "Long horizontal carrier.", SegmentColors.Green),
+            new EditorSegment(defaults["X0"], "Short horizontal carrier.", SegmentColors.Red, useExplicitPins),
+            new EditorSegment(defaults["Y0"], "Vertical pulse carrier shown horizontally here.", SegmentColors.Blue, useExplicitPins),
+            new EditorSegment(defaults["X1"], "Long horizontal carrier.", SegmentColors.Green, useExplicitPins),
         ];
     }
 
-    public string Title => "Frieze Pattern Editor";
+    public string Title => _useExplicitPins ? "Frieze Pinning Editor" : "Frieze Pattern Editor";
 
     public void Init(CoordinateSystem coords, HitTestEngine hitTest, SkiaCanvas canvas)
     {
@@ -239,14 +254,14 @@ public class FriezePatternEditorPage : IVisualizerPage
 
     public bool OnPointerDown(SKPoint pixelPoint)
     {
-        foreach (var hit in _lawHitTargets)
+        foreach (var hit in _buttonHitTargets)
         {
             if (!hit.Rect.Contains(pixelPoint.X, pixelPoint.Y))
             {
                 continue;
             }
 
-            hit.Editor.SetLaw(hit.Law);
+            hit.Handler();
             _canvasHost?.InvalidateCanvas();
             return true;
         }
@@ -302,7 +317,7 @@ public class FriezePatternEditorPage : IVisualizerPage
         _patternButtons.Clear();
         _paletteButtons.Clear();
         _gridColumns.Clear();
-        _lawHitTargets.Clear();
+        _buttonHitTargets.Clear();
 
         foreach (var editor in _editorSegments)
         {
@@ -748,7 +763,7 @@ public class FriezePatternEditorPage : IVisualizerPage
 
     private void DrawSegmentEditor(SKCanvas canvas, SKRect editorRect)
     {
-        _lawHitTargets.Clear();
+        _buttonHitTargets.Clear();
 
         canvas.DrawRoundRect(editorRect, 18f, 18f, _previewFillPaint);
         canvas.DrawRoundRect(editorRect, 18f, 18f, _previewBorderPaint);
@@ -774,15 +789,26 @@ public class FriezePatternEditorPage : IVisualizerPage
         float labelX = rowRect.Left + 14f;
         canvas.DrawText(editor.Name, labelX, rowRect.Top + 26f, _labelPaint);
 
-        float buttonLeft = rowRect.Left + 40f;
-        float buttonTop = rowRect.Top + 5f;
-        float buttonSize = 32f;
-        float buttonGap = 8f;
-        DrawLawToggleButton(canvas, new SKRect(buttonLeft, buttonTop, buttonLeft + buttonSize, buttonTop + buttonSize), editor, BoundaryContinuationLaw.ReflectiveBounce);
-        DrawLawToggleButton(canvas, new SKRect(buttonLeft + buttonSize + buttonGap, buttonTop, buttonLeft + buttonSize * 2f + buttonGap, buttonTop + buttonSize), editor, BoundaryContinuationLaw.PeriodicWrap);
-        DrawLawToggleButton(canvas, new SKRect(buttonLeft + (buttonSize + buttonGap) * 2f, buttonTop, buttonLeft + buttonSize * 3f + buttonGap * 2f, buttonTop + buttonSize), editor, BoundaryContinuationLaw.TensionPreserving);
+        SKRect stepRect;
+        if (_useExplicitPins)
+        {
+            float groupTop = rowRect.Top + 7f;
+            DrawEndpointModeGroup(canvas, rowRect.Left + 56f, groupTop, editor, PinBoundarySide.Left);
+            DrawEndpointModeGroup(canvas, rowRect.Left + 182f, groupTop, editor, PinBoundarySide.Right);
+            stepRect = new SKRect(rowRect.Left + 340f, rowRect.Top + 8f, rowRect.Left + 420f, rowRect.Bottom - 8f);
+        }
+        else
+        {
+            float buttonLeft = rowRect.Left + 40f;
+            float buttonTop = rowRect.Top + 5f;
+            float buttonSize = 32f;
+            float buttonGap = 8f;
+            DrawLawToggleButton(canvas, new SKRect(buttonLeft, buttonTop, buttonLeft + buttonSize, buttonTop + buttonSize), editor, BoundaryContinuationLaw.ReflectiveBounce);
+            DrawLawToggleButton(canvas, new SKRect(buttonLeft + buttonSize + buttonGap, buttonTop, buttonLeft + buttonSize * 2f + buttonGap, buttonTop + buttonSize), editor, BoundaryContinuationLaw.PeriodicWrap);
+            DrawLawToggleButton(canvas, new SKRect(buttonLeft + (buttonSize + buttonGap) * 2f, buttonTop, buttonLeft + buttonSize * 3f + buttonGap * 2f, buttonTop + buttonSize), editor, BoundaryContinuationLaw.TensionPreserving);
+            stepRect = new SKRect(rowRect.Left + 240f, rowRect.Top + 8f, rowRect.Left + 320f, rowRect.Bottom - 8f);
+        }
 
-        var stepRect = new SKRect(rowRect.Left + 240f, rowRect.Top + 8f, rowRect.Left + 320f, rowRect.Bottom - 8f);
         var spanRect = new SKRect(rowRect.Left + 560f, rowRect.Top + 8f, rowRect.Left + 640f, rowRect.Bottom - 8f);
 
         editor.StepCoords.OriginX = stepRect.MidX;
@@ -794,6 +820,25 @@ public class FriezePatternEditorPage : IVisualizerPage
         DrawEditorRuler(canvas, spanRect, editor.SpanCoords);
         editor.StepRenderer?.Render(canvas, editor.StepDisplay);
         editor.SpanRenderer?.Render(canvas, editor.SpanDisplay);
+    }
+
+    private void DrawEndpointModeGroup(SKCanvas canvas, float left, float top, EditorSegment editor, PinBoundarySide side)
+    {
+        canvas.DrawText(side == PinBoundarySide.Left ? "L" : "R", left, top + 16f, _sectionLabelPaint);
+
+        float buttonSize = 20f;
+        float buttonGap = 4f;
+        float buttonLeft = left + 14f;
+        foreach (EndpointPinMode mode in Enum.GetValues<EndpointPinMode>())
+        {
+            int index = (int)mode;
+            var rect = new SKRect(
+                buttonLeft + index * (buttonSize + buttonGap),
+                top,
+                buttonLeft + index * (buttonSize + buttonGap) + buttonSize,
+                top + buttonSize);
+            DrawEndpointToggleButton(canvas, rect, editor, side, mode);
+        }
     }
 
     private void DrawEditorRuler(SKCanvas canvas, SKRect rect, CoordinateSystem coords)
@@ -816,7 +861,7 @@ public class FriezePatternEditorPage : IVisualizerPage
         using var roundRect = new SKRoundRect(rect, 8f, 8f);
         canvas.DrawRoundRect(roundRect, selected ? _lawButtonSelectedPaint : _lawButtonFillPaint);
         canvas.DrawRoundRect(roundRect, _lawButtonBorderPaint);
-        _lawHitTargets.Add(new LawButtonHit(editor, law, rect));
+        _buttonHitTargets.Add(new EditorButtonHit(() => editor.SetLaw(law), rect));
 
         switch (law)
         {
@@ -830,6 +875,22 @@ public class FriezePatternEditorPage : IVisualizerPage
                 DrawContinuousIcon(canvas, rect);
                 break;
         }
+    }
+
+    private void DrawEndpointToggleButton(
+        SKCanvas canvas,
+        SKRect rect,
+        EditorSegment editor,
+        PinBoundarySide side,
+        EndpointPinMode mode)
+    {
+        bool selected = editor.GetEndpointMode(side) == mode;
+        using var roundRect = new SKRoundRect(rect, 6f, 6f);
+        canvas.DrawRoundRect(roundRect, selected ? _lawButtonSelectedPaint : _lawButtonFillPaint);
+        canvas.DrawRoundRect(roundRect, _lawButtonBorderPaint);
+        _buttonHitTargets.Add(new EditorButtonHit(() => editor.SetEndpointMode(side, mode), rect));
+
+        canvas.DrawText(GetEndpointModeLabel(mode), rect.MidX, rect.MidY + 4f, _endpointButtonTextPaint);
     }
 
     private void DrawArrowIcon(SKCanvas canvas, SKRect rect, bool stacked, bool reverseBottom)
@@ -1067,10 +1128,147 @@ public class FriezePatternEditorPage : IVisualizerPage
         _editorSegments.FirstOrDefault(segment => string.Equals(segment.Name, equationName, StringComparison.OrdinalIgnoreCase))?.Colors
         ?? SegmentColors.Green;
 
+    private static string GetEndpointModeLabel(EndpointPinMode mode) =>
+        mode switch
+        {
+            EndpointPinMode.Open => "O",
+            EndpointPinMode.Clamp => "C",
+            EndpointPinMode.Reflect => "R",
+            EndpointPinMode.Wrap => "W",
+            _ => "?"
+        };
+
+    private static BoundaryPinPair BuildBoundaryPins(Axis frame, EndpointPinMode leftMode, EndpointPinMode rightMode)
+    {
+        Proportion left = frame.LeftCoordinate;
+        Proportion right = frame.RightCoordinate;
+        return BoundaryPinPair.Create(
+            frame,
+            CreateEndpointPin(leftMode, left, right, isLeft: true),
+            CreateEndpointPin(rightMode, right, left, isLeft: false));
+    }
+
+    private static LocatedPin? CreateEndpointPin(
+        EndpointPinMode mode,
+        Proportion boundary,
+        Proportion oppositeBoundary,
+        bool isLeft)
+    {
+        string side = isLeft ? "Left" : "Right";
+        int inwardDirection = isLeft ? +1 : -1;
+        int wrapDirection = isLeft ? -1 : +1;
+
+        return mode switch
+        {
+            EndpointPinMode.Open => null,
+            EndpointPinMode.Clamp => new LocatedPin(boundary, Axis.PinUnit, absorbs: true, name: $"{side} clamp"),
+            EndpointPinMode.Reflect => new LocatedPin(
+                boundary,
+                Axis.PinUnit,
+                [new PinEgress(boundary, inwardDirection, name: $"{side} reflect")],
+                name: $"{side} reflect"),
+            EndpointPinMode.Wrap => new LocatedPin(
+                boundary,
+                Axis.PinUnit,
+                [new PinEgress(oppositeBoundary, wrapDirection, name: $"{side} wrap")],
+                name: $"{side} wrap"),
+            _ => throw new ArgumentOutOfRangeException(nameof(mode), mode, null),
+        };
+    }
+
+    private static (EndpointPinMode Left, EndpointPinMode Right) DeriveEndpointModes(PlanarSegmentDefinition definition)
+    {
+        if (definition.BoundaryPins is { } boundaryPins &&
+            TryDecodeEndpointModes(boundaryPins, out var leftMode, out var rightMode))
+        {
+            return (leftMode, rightMode);
+        }
+
+        return definition.BoundaryLawSummary switch
+        {
+            BoundaryContinuationLaw.Clamp => (EndpointPinMode.Clamp, EndpointPinMode.Clamp),
+            BoundaryContinuationLaw.ReflectiveBounce => (EndpointPinMode.Reflect, EndpointPinMode.Reflect),
+            BoundaryContinuationLaw.PeriodicWrap => (EndpointPinMode.Wrap, EndpointPinMode.Wrap),
+            _ => (EndpointPinMode.Open, EndpointPinMode.Open),
+        };
+    }
+
+    private static bool TryDecodeEndpointModes(
+        BoundaryPinPair boundaryPins,
+        out EndpointPinMode leftMode,
+        out EndpointPinMode rightMode)
+    {
+        if (TryDecodeEndpointMode(
+                boundaryPins.LeftPin,
+                boundaryPins.Frame.LeftCoordinate,
+                boundaryPins.Frame.RightCoordinate,
+                isLeft: true,
+                out leftMode) &&
+            TryDecodeEndpointMode(
+                boundaryPins.RightPin,
+                boundaryPins.Frame.RightCoordinate,
+                boundaryPins.Frame.LeftCoordinate,
+                isLeft: false,
+                out rightMode))
+        {
+            return true;
+        }
+
+        leftMode = EndpointPinMode.Open;
+        rightMode = EndpointPinMode.Open;
+        return false;
+    }
+
+    private static bool TryDecodeEndpointMode(
+        LocatedPin? pin,
+        Proportion boundary,
+        Proportion oppositeBoundary,
+        bool isLeft,
+        out EndpointPinMode mode)
+    {
+        if (pin is null)
+        {
+            mode = EndpointPinMode.Open;
+            return true;
+        }
+
+        if (pin.Absorbs && pin.OutputCount == 0)
+        {
+            mode = EndpointPinMode.Clamp;
+            return true;
+        }
+
+        int inwardDirection = isLeft ? +1 : -1;
+        int wrapDirection = isLeft ? -1 : +1;
+        if (!pin.Absorbs &&
+            pin.OutputCount == 1 &&
+            pin.PrimaryOutput is { Context: null } output &&
+            output.PreservesCurrentContext)
+        {
+            if (output.Start == boundary && Math.Sign(output.DirectionSign) == inwardDirection)
+            {
+                mode = EndpointPinMode.Reflect;
+                return true;
+            }
+
+            if (output.Start == oppositeBoundary && Math.Sign(output.DirectionSign) == wrapDirection)
+            {
+                mode = EndpointPinMode.Wrap;
+                return true;
+            }
+        }
+
+        mode = EndpointPinMode.Open;
+        return false;
+    }
+
     private sealed class EditorSegment
     {
-        public EditorSegment(PlanarSegmentDefinition definition, string role, SegmentColorSet colors)
+        private readonly bool _useExplicitPins;
+
+        public EditorSegment(PlanarSegmentDefinition definition, string role, SegmentColorSet colors, bool useExplicitPins)
         {
+            _useExplicitPins = useExplicitPins;
             Definition = definition;
             Role = role;
             Colors = colors;
@@ -1091,12 +1289,15 @@ public class FriezePatternEditorPage : IVisualizerPage
         public SegmentRenderer? StepRenderer { get; set; }
         public SegmentRenderer? SpanRenderer { get; set; }
         public BoundaryContinuationLaw Law { get; private set; }
+        public EndpointPinMode LeftEndpointMode { get; private set; }
+        public EndpointPinMode RightEndpointMode { get; private set; }
         public string Name => Definition.Name;
 
         public void SetDefinition(PlanarSegmentDefinition definition)
         {
             Definition = definition;
-            Law = definition.Law;
+            Law = definition.BoundaryLawSummary;
+            (LeftEndpointMode, RightEndpointMode) = FriezePatternEditorPage.DeriveEndpointModes(definition);
             SpanDisplay.SetAxis(definition.Segment);
             StepDisplay.SetStep(definition.Step);
         }
@@ -1106,15 +1307,42 @@ public class FriezePatternEditorPage : IVisualizerPage
             Law = law;
         }
 
-        public PlanarSegmentDefinition ToDefinition() =>
-            new(
+        public EndpointPinMode GetEndpointMode(PinBoundarySide side) =>
+            side == PinBoundarySide.Left ? LeftEndpointMode : RightEndpointMode;
+
+        public void SetEndpointMode(PinBoundarySide side, EndpointPinMode mode)
+        {
+            if (side == PinBoundarySide.Left)
+            {
+                LeftEndpointMode = mode;
+            }
+            else
+            {
+                RightEndpointMode = mode;
+            }
+        }
+
+        public PlanarSegmentDefinition ToDefinition()
+        {
+            var segment = SpanDisplay.Axis;
+            BoundaryPinPair? boundaryPins = null;
+            var law = Law;
+            if (_useExplicitPins)
+            {
+                boundaryPins = FriezePatternEditorPage.BuildBoundaryPins(segment, LeftEndpointMode, RightEndpointMode);
+                law = boundaryPins.SummaryLaw ?? BoundaryContinuationLaw.TensionPreserving;
+            }
+
+            return new PlanarSegmentDefinition(
                 Definition.Name,
-                SpanDisplay.Axis,
-                Law,
+                segment,
+                law,
                 Definition.AxisVector,
                 StepDisplay.ToProportion(),
                 Definition.UseSegmentAsFrame,
-                Definition.Seed);
+                Definition.Seed,
+                boundaryPins);
+        }
 
         public void DisposeRenderer()
         {
@@ -1153,7 +1381,21 @@ public class FriezePatternEditorPage : IVisualizerPage
         public Proportion ToProportion() => new Proportion((long)Math.Round(Real, MidpointRounding.AwayFromZero));
     }
 
-    private sealed record LawButtonHit(EditorSegment Editor, BoundaryContinuationLaw Law, SKRect Rect);
+    private enum EndpointPinMode
+    {
+        Open,
+        Clamp,
+        Reflect,
+        Wrap,
+    }
+
+    private enum PinBoundarySide
+    {
+        Left,
+        Right,
+    }
+
+    private sealed record EditorButtonHit(Action Handler, SKRect Rect);
 
     private sealed record EditorLayout(
         SKRoundRect Card,

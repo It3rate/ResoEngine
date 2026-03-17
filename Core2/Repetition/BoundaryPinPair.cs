@@ -137,8 +137,26 @@ public sealed class BoundaryPinPair
                 : FromLaw(frame, law);
         }
 
+        if (TryReframeCustomPins(frame, out var reframed))
+        {
+            return reframed;
+        }
+
         throw new InvalidOperationException(
             $"Boundary pin pair on frame [{Frame.LeftCoordinate}, {Frame.RightCoordinate}] cannot yet be reframed to [{frame.LeftCoordinate}, {frame.RightCoordinate}] because it has no known summary law.");
+    }
+
+    private bool TryReframeCustomPins(Axis frame, out BoundaryPinPair reframed)
+    {
+        if (!TryReframePin(LeftPin, Frame.LeftCoordinate, Frame.RightCoordinate, frame, out var leftPin) ||
+            !TryReframePin(RightPin, Frame.LeftCoordinate, Frame.RightCoordinate, frame, out var rightPin))
+        {
+            reframed = null!;
+            return false;
+        }
+
+        reframed = Create(frame, leftPin, rightPin);
+        return true;
     }
 
     private static void ValidatePinLocation(LocatedPin? pin, Proportion expectedLocation, string parameterName)
@@ -154,6 +172,104 @@ public sealed class BoundaryPinPair
                 $"Boundary pin '{pin.Name ?? pin.Location.ToString()}' must lie at boundary coordinate {expectedLocation}.",
                 parameterName);
         }
+    }
+
+    private bool TryReframePin(
+        LocatedPin? pin,
+        Proportion oldLeft,
+        Proportion oldRight,
+        Axis newFrame,
+        out LocatedPin? reframed)
+    {
+        if (pin is null)
+        {
+            reframed = null;
+            return true;
+        }
+
+        if (!TryMapBoundaryCoordinate(pin.Location, oldLeft, oldRight, newFrame, out var newLocation))
+        {
+            reframed = null;
+            return false;
+        }
+
+        List<PinEgress>? outputs = null;
+        if (pin.OutputCount > 0)
+        {
+            outputs = [];
+            foreach (var output in pin.Outputs)
+            {
+                if (!TryReframeEgress(output, oldLeft, oldRight, newFrame, out var reframedEgress))
+                {
+                    reframed = null;
+                    return false;
+                }
+
+                outputs.Add(reframedEgress);
+            }
+        }
+
+        reframed = new LocatedPin(newLocation, pin.Descriptor, outputs, pin.Absorbs, pin.Name);
+        return true;
+    }
+
+    private bool TryReframeEgress(
+        PinEgress egress,
+        Proportion oldLeft,
+        Proportion oldRight,
+        Axis newFrame,
+        out PinEgress reframed)
+    {
+        if (!TryMapBoundaryCoordinate(egress.Start, oldLeft, oldRight, newFrame, out var newStart))
+        {
+            reframed = null!;
+            return false;
+        }
+
+        if (ReferenceEquals(egress.Context, this))
+        {
+            reframed = null!;
+            return false;
+        }
+
+        BoundaryPinPair? context = null;
+        if (egress.Context is not null)
+        {
+            context = egress.Context.Frame == Frame
+                ? egress.Context.Reframe(newFrame)
+                : egress.Context;
+        }
+
+        reframed = new PinEgress(
+            newStart,
+            egress.DirectionSign,
+            context,
+            egress.Name,
+            egress.PreservesCurrentContext);
+        return true;
+    }
+
+    private static bool TryMapBoundaryCoordinate(
+        Proportion coordinate,
+        Proportion oldLeft,
+        Proportion oldRight,
+        Axis newFrame,
+        out Proportion mapped)
+    {
+        if (coordinate == oldLeft)
+        {
+            mapped = newFrame.LeftCoordinate;
+            return true;
+        }
+
+        if (coordinate == oldRight)
+        {
+            mapped = newFrame.RightCoordinate;
+            return true;
+        }
+
+        mapped = Proportion.Zero;
+        return false;
     }
 
     private static bool IsClamp(LocatedPin? pin, Proportion location) =>

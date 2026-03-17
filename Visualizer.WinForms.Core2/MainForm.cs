@@ -104,6 +104,7 @@ public class MainForm : Form
         _pageManager.CurrentPageChanged += page => UpdatePageName(page);
         _pageManager.AddPage(new PinningAxisPage());
         _pageManager.AddPage(new FriezePatternEditorPage());
+        _pageManager.AddPage(new FriezePinningEditorPage());
         _pageManager.AddPage(new FriezeGalleryPage());
         _pageManager.AddPage(new SquareWaveDynamicsPage());
         _pageManager.AddPage(new OrthogonalAxesPage());
