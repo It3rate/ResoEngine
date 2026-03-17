@@ -8,6 +8,7 @@ public enum PowerTensionKind
     UnsupportedNegativeExponent,
     InverseContinuationFailed,
     ShapeChangingPower,
+    ComputationOverflow,
 }
 
 public readonly record struct PowerTension(

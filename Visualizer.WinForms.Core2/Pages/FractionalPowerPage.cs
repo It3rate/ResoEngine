@@ -155,6 +155,7 @@ public class FractionalPowerPage : IVisualizerPage
     private SkiaCanvas? _canvasHost;
     private SegmentRenderer? _inputRenderer;
     private SegmentRenderer[]? _candidateRenderers;
+    private SKRect _graphOuterRect;
 
     private Panel? _controlsPanel;
     private ComboBox? _exponentCombo;
@@ -213,9 +214,11 @@ public class FractionalPowerPage : IVisualizerPage
         Axis? reference = branchRule == InverseContinuationRule.NearestToReference ? _branchReference : null;
         var result = _input.Axis.TryPow(exponent, branchRule, reference);
         UpdateCandidateDisplays(result);
+        GetGraphBounds(result, out var minValue, out var maxValue, out var outerRect, out _, out _);
+        _graphOuterRect = outerRect;
 
         DrawResultBadge(canvas, exponent, branchRule, result);
-        DrawGraphFrame(canvas, result);
+        DrawGraphFrame(canvas, minValue, maxValue, outerRect);
         _inputRenderer?.Render(canvas, _input);
         DrawRowBadge(canvas, "Input z", InputY, SegmentColors.Red);
 
@@ -302,14 +305,12 @@ public class FractionalPowerPage : IVisualizerPage
         canvas.DrawText(summary, rect.Left + 14f, rect.MidY + 5f, _sectionPaint);
     }
 
-    private void DrawGraphFrame(SKCanvas canvas, PowerResult<Axis> result)
+    private void DrawGraphFrame(SKCanvas canvas, decimal minValue, decimal maxValue, SKRect outerRect)
     {
         if (_coords == null)
         {
             return;
         }
-
-        GetGraphBounds(result, out var minValue, out var maxValue, out var outerRect, out var innerLeft, out var innerRight);
 
         canvas.DrawRoundRect(outerRect, 16f, 16f, _graphFillPaint);
         canvas.DrawRoundRect(outerRect, 16f, 16f, _graphBorderPaint);
@@ -340,23 +341,15 @@ public class FractionalPowerPage : IVisualizerPage
             return;
         }
 
-        GetGraphBounds(
-            _input.Axis.TryPow(SelectedExponent, SelectedBranchRule, SelectedBranchRule == InverseContinuationRule.NearestToReference ? _branchReference : null),
-            out _,
-            out _,
-            out var outerRect,
-            out _,
-            out _);
-
         var center = _coords.MathToPixel(0f, y);
         var bounds = new SKRect();
         _sectionPaint.MeasureText(text, ref bounds);
 
         float width = Math.Max(84f, bounds.Width + 26f);
         var rect = new SKRect(
-            outerRect.Left + 14f,
+            _graphOuterRect.Left + 14f,
             center.Y - 16f,
-            outerRect.Left + 14f + width,
+            _graphOuterRect.Left + 14f + width,
             center.Y + 16f);
 
         using var fill = new SKPaint
@@ -418,12 +411,12 @@ public class FractionalPowerPage : IVisualizerPage
         minValue = decimal.Floor(minValue) - 1m;
         maxValue = decimal.Ceiling(maxValue) + 1m;
 
-        decimal desiredSpan = 24m;
+        decimal desiredSpan = 8m;
         decimal currentSpan = maxValue - minValue;
         if (currentSpan < desiredSpan)
         {
-            minValue = -12m;
-            maxValue = 12m;
+            minValue = -4m;
+            maxValue = 4m;
         }
 
         innerLeft = _coords.MathToPixel((float)minValue, 0f).X;
@@ -555,9 +548,9 @@ public class FractionalPowerPage : IVisualizerPage
         _timer.Tick += (_, _) =>
         {
             _phase += 0.04f;
-            decimal recessive = 7m + (decimal)Math.Sin(_phase * 0.73f) * 3m;
-            decimal dominant = (decimal)Math.Cos(_phase * 0.51f) * 8m;
-            _input.SetAxis(Axis.FromCoordinates((Scalar)(-recessive), (Scalar)dominant, Scalar.One, Scalar.One));
+            decimal start = decimal.Round((decimal)Math.Sin(_phase * 0.73f) * 1.4m, 2);
+            decimal end = decimal.Round((decimal)Math.Cos(_phase * 0.51f) * 1.6m, 2);
+            _input.SetAxis(Axis.FromCoordinates(ToCoordinate(start), ToCoordinate(end)));
             _canvasHost.InvalidateCanvas();
         };
     }
@@ -668,4 +661,7 @@ public class FractionalPowerPage : IVisualizerPage
         string sign = dominant >= 0m ? "+" : "-";
         return $"{recessive:0.0}i {sign} {Math.Abs(dominant):0.0}";
     }
+
+    private static Proportion ToCoordinate(decimal value) =>
+        ((Scalar)decimal.Round(value, 2, MidpointRounding.AwayFromZero)).AsProportion(100);
 }

@@ -1,11 +1,15 @@
 using Core2.Branching;
 using Core2.Elements;
 using Core2.Support;
+using System.Numerics;
 
 namespace Core2.Repetition;
 
 public static class PowerEngine
 {
+    private const int AxisApproximationDecimals = 2;
+    private const long AxisApproximationSupport = 100;
+
     public static PowerResult<Scalar> Pow(
         Scalar value,
         Proportion exponent,
@@ -108,46 +112,53 @@ public static class PowerEngine
         InverseContinuationRule rule = InverseContinuationRule.Principal,
         Axis? reference = null)
     {
-        if (!TryNormalize(exponent, out var normalized, out var error))
+        try
         {
-            return InvalidExponent<Axis>(error);
-        }
+            if (!TryNormalize(exponent, out var normalized, out var error))
+            {
+                return InvalidExponent<Axis>(error);
+            }
 
-        if (normalized.Numerator < 0)
+            if (normalized.Numerator < 0)
+            {
+                return UnsupportedNegativeExponent<Axis>(exponent);
+            }
+
+            if (normalized.IsZero)
+            {
+                return SingleCandidate(Axis.One);
+            }
+
+            if (normalized.IsInteger)
+            {
+                var trace = RepetitionEngine.RepeatMultiplicative(value, normalized.Numerator);
+                return SingleCandidate(trace.Result);
+            }
+
+            var roots = InverseContinuationEngine.InverseContinue(value, normalized.Denominator, rule, reference);
+            if (!roots.Succeeded)
+            {
+                return FromInverseFailure(roots);
+            }
+
+            List<Axis> candidates = roots.Candidates
+                .Select(root => RaiseAxisCandidate(root, normalized.Numerator))
+                .DistinctBy(candidate => RootKey(candidate))
+                .ToList();
+
+            Axis principal = SelectAxisPrincipal(candidates, rule, reference);
+            var branches = ProjectRoots(
+                roots.Branches,
+                root => RaiseAxisCandidate(root, normalized.Numerator),
+                RootKey,
+                principal);
+
+            return new PowerResult<Axis>(branches, []);
+        }
+        catch (OverflowException exception)
         {
-            return UnsupportedNegativeExponent<Axis>(exponent);
+            return ComputationOverflow<Axis>(exponent, exception);
         }
-
-        if (normalized.IsZero)
-        {
-            return SingleCandidate(Axis.One);
-        }
-
-        if (normalized.IsInteger)
-        {
-            var trace = RepetitionEngine.RepeatMultiplicative(value, normalized.Numerator);
-            return SingleCandidate(trace.Result);
-        }
-
-        var roots = InverseContinuationEngine.InverseContinue(value, normalized.Denominator, rule, reference);
-        if (!roots.Succeeded)
-        {
-            return FromInverseFailure(roots);
-        }
-
-        List<Axis> candidates = roots.Candidates
-            .Select(root => RepetitionEngine.RepeatMultiplicative(root, normalized.Numerator).Result)
-            .DistinctBy(candidate => RootKey(candidate))
-            .ToList();
-
-        Axis principal = SelectAxisPrincipal(candidates, rule, reference);
-        var branches = ProjectRoots(
-            roots.Branches,
-            root => RepetitionEngine.RepeatMultiplicative(root, normalized.Numerator).Result,
-            RootKey,
-            principal);
-
-        return new PowerResult<Axis>(branches, []);
     }
 
     public static PowerResult<Axis> Pow(
@@ -189,6 +200,9 @@ public static class PowerEngine
 
     private static PowerResult<T> UnsupportedNegativeExponent<T>(Proportion exponent) =>
         new([], default, [new PowerTension(PowerTensionKind.UnsupportedNegativeExponent, $"Negative exponents are not implemented yet for {exponent}.")]);
+
+    private static PowerResult<T> ComputationOverflow<T>(Proportion exponent, OverflowException exception) =>
+        new([], default, [new PowerTension(PowerTensionKind.ComputationOverflow, $"Power computation overflowed for exponent {exponent}: {exception.Message}")]);
 
     private static PowerResult<T> FromInverseFailure<T>(InverseContinuationResult<T> roots) =>
         new(
@@ -330,4 +344,57 @@ public static class PowerEngine
 
     private static (decimal Recessive, decimal Dominant) RootKey(Axis candidate) =>
         (Math.Round(candidate.Recessive.Fold().Value, 9), Math.Round(candidate.Dominant.Fold().Value, 9));
+
+    private static Axis RaiseAxisCandidate(Axis root, int numerator)
+    {
+        if (root.Basis != AxisBasis.Complex)
+        {
+            return RepetitionEngine.RepeatMultiplicative(root, numerator).Result;
+        }
+
+        Complex complex = new((double)root.Dominant.Fold(), (double)root.Recessive.Fold());
+        Complex raised = Complex.Pow(complex, numerator);
+        return CreateApproximateComplexAxis(raised.Imaginary, raised.Real, root.Basis);
+    }
+
+    private static Axis CreateApproximateComplexAxis(double imaginary, double real, AxisBasis basis) =>
+        Axis.FromCoordinates(
+            QuantizeCoordinate(-imaginary),
+            QuantizeCoordinate(real),
+            basis);
+
+    private static Proportion QuantizeCoordinate(double value)
+    {
+        decimal rounded = decimal.Round(
+            (decimal)(Math.Abs(value) < 1e-9d ? 0d : value),
+            AxisApproximationDecimals,
+            MidpointRounding.AwayFromZero);
+
+        if (rounded == 0m)
+        {
+            return Proportion.Zero;
+        }
+
+        if (rounded == decimal.Truncate(rounded))
+        {
+            return new Proportion((long)rounded, 1);
+        }
+
+        long numerator = checked((long)(rounded * AxisApproximationSupport));
+        long denominator = AxisApproximationSupport;
+        long divisor = GreatestCommonDivisor(Math.Abs(numerator), denominator);
+        return new Proportion(numerator / divisor, denominator / divisor);
+    }
+
+    private static long GreatestCommonDivisor(long left, long right)
+    {
+        while (right != 0)
+        {
+            long remainder = left % right;
+            left = right;
+            right = remainder;
+        }
+
+        return left == 0 ? 1 : Math.Abs(left);
+    }
 }

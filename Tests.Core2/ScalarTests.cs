@@ -29,4 +29,12 @@ public class ScalarTests
         Assert.Equal(new Proportion(15, 30), half.AsProportion(3));
         Assert.Equal(new Proportion(-5, -10), half.AsProportion(-10));
     }
+
+    [Fact]
+    public void ZeroScalar_AsProportion_DoesNotOverflowForHighScaleZeros()
+    {
+        var zero = new Scalar(0.0000000000000000000000000000m);
+
+        Assert.Equal(new Proportion(0, 1), zero.AsProportion());
+    }
 }

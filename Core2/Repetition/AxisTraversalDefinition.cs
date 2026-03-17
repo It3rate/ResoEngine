@@ -6,9 +6,20 @@ public sealed record AxisTraversalDefinition(
     Axis? Frame,
     Proportion Step,
     BoundaryContinuationLaw Law = BoundaryContinuationLaw.TensionPreserving,
-    Proportion? Seed = null)
+    Proportion? Seed = null,
+    BoundaryPinPair? BoundaryPins = null)
 {
     public AxisTraversalState CreateState() => new(this, Seed ?? Proportion.Zero);
+
+    public BoundaryPinPair? ResolveBoundaryPins()
+    {
+        if (BoundaryPins is not null)
+        {
+            return BoundaryPins;
+        }
+
+        return Frame is null ? null : BoundaryPinPair.FromLaw(Frame, Law);
+    }
 
     public IEnumerable<AxisTraversalStep> Iterate()
     {

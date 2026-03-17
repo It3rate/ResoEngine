@@ -6,6 +6,9 @@ namespace Core2.Repetition;
 
 public static class InverseContinuationEngine
 {
+    private const int AxisApproximationDecimals = 2;
+    private const long AxisApproximationSupport = 100;
+
     public static InverseContinuationResult<Scalar> InverseContinue(
         Scalar value,
         int degree,
@@ -163,12 +166,7 @@ public static class InverseContinuationEngine
             double angle = (argument + (2d * Math.PI * k)) / degree;
             double candidateReal = ClampNearZero(rootMagnitude * Math.Cos(angle));
             double candidateImaginary = ClampNearZero(rootMagnitude * Math.Sin(angle));
-            candidates.Add(Axis.FromCoordinates(
-                (Scalar)(decimal)(-candidateImaginary),
-                (Scalar)(decimal)candidateReal,
-                Scalar.One,
-                Scalar.One,
-                value.Basis));
+            candidates.Add(CreateApproximateComplexAxis(candidateImaginary, candidateReal, value.Basis));
         }
 
         candidates = DistinctBy(candidates, candidate => RootKey(candidate)).ToList();
@@ -312,6 +310,47 @@ public static class InverseContinuationEngine
 
     private static double ClampNearZero(double value) =>
         Math.Abs(value) < 1e-9d ? 0d : value;
+
+    private static Axis CreateApproximateComplexAxis(double imaginary, double real, AxisBasis basis) =>
+        Axis.FromCoordinates(
+            QuantizeCoordinate(-imaginary),
+            QuantizeCoordinate(real),
+            basis);
+
+    private static Proportion QuantizeCoordinate(double value)
+    {
+        decimal rounded = decimal.Round(
+            (decimal)ClampNearZero(value),
+            AxisApproximationDecimals,
+            MidpointRounding.AwayFromZero);
+
+        if (rounded == 0m)
+        {
+            return Proportion.Zero;
+        }
+
+        if (rounded == decimal.Truncate(rounded))
+        {
+            return new Proportion((long)rounded, 1);
+        }
+
+        long numerator = checked((long)(rounded * AxisApproximationSupport));
+        long denominator = AxisApproximationSupport;
+        long divisor = GreatestCommonDivisor(Math.Abs(numerator), denominator);
+        return new Proportion(numerator / divisor, denominator / divisor);
+    }
+
+    private static long GreatestCommonDivisor(long left, long right)
+    {
+        while (right != 0)
+        {
+            long remainder = left % right;
+            left = right;
+            right = remainder;
+        }
+
+        return left == 0 ? 1 : Math.Abs(left);
+    }
 
     private static bool TryExactIntegerRoot(long value, int degree, out long root)
     {

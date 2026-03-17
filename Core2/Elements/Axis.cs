@@ -194,8 +194,14 @@ public sealed record Axis(Proportion Recessive, Proportion Dominant, AxisBasis B
     public BoundaryContinuationResult Continue(Scalar value, BoundaryContinuationLaw law) =>
         BoundaryContinuation.Continue(this, value, law);
 
+    public BoundaryContinuationResult Continue(Scalar value, BoundaryPinPair? boundaryPins) =>
+        BoundaryContinuation.Continue(this, value, boundaryPins);
+
     public BoundaryContinuationResult Continue(Proportion value, BoundaryContinuationLaw law) =>
         BoundaryContinuation.Continue(this, value, law);
+
+    public BoundaryContinuationResult Continue(Proportion value, BoundaryPinPair? boundaryPins) =>
+        BoundaryContinuation.Continue(this, value, boundaryPins);
 
     public static Axis operator +(Axis left, Axis right) =>
         new(left.Recessive + right.Recessive, left.Dominant + right.Dominant, left.Basis);

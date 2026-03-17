@@ -6,6 +6,8 @@ public sealed class AxisTraversalState
 {
     private readonly AxisTraversalDefinition _definition;
     private readonly Proportion _stepMagnitude;
+    private Axis? _activeFrame;
+    private BoundaryPinPair? _boundaryPins;
     private int _direction;
 
     public AxisTraversalState(AxisTraversalDefinition definition, Proportion value)
@@ -15,6 +17,8 @@ public sealed class AxisTraversalState
         _definition = definition;
         _stepMagnitude = definition.Step.Abs();
         _direction = definition.Step.Sign < 0 ? -1 : 1;
+        _activeFrame = definition.Frame ?? definition.BoundaryPins?.Frame;
+        _boundaryPins = definition.ResolveBoundaryPins();
         Value = value;
         Law = definition.Law;
     }
@@ -40,29 +44,26 @@ public sealed class AxisTraversalState
 
     public IEnumerable<AxisTraversalStep> EnumerateFire()
     {
-        Proportion start = Value;
         if (_stepMagnitude.IsZero)
         {
             yield break;
         }
 
-        if (_definition.Frame is null)
-        {
-            Value = start + SignedStep();
-            yield return CreateStep(start, Value);
-            yield break;
-        }
+        var advance = PinBoundaryTraversal.Advance(
+            Value,
+            _stepMagnitude,
+            _direction,
+            _activeFrame,
+            _boundaryPins);
 
-        foreach (var part in Law switch
+        Value = advance.FinalValue;
+        _direction = advance.FinalDirection;
+        _activeFrame = advance.ActiveFrame;
+        _boundaryPins = advance.ActivePins;
+
+        foreach (var part in advance.Fragments)
         {
-            BoundaryContinuationLaw.ReflectiveBounce => EnumerateReflectiveFire(start),
-            BoundaryContinuationLaw.PeriodicWrap => EnumerateWrappedFire(start),
-            BoundaryContinuationLaw.Clamp => EnumerateClampedFire(start),
-            BoundaryContinuationLaw.TensionPreserving => EnumerateTensionPreservingFire(start),
-            _ => throw new ArgumentOutOfRangeException(nameof(Law), Law, null),
-        })
-        {
-            yield return part;
+            yield return CreateStep(part.Start, part.End, part.Tensions, part.BreakAfter);
         }
     }
 
@@ -84,123 +85,18 @@ public sealed class AxisTraversalState
         }
     }
 
-    public void SetLaw(BoundaryContinuationLaw law) => Law = law;
-
-    private IEnumerable<AxisTraversalStep> EnumerateReflectiveFire(Proportion start)
+    public void SetLaw(BoundaryContinuationLaw law)
     {
-        Proportion min = _definition.Frame!.LeftCoordinate;
-        Proportion max = _definition.Frame.RightCoordinate;
-
-        if (min == max)
-        {
-            Value = start;
-            yield break;
-        }
-
-        Proportion current = start;
-        Proportion remaining = _stepMagnitude;
-        int direction = _direction;
-
-        while (remaining > Proportion.Zero)
-        {
-            Proportion edge = direction > 0 ? max : min;
-            Proportion distanceToEdge = (edge - current).Abs();
-
-            if (distanceToEdge.IsZero)
-            {
-                direction *= -1;
-                continue;
-            }
-
-            Proportion travel = Proportion.Min(remaining, distanceToEdge);
-            Proportion next = direction > 0
-                ? current + travel
-                : current - travel;
-            bool breakAfter = remaining > travel && next == edge;
-
-            yield return CreateStep(current, next, breakAfter: breakAfter);
-
-            current = next;
-            remaining -= travel;
-
-            if (remaining > Proportion.Zero && current == edge)
-            {
-                direction *= -1;
-            }
-        }
-
-        _direction = direction;
-        Value = current;
+        Law = law;
+        _activeFrame = _definition.Frame;
+        _boundaryPins = _definition.Frame is null ? null : BoundaryPinPair.FromLaw(_definition.Frame, law);
     }
 
-    private IEnumerable<AxisTraversalStep> EnumerateWrappedFire(Proportion start)
+    public void SetBoundaryPins(BoundaryPinPair? boundaryPins)
     {
-        Proportion min = _definition.Frame!.LeftCoordinate;
-        Proportion max = _definition.Frame.RightCoordinate;
-
-        if (min == max)
-        {
-            Value = start;
-            yield break;
-        }
-
-        Proportion current = start;
-        Proportion remaining = _stepMagnitude;
-
-        while (remaining > Proportion.Zero)
-        {
-            Proportion edge = _direction > 0 ? max : min;
-            Proportion distanceToEdge = (edge - current).Abs();
-
-            if (distanceToEdge.IsZero)
-            {
-                current = _direction > 0 ? min : max;
-                continue;
-            }
-
-            Proportion travel = Proportion.Min(remaining, distanceToEdge);
-            Proportion next = _direction > 0
-                ? current + travel
-                : current - travel;
-
-            yield return CreateStep(current, next);
-
-            current = next;
-            remaining -= travel;
-
-            if (remaining > Proportion.Zero && current == edge)
-            {
-                current = _direction > 0 ? min : max;
-            }
-        }
-
-        Value = current;
+        _boundaryPins = boundaryPins;
+        _activeFrame = boundaryPins?.Frame ?? _definition.Frame;
     }
-
-    private IEnumerable<AxisTraversalStep> EnumerateClampedFire(Proportion start)
-    {
-        Proportion unclamped = start + SignedStep();
-        Proportion next = Proportion.Max(
-            _definition.Frame!.LeftCoordinate,
-            Proportion.Min(_definition.Frame.RightCoordinate, unclamped));
-
-        Value = next;
-        if (start != next)
-        {
-            yield return CreateStep(start, next);
-        }
-    }
-
-    private IEnumerable<AxisTraversalStep> EnumerateTensionPreservingFire(Proportion start)
-    {
-        Proportion next = start + SignedStep();
-        Value = next;
-
-        var continuation = _definition.Frame!.Continue(next, BoundaryContinuationLaw.TensionPreserving);
-        yield return CreateStep(start, next, continuation.Tensions);
-    }
-
-    private Proportion SignedStep() => _direction < 0 ? -_stepMagnitude : _stepMagnitude;
 
     private static AxisTraversalStep CreateStep(
         Proportion start,

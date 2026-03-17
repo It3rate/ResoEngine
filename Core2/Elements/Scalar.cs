@@ -73,6 +73,11 @@ public readonly record struct Scalar(decimal Value) : IElement, IComparable<Scal
 
     public Proportion AsProportion(long support = 1)
     {
+        if (IsZero)
+        {
+            return new Proportion(0, support == 0 ? 0 : support);
+        }
+
         BigInteger unscaled = GetUnscaledValue(Value);
         BigInteger exactDenominator = BigInteger.Pow(10, GetScale(Value));
         BigInteger requestedSupport = new(support);

@@ -87,6 +87,25 @@ public class RepetitionTests
     }
 
     [Fact]
+    public void BoundaryContinuation_CanResolveThroughExplicitBoundaryPins()
+    {
+        var frame = Axis.FromCoordinates(0, 5);
+        BoundaryPinPair wrapPins = BoundaryPinPair.FromLaw(frame, BoundaryContinuationLaw.PeriodicWrap);
+        BoundaryPinPair reflectPins = BoundaryPinPair.FromLaw(frame, BoundaryContinuationLaw.ReflectiveBounce);
+        BoundaryPinPair clampPins = BoundaryPinPair.FromLaw(frame, BoundaryContinuationLaw.Clamp);
+
+        Assert.Equal(
+            frame.Continue(new Proportion(17), BoundaryContinuationLaw.PeriodicWrap).Value,
+            frame.Continue(new Proportion(17), wrapPins).Value);
+        Assert.Equal(
+            frame.Continue(new Proportion(17), BoundaryContinuationLaw.ReflectiveBounce).Value,
+            frame.Continue(new Proportion(17), reflectPins).Value);
+        Assert.Equal(
+            frame.Continue(new Proportion(17), BoundaryContinuationLaw.Clamp).Value,
+            frame.Continue(new Proportion(17), clampPins).Value);
+    }
+
+    [Fact]
     public void AxisTraversal_EnumeratesReflectionAndWrapAsExactStepSequences()
     {
         var reflective = new AxisTraversalDefinition(
@@ -115,5 +134,55 @@ public class RepetitionTests
             [Axis.FromCoordinates(Proportion.Zero, new Proportion(2)), Axis.FromCoordinates(Proportion.Zero, new Proportion(2)), Axis.FromCoordinates(Proportion.Zero, Proportion.One)],
             wrappedParts.Select(part => part.Segment).ToArray());
         Assert.Equal(new Proportion(1), wrapped.Value);
+    }
+
+    [Fact]
+    public void AxisTraversal_CanUseExplicitBoundaryPins()
+    {
+        var frame = Axis.FromCoordinates(Proportion.Zero, new Proportion(2));
+
+        var reflective = new AxisTraversalDefinition(
+            frame,
+            new Proportion(3),
+            Seed: Proportion.Zero,
+            BoundaryPins: BoundaryPinPair.FromLaw(frame, BoundaryContinuationLaw.ReflectiveBounce)).CreateState();
+
+        var reflectiveParts = reflective.EnumerateFire().ToArray();
+
+        Assert.Equal(
+            [Axis.FromCoordinates(Proportion.Zero, new Proportion(2)), Axis.FromCoordinates(new Proportion(2), Proportion.One)],
+            reflectiveParts.Select(part => part.Segment).ToArray());
+        Assert.True(reflectiveParts[0].BreakAfter);
+
+        var wrapped = new AxisTraversalDefinition(
+            frame,
+            new Proportion(5),
+            Seed: Proportion.Zero,
+            BoundaryPins: BoundaryPinPair.FromLaw(frame, BoundaryContinuationLaw.PeriodicWrap)).CreateState();
+
+        var wrappedParts = wrapped.EnumerateFire().ToArray();
+
+        Assert.Equal(
+            [Axis.FromCoordinates(Proportion.Zero, new Proportion(2)), Axis.FromCoordinates(Proportion.Zero, new Proportion(2)), Axis.FromCoordinates(Proportion.Zero, Proportion.One)],
+            wrappedParts.Select(part => part.Segment).ToArray());
+        Assert.Equal(new Proportion(1), wrapped.Value);
+    }
+
+    [Fact]
+    public void AxisTraversal_WithoutBoundaryPinsFallsOpenIntoTensionAndThenContinuesUnbounded()
+    {
+        var frame = Axis.FromCoordinates(Proportion.Zero, new Proportion(2));
+        var traversal = new AxisTraversalDefinition(
+            frame,
+            new Proportion(3),
+            BoundaryContinuationLaw.TensionPreserving,
+            Proportion.Zero).CreateState();
+
+        var first = traversal.Fire();
+        var second = traversal.Fire();
+
+        Assert.Equal(Axis.FromCoordinates(Proportion.Zero, new Proportion(3)), first.Segment);
+        Assert.Contains(first.Tensions, tension => tension.Kind == RepetitionTensionKind.BoundaryExceeded);
+        Assert.Equal(Axis.FromCoordinates(new Proportion(3), new Proportion(6)), second.Segment);
     }
 }

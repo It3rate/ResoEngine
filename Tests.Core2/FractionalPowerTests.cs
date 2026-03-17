@@ -74,4 +74,40 @@ public class FractionalPowerTests
         Assert.False(result.Succeeded);
         Assert.Contains(result.Tensions, tension => tension.Kind == PowerTensionKind.UnsupportedNegativeExponent);
     }
+
+    [Fact]
+    public void Axis_FractionalPower_OverflowReturnsTensionInsteadOfThrowing()
+    {
+        var value = Axis.FromCoordinates((Scalar)(-0.5m), (Scalar)1m, Scalar.One, Scalar.One);
+
+        var result = value.TryPow(new Proportion(1, 2));
+
+        Assert.True(
+            result.Succeeded ||
+            result.Tensions.Any(tension => tension.Kind == PowerTensionKind.ComputationOverflow));
+    }
+
+    [Fact]
+    public void Axis_FractionalPower_OffsetAxis_ProducesCandidates()
+    {
+        var value = Axis.FromCoordinates(new Proportion(-3), new Proportion(9));
+
+        var result = value.TryPow(new Proportion(1, 2));
+
+        Assert.True(result.Succeeded);
+        Assert.NotNull(result.PrincipalCandidate);
+        Assert.NotEmpty(result.Candidates);
+    }
+
+    [Fact]
+    public void Axis_FractionalPower_OffsetAxis_ThreeHalves_ProducesCandidates()
+    {
+        var value = Axis.FromCoordinates(new Proportion(-3), new Proportion(9));
+
+        var result = value.TryPow(new Proportion(3, 2));
+
+        Assert.True(result.Succeeded);
+        Assert.NotNull(result.PrincipalCandidate);
+        Assert.NotEmpty(result.Candidates);
+    }
 }
