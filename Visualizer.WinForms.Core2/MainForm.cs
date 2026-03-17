@@ -103,6 +103,7 @@ public class MainForm : Form
         _pageManager = new PageManager(_canvas, _navBar, hitTest);
         _pageManager.CurrentPageChanged += page => UpdatePageName(page);
         _pageManager.AddPage(new PinningAxisPage());
+        _pageManager.AddPage(new LandmarkContinuationPage());
         _pageManager.AddPage(new FriezePatternEditorPage());
         _pageManager.AddPage(new FriezePinningEditorPage());
         _pageManager.AddPage(new FriezeGalleryPage());
