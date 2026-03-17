@@ -36,4 +36,10 @@ public interface IVisualizerPage : IDisposable
     /// Pages can use this for hover state without participating in drag logic.
     /// </summary>
     void OnPointerMove(SKPoint pixelPoint) { }
+
+    /// <summary>
+    /// Observe pointer release at a viewBox pixel point.
+    /// Pages with custom drag state can use this to end their own interactions.
+    /// </summary>
+    void OnPointerUp(SKPoint pixelPoint) { }
 }
