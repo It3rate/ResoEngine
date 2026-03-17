@@ -14,7 +14,7 @@ public static class BoundaryContinuation
         Continue(frame, value, BoundaryPinPair.FromLaw(frame, law));
 
     public static BoundaryContinuationResult Continue(Axis frame, Proportion value, BoundaryPinPair? boundaryPins) =>
-        Continue(frame.LeftCoordinate, frame.RightCoordinate, value, boundaryPins ?? BoundaryPinPair.FromLaw(frame, BoundaryContinuationLaw.TensionPreserving));
+        Continue(frame.LeftCoordinate, frame.RightCoordinate, value, boundaryPins ?? BoundaryPinPair.Open(frame));
 
     public static BoundaryContinuationResult Continue(
         Proportion min,
@@ -51,7 +51,7 @@ public static class BoundaryContinuation
         int direction = value > max ? 1 : -1;
         Proportion start = direction > 0 ? max : min;
         Proportion overshoot = direction > 0 ? value - max : min - value;
-        var advance = PinBoundaryTraversal.Advance(start, overshoot, direction, frame, boundaryPins);
+        var advance = PinBoundaryTraversal.Advance(start, overshoot, direction, frame, boundaryPins ?? BoundaryPinPair.Open(frame));
         return new BoundaryContinuationResult(advance.FinalValue, advance.Tensions);
     }
 }

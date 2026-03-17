@@ -106,6 +106,50 @@ public class RepetitionTests
     }
 
     [Fact]
+    public void BoundaryPinPair_CanBeCreatedDirectlyFromExplicitPins()
+    {
+        var frame = Axis.FromCoordinates(0, 5);
+        var explicitWrap = BoundaryPinPair.Create(
+            frame,
+            new LocatedPin(Proportion.Zero, Axis.PinUnit, [new PinEgress(new Proportion(5), -1, name: "Wrap to right")], name: "Left wrap"),
+            new LocatedPin(new Proportion(5), Axis.PinUnit, [new PinEgress(Proportion.Zero, +1, name: "Wrap to left")], name: "Right wrap"));
+
+        var result = frame.Continue(new Proportion(17), explicitWrap);
+
+        Assert.Equal(frame.Continue(new Proportion(17), BoundaryContinuationLaw.PeriodicWrap).Value, result.Value);
+        Assert.Equal(BoundaryContinuationLaw.PeriodicWrap, explicitWrap.SummaryLaw);
+    }
+
+    [Fact]
+    public void BoundaryPinPair_SummaryLawRecognizesExplicitReflectAndClampPins()
+    {
+        var frame = Axis.FromCoordinates(0, 5);
+        var reflect = BoundaryPinPair.Create(
+            frame,
+            new LocatedPin(Proportion.Zero, Axis.PinUnit, [new PinEgress(Proportion.Zero, +1, name: "Reflect in")], name: "Left reflect"),
+            new LocatedPin(new Proportion(5), Axis.PinUnit, [new PinEgress(new Proportion(5), -1, name: "Reflect in")], name: "Right reflect"));
+        var clamp = BoundaryPinPair.Create(
+            frame,
+            new LocatedPin(Proportion.Zero, Axis.PinUnit, absorbs: true, name: "Left clamp"),
+            new LocatedPin(new Proportion(5), Axis.PinUnit, absorbs: true, name: "Right clamp"));
+
+        Assert.Equal(BoundaryContinuationLaw.ReflectiveBounce, reflect.SummaryLaw);
+        Assert.Equal(BoundaryContinuationLaw.Clamp, clamp.SummaryLaw);
+    }
+
+    [Fact]
+    public void BoundaryPinPair_SummaryLawIsNullForCustomBoundaryPins()
+    {
+        var frame = Axis.FromCoordinates(0, 5);
+        var custom = BoundaryPinPair.Create(
+            frame,
+            new LocatedPin(Proportion.Zero, Axis.PinUnit, [new PinEgress(new Proportion(2), +1, name: "Short attach")], name: "Left custom"),
+            null);
+
+        Assert.Null(custom.SummaryLaw);
+    }
+
+    [Fact]
     public void AxisTraversal_EnumeratesReflectionAndWrapAsExactStepSequences()
     {
         var reflective = new AxisTraversalDefinition(

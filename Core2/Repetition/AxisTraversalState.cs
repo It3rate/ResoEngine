@@ -22,7 +22,7 @@ public sealed class AxisTraversalState
         _activeFrame = definition.Frame ?? definition.BoundaryPins?.Frame;
         _boundaryPins = definition.ResolveBoundaryPins();
         Value = value;
-        Law = definition.Law;
+        Law = _boundaryPins?.SummaryLaw ?? definition.Law;
     }
 
     public Proportion Value { get; private set; }
@@ -90,15 +90,20 @@ public sealed class AxisTraversalState
 
     public void SetLaw(BoundaryContinuationLaw law)
     {
-        Law = law;
         _activeFrame = _definition.Frame;
-        _boundaryPins = _definition.Frame is null ? null : BoundaryPinPair.FromLaw(_definition.Frame, law);
+        _boundaryPins = _definition.Frame is null
+            ? null
+            : law == BoundaryContinuationLaw.TensionPreserving
+                ? BoundaryPinPair.Open(_definition.Frame)
+                : BoundaryPinPair.FromLaw(_definition.Frame, law);
+        Law = _boundaryPins?.SummaryLaw ?? law;
     }
 
     public void SetBoundaryPins(BoundaryPinPair? boundaryPins)
     {
         _boundaryPins = boundaryPins;
         _activeFrame = boundaryPins?.Frame ?? _definition.Frame;
+        Law = boundaryPins?.SummaryLaw ?? _definition.Law;
     }
 
     private static AxisTraversalStep CreateStep(

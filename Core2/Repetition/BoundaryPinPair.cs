@@ -12,55 +12,153 @@ public sealed class BoundaryPinPair
     public Axis Frame { get; }
     public LocatedPin? LeftPin { get; private set; }
     public LocatedPin? RightPin { get; private set; }
+    public BoundaryContinuationLaw? SummaryLaw =>
+        TrySummarizeLaw(out var law) ? law : null;
 
     public LocatedPin? ResolveForDirection(int direction) => direction < 0 ? LeftPin : RightPin;
+
+    public static BoundaryPinPair Open(Axis frame) => new(frame);
+
+    public static BoundaryPinPair Create(
+        Axis frame,
+        LocatedPin? leftPin = null,
+        LocatedPin? rightPin = null)
+    {
+        ArgumentNullException.ThrowIfNull(frame);
+
+        var pair = new BoundaryPinPair(frame);
+        pair.SetPins(leftPin, rightPin);
+        return pair;
+    }
 
     public static BoundaryPinPair FromLaw(Axis frame, BoundaryContinuationLaw law)
     {
         ArgumentNullException.ThrowIfNull(frame);
 
-        var context = new BoundaryPinPair(frame);
         Proportion left = frame.LeftCoordinate;
         Proportion right = frame.RightCoordinate;
 
         switch (law)
         {
             case BoundaryContinuationLaw.TensionPreserving:
-                return context;
+                return Open(frame);
 
             case BoundaryContinuationLaw.Clamp:
-                context.LeftPin = new LocatedPin(left, Axis.PinUnit, absorbs: true, name: "Clamp(left)");
-                context.RightPin = new LocatedPin(right, Axis.PinUnit, absorbs: true, name: "Clamp(right)");
-                return context;
+                return Create(
+                    frame,
+                    new LocatedPin(left, Axis.PinUnit, absorbs: true, name: "Clamp(left)"),
+                    new LocatedPin(right, Axis.PinUnit, absorbs: true, name: "Clamp(right)"));
 
             case BoundaryContinuationLaw.ReflectiveBounce:
-                context.LeftPin = new LocatedPin(
-                    left,
-                    Axis.PinUnit,
-                    [new PinEgress(left, +1, context, "Reflect(inward)")],
-                    name: "Reflect(left)");
-                context.RightPin = new LocatedPin(
-                    right,
-                    Axis.PinUnit,
-                    [new PinEgress(right, -1, context, "Reflect(inward)")],
-                    name: "Reflect(right)");
-                return context;
+                return Create(
+                    frame,
+                    new LocatedPin(
+                        left,
+                        Axis.PinUnit,
+                        [new PinEgress(left, +1, name: "Reflect(inward)")],
+                        name: "Reflect(left)"),
+                    new LocatedPin(
+                        right,
+                        Axis.PinUnit,
+                        [new PinEgress(right, -1, name: "Reflect(inward)")],
+                        name: "Reflect(right)"));
 
             case BoundaryContinuationLaw.PeriodicWrap:
-                context.LeftPin = new LocatedPin(
-                    left,
-                    Axis.PinUnit,
-                    [new PinEgress(right, -1, context, "Wrap(to-right)")],
-                    name: "Wrap(left)");
-                context.RightPin = new LocatedPin(
-                    right,
-                    Axis.PinUnit,
-                    [new PinEgress(left, +1, context, "Wrap(to-left)")],
-                    name: "Wrap(right)");
-                return context;
+                return Create(
+                    frame,
+                    new LocatedPin(
+                        left,
+                        Axis.PinUnit,
+                        [new PinEgress(right, -1, name: "Wrap(to-right)")],
+                        name: "Wrap(left)"),
+                    new LocatedPin(
+                        right,
+                        Axis.PinUnit,
+                        [new PinEgress(left, +1, name: "Wrap(to-left)")],
+                        name: "Wrap(right)"));
 
             default:
                 throw new ArgumentOutOfRangeException(nameof(law), law, null);
         }
     }
+
+    public void SetPins(LocatedPin? leftPin, LocatedPin? rightPin)
+    {
+        ValidatePinLocation(leftPin, Frame.LeftCoordinate, nameof(leftPin));
+        ValidatePinLocation(rightPin, Frame.RightCoordinate, nameof(rightPin));
+        LeftPin = leftPin;
+        RightPin = rightPin;
+    }
+
+    public bool TrySummarizeLaw(out BoundaryContinuationLaw law)
+    {
+        if (LeftPin is null && RightPin is null)
+        {
+            law = BoundaryContinuationLaw.TensionPreserving;
+            return true;
+        }
+
+        if (IsClamp(LeftPin, Frame.LeftCoordinate) && IsClamp(RightPin, Frame.RightCoordinate))
+        {
+            law = BoundaryContinuationLaw.Clamp;
+            return true;
+        }
+
+        if (IsReflect(LeftPin, Frame.LeftCoordinate, +1) && IsReflect(RightPin, Frame.RightCoordinate, -1))
+        {
+            law = BoundaryContinuationLaw.ReflectiveBounce;
+            return true;
+        }
+
+        if (IsWrap(LeftPin, Frame.LeftCoordinate, Frame.RightCoordinate, -1) &&
+            IsWrap(RightPin, Frame.RightCoordinate, Frame.LeftCoordinate, +1))
+        {
+            law = BoundaryContinuationLaw.PeriodicWrap;
+            return true;
+        }
+
+        law = default;
+        return false;
+    }
+
+    private static void ValidatePinLocation(LocatedPin? pin, Proportion expectedLocation, string parameterName)
+    {
+        if (pin is null)
+        {
+            return;
+        }
+
+        if (pin.Location != expectedLocation)
+        {
+            throw new ArgumentException(
+                $"Boundary pin '{pin.Name ?? pin.Location.ToString()}' must lie at boundary coordinate {expectedLocation}.",
+                parameterName);
+        }
+    }
+
+    private static bool IsClamp(LocatedPin? pin, Proportion location) =>
+        pin is not null &&
+        pin.Location == location &&
+        pin.Absorbs &&
+        pin.OutputCount == 0;
+
+    private static bool IsReflect(LocatedPin? pin, Proportion location, int inwardDirection) =>
+        pin is not null &&
+        pin.Location == location &&
+        !pin.Absorbs &&
+        pin.OutputCount == 1 &&
+        pin.PrimaryOutput is { } egress &&
+        egress.Start == location &&
+        Math.Sign(egress.DirectionSign) == inwardDirection &&
+        egress.PreservesCurrentContext;
+
+    private static bool IsWrap(LocatedPin? pin, Proportion location, Proportion target, int direction) =>
+        pin is not null &&
+        pin.Location == location &&
+        !pin.Absorbs &&
+        pin.OutputCount == 1 &&
+        pin.PrimaryOutput is { } egress &&
+        egress.Start == target &&
+        Math.Sign(egress.DirectionSign) == direction &&
+        egress.PreservesCurrentContext;
 }

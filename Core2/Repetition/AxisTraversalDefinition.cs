@@ -19,7 +19,14 @@ public sealed record AxisTraversalDefinition(
             return BoundaryPins;
         }
 
-        return Frame is null ? null : BoundaryPinPair.FromLaw(Frame, Law);
+        if (Frame is null)
+        {
+            return null;
+        }
+
+        return Law == BoundaryContinuationLaw.TensionPreserving
+            ? BoundaryPinPair.Open(Frame)
+            : BoundaryPinPair.FromLaw(Frame, Law);
     }
 
     public IEnumerable<AxisTraversalStep> Iterate()
