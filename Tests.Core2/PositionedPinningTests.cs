@@ -45,6 +45,44 @@ public class PositionedPinningTests
     }
 
     [Fact]
+    public void PositionedAxis_CanSummarizeCarrierResponseForInteriorAndBoundaryEncounters()
+    {
+        var host = Axis.FromCoordinates(Proportion.Zero, new Proportion(10));
+        var interior = Axis.PinUnit.PlaceAt(new Proportion(5));
+        var rightBoundary = Axis.PinUnit.PlaceAt(new Proportion(10));
+
+        var forward = interior.ResolveCarrierResponse(+1);
+        var reverse = interior.ResolveCarrierResponse(-1);
+        var boundary = rightBoundary.ResolveCarrierResponse(+1, host: host, boundaryEncounter: true);
+
+        Assert.Equal(PinSideRole.Dominant, forward.EncounteredSide.Role);
+        Assert.True(forward.IsTransparent);
+        Assert.Equal(PinSideRole.Recessive, reverse.EncounteredSide.Role);
+        Assert.True(reverse.IsTransparent);
+        Assert.Equal(PinSideRole.Recessive, boundary.EncounteredSide.Role);
+        Assert.True(boundary.IsRedirect);
+        Assert.Equal(-1, boundary.EncounterNextDirection);
+    }
+
+    [Fact]
+    public void PositionedAxis_CarrierResponse_CapturesBlockAndOrthogonalPotential()
+    {
+        var dominantOpposing = new Axis(0, 1, -1, 1).PlaceAt(new Proportion(4));
+        var recessiveOpposing = new Axis(1, 1, 0, 1).PlaceAt(new Proportion(4));
+        var bent = new Axis(1, -1, 1, 1).PlaceAt(new Proportion(4));
+
+        var dominantResponse = dominantOpposing.ResolveCarrierResponse(+1);
+        var recessiveResponse = recessiveOpposing.ResolveCarrierResponse(+1);
+        var bentResponse = bent.ResolveCarrierResponse(+1);
+
+        Assert.True(dominantResponse.BlocksHostNegativeSide);
+        Assert.False(dominantResponse.BlocksHostPositiveSide);
+        Assert.True(recessiveResponse.BlocksHostPositiveSide);
+        Assert.True(bentResponse.HasOrthogonalOutlet);
+        Assert.True(bentResponse.IsTransparent);
+    }
+
+    [Fact]
     public void Proportion_CanParticipateInHostRelativePointPinning()
     {
         var host = new Proportion(8);
