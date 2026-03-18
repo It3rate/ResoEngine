@@ -36,6 +36,12 @@ public sealed record PositionedAxis(Axis Intrinsic, Proportion Position)
             boundaryEncounter);
     }
 
+    public int? ResolveAmbientCarrierRank(PinSideRole role, int hostCarrierRank = 0)
+    {
+        PositionedAxisSide side = role == PinSideRole.Recessive ? RecessiveSide : DominantSide;
+        return ResolveAmbientCarrierRank(side, hostCarrierRank);
+    }
+
     private PositionedAxisSide CreateSide(PinSideRole role, Proportion intrinsicValue, PinResolvedSide resolvedSide)
     {
         Proportion magnitude = MagnitudeOf(intrinsicValue);
@@ -84,6 +90,23 @@ public sealed record PositionedAxis(Axis Intrinsic, Proportion Position)
             : DominantSide;
     }
 
+    internal static int? ResolveAmbientCarrierRank(PositionedAxisSide side, int hostCarrierRank)
+    {
+        if (!side.CarrierRank.HasValue)
+        {
+            return null;
+        }
+
+        return side.CarrierRank.Value switch
+        {
+            0 => hostCarrierRank,
+            1 => OrthogonalCarrierRank(hostCarrierRank),
+            _ => side.CarrierRank,
+        };
+    }
+
+    internal static int OrthogonalCarrierRank(int carrierRank) => carrierRank == 0 ? 1 : 0;
+
     private static int NormalizeDirection(int direction) => direction < 0 ? -1 : 1;
 }
 
@@ -119,7 +142,11 @@ public sealed record PositionedAxisCarrierResponse(
     int CurrentCarrierRank,
     bool BoundaryEncounter)
 {
-    public bool EncounterSideOnCurrentCarrier => EncounteredSide.CarrierRank == CurrentCarrierRank;
+    public int? RecessiveAmbientCarrierRank => ResolveAmbientCarrierRank(RecessiveSide);
+    public int? DominantAmbientCarrierRank => ResolveAmbientCarrierRank(DominantSide);
+    public int? EncounterAmbientCarrierRank => ResolveAmbientCarrierRank(EncounteredSide);
+    public int? OppositeAmbientCarrierRank => ResolveAmbientCarrierRank(OppositeSide);
+    public bool EncounterSideOnCurrentCarrier => EncounterAmbientCarrierRank == CurrentCarrierRank;
     public bool EncounterSideHasTravel => EncounteredSide.SignedExtent.Sign != 0;
     public int EncounterNextDirection => EncounterSideHasTravel ? Math.Sign(EncounteredSide.SignedExtent.Sign) : 0;
     public bool IsTransparent => EncounterSideOnCurrentCarrier && EncounterNextDirection == CurrentDirection;
@@ -133,7 +160,7 @@ public sealed record PositionedAxisCarrierResponse(
     public bool BlocksHostPositiveSide => OpposesPositiveCarrier(RecessiveSide);
     public bool BlocksContinuationPastEncounter => CurrentDirection < 0 ? BlocksHostNegativeSide : BlocksHostPositiveSide;
     public PositionedAxisSide ApproachSide => BoundaryEncounter ? EncounteredSide : OppositeSide;
-    public bool ApproachSideOnCurrentCarrier => ApproachSide.CarrierRank == CurrentCarrierRank;
+    public bool ApproachSideOnCurrentCarrier => ResolveAmbientCarrierRank(ApproachSide) == CurrentCarrierRank;
     public bool ApproachSideHasTravel => ApproachSide.TransportDirectionSign != 0;
     public bool SupportsApproachIntoEncounter =>
         ApproachSideOnCurrentCarrier &&
@@ -145,10 +172,13 @@ public sealed record PositionedAxisCarrierResponse(
         ApproachSide.TransportDirectionSign == -CurrentDirection;
 
     private bool OpposesPositiveCarrier(PositionedAxisSide side) =>
-        side.CarrierRank == CurrentCarrierRank && side.TransportDirectionSign < 0;
+        ResolveAmbientCarrierRank(side) == CurrentCarrierRank && side.TransportDirectionSign < 0;
 
     private bool HasNonCurrentCarrierTravel(PositionedAxisSide side) =>
         side.HasCarrier &&
-        side.CarrierRank != CurrentCarrierRank &&
+        ResolveAmbientCarrierRank(side) != CurrentCarrierRank &&
         side.SignedExtent.Sign != 0;
+
+    private int? ResolveAmbientCarrierRank(PositionedAxisSide side) =>
+        PositionedAxis.ResolveAmbientCarrierRank(side, CurrentCarrierRank);
 }

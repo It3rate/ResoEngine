@@ -87,6 +87,22 @@ public class PositionedPinningTests
     }
 
     [Fact]
+    public void PositionedAxis_CarrierResponse_RemainsHostRelativeOnCarrierOne()
+    {
+        var straight = Axis.PinUnit.PlaceAt(new Proportion(4));
+        var bent = new Axis(1, -1, 1, 1).PlaceAt(new Proportion(4));
+
+        var straightResponse = straight.ResolveCarrierResponse(+1, currentCarrierRank: 1);
+        var bentResponse = bent.ResolveCarrierResponse(+1, currentCarrierRank: 1);
+
+        Assert.True(straightResponse.IsTransparent);
+        Assert.Equal(1, straightResponse.EncounterAmbientCarrierRank);
+        Assert.Equal(0, bentResponse.OppositeAmbientCarrierRank);
+        Assert.True(bentResponse.IsTransparent);
+        Assert.True(bentResponse.HasOrthogonalOutlet);
+    }
+
+    [Fact]
     public void PositionedAxisSide_DistinguishesDisplayDirectionFromTransportDirection()
     {
         var incoming = new Axis(1, 1, 0, 1).PlaceAt(new Proportion(4));
