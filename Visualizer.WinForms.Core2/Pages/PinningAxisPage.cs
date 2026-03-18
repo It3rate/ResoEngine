@@ -1025,7 +1025,7 @@ public sealed partial class PinningAxisPage : IVisualizerPage
             return "no carrier";
         }
 
-        return $"{(ray.CarrierRank == 0 ? "carrier 0" : "carrier 1")}, {DescribeDirection(ray)}";
+        return $"{(ray.CarrierRank == 0 ? "host carrier" : "orthogonal carrier")}, {DescribeDirection(ray)}";
     }
 
     private static string DescribeDirection(PinDisplayRay ray)

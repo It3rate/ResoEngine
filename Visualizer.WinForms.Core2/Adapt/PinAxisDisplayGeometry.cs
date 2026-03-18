@@ -88,7 +88,7 @@ public sealed class PinAxisDisplayGeometry
             ? Math.Abs(side.ValueEncoding)
             : SafeMagnitude(proportion);
 
-        int? ambientCarrierRank = ResolveAmbientCarrierRank(side.CarrierRank, hostCarrierRank);
+        int? ambientCarrierRank = PositionedAxis.ResolveAmbientCarrierRank(side.CarrierRank, hostCarrierRank);
         if (side.DirectionSign == 0 || magnitude <= 0.0001f)
         {
             return new PinDisplayRay(name, ambientCarrierRank, side.DirectionSign, magnitude, SKPoint.Empty, side.IsUnresolved, side.IsLifted);
@@ -121,7 +121,7 @@ public sealed class PinAxisDisplayGeometry
 
     private static SKPoint ResolveUnitBasis(PinResolvedSide side, int hostCarrierRank)
     {
-        int? ambientCarrierRank = ResolveAmbientCarrierRank(side.CarrierRank, hostCarrierRank);
+        int? ambientCarrierRank = PositionedAxis.ResolveAmbientCarrierRank(side.CarrierRank, hostCarrierRank);
         if (!ambientCarrierRank.HasValue)
         {
             return SKPoint.Empty;
@@ -134,18 +134,6 @@ public sealed class PinAxisDisplayGeometry
             1 => new SKPoint(0f, naturalDirection),
             _ => SKPoint.Empty,
         };
-    }
-
-    private static int? ResolveAmbientCarrierRank(int? localCarrierRank, int hostCarrierRank)
-    {
-        if (!localCarrierRank.HasValue)
-        {
-            return null;
-        }
-
-        return localCarrierRank.Value == 0
-            ? hostCarrierRank
-            : hostCarrierRank == 0 ? 1 : 0;
     }
 
     private static SKPoint ResolveBasis(PinDisplayRay ray)

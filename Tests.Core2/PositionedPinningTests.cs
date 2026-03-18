@@ -103,6 +103,16 @@ public class PositionedPinningTests
     }
 
     [Fact]
+    public void PositionedAxis_StaticAmbientCarrierMapping_IsHostRelative()
+    {
+        Assert.Equal(1, PositionedAxis.ResolveAmbientCarrierRank(0, 1));
+        Assert.Equal(0, PositionedAxis.ResolveAmbientCarrierRank(1, 1));
+        Assert.Equal(1, PositionedAxis.OrthogonalCarrierRank(0));
+        Assert.Equal(0, PositionedAxis.OrthogonalCarrierRank(1));
+        Assert.Null(PositionedAxis.ResolveAmbientCarrierRank(null, 1));
+    }
+
+    [Fact]
     public void PositionedAxisSide_DistinguishesDisplayDirectionFromTransportDirection()
     {
         var incoming = new Axis(1, 1, 0, 1).PlaceAt(new Proportion(4));

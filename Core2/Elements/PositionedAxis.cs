@@ -42,6 +42,21 @@ public sealed record PositionedAxis(Axis Intrinsic, Proportion Position)
         return ResolveAmbientCarrierRank(side, hostCarrierRank);
     }
 
+    public static int? ResolveAmbientCarrierRank(int? localCarrierRank, int hostCarrierRank)
+    {
+        if (!localCarrierRank.HasValue)
+        {
+            return null;
+        }
+
+        return localCarrierRank.Value switch
+        {
+            0 => hostCarrierRank,
+            1 => OrthogonalCarrierRank(hostCarrierRank),
+            _ => localCarrierRank,
+        };
+    }
+
     private PositionedAxisSide CreateSide(PinSideRole role, Proportion intrinsicValue, PinResolvedSide resolvedSide)
     {
         Proportion magnitude = MagnitudeOf(intrinsicValue);
@@ -91,21 +106,9 @@ public sealed record PositionedAxis(Axis Intrinsic, Proportion Position)
     }
 
     internal static int? ResolveAmbientCarrierRank(PositionedAxisSide side, int hostCarrierRank)
-    {
-        if (!side.CarrierRank.HasValue)
-        {
-            return null;
-        }
+        => ResolveAmbientCarrierRank(side.CarrierRank, hostCarrierRank);
 
-        return side.CarrierRank.Value switch
-        {
-            0 => hostCarrierRank,
-            1 => OrthogonalCarrierRank(hostCarrierRank),
-            _ => side.CarrierRank,
-        };
-    }
-
-    internal static int OrthogonalCarrierRank(int carrierRank) => carrierRank == 0 ? 1 : 0;
+    public static int OrthogonalCarrierRank(int carrierRank) => carrierRank == 0 ? 1 : 0;
 
     private static int NormalizeDirection(int direction) => direction < 0 ? -1 : 1;
 }
