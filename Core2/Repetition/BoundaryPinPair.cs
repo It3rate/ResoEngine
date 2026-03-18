@@ -209,7 +209,7 @@ public sealed class BoundaryPinPair
             }
         }
 
-        reframed = new LocatedPin(newLocation, pin.Descriptor, outputs, pin.Absorbs, pin.Name);
+        reframed = new LocatedPin(newLocation, pin.Applied, outputs, pin.Absorbs, pin.Name);
         return true;
     }
 
@@ -297,4 +297,20 @@ public sealed class BoundaryPinPair
         egress.Start == target &&
         Math.Sign(egress.DirectionSign) == direction &&
         egress.PreservesCurrentContext;
+
+    public IReadOnlyList<PointPinning<Axis, Axis>> ResolvePointPins()
+    {
+        List<PointPinning<Axis, Axis>> pins = [];
+        if (LeftPin is not null)
+        {
+            pins.Add(LeftPin.AttachTo(Frame));
+        }
+
+        if (RightPin is not null)
+        {
+            pins.Add(RightPin.AttachTo(Frame));
+        }
+
+        return pins;
+    }
 }

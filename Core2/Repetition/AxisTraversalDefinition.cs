@@ -29,6 +29,21 @@ public sealed record AxisTraversalDefinition(
             : BoundaryPinPair.FromLaw(Frame, Law);
     }
 
+    public IReadOnlyList<PointPinning<Axis, Axis>> ResolvePointPins()
+    {
+        if (Frame is null || Pins is null || Pins.Count == 0)
+        {
+            return [];
+        }
+
+        return Pins.Select(pin => pin.AttachTo(Frame)).ToArray();
+    }
+
+    public IReadOnlyList<PositionedAxis> ResolvePlacedAppliedAxes() =>
+        Pins is null || Pins.Count == 0
+            ? []
+            : Pins.Select(pin => pin.PlaceApplied()).ToArray();
+
     public IEnumerable<AxisTraversalStep> Iterate()
     {
         var state = CreateState();

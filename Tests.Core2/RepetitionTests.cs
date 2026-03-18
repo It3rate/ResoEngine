@@ -150,6 +150,63 @@ public class RepetitionTests
     }
 
     [Fact]
+    public void LocatedPin_CanAttachItsAppliedAxisToAHostFrame()
+    {
+        var frame = Axis.FromCoordinates(new Proportion(-3), new Proportion(7));
+        var applied = new Axis(new Proportion(3, -1), new Proportion(2, 1));
+        var pin = new LocatedPin(new Proportion(4), applied, name: "Bent landmark");
+
+        var pointPin = pin.AttachTo(frame);
+        var placed = pin.PlaceApplied();
+
+        Assert.Equal(frame, pointPin.Host);
+        Assert.Equal(applied, pointPin.Applied);
+        Assert.Equal(new Proportion(4), pointPin.Position);
+        Assert.True(pin.IsHostRelativeTo(frame));
+        Assert.Equal(new Proportion(4), placed.EmbeddedOrigin);
+        Assert.Equal(1, placed.RecessiveSide.CarrierRank);
+        Assert.Equal(0, placed.DominantSide.CarrierRank);
+    }
+
+    [Fact]
+    public void AxisTraversalDefinition_CanExposePinsAsPointPinningAndPlacedAxes()
+    {
+        var frame = Axis.FromCoordinates(Proportion.Zero, new Proportion(10));
+        var first = new LocatedPin(new Proportion(3), new Axis(new Proportion(1), new Proportion(2)), name: "P1");
+        var second = new LocatedPin(new Proportion(7), new Axis(new Proportion(1, -1), new Proportion(2)), name: "P2");
+        var definition = new AxisTraversalDefinition(frame, Proportion.One, Pins: [first, second]);
+
+        var pointPins = definition.ResolvePointPins();
+        var placedAxes = definition.ResolvePlacedAppliedAxes();
+
+        Assert.Equal(2, pointPins.Count);
+        Assert.Equal(frame, pointPins[0].Host);
+        Assert.Equal(new Proportion(3), pointPins[0].Position);
+        Assert.Equal(new Proportion(7), pointPins[1].Position);
+        Assert.Equal(2, placedAxes.Count);
+        Assert.Equal(new Proportion(3), placedAxes[0].EmbeddedOrigin);
+        Assert.Equal(new Proportion(7), placedAxes[1].EmbeddedOrigin);
+        Assert.Equal(1, placedAxes[1].RecessiveSide.CarrierRank);
+    }
+
+    [Fact]
+    public void BoundaryPinPair_CanExposeBoundaryPinsAsPointPinning()
+    {
+        var frame = Axis.FromCoordinates(Proportion.Zero, new Proportion(5));
+        var pair = BoundaryPinPair.Create(
+            frame,
+            new LocatedPin(Proportion.Zero, Axis.PinUnit, absorbs: true, name: "Left clamp"),
+            new LocatedPin(new Proportion(5), Axis.PinUnit, [new PinEgress(new Proportion(5), -1, name: "Reflect in")], name: "Right reflect"));
+
+        var pointPins = pair.ResolvePointPins();
+
+        Assert.Equal(2, pointPins.Count);
+        Assert.All(pointPins, pinning => Assert.Equal(frame, pinning.Host));
+        Assert.Equal(Proportion.Zero, pointPins[0].Position);
+        Assert.Equal(new Proportion(5), pointPins[1].Position);
+    }
+
+    [Fact]
     public void AxisTraversal_EnumeratesReflectionAndWrapAsExactStepSequences()
     {
         var reflective = new AxisTraversalDefinition(
