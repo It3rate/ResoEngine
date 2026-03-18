@@ -7,7 +7,7 @@ The original markdown files in Core2/Axioms remain useful and should not be dele
 
 Parts I through VIII are general Core 2 system axioms.
 Part IX is a directed-segment appendix aligned to the current geometry and boolean implementation.
-Part X integrates the current pinning redesign, including explicit endpoint and landmark pins as the deeper source of continuation behavior.
+Part X integrates the current pinning redesign as host-relative attachment, encountered local structure, and later folding.
 
 
 PART I. FOUNDATIONS
@@ -129,6 +129,10 @@ depending on the chosen operator ordering convention.
 F19. Core ontology.
 A directed value is not fundamentally a number.
 It is an ordered interval placed into a frame and then read from a perspective.
+
+F20. Local description and later placement differ.
+A structured object may carry an intrinsic local frame before later placement in another host frame.
+Local description and embedded reading should not be collapsed prematurely.
 
 
 PART II. REPETITION AND INVERSE CONTINUATION
@@ -682,6 +686,13 @@ T17. Boundary-law labels are traversal summaries.
 Named boundary laws such as reflect, wrap, clamp, and tension-preserving continuation remain useful summaries for display and authoring.
 They should increasingly be understood as shorthand for encountered endpoint-pin configurations rather than as the primitive source of traversal behavior.
 
+T18. Encountered pin behavior is host-relative.
+When traversal encounters a placed operand on a carrier, meanings such as same-carrier and orthogonal-carrier are read relative to the host carrier of that encounter rather than by absolute carrier labels.
+
+T19. Approach and continuation may differ.
+An encountered placed operand may support or oppose the approach side and may independently support or block continuation beyond the encounter.
+Traversal should preserve that distinction rather than flattening the whole event into one reaction.
+
 
 PART IX. DIRECTED SEGMENT BOOLEAN RULES
 ---------------------------------------
@@ -728,29 +739,55 @@ S10. Co-present multiplicity must be preserved.
 When boolean evaluation yields multiple surviving pieces, those pieces jointly constitute the result and should not be collapsed unless a later law explicitly folds them.
 
 
-PART X. PINNING AS DYNAMIC LOCAL EVENTS
+PART X. PINNING, PLACEMENT, AND FOLDING
 ---------------------------------------
 
 P1. Pinning is fundamental.
 Pinning is not merely a side feature of units or a display convenience.
-It is a foundational local mechanism by which structure is attached, emitted, redirected, interrupted, lifted, folded, branched, or rejoined.
+It is a foundational local mechanism by which structure is attached, placed, redirected, interrupted, lifted, folded, branched, or rejoined.
 
-P2. One pin mechanism is preferred.
+P2. Pinning and folding differ.
+Pinning creates structural relation.
+Folding is a later interpretation or enactment of that relation.
+A pinned structure may remain lawful and informative before any one folded result is chosen.
+
+P3. One pin mechanism is preferred.
 There should not be many primitive named pin types.
-Wrap, reflect, continue, clamp, branch, corner, loop, and join are best understood as contextual readings of one pin mechanism.
-
-P3. Pinning is local.
-A pin is interpreted where it is encountered.
-It is a local event rather than a global law.
+Wrap, reflect, continue, clamp, branch, corner, loop, and join are best understood as contextual readings of one pinning mechanism.
 
 P4. Pinning remains locally binary.
-A pin joins, opposes, redirects, or relates two local structural roles.
-Higher structures arise by nesting, sequencing, or branching local pin events rather than by introducing many-way primitive pins.
+A point pinning event joins two structural roles at one site:
+- a host role
+- an applied role
+Richer structures arise by nesting, sequencing, or distributing such events rather than by introducing many-way primitive pins.
 
-P5. Axis is the current canonical pin descriptor.
-The existing Axis may be read not only as a directed interval, but as the current canonical descriptor of a pin.
+P5. A * B @ P is the canonical positioned pinning form.
+The expression A * B @ P should be read first as a pinning event:
+- A is the host
+- B is the applied element
+- P is the host-relative pin position
 
-P6. A pin descriptor has four distinct slots.
+P6. Host is canonically recessive.
+The host role is canonically recessive.
+It supplies the local substrate, carrier, and attachment site of the event.
+
+P7. Applied is canonically dominant.
+The applied role is canonically dominant.
+It supplies the local directive brought to the host at the pinning site.
+
+P8. Pinning aligns dominant with dominant.
+When host and applied are pinned, dominant direction is aligned with dominant direction at the attachment site.
+Negative and orthogonal consequences are then read relative to that alignment.
+
+P9. Intrinsic local frames belong to the operands.
+Both host and applied operands may already be straight, bent, inverted, or unresolved before pinning.
+Those properties belong to the operands themselves, not to the pin as an added bend-generator.
+
+P10. Axis is the current canonical intrinsic descriptor.
+The existing Axis remains the current canonical descriptor carried by a pinned operand.
+It need not be treated as a separate extra object owned by the pin.
+
+P11. The four descriptor slots remain distinct.
 The current descriptor carries:
 - a recessive unit
 - a recessive value
@@ -758,150 +795,121 @@ The current descriptor carries:
 - a dominant value
 In shorthand these may be read as i, iV, u, and uV.
 
-P7. Unit and value must remain distinct.
+P12. Unit and value must remain distinct.
 The unit slots describe carrier preference, contradiction, or unresolved carrier assignment.
 The value slots describe realized extent, travel, or enactment on the chosen carrier.
+Taken together they express local structural desire, not guaranteed final realization.
 
-P8. A pin is a goal, not a guarantee.
-The descriptor within a pin expresses what local structure wants to happen.
-It does not guarantee that the environment, nearby carriers, or surrounding tensions will satisfy it exactly.
+P13. Unit sign gives coarse structural type.
+For a pin-side descriptor:
+- positive unit prefers the current carrier
+- negative unit prefers orthogonal breakout relative to the current carrier
+- zero unit preserves unresolved carrier choice
+Negative unit does not mean globally vertical by itself.
+It means orthogonal relative to the hosted carrier being read.
 
-P9. Positive unit preserves native carrier.
-If a pin-side unit is positive, that side prefers to remain on its native carrier.
+P14. Value sign acts within the chosen carrier.
+Once a carrier has been preserved, lifted, or otherwise selected:
+- positive value realizes with that carrier's orientation
+- negative value realizes against it
+- zero value preserves unrealized travel
 
-P10. Negative unit contradicts native carrier.
-If a pin-side unit is negative, that side contradicts its native carrier assignment.
-This contradiction should be preserved as informative tension unless a lawful compromise or lift resolves it.
+P15. Magnitude is weighted participation.
+Values beyond -1, 0, and 1 should not be treated as meaningless extras.
+Their magnitude is best read as weighted participation, strength, or local transport pressure rather than as a different primitive kind of pin.
 
-P11. Zero unit preserves unresolved carrier information.
-A zero unit is not mere absence.
-It may mark noise, uncertainty, indifference, unresolved carrier choice, latent structure, stochastic spread, or held tension.
+P16. Pins require location.
+A pinning event must be locatable in some frame, carrier, sheet, or relation.
+Location is part of what makes the event interpretable.
 
-P12. Value sign acts within the chosen carrier.
-Once a carrier has been preserved, lifted, or otherwise selected, the sign of the value acts within that carrier.
-
-P13. Zero value preserves unresolved realization.
-A zero value means no realized travel has yet been committed on that side.
-It may therefore remain latent, noisy, or tension-held depending on context.
-
-P14. One-sided noise is lawful.
-One side of a pin may remain unresolved while the other side resolves normally.
-The unresolved side should not force the resolved side to disappear.
-
-P15. Two-sided noise is lawful.
-If both sides remain unresolved, the pin may remain as pure held tension or noise rather than forcing false structure.
-
-P16. Opposed resolved sides yield directed-segment structure.
-If the resolved sides occupy one carrier and point against each other, the result is directed-segment structure.
-
-P17. Same-direction resolved sides yield reinforcement.
-If the resolved sides occupy one carrier and point in the same direction, the result is reinforcement, acceleration-like continuation, or sequential same-direction passage.
-
-P18. Orthogonal resolved sides yield area-like structure.
-If the resolved sides occupy perpendicular carriers, the result is area-like, corner-like, or sheet-like structure.
-
-P19. Preferred geometric breakout is the smallest lawful orthogonal lift.
-When a carrier contradiction is resolved geometrically, the preferred first response is the smallest lawful orthogonal lift available at the current grade.
-This is a preference, not an absolute decree.
-
-P20. Available lift depends on structural grade.
-What counts as the smallest lawful breakout depends on the current nesting depth or structural grade.
-At one grade it may create planar breakout; at the next it may leave the plane or move into a new sheet.
-
-P21. Pins require location.
-A pin must be locatable in some frame, carrier, sheet, or relation.
-Location is part of what makes the pin interpretable.
-
-P22. Location and attachment differ.
-A pin may be located without yet being structurally attached.
+P17. Location and attachment differ.
+A pin may be locatable without yet being structurally attached.
 Attachment is join; location is situatedness.
 
-P23. Pins need not be anchored at zero.
-A pin may occur:
-- at a start point
-- at an endpoint
-- at an interior landmark
-- off a carrier
-- between carriers
-- between sheets
+P18. Line-like hosts use proportional pin position.
+For line-like hosts, the pin position P is normally represented by Proportion.
+It is measured in the host's frame and support rather than in a detached neutral frame.
 
-P24. Pins may create carriers.
-A pin may attach to an existing carrier, emit a new carrier, or do both at once.
-Carrier creation is fundamental rather than exceptional.
+P19. Local coordinates and host embedding differ.
+The host-relative position of a pin, the local zero of the applied element, and the later embedded reading are distinct layers.
+They should not be collapsed prematurely.
 
-P25. Join and growth are not fully separate.
-A created carrier that later attaches to another carrier may be read as growth becoming join or join discovered through growth.
+P20. Point pinning and distributed pinning are one mechanism at different extents.
+Point pinning is one local attachment event.
+Distributed pinning is a family of such local events enacted across a support, span, or piece family.
 
-P26. Open endpoint is not clamp.
+P21. Distributed pinning belongs to folding.
+Point pinning gives local structural potential.
+Distributed pinning is often the enacted form of a later fold, such as support-wide comparison, continuation, span formation, or similar combination.
+
+P22. Opposed same-carrier resolution yields directed-segment structure.
+If the resolved sides occupy one carrier and point against each other, the local result is directed-segment structure.
+
+P23. Same-direction same-carrier resolution yields reinforcement.
+If the resolved sides occupy one carrier and point in the same direction, the local result is reinforcement, acceleration-like continuation, or layered same-direction passage.
+
+P24. Orthogonal resolution yields corner-like or area-like structure.
+If the resolved sides occupy perpendicular carriers, the local result is corner-like, branch-like, or area-like structure.
+
+P25. Zero or partial resolution is lawful.
+One side may resolve while the other remains noisy, latent, or unresolved.
+If both sides remain unresolved, the pin may remain as held tension or ambiguous potential rather than forcing false structure.
+
+P26. Preferred geometric breakout is the smallest lawful orthogonal lift.
+When a carrier contradiction is resolved geometrically, the preferred first response is the smallest lawful orthogonal lift available at the current structural grade.
+
+P27. Meaning depends on location.
+The same applied descriptor may read differently at:
+- an endpoint
+- an interior landmark
+- an off-carrier location
+- a relation between carriers
+- a relation between sheets
+
+P28. Open endpoint is not clamp.
 If a carrier reaches its end with no explicit resolving pin, this is not a stop.
-It is open termination.
+It is open termination, and it raises tension.
 
-P27. Open termination raises tension.
-Open termination introduces uncertainty or unresolved continuation pressure.
-That tension should remain informative rather than being silently treated as clamp.
+P29. Endpoint law names are contextual readings.
+Clamp, reflection, continuation, wrap, and loop are best understood as contextual readings of encountered endpoint or landmark structure rather than as the deepest primitive laws.
 
-P28. Clamp is explicit.
-Clamp is an explicit pin reading in which incoming continuation is absorbed, held, or arrested.
+P30. Pins may attach, emit, or seek attachment.
+A pin may attach to an existing carrier, emit a new carrier, or do both.
+Growth and join are therefore not fully separate.
 
-P29. Reflection is an encountered-pin reading.
-Reflection is best understood as encountered endpoint or landmark structure redirecting continuation back along a carrier.
-
-P30. Wrap is a self-capture reading.
-Wrap may be understood as one carrier and one pin whose forward continuation identifies with itself or finds itself again.
-
-P31. Loop is a self-join reading.
-A loop is a lawful self-join in which continuation returns to the same pin, the same earlier landmark, or the same carrier origin.
-
-P32. Landmark meaning is contextual.
-There is no need for separate primitive landmark pin names.
-The location of the pin, its descriptor, and its local environment determine whether it reads as branch, corner, reinforcement, reversal, join, loop, or control influence.
-
-P33. A pin may have zero, one, or two local outputs.
+P31. A pin may have zero, one, or two local outputs.
 Locally, a pin may:
 - absorb with zero outputs
 - continue or redirect with one output
 - branch with two outputs
 Richer multiplicity should generally be represented by several pins or a branch family.
 
-P34. The input of a pin is encounter.
-The meaningful input of a pin is not merely a value passing through.
-It is the encounter of current continuation, local carrier, nearby pins, frame conditions, and accumulated tension at that location.
-
-P35. Sheets differ from observer perspective.
+P32. Sheets differ from observer perspective.
 The places in which pins and carriers interact should be distinguished from the binary observer +/- perspective.
 Sheets or fields are the better layer for multi-place interaction.
 
-P36. Pins may influence across sheets.
-A pin in one sheet may attract, repel, align, or seek attachment with structure in another sheet without immediate direct join.
+P33. Host-relative carrier meaning must be preserved.
+Carrier interpretations such as same-carrier and orthogonal-carrier are relative to the host carrier of the encounter.
+They should not be treated as permanent absolute labels such as "carrier 0" and "carrier 1".
 
-P37. Relative and absolute location are both lawful.
-A pin may be located absolutely in a sheet, relatively to a carrier, relatively to another pin, or by a mixture of these.
-
-P38. Curves and controls are pin readings.
-Off-carrier curve controls, polyline vertices, and similar geometric control landmarks may be understood as pins influencing continuation rather than as wholly separate primitive object classes.
-
-P39. Continuation-law names are summaries.
-Names such as reflect, wrap, clamp, continue, orthogonal, parallel, or opposed are best treated as reports of resolved pin behavior rather than as the deepest source of meaning.
-
-P40. Boundary laws are compatibility shells.
+P34. Boundary labels remain compatibility shells.
 Named boundary laws remain useful for display, editing, and compatibility.
 They should increasingly be understood as shorthand for explicit endpoint-pin configurations.
 
-P41. Traversal should encounter pins directly.
-Traversal is not limited to reacting only after boundary exceedance.
-Interior landmarks and endpoint pins may be encountered before a frame edge is crossed, and those encountered pins may absorb, redirect, branch, or reframe continuation.
-
-P42. Boundary-relative pins preserve intent under reframing.
+P35. Boundary-relative pins preserve intent under reframing.
 When a boundary-relative pin is moved onto a new carrier or route frame, its left/right intent should be preserved if that meaning can be translated lawfully onto the new boundaries.
 
-P43. Pinning and folding differ.
-Pinning creates structural relation.
-Folding is a later interpretation or collapse of that structure.
-A pin may remain structurally valid and dynamically active without resolving to one unique folded reading.
-
-P44. Tension must not be normalized away prematurely.
+P36. Tension must not be normalized away prematurely.
 Negative or zero unit information, ambiguous attachment, unresolved continuation, or competing pin goals should not be silently normalized away merely to recover a simpler display.
 Such tension may later drive rupture, branching, curvature, phase offset, compromise, or higher-dimensional lift.
+
+P37. Pinned structure and folded result should preserve provenance.
+Whenever possible, a folded result should preserve:
+- where the pin occurred
+- which operand acted as host
+- which operand acted as applied
+- which intrinsic descriptors were involved
+- what unresolved tensions remained
 
 
 KEY EXAMPLES
@@ -949,20 +957,30 @@ A positive recessive unit and positive dominant unit produce the current straigh
 E12. Pinning contradiction.
 A negative pin-side unit may contradict its native line-carrier and prefer orthogonal lift rather than silent sign normalization.
 
-E13. Same-direction reinforcement.
+E13. Positioned pinning.
+A * B @ 1/2 means:
+- pin B onto A
+- at the midpoint of A
+- by aligning dominant direction with dominant direction
+- then interpret the resulting placed structure
+
+E14. Distributed pinning as fold.
+A support-wide comparison or multiplication-like construction may be read as a later fold that enacts many local pinning relations across a shared support rather than as one isolated point event.
+
+E15. Same-direction reinforcement.
 Two resolved pin sides pointing in the same direction may act like sequential reinforcement or acceleration.
 
-E14. Zero-unit hold.
+E16. Zero-unit hold.
 A zero unit may preserve unresolved or noisy carrier information without committing to one orientation.
 
-E15. Open endpoint.
+E17. Open endpoint.
 A carrier that reaches an end without an explicit resolving pin does not thereby clamp.
 It produces open termination tension.
 
-E16. Explicit endpoint pin.
+E18. Explicit endpoint pin.
 A clamp, reflect, or wrap boundary may be represented by explicit endpoint pins rather than only by a named continuation-law enum.
 
-E17. Interior landmark pin.
+E19. Interior landmark pin.
 A traversal may encounter an interior landmark before the frame edge and reverse, absorb, or jump from that landmark without changing the identity of the carrier that encountered it.
 
 
@@ -1015,7 +1033,7 @@ Residual:
 The exact detail not captured by the representative reading at that grain.
 
 Pin descriptor:
-An Axis read as a four-slot descriptor of how two elements are pinned.
+An Axis read as a four-slot intrinsic descriptor carried into a pinning event.
 
 Carrier contradiction:
 Unit-level information that conflicts with the native carrier assignment of a pin side.
