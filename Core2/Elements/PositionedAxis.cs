@@ -97,6 +97,13 @@ public sealed record PositionedAxisSide(
     PinLiftKind LiftKind)
 {
     public int UnitSign => Math.Sign(UnitEncoding);
+    public int DisplayDirectionSign => Math.Sign(SignedExtent.Sign);
+    public int TransportDirectionSign =>
+        DisplayDirectionSign == 0
+            ? 0
+            : Role == PinSideRole.Dominant
+                ? DisplayDirectionSign
+                : -DisplayDirectionSign;
     public bool HasCarrier => CarrierRank.HasValue;
     public bool IsUnresolved => !HasCarrier;
     public bool IsLifted => LiftKind == PinLiftKind.OrthogonalBreakout;
@@ -124,9 +131,10 @@ public sealed record PositionedAxisCarrierResponse(
     public bool EncounterHasOrthogonalOutlet => HasNonCurrentCarrierTravel(EncounteredSide);
     public bool BlocksHostNegativeSide => OpposesPositiveCarrier(DominantSide);
     public bool BlocksHostPositiveSide => OpposesPositiveCarrier(RecessiveSide);
+    public bool BlocksContinuationPastEncounter => CurrentDirection < 0 ? BlocksHostNegativeSide : BlocksHostPositiveSide;
 
     private bool OpposesPositiveCarrier(PositionedAxisSide side) =>
-        side.CarrierRank == CurrentCarrierRank && side.SignedExtent.Sign < 0;
+        side.CarrierRank == CurrentCarrierRank && side.TransportDirectionSign < 0;
 
     private bool HasNonCurrentCarrierTravel(PositionedAxisSide side) =>
         side.HasCarrier &&

@@ -280,6 +280,25 @@ public class RepetitionTests
     }
 
     [Fact]
+    public void AxisTraversal_ImplicitTransparentLandmark_CanBlockFarSideContinuation()
+    {
+        var frame = Axis.FromCoordinates(Proportion.Zero, new Proportion(10));
+        var pin = new LocatedPin(new Proportion(5), new Axis(new Proportion(-1, 1), new Proportion(1, 1)), name: "Implicit block");
+        var traversal = new AxisTraversalDefinition(
+            frame,
+            new Proportion(7),
+            Seed: Proportion.Zero,
+            Pins: [pin]).CreateState();
+
+        var parts = traversal.EnumerateFire().ToArray();
+
+        Assert.Single(parts);
+        Assert.Equal(Axis.FromCoordinates(Proportion.Zero, new Proportion(5)), parts[0].Segment);
+        Assert.Contains(parts[0].Tensions, tension => tension.Kind == RepetitionTensionKind.PinFlowBlocked);
+        Assert.Equal(new Proportion(5), traversal.Value);
+    }
+
+    [Fact]
     public void BoundaryContinuation_CanDeriveLeftBoundaryReflectionFromImplicitPinDescriptor()
     {
         var frame = Axis.FromCoordinates(Proportion.Zero, new Proportion(5));

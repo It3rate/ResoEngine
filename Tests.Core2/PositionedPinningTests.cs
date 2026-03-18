@@ -68,7 +68,7 @@ public class PositionedPinningTests
     public void PositionedAxis_CarrierResponse_CapturesBlockAndOrthogonalPotential()
     {
         var dominantOpposing = new Axis(0, 1, -1, 1).PlaceAt(new Proportion(4));
-        var recessiveOpposing = new Axis(1, 1, 0, 1).PlaceAt(new Proportion(4));
+        var recessiveOpposing = new Axis(-1, 1, 0, 1).PlaceAt(new Proportion(4));
         var bent = new Axis(1, -1, 1, 1).PlaceAt(new Proportion(4));
 
         var dominantResponse = dominantOpposing.ResolveCarrierResponse(+1);
@@ -80,6 +80,18 @@ public class PositionedPinningTests
         Assert.True(recessiveResponse.BlocksHostPositiveSide);
         Assert.True(bentResponse.HasOrthogonalOutlet);
         Assert.True(bentResponse.IsTransparent);
+    }
+
+    [Fact]
+    public void PositionedAxisSide_DistinguishesDisplayDirectionFromTransportDirection()
+    {
+        var incoming = new Axis(1, 1, 0, 1).PlaceAt(new Proportion(4));
+        var outgoing = new Axis(0, 1, 1, 1).PlaceAt(new Proportion(4));
+
+        Assert.Equal(-1, incoming.RecessiveSide.DisplayDirectionSign);
+        Assert.Equal(+1, incoming.RecessiveSide.TransportDirectionSign);
+        Assert.Equal(+1, outgoing.DominantSide.DisplayDirectionSign);
+        Assert.Equal(+1, outgoing.DominantSide.TransportDirectionSign);
     }
 
     [Fact]

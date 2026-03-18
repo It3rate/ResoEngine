@@ -49,6 +49,14 @@ public sealed class LocatedPin
 
         if (response.IsTransparent)
         {
+            if (response.BlocksContinuationPastEncounter)
+            {
+                return LocatedPinTraversalResolution.Absorb(
+                    new RepetitionTension(
+                        RepetitionTensionKind.PinFlowBlocked,
+                        $"Pin '{Name ?? Location.ToString()}' blocks continuation past the encounter on the current carrier."));
+            }
+
             return LocatedPinTraversalResolution.Transparent();
         }
 

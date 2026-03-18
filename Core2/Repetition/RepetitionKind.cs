@@ -22,4 +22,5 @@ public enum RepetitionTensionKind
     PinStalled,
     MultipleOutputsDeferred,
     PinBehaviorDeferred,
+    PinFlowBlocked,
 }
