@@ -216,7 +216,7 @@ public sealed class BoundaryPinPair
             }
         }
 
-        reframed = new LocatedPin(newLocation, pin.Applied, outputs, pin.Absorbs, pin.Name);
+        reframed = new LocatedPin(newLocation, pin.Applied, outputs, pin.Absorbs, pin.Name, pin.SideAttachments);
         return true;
     }
 
@@ -341,4 +341,25 @@ public sealed class BoundaryPinPair
 
         return pins;
     }
+
+    public IReadOnlyList<CarrierPinSite> ResolveCarrierSites(CarrierIdentity hostCarrier)
+    {
+        ArgumentNullException.ThrowIfNull(hostCarrier);
+
+        List<CarrierPinSite> sites = [];
+        if (LeftPin is not null)
+        {
+            sites.Add(LeftPin.ResolveCarrierPinSite(Frame, hostCarrier));
+        }
+
+        if (RightPin is not null)
+        {
+            sites.Add(RightPin.ResolveCarrierPinSite(Frame, hostCarrier));
+        }
+
+        return sites;
+    }
+
+    public CarrierPinGraph ResolveCarrierPinGraph(CarrierIdentity hostCarrier) =>
+        new([hostCarrier], ResolveCarrierSites(hostCarrier));
 }

@@ -181,6 +181,31 @@ public class RepetitionTests
     }
 
     [Fact]
+    public void LocatedPin_CanResolveIntoACarrierPinSite()
+    {
+        var frame = Axis.FromCoordinates(Proportion.Zero, new Proportion(10));
+        var hostCarrier = CarrierIdentity.Create("Stem");
+        var branchCarrier = CarrierIdentity.Create("Bowl");
+        var pin = new LocatedPin(
+            new Proportion(4),
+            new Axis(new Proportion(3, -1), new Proportion(2, 1)),
+            name: "Bent landmark",
+            sideAttachments:
+            [
+                new CarrierSideAttachment(PinSideRole.Recessive, hostCarrier, new Proportion(4)),
+                new CarrierSideAttachment(PinSideRole.Dominant, branchCarrier, new Proportion(0)),
+            ]);
+
+        var site = pin.ResolveCarrierPinSite(frame, hostCarrier);
+
+        Assert.Equal(hostCarrier, site.HostCarrier);
+        Assert.Equal(new Proportion(4), site.HostPosition);
+        Assert.Equal(hostCarrier.Id, site.RecessiveAttachment?.CarrierId);
+        Assert.Equal(branchCarrier.Id, site.DominantAttachment?.CarrierId);
+        Assert.Equal(pin.Applied, site.Applied);
+    }
+
+    [Fact]
     public void AxisTraversalDefinition_CanExposePinsAsPointPinningAndPlacedAxes()
     {
         var frame = Axis.FromCoordinates(Proportion.Zero, new Proportion(10));
@@ -216,6 +241,81 @@ public class RepetitionTests
         Assert.All(pointPins, pinning => Assert.Equal(frame, pinning.Host));
         Assert.Equal(Proportion.Zero, pointPins[0].Position);
         Assert.Equal(new Proportion(5), pointPins[1].Position);
+    }
+
+    [Fact]
+    public void BoundaryPinPair_CanExposeBoundaryPinsAsCarrierSites()
+    {
+        var frame = Axis.FromCoordinates(Proportion.Zero, new Proportion(5));
+        var stem = CarrierIdentity.Create("Stem");
+        var bowl = CarrierIdentity.Create("Bowl");
+        var pair = BoundaryPinPair.Create(
+            frame,
+            new LocatedPin(
+                Proportion.Zero,
+                Axis.PinUnit,
+                name: "Left",
+                sideAttachments:
+                [
+                    new CarrierSideAttachment(PinSideRole.Recessive, stem, Proportion.Zero),
+                    new CarrierSideAttachment(PinSideRole.Dominant, bowl, Proportion.Zero),
+                ]),
+            new LocatedPin(
+                new Proportion(5),
+                Axis.PinUnit,
+                name: "Right",
+                sideAttachments:
+                [
+                    new CarrierSideAttachment(PinSideRole.Recessive, stem, new Proportion(5)),
+                    new CarrierSideAttachment(PinSideRole.Dominant, bowl, new Proportion(1)),
+                ]));
+
+        var graph = pair.ResolveCarrierPinGraph(stem);
+
+        Assert.Equal(2, graph.Sites.Count);
+        Assert.Equal(2, graph.GetReferencingSites(bowl.Id).Count);
+        Assert.False(graph.HasRecursiveCarrierCycle());
+    }
+
+    [Fact]
+    public void AxisTraversalDefinition_CanResolveCarrierGraphAcrossInteriorAndBoundaryPins()
+    {
+        var frame = Axis.FromCoordinates(Proportion.Zero, new Proportion(10));
+        var stem = CarrierIdentity.Create("Stem");
+        var bowl = CarrierIdentity.Create("Bowl");
+        var top = new LocatedPin(
+            new Proportion(0),
+            new Axis(new Proportion(3, -1), new Proportion(2, 1)),
+            name: "Top",
+            sideAttachments:
+            [
+                new CarrierSideAttachment(PinSideRole.Recessive, stem, Proportion.Zero),
+                new CarrierSideAttachment(PinSideRole.Dominant, bowl, Proportion.Zero),
+            ]);
+        var bottom = new LocatedPin(
+            new Proportion(10),
+            new Axis(new Proportion(-3, -1), new Proportion(2, 1)),
+            name: "Bottom",
+            sideAttachments:
+            [
+                new CarrierSideAttachment(PinSideRole.Recessive, stem, Proportion.One),
+                new CarrierSideAttachment(PinSideRole.Dominant, bowl, Proportion.One),
+            ]);
+        var definition = new AxisTraversalDefinition(
+            frame,
+            Proportion.One,
+            BoundaryPins: BoundaryPinPair.Open(frame),
+            Pins: [top, bottom]);
+
+        var graph = definition.ResolveCarrierPinGraph(stem);
+
+        Assert.Equal(2, graph.Sites.Count);
+        Assert.Equal(2, graph.GetHostedSites(stem.Id).Count);
+        Assert.Equal(2, graph.GetReferencingSites(bowl.Id).Count);
+        Assert.Equal(
+            [Proportion.Zero, Proportion.One],
+            graph.GetAttachments(bowl.Id).Select(attachment => attachment.CarrierPosition).ToArray());
+        Assert.Single(graph.GetReferencedCarriers(stem.Id, includeSelf: false));
     }
 
     [Fact]

@@ -44,6 +44,36 @@ public sealed record AxisTraversalDefinition(
             ? []
             : Pins.Select(pin => pin.PlaceApplied()).ToArray();
 
+    public IReadOnlyList<CarrierPinSite> ResolveCarrierPinSites(
+        CarrierIdentity hostCarrier,
+        bool includeBoundaryPins = true)
+    {
+        ArgumentNullException.ThrowIfNull(hostCarrier);
+
+        if (Frame is null)
+        {
+            return [];
+        }
+
+        List<CarrierPinSite> sites = [];
+        if (Pins is not null)
+        {
+            sites.AddRange(Pins.Select(pin => pin.ResolveCarrierPinSite(Frame, hostCarrier)));
+        }
+
+        if (includeBoundaryPins && ResolveBoundaryPins() is { } boundaryPins)
+        {
+            sites.AddRange(boundaryPins.ResolveCarrierSites(hostCarrier));
+        }
+
+        return sites;
+    }
+
+    public CarrierPinGraph ResolveCarrierPinGraph(
+        CarrierIdentity hostCarrier,
+        bool includeBoundaryPins = true) =>
+        new([hostCarrier], ResolveCarrierPinSites(hostCarrier, includeBoundaryPins));
+
     public IEnumerable<AxisTraversalStep> Iterate()
     {
         var state = CreateState();

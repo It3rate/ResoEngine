@@ -4,18 +4,29 @@ namespace Core2.Repetition;
 
 public sealed class LocatedPin
 {
+        private readonly IReadOnlyDictionary<PinSideRole, CarrierSideAttachment> _attachmentsByRole;
+
     public LocatedPin(
         Proportion location,
         Axis applied,
         IReadOnlyList<PinEgress>? outputs = null,
         bool absorbs = false,
-        string? name = null)
+        string? name = null,
+        IReadOnlyList<CarrierSideAttachment>? sideAttachments = null)
     {
         Location = location;
         Applied = applied;
         Outputs = outputs ?? [];
         Absorbs = absorbs;
         Name = name;
+        SideAttachments = (sideAttachments ?? []).ToArray();
+
+        if (SideAttachments.GroupBy(attachment => attachment.Role).Any(group => group.Count() > 1))
+        {
+            throw new ArgumentException("Each pin-side role may be attached at most once.", nameof(sideAttachments));
+        }
+
+        _attachmentsByRole = SideAttachments.ToDictionary(attachment => attachment.Role);
     }
 
     public Proportion Location { get; }
@@ -24,6 +35,9 @@ public sealed class LocatedPin
     public IReadOnlyList<PinEgress> Outputs { get; }
     public bool Absorbs { get; }
     public string? Name { get; }
+    public IReadOnlyList<CarrierSideAttachment> SideAttachments { get; }
+    public CarrierSideAttachment? RecessiveAttachment => GetAttachment(PinSideRole.Recessive);
+    public CarrierSideAttachment? DominantAttachment => GetAttachment(PinSideRole.Dominant);
 
     public int OutputCount => Outputs.Count;
     public PinEgress? PrimaryOutput => Outputs.Count > 0 ? Outputs[0] : null;
@@ -31,6 +45,32 @@ public sealed class LocatedPin
     public PointPinning<Axis, Axis> AttachTo(Axis host) => host.PinAt(Applied, Location);
 
     public PositionedAxis PlaceApplied() => Applied.PlaceAt(Location);
+
+    public CarrierSideAttachment? GetAttachment(PinSideRole role) =>
+        _attachmentsByRole.TryGetValue(role, out var attachment) ? attachment : null;
+
+    public CarrierPinSite ResolveCarrierPinSite(
+        Axis host,
+        CarrierIdentity hostCarrier,
+        CarrierPinSiteId? id = null)
+    {
+        ArgumentNullException.ThrowIfNull(host);
+        ArgumentNullException.ThrowIfNull(hostCarrier);
+
+        if (!IsHostRelativeTo(host))
+        {
+            throw new ArgumentException(
+                $"Pin '{Name ?? Location.ToString()}' is not hosted on the supplied carrier frame.",
+                nameof(host));
+        }
+
+        return new CarrierPinSite(
+            id ?? CarrierPinSiteId.New(),
+            hostCarrier,
+            AttachTo(host),
+            SideAttachments,
+            Name);
+    }
 
     public bool IsHostRelativeTo(Axis host) => Location >= host.LeftCoordinate && Location <= host.RightCoordinate;
 
