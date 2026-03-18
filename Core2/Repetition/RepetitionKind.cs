@@ -21,4 +21,5 @@ public enum RepetitionTensionKind
     BoundaryExceeded,
     PinStalled,
     MultipleOutputsDeferred,
+    PinBehaviorDeferred,
 }

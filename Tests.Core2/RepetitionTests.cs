@@ -150,6 +150,18 @@ public class RepetitionTests
     }
 
     [Fact]
+    public void BoundaryPinPair_SummaryLawRecognizesImplicitReflectiveBoundaryPins()
+    {
+        var frame = Axis.FromCoordinates(0, 5);
+        var implicitReflect = BoundaryPinPair.Create(
+            frame,
+            new LocatedPin(Proportion.Zero, Axis.PinUnit, name: "Implicit left"),
+            new LocatedPin(new Proportion(5), Axis.PinUnit, name: "Implicit right"));
+
+        Assert.Equal(BoundaryContinuationLaw.ReflectiveBounce, implicitReflect.SummaryLaw);
+    }
+
+    [Fact]
     public void LocatedPin_CanAttachItsAppliedAxisToAHostFrame()
     {
         var frame = Axis.FromCoordinates(new Proportion(-3), new Proportion(7));
@@ -204,6 +216,95 @@ public class RepetitionTests
         Assert.All(pointPins, pinning => Assert.Equal(frame, pinning.Host));
         Assert.Equal(Proportion.Zero, pointPins[0].Position);
         Assert.Equal(new Proportion(5), pointPins[1].Position);
+    }
+
+    [Fact]
+    public void AxisTraversal_ImplicitSameDirectionLandmark_IsTransparent()
+    {
+        var frame = Axis.FromCoordinates(Proportion.Zero, new Proportion(10));
+        var pin = new LocatedPin(new Proportion(5), Axis.PinUnit, name: "Implicit continue");
+        var traversal = new AxisTraversalDefinition(
+            frame,
+            new Proportion(7),
+            Seed: Proportion.Zero,
+            Pins: [pin]).CreateState();
+
+        var parts = traversal.EnumerateFire().ToArray();
+
+        Assert.Equal(
+            [Axis.FromCoordinates(Proportion.Zero, new Proportion(5)), Axis.FromCoordinates(new Proportion(5), new Proportion(7))],
+            parts.Select(part => part.Segment).ToArray());
+        Assert.All(parts, part => Assert.Empty(part.Tensions));
+        Assert.All(parts, part => Assert.False(part.BreakAfter));
+        Assert.Equal(new Proportion(7), traversal.Value);
+    }
+
+    [Fact]
+    public void AxisTraversal_ImplicitSameDirectionLandmark_IsTransparentWhenApproachedFromRight()
+    {
+        var frame = Axis.FromCoordinates(Proportion.Zero, new Proportion(10));
+        var pin = new LocatedPin(new Proportion(5), Axis.PinUnit, name: "Implicit continue");
+        var traversal = new AxisTraversalDefinition(
+            frame,
+            new Proportion(-7),
+            Seed: new Proportion(10),
+            Pins: [pin]).CreateState();
+
+        var parts = traversal.EnumerateFire().ToArray();
+
+        Assert.Equal(
+            [Axis.FromCoordinates(new Proportion(10), new Proportion(5)), Axis.FromCoordinates(new Proportion(5), new Proportion(3))],
+            parts.Select(part => part.Segment).ToArray());
+        Assert.All(parts, part => Assert.Empty(part.Tensions));
+        Assert.All(parts, part => Assert.False(part.BreakAfter));
+        Assert.Equal(new Proportion(3), traversal.Value);
+    }
+
+    [Fact]
+    public void AxisTraversal_ImplicitOrthogonalLandmark_IsDeferredAsTension()
+    {
+        var frame = Axis.FromCoordinates(Proportion.Zero, new Proportion(10));
+        var pin = new LocatedPin(new Proportion(5), new Axis(new Proportion(1), new Proportion(2, -1)), name: "Implicit bent");
+        var traversal = new AxisTraversalDefinition(
+            frame,
+            new Proportion(7),
+            Seed: Proportion.Zero,
+            Pins: [pin]).CreateState();
+
+        var parts = traversal.EnumerateFire().ToArray();
+
+        Assert.Single(parts);
+        Assert.Equal(Axis.FromCoordinates(Proportion.Zero, new Proportion(5)), parts[0].Segment);
+        Assert.Contains(parts[0].Tensions, tension => tension.Kind == RepetitionTensionKind.PinBehaviorDeferred);
+        Assert.Equal(new Proportion(5), traversal.Value);
+    }
+
+    [Fact]
+    public void BoundaryContinuation_CanDeriveLeftBoundaryReflectionFromImplicitPinDescriptor()
+    {
+        var frame = Axis.FromCoordinates(Proportion.Zero, new Proportion(5));
+        var implicitLeft = BoundaryPinPair.Create(
+            frame,
+            new LocatedPin(Proportion.Zero, Axis.PinUnit, name: "Implicit left"),
+            null);
+
+        var result = frame.Continue(new Proportion(-2), implicitLeft);
+
+        Assert.Equal(new Proportion(2), result.Value);
+    }
+
+    [Fact]
+    public void BoundaryContinuation_CanDeriveRightBoundaryReflectionFromImplicitPinDescriptor()
+    {
+        var frame = Axis.FromCoordinates(Proportion.Zero, new Proportion(5));
+        var implicitRight = BoundaryPinPair.Create(
+            frame,
+            null,
+            new LocatedPin(new Proportion(5), Axis.PinUnit, name: "Implicit right"));
+
+        var result = frame.Continue(new Proportion(7), implicitRight);
+
+        Assert.Equal(new Proportion(3), result.Value);
     }
 
     [Fact]

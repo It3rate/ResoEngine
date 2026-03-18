@@ -191,13 +191,52 @@ internal static class PinBoundaryTraversal
             return;
         }
 
-        if (pin.Absorbs || pin.OutputCount == 0)
+        bool useImplicit = !pin.Absorbs && pin.OutputCount == 0;
+        LocatedPinTraversalResolution implicitResolution = useImplicit
+            ? pin.ResolveImplicitTraversal(frame, direction, boundaryEncounter: true)
+            : LocatedPinTraversalResolution.Unhandled;
+
+        if (pin.Absorbs || (useImplicit && !implicitResolution.Handled))
         {
             remaining = Proportion.Zero;
             return;
         }
 
-        PinEgress egress = pin.PrimaryOutput!;
+        if (useImplicit && implicitResolution.Handled)
+        {
+            AppendEncounterTensions(fragments, current, implicitResolution.Tensions);
+
+            if (implicitResolution.TransparentContinue)
+            {
+                if (remaining > Proportion.Zero)
+                {
+                    Proportion min = frame is null ? edge : frame.LeftCoordinate;
+                    Proportion max = frame is null ? edge : frame.RightCoordinate;
+                    Proportion overflow = Move(current, direction, remaining);
+                    fragments.Add(new PinTraversalFragment(
+                        current,
+                        overflow,
+                        [CreateBoundaryTension(overflow, Proportion.Min(min, max), Proportion.Max(min, max))],
+                        false));
+                    current = overflow;
+                    remaining = Proportion.Zero;
+                }
+
+                frame = null;
+                pins = null;
+                return;
+            }
+
+            if (implicitResolution.Absorbs || implicitResolution.PrimaryOutput is null)
+            {
+                remaining = Proportion.Zero;
+                return;
+            }
+        }
+
+        PinEgress egress = pin.OutputCount > 0
+            ? pin.PrimaryOutput!
+            : implicitResolution.PrimaryOutput!;
 
         if (frame is not null &&
             frame.IsDegenerate &&
@@ -269,14 +308,38 @@ internal static class PinBoundaryTraversal
                 $"Pin '{pin.Name ?? pin.Location.ToString()}' has {pin.OutputCount} outputs; continuing through the primary output only."));
         }
 
-        if (pin.Absorbs || pin.OutputCount == 0)
+        bool useImplicit = !pin.Absorbs && pin.OutputCount == 0;
+        LocatedPinTraversalResolution implicitResolution = useImplicit
+            ? pin.ResolveImplicitTraversal(frame, direction)
+            : LocatedPinTraversalResolution.Unhandled;
+
+        if (pin.Absorbs || (useImplicit && !implicitResolution.Handled))
         {
             remaining = Proportion.Zero;
             AppendEncounterTensions(fragments, current, tensions);
             return;
         }
 
-        PinEgress egress = pin.PrimaryOutput!;
+        if (useImplicit && implicitResolution.Handled)
+        {
+            tensions.AddRange(implicitResolution.Tensions);
+            if (implicitResolution.TransparentContinue)
+            {
+                AppendEncounterTensions(fragments, current, tensions);
+                return;
+            }
+
+            if (implicitResolution.Absorbs || implicitResolution.PrimaryOutput is null)
+            {
+                remaining = Proportion.Zero;
+                AppendEncounterTensions(fragments, current, tensions);
+                return;
+            }
+        }
+
+        PinEgress egress = pin.OutputCount > 0
+            ? pin.PrimaryOutput!
+            : implicitResolution.PrimaryOutput!;
         int nextDirection = NormalizeDirection(egress.DirectionSign == 0 ? direction : egress.DirectionSign);
 
         if (egress.PreservesCurrentContext &&

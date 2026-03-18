@@ -33,6 +33,94 @@ public sealed class LocatedPin
     public PositionedAxis PlaceApplied() => Applied.PlaceAt(Location);
 
     public bool IsHostRelativeTo(Axis host) => Location >= host.LeftCoordinate && Location <= host.RightCoordinate;
+
+    public LocatedPinTraversalResolution ResolveImplicitTraversal(
+        Axis? host,
+        int currentDirection,
+        bool boundaryEncounter = false)
+    {
+        if (host is null || !IsHostRelativeTo(host))
+        {
+            return LocatedPinTraversalResolution.Unhandled;
+        }
+
+        var placed = PlaceApplied();
+        var traversedSide = ResolveTraversalSide(placed, host, currentDirection, boundaryEncounter);
+
+        if (traversedSide.CarrierRank == 0 && traversedSide.SignedExtent.Sign != 0)
+        {
+            int nextDirection = traversedSide.SignedExtent.Sign;
+            return nextDirection == Math.Sign(currentDirection == 0 ? 1 : currentDirection)
+                ? LocatedPinTraversalResolution.Transparent()
+                : LocatedPinTraversalResolution.Redirect(new PinEgress(Location, nextDirection, name: $"Implicit({Name ?? Location.ToString()})"));
+        }
+
+        if (traversedSide.CarrierRank == 0)
+        {
+            return LocatedPinTraversalResolution.Absorb(
+                new RepetitionTension(
+                    RepetitionTensionKind.PinBehaviorDeferred,
+                    $"Pin '{Name ?? Location.ToString()}' has no realized travel on the current carrier in the encountered direction."));
+        }
+
+        if (traversedSide.HasCarrier)
+        {
+            return LocatedPinTraversalResolution.Absorb(
+                new RepetitionTension(
+                    RepetitionTensionKind.PinBehaviorDeferred,
+                    $"Pin '{Name ?? Location.ToString()}' resolves off the current carrier on its {traversedSide.Role} side and cannot yet be executed by 1D traversal."));
+        }
+
+        return LocatedPinTraversalResolution.Absorb(
+            new RepetitionTension(
+                RepetitionTensionKind.PinBehaviorDeferred,
+                $"Pin '{Name ?? Location.ToString()}' remains unresolved on the current carrier and cannot yet be executed by 1D traversal."));
+    }
+
+    private static PositionedAxisSide ResolveTraversalSide(
+        PositionedAxis placed,
+        Axis host,
+        int currentDirection,
+        bool boundaryEncounter)
+    {
+        int normalizedDirection = Math.Sign(currentDirection == 0 ? 1 : currentDirection);
+        if (boundaryEncounter)
+        {
+            if (normalizedDirection < 0 && placed.EmbeddedOrigin == host.LeftCoordinate)
+            {
+                return placed.DominantSide;
+            }
+
+            if (normalizedDirection > 0 && placed.EmbeddedOrigin == host.RightCoordinate)
+            {
+                return placed.RecessiveSide;
+            }
+        }
+
+        return normalizedDirection < 0
+            ? placed.RecessiveSide
+            : placed.DominantSide;
+    }
+}
+
+public readonly record struct LocatedPinTraversalResolution(
+    bool Handled,
+    bool TransparentContinue,
+    bool Absorbs,
+    PinEgress? PrimaryOutput,
+    IReadOnlyList<RepetitionTension> Tensions)
+{
+    public static LocatedPinTraversalResolution Unhandled =>
+        new(false, false, false, null, []);
+
+    public static LocatedPinTraversalResolution Transparent(params RepetitionTension[] tensions) =>
+        new(true, true, false, null, tensions);
+
+    public static LocatedPinTraversalResolution Redirect(PinEgress egress, params RepetitionTension[] tensions) =>
+        new(true, false, false, egress, tensions);
+
+    public static LocatedPinTraversalResolution Absorb(params RepetitionTension[] tensions) =>
+        new(true, false, true, null, tensions);
 }
 
 public sealed class PinEgress

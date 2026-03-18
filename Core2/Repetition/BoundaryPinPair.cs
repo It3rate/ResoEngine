@@ -110,6 +110,13 @@ public sealed class BoundaryPinPair
             return true;
         }
 
+        if (IsImplicitReflect(LeftPin, Frame.LeftCoordinate, -1, +1) &&
+            IsImplicitReflect(RightPin, Frame.RightCoordinate, +1, -1))
+        {
+            law = BoundaryContinuationLaw.ReflectiveBounce;
+            return true;
+        }
+
         if (IsWrap(LeftPin, Frame.LeftCoordinate, Frame.RightCoordinate, -1) &&
             IsWrap(RightPin, Frame.RightCoordinate, Frame.LeftCoordinate, +1))
         {
@@ -297,6 +304,27 @@ public sealed class BoundaryPinPair
         egress.Start == target &&
         Math.Sign(egress.DirectionSign) == direction &&
         egress.PreservesCurrentContext;
+
+    private bool IsImplicitReflect(
+        LocatedPin? pin,
+        Proportion location,
+        int boundaryDirection,
+        int inwardDirection)
+    {
+        if (pin is null || pin.Location != location || pin.Absorbs || pin.OutputCount != 0)
+        {
+            return false;
+        }
+
+        LocatedPinTraversalResolution resolution = pin.ResolveImplicitTraversal(Frame, boundaryDirection, boundaryEncounter: true);
+        return resolution.Handled &&
+               !resolution.Absorbs &&
+               !resolution.TransparentContinue &&
+               resolution.PrimaryOutput is { } egress &&
+               egress.Start == location &&
+               Math.Sign(egress.DirectionSign) == inwardDirection &&
+               egress.PreservesCurrentContext;
+    }
 
     public IReadOnlyList<PointPinning<Axis, Axis>> ResolvePointPins()
     {
