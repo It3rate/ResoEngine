@@ -60,6 +60,8 @@ public sealed record Proportion : IElement, IComparable<Proportion>, IComparable
 
     public Axis Pin(Proportion other) => new(this, other);
 
+    public PointPinning<Proportion, Proportion> PinAt(Proportion other, Proportion position) => new(this, other, position);
+
     public InverseContinuationResult<Proportion> InverseContinue(
         int degree,
         InverseContinuationRule rule = InverseContinuationRule.Principal,

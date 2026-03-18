@@ -134,6 +134,10 @@ public sealed record Axis(Proportion Recessive, Proportion Dominant, AxisBasis B
 
     public Area Pin(Axis other) => new(this, other);
 
+    public PointPinning<Axis, Axis> PinAt(Axis other, Proportion position) => new(this, other, position);
+
+    public PositionedAxis PlaceAt(Proportion position) => new(this, position);
+
     public PinnedPair<Proportion, Proportion> AsPinnedPair() =>
         new(Recessive, Dominant, Relation);
 
