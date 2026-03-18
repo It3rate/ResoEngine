@@ -5,19 +5,25 @@ namespace ResoEngine.Visualizer.Adapt;
 
 public sealed class PinAxisDisplayGeometry
 {
-    public PinAxisDisplayGeometry(Axis descriptor)
+    public PinAxisDisplayGeometry(Axis descriptor, int hostCarrierRank = 0)
     {
         Descriptor = descriptor;
+        HostCarrierRank = hostCarrierRank;
         Resolution = descriptor.PinResolution;
-        RecessiveRay = CreateRay("Recessive", descriptor.Recessive, Resolution.RecessiveSide);
-        DominantRay = CreateRay("Dominant", descriptor.Dominant, Resolution.DominantSide);
+        RecessiveRay = CreateRay("Recessive", descriptor.Recessive, Resolution.RecessiveSide, hostCarrierRank);
+        DominantRay = CreateRay("Dominant", descriptor.Dominant, Resolution.DominantSide, hostCarrierRank);
+        RecessiveUnitBasis = ResolveUnitBasis(Resolution.RecessiveSide, hostCarrierRank);
+        DominantUnitBasis = ResolveUnitBasis(Resolution.DominantSide, hostCarrierRank);
     }
 
     public Axis Descriptor { get; }
+    public int HostCarrierRank { get; }
     public PinAxisResolution Resolution { get; }
     public PinRelation Relation => Descriptor.Relation;
     public PinDisplayRay RecessiveRay { get; }
     public PinDisplayRay DominantRay { get; }
+    public SKPoint RecessiveUnitBasis { get; }
+    public SKPoint DominantUnitBasis { get; }
     public bool IsDirectedSegment => Descriptor.IsSegmentLike;
     public bool IsSequentialReinforcement => Descriptor.IsSequentialReinforcement;
     public bool IsOrthogonalStructure => Descriptor.IsOrthogonalStructure;
@@ -76,26 +82,27 @@ public sealed class PinAxisDisplayGeometry
         }
     }
 
-    private static PinDisplayRay CreateRay(string name, Proportion proportion, PinResolvedSide side)
+    private static PinDisplayRay CreateRay(string name, Proportion proportion, PinResolvedSide side, int hostCarrierRank)
     {
         float magnitude = side.IsUnresolved
             ? Math.Abs(side.ValueEncoding)
             : SafeMagnitude(proportion);
 
+        int? ambientCarrierRank = ResolveAmbientCarrierRank(side.CarrierRank, hostCarrierRank);
         if (side.DirectionSign == 0 || magnitude <= 0.0001f)
         {
-            return new PinDisplayRay(name, side.CarrierRank, side.DirectionSign, magnitude, SKPoint.Empty, side.IsUnresolved, side.IsLifted);
+            return new PinDisplayRay(name, ambientCarrierRank, side.DirectionSign, magnitude, SKPoint.Empty, side.IsUnresolved, side.IsLifted);
         }
 
         float signedMagnitude = side.DirectionSign * magnitude;
-        var endpoint = side.CarrierRank switch
+        var endpoint = ambientCarrierRank switch
         {
             0 => new SKPoint(signedMagnitude, 0f),
             1 => new SKPoint(0f, signedMagnitude),
             _ => SKPoint.Empty,
         };
 
-        return new PinDisplayRay(name, side.CarrierRank, side.DirectionSign, magnitude, endpoint, side.IsUnresolved, side.IsLifted);
+        return new PinDisplayRay(name, ambientCarrierRank, side.DirectionSign, magnitude, endpoint, side.IsUnresolved, side.IsLifted);
     }
 
     private static float SafeMagnitude(Proportion value)
@@ -111,6 +118,35 @@ public sealed class PinAxisDisplayGeometry
 
     private static SKPoint Add(SKPoint left, SKPoint right) =>
         new(left.X + right.X, left.Y + right.Y);
+
+    private static SKPoint ResolveUnitBasis(PinResolvedSide side, int hostCarrierRank)
+    {
+        int? ambientCarrierRank = ResolveAmbientCarrierRank(side.CarrierRank, hostCarrierRank);
+        if (!ambientCarrierRank.HasValue)
+        {
+            return SKPoint.Empty;
+        }
+
+        int naturalDirection = side.Role == PinSideRole.Recessive ? -1 : 1;
+        return ambientCarrierRank.Value switch
+        {
+            0 => new SKPoint(naturalDirection, 0f),
+            1 => new SKPoint(0f, naturalDirection),
+            _ => SKPoint.Empty,
+        };
+    }
+
+    private static int? ResolveAmbientCarrierRank(int? localCarrierRank, int hostCarrierRank)
+    {
+        if (!localCarrierRank.HasValue)
+        {
+            return null;
+        }
+
+        return localCarrierRank.Value == 0
+            ? hostCarrierRank
+            : hostCarrierRank == 0 ? 1 : 0;
+    }
 
     private static SKPoint ResolveBasis(PinDisplayRay ray)
     {

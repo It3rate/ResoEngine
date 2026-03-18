@@ -1009,23 +1009,20 @@ public sealed class LandmarkContinuationPage : IVisualizerPage
     {
         _pinLayouts.Add(new PinLayout(info.Pin.Id, new SKRect(info.Origin.X - 14f, info.Origin.Y - 14f, info.Origin.X + 14f, info.Origin.Y + 14f)));
 
-        DrawUnitDisplay(canvas, info.Origin, scale, info.Geometry.Resolution, info.HostCarrierRank, alpha);
-
-        PinDisplayRay recessiveRay = BuildHostedRay("R", info.Geometry.Resolution.RecessiveSide, info.HostCarrierRank);
-        PinDisplayRay dominantRay = BuildHostedRay("D", info.Geometry.Resolution.DominantSide, info.HostCarrierRank);
+        DrawUnitDisplay(canvas, info.Origin, scale, info.Geometry, alpha);
 
         DrawRay(
             canvas,
             info.Origin,
             scale,
-            recessiveRay,
+            info.Geometry.RecessiveRay,
             WithAlpha(SegmentColors.Red.Solid, alpha),
             incoming: true);
         DrawRay(
             canvas,
             info.Origin,
             scale,
-            dominantRay,
+            info.Geometry.DominantRay,
             WithAlpha(SegmentColors.Blue.Solid, alpha),
             incoming: false);
 
@@ -1053,14 +1050,14 @@ public sealed class LandmarkContinuationPage : IVisualizerPage
         }
     }
 
-    private void DrawUnitDisplay(SKCanvas canvas, SKPoint origin, float scale, PinAxisResolution resolution, int hostCarrierRank, byte alpha)
+    private void DrawUnitDisplay(SKCanvas canvas, SKPoint origin, float scale, PinAxisDisplayGeometry geometry, byte alpha)
     {
-        bool recessiveNoise = resolution.RecessiveSide.ValueSign == 0 || resolution.RecessiveSide.UnitSign == 0;
-        bool dominantNoise = resolution.DominantSide.ValueSign == 0 || resolution.DominantSide.UnitSign == 0;
-        SKPoint recessiveDisplayBasis = recessiveNoise ? SKPoint.Empty : GetDisplayBasis(resolution.RecessiveSide, hostCarrierRank);
-        SKPoint dominantDisplayBasis = dominantNoise ? SKPoint.Empty : GetDisplayBasis(resolution.DominantSide, hostCarrierRank);
-        SKPoint recessiveUnitBasis = GetUnitBasis(resolution.RecessiveSide, hostCarrierRank);
-        SKPoint dominantUnitBasis = GetUnitBasis(resolution.DominantSide, hostCarrierRank);
+        bool recessiveNoise = geometry.Resolution.RecessiveSide.ValueSign == 0 || geometry.Resolution.RecessiveSide.UnitSign == 0;
+        bool dominantNoise = geometry.Resolution.DominantSide.ValueSign == 0 || geometry.Resolution.DominantSide.UnitSign == 0;
+        SKPoint recessiveDisplayBasis = recessiveNoise ? SKPoint.Empty : geometry.RecessiveBasis;
+        SKPoint dominantDisplayBasis = dominantNoise ? SKPoint.Empty : geometry.DominantBasis;
+        SKPoint recessiveUnitBasis = geometry.RecessiveUnitBasis;
+        SKPoint dominantUnitBasis = geometry.DominantUnitBasis;
 
         bool showUnitCell =
             !recessiveNoise &&
@@ -1571,7 +1568,7 @@ public sealed class LandmarkContinuationPage : IVisualizerPage
             Axis descriptor = pin.BuildDescriptor();
             return new LandmarkRenderInfo(
                 pin,
-                new PinAxisDisplayGeometry(descriptor),
+                new PinAxisDisplayGeometry(descriptor, hostCarrierRank: 0),
                 descriptor.PlaceAt(new Proportion(pin.LocationHalfSteps, 2)),
                 new SKPoint(layout.ZeroX, layout.CarrierY),
                 GetLandmarkAccentColor(pin.Id),
@@ -1579,10 +1576,10 @@ public sealed class LandmarkContinuationPage : IVisualizerPage
         }
 
         Axis resolvedDescriptor = pin.BuildDescriptor();
-        var geometry = new PinAxisDisplayGeometry(resolvedDescriptor);
         var placed = resolvedDescriptor.PlaceAt(new Proportion(pin.LocationHalfSteps, 2));
         SKPoint origin = ResolvePinOrigin(layout, pin, cache, visiting);
         int hostCarrierRank = ResolveHostCarrierRank(layout, pin, cache, visiting);
+        var geometry = new PinAxisDisplayGeometry(resolvedDescriptor, hostCarrierRank);
         var info = new LandmarkRenderInfo(pin, geometry, placed, origin, GetLandmarkAccentColor(pin.Id), hostCarrierRank);
         cache[pin.Id] = info;
         visiting.Remove(pin.Id);
@@ -1647,14 +1644,18 @@ public sealed class LandmarkContinuationPage : IVisualizerPage
         PinResolvedSide side = sideRole == PinSideRole.Recessive
             ? info.Geometry.Resolution.RecessiveSide
             : info.Geometry.Resolution.DominantSide;
-        SKPoint displayBasis = GetDisplayBasis(side, info.HostCarrierRank);
+        SKPoint displayBasis = sideRole == PinSideRole.Recessive
+            ? info.Geometry.RecessiveBasis
+            : info.Geometry.DominantBasis;
         if (!ShouldShowForceLine(side))
         {
             carrier = default!;
             return false;
         }
 
-        SKPoint unitBasis = GetUnitBasis(side, info.HostCarrierRank);
+        SKPoint unitBasis = sideRole == PinSideRole.Recessive
+            ? info.Geometry.RecessiveUnitBasis
+            : info.Geometry.DominantUnitBasis;
         if (unitBasis == SKPoint.Empty || displayBasis == SKPoint.Empty)
         {
             carrier = default!;
@@ -1666,14 +1667,15 @@ public sealed class LandmarkContinuationPage : IVisualizerPage
         SKPoint end = new(
             start.X + displayBasis.X * layout.UnitScale * lengthHalfSteps / 2f,
             start.Y - displayBasis.Y * layout.UnitScale * lengthHalfSteps / 2f);
-        int ambientCarrierRank = ResolveAmbientCarrierRank(side, info.HostCarrierRank) ?? info.HostCarrierRank;
         PositionedAxisSide positionedSide = GetPlacedSide(info, sideRole);
         carrier = new CarrierLayout(
             new CarrierReference(CarrierKind.PinSide, info.Pin.Id, sideRole),
             start,
             end,
             lengthHalfSteps,
-            ambientCarrierRank,
+            sideRole == PinSideRole.Recessive
+                ? info.Geometry.RecessiveRay.CarrierRank ?? info.HostCarrierRank
+                : info.Geometry.DominantRay.CarrierRank ?? info.HostCarrierRank,
             positionedSide.TransportDirectionSign == 0 ? +1 : positionedSide.TransportDirectionSign);
         return true;
     }
@@ -1830,13 +1832,17 @@ public sealed class LandmarkContinuationPage : IVisualizerPage
         IReadOnlyList<LandmarkRenderInfo> pinInfos,
         IReadOnlyDictionary<int, LandmarkRenderInfo> pinInfoMap)
     {
-        SKPoint displayBasis = GetDisplayBasis(side, info.HostCarrierRank);
+        SKPoint displayBasis = side.Role == PinSideRole.Recessive
+            ? info.Geometry.RecessiveBasis
+            : info.Geometry.DominantBasis;
         if (!ShouldShowForceLine(side))
         {
             return;
         }
 
-        SKPoint unitBasis = GetUnitBasis(side, info.HostCarrierRank);
+        SKPoint unitBasis = side.Role == PinSideRole.Recessive
+            ? info.Geometry.RecessiveUnitBasis
+            : info.Geometry.DominantUnitBasis;
         if (unitBasis == SKPoint.Empty || displayBasis == SKPoint.Empty)
         {
             return;
@@ -1848,14 +1854,15 @@ public sealed class LandmarkContinuationPage : IVisualizerPage
             anchor.X + displayBasis.X * scale * GetForceLengthHalfSteps(info.Pin, side.Role) / 2f,
             anchor.Y - displayBasis.Y * scale * GetForceLengthHalfSteps(info.Pin, side.Role) / 2f);
 
-        int ambientCarrierRank = ResolveAmbientCarrierRank(side, info.HostCarrierRank) ?? info.HostCarrierRank;
         PositionedAxisSide positionedSide = GetPlacedSide(info, side.Role);
         var currentCarrier = new CarrierLayout(
             new CarrierReference(CarrierKind.PinSide, info.Pin.Id, side.Role),
             anchor,
             end,
             GetForceLengthHalfSteps(info.Pin, side.Role),
-            ambientCarrierRank,
+            side.Role == PinSideRole.Recessive
+                ? info.Geometry.RecessiveRay.CarrierRank ?? info.HostCarrierRank
+                : info.Geometry.DominantRay.CarrierRank ?? info.HostCarrierRank,
             positionedSide.TransportDirectionSign == 0 ? +1 : positionedSide.TransportDirectionSign);
         _carrierLayouts.Add(currentCarrier);
         _forceHandleLayouts.Add(new ForceHandleLayout(info.Pin.Id, side.Role, new SKRect(end.X - 12f, end.Y - 12f, end.X + 12f, end.Y + 12f)));
@@ -2019,80 +2026,6 @@ public sealed class LandmarkContinuationPage : IVisualizerPage
         sideRole == PinSideRole.Recessive
             ? info.Placed.RecessiveSide
             : info.Placed.DominantSide;
-
-    private static PinDisplayRay BuildHostedRay(string name, PinResolvedSide side, int hostCarrierRank)
-    {
-        float magnitude = side.IsUnresolved
-            ? Math.Abs(side.ValueEncoding)
-            : SafeMagnitude(side.ValueEncoding, side.UnitEncoding);
-        SKPoint basis = GetDisplayBasis(side, hostCarrierRank);
-        if (!side.HasCarrier || basis == SKPoint.Empty)
-        {
-            return new PinDisplayRay(name, side.CarrierRank, side.DirectionSign, magnitude, SKPoint.Empty, side.IsUnresolved, side.IsLifted);
-        }
-
-        SKPoint endpoint = new(
-            basis.X * magnitude,
-            basis.Y * magnitude);
-        return new PinDisplayRay(name, ResolveAmbientCarrierRank(side, hostCarrierRank), side.DirectionSign, magnitude, endpoint, side.IsUnresolved, side.IsLifted);
-    }
-
-    private static float SafeMagnitude(long valueEncoding, long unitEncoding)
-    {
-        if (unitEncoding == 0)
-        {
-            return Math.Abs(valueEncoding);
-        }
-
-        return Math.Abs(valueEncoding / (float)unitEncoding);
-    }
-
-    private static SKPoint GetUnitBasis(PinResolvedSide side, int hostCarrierRank)
-    {
-        int? ambientCarrierRank = ResolveAmbientCarrierRank(side, hostCarrierRank);
-        if (!ambientCarrierRank.HasValue)
-        {
-            return SKPoint.Empty;
-        }
-
-        int naturalDirection = side.Role == PinSideRole.Recessive ? -1 : 1;
-        return ambientCarrierRank.Value switch
-        {
-            0 => new SKPoint(naturalDirection, 0f),
-            1 => new SKPoint(0f, naturalDirection),
-            _ => SKPoint.Empty,
-        };
-    }
-
-    private static SKPoint GetDisplayBasis(PinResolvedSide side, int hostCarrierRank)
-    {
-        int? ambientCarrierRank = ResolveAmbientCarrierRank(side, hostCarrierRank);
-        if (!ambientCarrierRank.HasValue || side.DirectionSign == 0)
-        {
-            return SKPoint.Empty;
-        }
-
-        return ambientCarrierRank.Value switch
-        {
-            0 => new SKPoint(side.DirectionSign, 0f),
-            1 => new SKPoint(0f, side.DirectionSign),
-            _ => SKPoint.Empty,
-        };
-    }
-
-    private static int? ResolveAmbientCarrierRank(PinResolvedSide side, int hostCarrierRank)
-    {
-        if (!side.CarrierRank.HasValue)
-        {
-            return null;
-        }
-
-        return side.CarrierRank.Value == 0
-            ? hostCarrierRank
-            : OrthogonalCarrierRank(hostCarrierRank);
-    }
-
-    private static int OrthogonalCarrierRank(int hostCarrierRank) => hostCarrierRank == 0 ? 1 : 0;
 
     private static bool AreOrthogonal(SKPoint left, SKPoint right) =>
         Math.Abs(left.X * right.X + left.Y * right.Y) < 0.01f;
