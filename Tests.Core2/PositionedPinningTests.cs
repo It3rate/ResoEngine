@@ -57,8 +57,12 @@ public class PositionedPinningTests
 
         Assert.Equal(PinSideRole.Dominant, forward.EncounteredSide.Role);
         Assert.True(forward.IsTransparent);
+        Assert.True(forward.SupportsApproachIntoEncounter);
+        Assert.False(forward.BlocksApproachIntoEncounter);
         Assert.Equal(PinSideRole.Recessive, reverse.EncounteredSide.Role);
         Assert.True(reverse.IsTransparent);
+        Assert.True(reverse.BlocksApproachIntoEncounter);
+        Assert.False(reverse.SupportsApproachIntoEncounter);
         Assert.Equal(PinSideRole.Recessive, boundary.EncounteredSide.Role);
         Assert.True(boundary.IsRedirect);
         Assert.Equal(-1, boundary.EncounterNextDirection);

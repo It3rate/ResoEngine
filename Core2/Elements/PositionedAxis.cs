@@ -132,6 +132,17 @@ public sealed record PositionedAxisCarrierResponse(
     public bool BlocksHostNegativeSide => OpposesPositiveCarrier(DominantSide);
     public bool BlocksHostPositiveSide => OpposesPositiveCarrier(RecessiveSide);
     public bool BlocksContinuationPastEncounter => CurrentDirection < 0 ? BlocksHostNegativeSide : BlocksHostPositiveSide;
+    public PositionedAxisSide ApproachSide => BoundaryEncounter ? EncounteredSide : OppositeSide;
+    public bool ApproachSideOnCurrentCarrier => ApproachSide.CarrierRank == CurrentCarrierRank;
+    public bool ApproachSideHasTravel => ApproachSide.TransportDirectionSign != 0;
+    public bool SupportsApproachIntoEncounter =>
+        ApproachSideOnCurrentCarrier &&
+        ApproachSideHasTravel &&
+        ApproachSide.TransportDirectionSign == CurrentDirection;
+    public bool BlocksApproachIntoEncounter =>
+        ApproachSideOnCurrentCarrier &&
+        ApproachSideHasTravel &&
+        ApproachSide.TransportDirectionSign == -CurrentDirection;
 
     private bool OpposesPositiveCarrier(PositionedAxisSide side) =>
         side.CarrierRank == CurrentCarrierRank && side.TransportDirectionSign < 0;

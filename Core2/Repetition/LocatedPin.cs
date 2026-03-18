@@ -46,46 +46,56 @@ public sealed class LocatedPin
 
         var placed = PlaceApplied();
         var response = placed.ResolveCarrierResponse(currentDirection, host: host, boundaryEncounter: boundaryEncounter);
+        string pinName = Name ?? Location.ToString();
+        List<RepetitionTension> tensions = [];
+
+        if (response.BlocksApproachIntoEncounter)
+        {
+            tensions.Add(new RepetitionTension(
+                RepetitionTensionKind.PinFlowBlocked,
+                $"Pin '{pinName}' opposes approach into the encounter on the current carrier."));
+        }
 
         if (response.IsTransparent)
         {
             if (response.BlocksContinuationPastEncounter)
             {
-                return LocatedPinTraversalResolution.Absorb(
-                    new RepetitionTension(
-                        RepetitionTensionKind.PinFlowBlocked,
-                        $"Pin '{Name ?? Location.ToString()}' blocks continuation past the encounter on the current carrier."));
+                tensions.Add(new RepetitionTension(
+                    RepetitionTensionKind.PinFlowBlocked,
+                    $"Pin '{pinName}' blocks continuation past the encounter on the current carrier."));
+                return LocatedPinTraversalResolution.Absorb(tensions.ToArray());
             }
 
-            return LocatedPinTraversalResolution.Transparent();
+            return LocatedPinTraversalResolution.Transparent(tensions.ToArray());
         }
 
         if (response.IsRedirect)
         {
             return LocatedPinTraversalResolution.Redirect(
-                new PinEgress(Location, response.EncounterNextDirection, name: $"Implicit({Name ?? Location.ToString()})"));
+                new PinEgress(Location, response.EncounterNextDirection, name: $"Implicit({pinName})"),
+                tensions.ToArray());
         }
 
         if (response.HasNoTravelOnCurrentCarrier)
         {
-            return LocatedPinTraversalResolution.Absorb(
-                new RepetitionTension(
-                    RepetitionTensionKind.PinBehaviorDeferred,
-                    $"Pin '{Name ?? Location.ToString()}' has no realized travel on the current carrier in the encountered direction."));
+            tensions.Add(new RepetitionTension(
+                RepetitionTensionKind.PinBehaviorDeferred,
+                $"Pin '{pinName}' has no realized travel on the current carrier in the encountered direction."));
+            return LocatedPinTraversalResolution.Absorb(tensions.ToArray());
         }
 
         if (response.ResolvesOffCurrentCarrier)
         {
-            return LocatedPinTraversalResolution.Absorb(
-                new RepetitionTension(
-                    RepetitionTensionKind.PinBehaviorDeferred,
-                    $"Pin '{Name ?? Location.ToString()}' resolves off the current carrier on its {response.EncounteredSide.Role} side and cannot yet be executed by 1D traversal."));
+            tensions.Add(new RepetitionTension(
+                RepetitionTensionKind.PinBehaviorDeferred,
+                $"Pin '{pinName}' resolves off the current carrier on its {response.EncounteredSide.Role} side and cannot yet be executed by 1D traversal."));
+            return LocatedPinTraversalResolution.Absorb(tensions.ToArray());
         }
 
-        return LocatedPinTraversalResolution.Absorb(
-            new RepetitionTension(
-                RepetitionTensionKind.PinBehaviorDeferred,
-                $"Pin '{Name ?? Location.ToString()}' remains unresolved on the current carrier and cannot yet be executed by 1D traversal."));
+        tensions.Add(new RepetitionTension(
+            RepetitionTensionKind.PinBehaviorDeferred,
+            $"Pin '{pinName}' remains unresolved on the current carrier and cannot yet be executed by 1D traversal."));
+        return LocatedPinTraversalResolution.Absorb(tensions.ToArray());
     }
 }
 

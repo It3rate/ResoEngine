@@ -255,7 +255,8 @@ public class RepetitionTests
         Assert.Equal(
             [Axis.FromCoordinates(new Proportion(10), new Proportion(5)), Axis.FromCoordinates(new Proportion(5), new Proportion(3))],
             parts.Select(part => part.Segment).ToArray());
-        Assert.All(parts, part => Assert.Empty(part.Tensions));
+        Assert.Contains(parts[0].Tensions, tension => tension.Kind == RepetitionTensionKind.PinFlowBlocked);
+        Assert.Empty(parts[1].Tensions);
         Assert.All(parts, part => Assert.False(part.BreakAfter));
         Assert.Equal(new Proportion(3), traversal.Value);
     }
