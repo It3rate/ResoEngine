@@ -113,6 +113,31 @@ public sealed class CarrierPinGraph
         return false;
     }
 
+    public bool ParticipatesInRecursiveCycle(CarrierId carrierId, bool includeSelf = false)
+    {
+        HashSet<CarrierId> visited = [];
+        return HasCycleBackToStart(carrierId, carrierId, includeSelf, isInitial: true, visited);
+    }
+
+    public CarrierPinGraphAnalysis Analyze()
+    {
+        CarrierStructuralProfile[] profiles = Carriers
+            .Select(
+                carrier => new CarrierStructuralProfile(
+                    carrier,
+                    GetHostedSites(carrier.Id),
+                    GetAttachments(carrier.Id),
+                    GetReferencedCarriers(carrier.Id),
+                    GetReferencingSites(carrier.Id)
+                        .Select(site => site.HostCarrier)
+                        .DistinctBy(host => host.Id)
+                        .ToArray(),
+                    ParticipatesInRecursiveCycle(carrier.Id)))
+            .ToArray();
+
+        return new CarrierPinGraphAnalysis(profiles);
+    }
+
     private bool HasCycleFrom(
         CarrierId current,
         bool includeSelf,
@@ -144,6 +169,40 @@ public sealed class CarrierPinGraph
 
         visiting.Remove(current);
         visited.Add(current);
+        return false;
+    }
+
+    private bool HasCycleBackToStart(
+        CarrierId start,
+        CarrierId current,
+        bool includeSelf,
+        bool isInitial,
+        HashSet<CarrierId> visited)
+    {
+        if (!isInitial && current == start)
+        {
+            return true;
+        }
+
+        if (!visited.Add(current))
+        {
+            return false;
+        }
+
+        foreach (var dependency in GetReferencedCarriers(current, includeSelf))
+        {
+            if (!includeSelf && dependency.Id == current)
+            {
+                continue;
+            }
+
+            if (HasCycleBackToStart(start, dependency.Id, includeSelf, isInitial: false, visited))
+            {
+                return true;
+            }
+        }
+
+        visited.Remove(current);
         return false;
     }
 }

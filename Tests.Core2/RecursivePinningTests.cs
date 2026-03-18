@@ -47,7 +47,7 @@ public class RecursivePinningTests
             name: "Top");
         var bottom = CarrierPinSite.FromPointPinning(
             stem,
-            host.PinAt(bottomApplied, new Proportion(1)),
+            host.PinAt(bottomApplied, new Proportion(10)),
             new CarrierSideAttachment(PinSideRole.Recessive, stem, new Proportion(1)),
             new CarrierSideAttachment(PinSideRole.Dominant, bowl, new Proportion(1)),
             name: "Bottom");
@@ -81,7 +81,7 @@ public class RecursivePinningTests
             name: "TopOnStem");
         var bottomOnStem = CarrierPinSite.FromPointPinning(
             stem,
-            host.PinAt(new Axis(new Proportion(-3, -1), new Proportion(2, 1)), new Proportion(1)),
+            host.PinAt(new Axis(new Proportion(-3, -1), new Proportion(2, 1)), new Proportion(10)),
             new CarrierSideAttachment(PinSideRole.Recessive, stem, new Proportion(1)),
             new CarrierSideAttachment(PinSideRole.Dominant, bowl, new Proportion(1)),
             name: "BottomOnStem");
@@ -94,7 +94,7 @@ public class RecursivePinningTests
             name: "TopOnBowl");
         var bottomOnBowl = CarrierPinSite.FromPointPinning(
             bowl,
-            host.PinAt(new Axis(new Proportion(1, 1), new Proportion(-2, -1)), new Proportion(1)),
+            host.PinAt(new Axis(new Proportion(1, 1), new Proportion(-2, -1)), new Proportion(10)),
             new CarrierSideAttachment(PinSideRole.Recessive, bowl, new Proportion(1)),
             new CarrierSideAttachment(PinSideRole.Dominant, stem, new Proportion(1)),
             name: "BottomOnBowl");
@@ -106,6 +106,71 @@ public class RecursivePinningTests
         Assert.Contains(
             new CarrierPinGraph([stem, bowl], [topOnStem, bottomOnStem]).GetReferencedCarriers(stem.Id),
             carrier => carrier.Id == stem.Id);
+    }
+
+    [Fact]
+    public void CarrierPinGraphAnalysis_CanSummarizeSharedCarrierSpansWithoutGeometry()
+    {
+        var stem = CarrierIdentity.Create("Stem");
+        var bowl = CarrierIdentity.Create("Bowl");
+        var host = Axis.FromCoordinates(Proportion.Zero, new Proportion(10));
+
+        var top = CarrierPinSite.FromPointPinning(
+            stem,
+            host.PinAt(new Axis(new Proportion(3, -1), new Proportion(2, 1)), Proportion.Zero),
+            new CarrierSideAttachment(PinSideRole.Recessive, stem, Proportion.Zero),
+            new CarrierSideAttachment(PinSideRole.Dominant, bowl, Proportion.Zero),
+            name: "Top");
+        var bottom = CarrierPinSite.FromPointPinning(
+            stem,
+            host.PinAt(new Axis(new Proportion(-3, -1), new Proportion(2, 1)), new Proportion(10)),
+            new CarrierSideAttachment(PinSideRole.Recessive, stem, Proportion.One),
+            new CarrierSideAttachment(PinSideRole.Dominant, bowl, Proportion.One),
+            name: "Bottom");
+
+        var analysis = new CarrierPinGraph([stem, bowl], [top, bottom]).Analyze();
+        var bowlProfile = analysis.GetProfile(bowl.Id);
+
+        Assert.True(bowlProfile.IsReferenced);
+        Assert.True(bowlProfile.IsSharedAcrossSites);
+        Assert.True(bowlProfile.HasAttachmentSpan);
+        Assert.Equal(Proportion.Zero, bowlProfile.FirstAttachmentPosition);
+        Assert.Equal(Proportion.One, bowlProfile.LastAttachmentPosition);
+        Assert.False(bowlProfile.ParticipatesInRecursiveCycle);
+    }
+
+    [Fact]
+    public void CarrierPinGraphAnalysis_CanMarkRecursiveCycleParticipants()
+    {
+        var stem = CarrierIdentity.Create("Stem");
+        var bowl = CarrierIdentity.Create("Bowl");
+        var host = Axis.FromCoordinates(Proportion.Zero, new Proportion(10));
+
+        var topOnStem = CarrierPinSite.FromPointPinning(
+            stem,
+            host.PinAt(new Axis(new Proportion(3, -1), new Proportion(2, 1)), Proportion.Zero),
+            new CarrierSideAttachment(PinSideRole.Recessive, stem, Proportion.Zero),
+            new CarrierSideAttachment(PinSideRole.Dominant, bowl, Proportion.Zero));
+        var bottomOnStem = CarrierPinSite.FromPointPinning(
+            stem,
+            host.PinAt(new Axis(new Proportion(-3, -1), new Proportion(2, 1)), new Proportion(10)),
+            new CarrierSideAttachment(PinSideRole.Recessive, stem, Proportion.One),
+            new CarrierSideAttachment(PinSideRole.Dominant, bowl, Proportion.One));
+        var topOnBowl = CarrierPinSite.FromPointPinning(
+            bowl,
+            host.PinAt(new Axis(new Proportion(1, 1), new Proportion(2, -1)), Proportion.Zero),
+            new CarrierSideAttachment(PinSideRole.Recessive, bowl, Proportion.Zero),
+            new CarrierSideAttachment(PinSideRole.Dominant, stem, Proportion.Zero));
+        var bottomOnBowl = CarrierPinSite.FromPointPinning(
+            bowl,
+            host.PinAt(new Axis(new Proportion(1, 1), new Proportion(-2, -1)), new Proportion(10)),
+            new CarrierSideAttachment(PinSideRole.Recessive, bowl, Proportion.One),
+            new CarrierSideAttachment(PinSideRole.Dominant, stem, Proportion.One));
+
+        var analysis = new CarrierPinGraph([stem, bowl], [topOnStem, bottomOnStem, topOnBowl, bottomOnBowl]).Analyze();
+
+        Assert.True(analysis.GetProfile(stem.Id).ParticipatesInRecursiveCycle);
+        Assert.True(analysis.GetProfile(bowl.Id).ParticipatesInRecursiveCycle);
     }
 
     [Fact]
