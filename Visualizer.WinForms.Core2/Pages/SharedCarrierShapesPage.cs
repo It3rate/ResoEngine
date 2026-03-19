@@ -485,15 +485,52 @@ public sealed class SharedCarrierShapesPage : IVisualizerPage
         y += 48f;
 
         CarrierPinSite selectedSite = GetSelectedSite(preset);
+        CarrierSiteStructuralProfile selectedProfile = ResolveSiteProfile(preset, selectedSite);
         string selectedTitle = ResolveSelectedCarrierTitle(selectedSite);
         SKColor selectedAccent = ResolveSelectedCarrierColor(preset, selectedSite);
         DrawBadge(canvas, new SKPoint(rect.Left + 20f, y), selectedTitle, selectedAccent);
+        DrawBadge(canvas, new SKPoint(rect.Left + 144f, y), FormatJunctionSummary(selectedProfile.Summary));
         y += 40f;
 
         string host = selectedSite.HostCarrier.Name ?? selectedSite.HostCarrier.Id.ToString();
         string line = $"{selectedSite.Name ?? selectedSite.Id.ToString()} on {host}@{FormatProportion(selectedSite.HostPosition)}";
         canvas.DrawText(line, rect.Left + 20f, y, _monoPaint);
         y += _monoPaint.TextSize + 4f;
+
+        string routingLine =
+            $"through host {(selectedProfile.HostContinues ? "yes" : "no")}, " +
+            $"cross proposal {(selectedProfile.HasCrossShapedProposal ? "yes" : "no")}";
+        PageChrome.DrawWrappedText(
+            canvas,
+            routingLine,
+            rect.Left + 28f,
+            ref y,
+            rect.Width - 56f,
+            _captionPaint);
+
+        if (selectedProfile.ThroughCarriers.Count > 0)
+        {
+            string throughCarriers = string.Join(", ", selectedProfile.ThroughCarriers.Select(carrier => carrier.Name ?? carrier.Id.ToString()));
+            PageChrome.DrawWrappedText(
+                canvas,
+                $"through: {throughCarriers}",
+                rect.Left + 28f,
+                ref y,
+                rect.Width - 56f,
+                _captionPaint);
+        }
+
+        if (selectedProfile.ParticipatingCarriers.Count > 0)
+        {
+            string participants = string.Join(", ", selectedProfile.ParticipatingCarriers.Select(carrier => carrier.Name ?? carrier.Id.ToString()));
+            PageChrome.DrawWrappedText(
+                canvas,
+                $"carriers: {participants}",
+                rect.Left + 28f,
+                ref y,
+                rect.Width - 56f,
+                _captionPaint);
+        }
 
         string bindings = selectedSite.SideAttachments.Count == 0
             ? "unbound side attachments"
@@ -549,6 +586,17 @@ public sealed class SharedCarrierShapesPage : IVisualizerPage
             PageChrome.DrawWrappedText(
                 canvas,
                 summary,
+                rect.Left + 28f,
+                ref y,
+                    rect.Width - 56f,
+                    _captionPaint);
+
+            string junctionSummary =
+                $"through {profile.ThroughSiteCount}, cusp {profile.CuspSiteCount}, branch {profile.BranchSiteCount}, " +
+                $"tee {profile.TeeSiteCount}, cross {profile.CrossSiteCount}";
+            PageChrome.DrawWrappedText(
+                canvas,
+                junctionSummary,
                 rect.Left + 28f,
                 ref y,
                 rect.Width - 56f,
@@ -1927,6 +1975,16 @@ public sealed class SharedCarrierShapesPage : IVisualizerPage
         return FindSite(preset, selectedName);
     }
 
+    private CarrierSiteStructuralProfile ResolveSiteProfile(ShapePreset preset, CarrierPinSite site)
+    {
+        if (preset.Analysis.TryGetSiteProfile(site.Id, out var profile) && profile is not null)
+        {
+            return profile;
+        }
+
+        return new CarrierSiteStructuralProfile(site, site.ResolveRouting());
+    }
+
     private bool UpdateSiteAxis(PresetKind preset, string siteName, Axis axis)
     {
         if (TryGetCustomPin(preset, siteName, out var customPin) && customPin is not null)
@@ -2828,6 +2886,16 @@ public sealed class SharedCarrierShapesPage : IVisualizerPage
     }
 
     private static string ShortRole(PinSideRole role) => role == PinSideRole.Recessive ? "r" : "d";
+
+    private static string FormatJunctionSummary(CarrierJunctionSummary summary) => summary switch
+    {
+        CarrierJunctionSummary.Open => "Open",
+        CarrierJunctionSummary.Cusp => "Cusp",
+        CarrierJunctionSummary.Branch => "Branch",
+        CarrierJunctionSummary.Tee => "T",
+        CarrierJunctionSummary.Cross => "Cross",
+        _ => summary.ToString(),
+    };
 
     private static SKColor WithAlpha(SKColor color, byte alpha) => new(color.Red, color.Green, color.Blue, alpha);
 
