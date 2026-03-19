@@ -47,6 +47,8 @@ public sealed class CarrierPinSite
 
     public PositionedAxis PlaceApplied() => Applied.PlaceAt(HostPosition);
 
+    public CarrierSiteRouting ResolveRouting() => CarrierSiteRouting.FromSite(this);
+
     public CarrierSideAttachment? GetAttachment(PinSideRole role) =>
         _attachmentsByRole.TryGetValue(role, out var attachment) ? attachment : null;
 

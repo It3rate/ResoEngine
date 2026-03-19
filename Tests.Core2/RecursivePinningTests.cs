@@ -192,4 +192,105 @@ public class RecursivePinningTests
         Assert.Equal(new Proportion(4), placed.RecessiveSide.Origin);
         Assert.Equal(new Proportion(4), placed.DominantSide.Origin);
     }
+
+    [Fact]
+    public void CarrierPinSiteRouting_CanRecognizeTrueCross()
+    {
+        var stem = CarrierIdentity.Create("Stem");
+        var bar = CarrierIdentity.Create("Bar");
+        var host = Axis.FromCoordinates(Proportion.Zero, new Proportion(10));
+
+        var site = CarrierPinSite.FromPointPinning(
+            stem,
+            host.PinAt(new Axis(3, -1, 3, -1), new Proportion(5)),
+            new CarrierSideAttachment(PinSideRole.Recessive, bar, Proportion.Zero),
+            new CarrierSideAttachment(PinSideRole.Dominant, bar, Proportion.One),
+            name: "Cross");
+
+        var routing = site.ResolveRouting();
+
+        Assert.Equal(CarrierJunctionSummary.Cross, routing.Summary);
+        Assert.True(routing.HostContinues);
+        Assert.True(routing.HasNonHostThroughCarrier);
+        Assert.True(routing.HasThroughRoute(CarrierIncidentKind.RecessiveSide, CarrierIncidentKind.DominantSide));
+    }
+
+    [Fact]
+    public void CarrierPinSiteRouting_CanRecognizeTeeWhenSharedCarrierDoesNotPassThroughHost()
+    {
+        var stem = CarrierIdentity.Create("Stem");
+        var bar = CarrierIdentity.Create("Bar");
+        var host = Axis.FromCoordinates(Proportion.Zero, new Proportion(10));
+
+        var site = CarrierPinSite.FromPointPinning(
+            stem,
+            host.PinAt(new Axis(3, -1, 3, -1), new Proportion(10)),
+            new CarrierSideAttachment(PinSideRole.Recessive, bar, Proportion.Zero),
+            new CarrierSideAttachment(PinSideRole.Dominant, bar, Proportion.One),
+            name: "Tee");
+
+        var routing = site.ResolveRouting();
+
+        Assert.Equal(CarrierJunctionSummary.Tee, routing.Summary);
+        Assert.False(routing.HostContinues);
+        Assert.True(routing.HasNonHostThroughCarrier);
+    }
+
+    [Fact]
+    public void CarrierPinSiteRouting_CanRecognizeBranchFromOneDistinctCarrier()
+    {
+        var stem = CarrierIdentity.Create("Stem");
+        var branch = CarrierIdentity.Create("Branch");
+        var host = Axis.FromCoordinates(Proportion.Zero, new Proportion(10));
+
+        var site = CarrierPinSite.FromPointPinning(
+            stem,
+            host.PinAt(new Axis(0, 0, 3, -1), new Proportion(5)),
+            dominantAttachment: new CarrierSideAttachment(PinSideRole.Dominant, branch, Proportion.Zero),
+            name: "Branch");
+
+        var routing = site.ResolveRouting();
+
+        Assert.Equal(CarrierJunctionSummary.Branch, routing.Summary);
+        Assert.True(routing.HostContinues);
+        Assert.False(routing.HasNonHostThroughCarrier);
+    }
+
+    [Fact]
+    public void CarrierPinSiteRouting_CanRecognizeHostBoundOrthogonalCusp()
+    {
+        var stem = CarrierIdentity.Create("Stem");
+        var host = Axis.FromCoordinates(Proportion.Zero, new Proportion(10));
+
+        var site = CarrierPinSite.FromPointPinning(
+            stem,
+            host.PinAt(new Axis(3, -1, 0, 0), new Proportion(5)),
+            recessiveAttachment: new CarrierSideAttachment(PinSideRole.Recessive, stem, new Proportion(5)),
+            name: "Cusp");
+
+        var routing = site.ResolveRouting();
+
+        Assert.Equal(CarrierJunctionSummary.Cusp, routing.Summary);
+        Assert.True(routing.HostContinues);
+        Assert.False(routing.HasNonHostThroughCarrier);
+    }
+
+    [Fact]
+    public void CarrierPinSiteRouting_DoesNotTreatUnboundOrthogonalPairAsTrueCross()
+    {
+        var stem = CarrierIdentity.Create("Stem");
+        var host = Axis.FromCoordinates(Proportion.Zero, new Proportion(10));
+
+        var site = CarrierPinSite.FromPointPinning(
+            stem,
+            host.PinAt(new Axis(3, -1, 3, -1), new Proportion(5)),
+            name: "CrossProposal");
+
+        var routing = site.ResolveRouting();
+
+        Assert.Equal(CarrierJunctionSummary.Open, routing.Summary);
+        Assert.True(routing.HostContinues);
+        Assert.False(routing.HasNonHostThroughCarrier);
+        Assert.True(routing.HasCrossShapedProposal);
+    }
 }
