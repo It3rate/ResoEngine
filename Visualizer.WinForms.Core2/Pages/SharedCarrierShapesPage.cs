@@ -3,6 +3,8 @@ using ResoEngine.Visualizer.Controls;
 using ResoEngine.Visualizer.Core;
 using ResoEngine.Visualizer.Input;
 using SkiaSharp;
+using System.Drawing;
+using System.Windows.Forms;
 
 namespace ResoEngine.Visualizer.Pages;
 
@@ -12,35 +14,64 @@ public sealed class SharedCarrierShapesPage : IVisualizerPage
     private readonly List<ButtonLayout> _buttonLayouts = [];
     private readonly List<HandleLayout> _handleLayouts = [];
     private readonly List<ToggleLayout> _toggleLayouts = [];
+    private readonly List<CopyLayout> _copyLayouts = [];
+    private readonly List<ValueLayout> _valueLayouts = [];
     private readonly Dictionary<(PresetKind Preset, string SiteName), Axis> _siteAxisOverrides = [];
     private readonly Dictionary<PresetKind, string> _selectedSiteByPreset = new()
     {
         [PresetKind.CapitalD] = "Top",
         [PresetKind.BridgeH] = "Left Join",
+        [PresetKind.LetterT] = "Base",
+        [PresetKind.LetterA] = "Left Bar",
+        [PresetKind.LetterY] = "Junction",
+        [PresetKind.LetterL] = "Corner",
+        [PresetKind.LetterM] = "Left Peak",
     };
 
     private CoordinateSystem? _coords;
     private SkiaCanvas? _canvasHost;
+    private TextBox? _inlineValueEditor;
+    private (PresetKind Preset, string SiteName)? _inlineValueTarget;
+    private bool _inlineValueSyncing;
+    private SKRect _letterboxToggleRect;
     private PresetKind _selectedPreset = PresetKind.CapitalD;
     private DragHandleKind _dragHandle;
-    private float _dStemTopT;
+    private bool _showLetterbox = true;
+    private SKPoint _dStemStart = new(0.22f, 0.12f);
+    private SKPoint _dStemEnd = new(0.22f, 0.88f);
     private float _dTopT;
     private float _dBottomT = 1f;
-    private float _dStemBottomT = 1f;
     private float _dTopRecessiveLength = 68f;
     private float _dTopDominantLength = 52f;
     private float _dBottomRecessiveLength = 68f;
     private float _dBottomDominantLength = 52f;
-    private float _hLeftStemTopT;
+    private SKPoint _hLeftStemStart = new(0.24f, 0.14f);
+    private SKPoint _hLeftStemEnd = new(0.24f, 0.86f);
     private float _hLeftT = 0.5f;
-    private float _hLeftStemBottomT = 1f;
-    private float _hRightStemTopT;
+    private SKPoint _hRightStemStart = new(0.76f, 0.14f);
+    private SKPoint _hRightStemEnd = new(0.76f, 0.86f);
     private float _hRightT = 0.5f;
-    private float _hRightStemBottomT = 1f;
     private float _hLeftRecessiveLength = 52f;
     private float _hLeftDominantLength = 68f;
     private float _hRightRecessiveLength = 52f;
     private float _hRightDominantLength = 68f;
+    private float _tBaseDominantLength = 84f;
+    private float _tCrossbarRecessiveLength = 68f;
+    private float _tCrossbarDominantLength = 68f;
+    private float _yJunctionRecessiveLength = 52f;
+    private float _yJunctionDominantLength = 68f;
+    private float _lCornerRecessiveLength = 68f;
+    private float _lCornerDominantLength = 68f;
+    private float _aLeftRecessiveLength = 52f;
+    private float _aLeftDominantLength = 52f;
+    private float _aLeftT = 0.45f;
+    private float _aRightRecessiveLength = 52f;
+    private float _aRightDominantLength = 52f;
+    private float _aRightT = 0.45f;
+    private float _mLeftRecessiveLength = 52f;
+    private float _mLeftDominantLength = 68f;
+    private float _mRightRecessiveLength = 52f;
+    private float _mRightDominantLength = 68f;
 
     private readonly SKPaint _headingPaint = new()
     {
@@ -101,6 +132,13 @@ public sealed class SharedCarrierShapesPage : IVisualizerPage
         Color = new SKColor(68, 68, 68),
         TextSize = 14f,
         Typeface = SKTypeface.FromFamilyName("Consolas", SKFontStyle.Normal),
+        IsAntialias = true,
+    };
+    private readonly SKPaint _valuePaint = new()
+    {
+        Color = new SKColor(48, 48, 48),
+        TextSize = 16f,
+        Typeface = SKTypeface.FromFamilyName("Consolas", SKFontStyle.Bold),
         IsAntialias = true,
     };
     private readonly SKPaint _buttonFillPaint = new()
@@ -210,7 +248,7 @@ public sealed class SharedCarrierShapesPage : IVisualizerPage
     private static readonly SKColor DominantRayColor = SegmentColors.Orange.Solid;
     private const byte CarrierPreviewAlpha = 128;
     private const float EndpointHandleOffset = 18f;
-    private const float MaxPreviewRayLength = 140f;
+    private const float MaxPreviewRayLength = 4000f;
 
     public string Title => "Shared Carrier Shapes";
 
@@ -218,6 +256,7 @@ public sealed class SharedCarrierShapesPage : IVisualizerPage
     {
         _coords = coords;
         _canvasHost = canvas;
+        EnsureInlineValueEditor();
     }
 
     public void Render(SKCanvas canvas)
@@ -225,6 +264,8 @@ public sealed class SharedCarrierShapesPage : IVisualizerPage
         _buttonLayouts.Clear();
         _handleLayouts.Clear();
         _toggleLayouts.Clear();
+        _copyLayouts.Clear();
+        _valueLayouts.Clear();
 
         float width = _coords?.Width ?? 1220f;
         float height = _coords?.Height ?? 920f;
@@ -254,6 +295,28 @@ public sealed class SharedCarrierShapesPage : IVisualizerPage
         {
             _selectedPreset = button.Preset;
             _canvasHost?.InvalidateCanvas();
+            return true;
+        }
+
+        if (_letterboxToggleRect.Contains(pixelPoint))
+        {
+            ToggleLetterboxMode();
+            _canvasHost?.InvalidateCanvas();
+            return true;
+        }
+
+        var copy = _copyLayouts.FirstOrDefault(layout => layout.Rect.Contains(pixelPoint));
+        if (copy is not null)
+        {
+            try
+            {
+                Clipboard.SetText(copy.Text);
+            }
+            catch
+            {
+                // Ignore clipboard failures in the visualizer.
+            }
+
             return true;
         }
 
@@ -299,6 +362,12 @@ public sealed class SharedCarrierShapesPage : IVisualizerPage
 
         _canvasHost.Cursor = _buttonLayouts.Any(layout => layout.Rect.Contains(pixelPoint))
             ? Cursors.Hand
+            : _letterboxToggleRect.Contains(pixelPoint)
+                ? Cursors.Hand
+            : _copyLayouts.Any(layout => layout.Rect.Contains(pixelPoint))
+                ? Cursors.Hand
+            : _valueLayouts.Any(layout => layout.Rect.Contains(pixelPoint))
+                ? Cursors.IBeam
             : _toggleLayouts.Any(layout => layout.Rect.Contains(pixelPoint))
                 ? Cursors.Hand
             : HitHandle(pixelPoint) is not null
@@ -309,6 +378,7 @@ public sealed class SharedCarrierShapesPage : IVisualizerPage
     public void OnPointerUp(SKPoint pixelPoint)
     {
         _dragHandle = DragHandleKind.None;
+        SyncInlineValueText();
         if (_canvasHost is not null)
         {
             _canvasHost.Cursor = Cursors.Default;
@@ -317,9 +387,12 @@ public sealed class SharedCarrierShapesPage : IVisualizerPage
 
     public void Destroy()
     {
+        RemoveInlineValueEditor();
         _buttonLayouts.Clear();
         _handleLayouts.Clear();
         _toggleLayouts.Clear();
+        _copyLayouts.Clear();
+        _valueLayouts.Clear();
         _coords = null;
         _canvasHost = null;
         _dragHandle = DragHandleKind.None;
@@ -337,6 +410,7 @@ public sealed class SharedCarrierShapesPage : IVisualizerPage
         _labelPaint.Dispose();
         _captionPaint.Dispose();
         _monoPaint.Dispose();
+        _valuePaint.Dispose();
         _buttonFillPaint.Dispose();
         _buttonSelectedFillPaint.Dispose();
         _buttonStrokePaint.Dispose();
@@ -365,22 +439,59 @@ public sealed class SharedCarrierShapesPage : IVisualizerPage
         DrawPresetButtons(canvas, rect.Left + 20f, ref y);
 
         y += 18f;
-        DrawBadge(canvas, new SKPoint(rect.Left + 20f, y), preset.Name);
-        y += 44f;
-
-        PageChrome.DrawWrappedText(
-            canvas,
-            preset.Description,
-            rect.Left + 20f,
-            ref y,
-            rect.Width - 40f,
-            _captionPaint);
-
-        y += 14f;
         DrawBadge(canvas, new SKPoint(rect.Left + 20f, y), $"Carriers {preset.Graph.Carriers.Count}");
         DrawBadge(canvas, new SKPoint(rect.Left + 140f, y), $"Sites {preset.Graph.Sites.Count}");
         y += 48f;
 
+        CarrierPinSite selectedSite = GetSelectedSite(preset);
+        string selectedTitle = ResolveSelectedCarrierTitle(selectedSite);
+        SKColor selectedAccent = ResolveSelectedCarrierColor(preset, selectedSite);
+        DrawBadge(canvas, new SKPoint(rect.Left + 20f, y), selectedTitle, selectedAccent);
+        y += 40f;
+
+        string host = selectedSite.HostCarrier.Name ?? selectedSite.HostCarrier.Id.ToString();
+        string line = $"{selectedSite.Name ?? selectedSite.Id.ToString()} on {host}@{FormatProportion(selectedSite.HostPosition)}";
+        canvas.DrawText(line, rect.Left + 20f, y, _monoPaint);
+        y += _monoPaint.TextSize + 4f;
+
+        string bindings = string.Join(
+            ", ",
+            selectedSite.SideAttachments.Select(
+                attachment => $"{ShortRole(attachment.Role)}:{attachment.Carrier.Name ?? attachment.Carrier.Id.ToString()}@{FormatProportion(attachment.CarrierPosition)}"));
+        PageChrome.DrawWrappedText(
+            canvas,
+            bindings,
+            rect.Left + 28f,
+            ref y,
+            rect.Width - 82f,
+            _captionPaint);
+
+        string axisText = FormatAxis(selectedSite.Applied);
+        float valueY = y + _valuePaint.TextSize;
+        float editorLeft = rect.Left + 20f;
+        float copyWidth = 30f;
+        float gap = 10f;
+        float editorRight = rect.Right - 20f - copyWidth - gap;
+        var valueRect = new SKRect(editorLeft, valueY - 20f, editorRight, valueY + 10f);
+        using var editorFramePaint = new SKPaint
+        {
+            Style = SKPaintStyle.Stroke,
+            StrokeWidth = 1.1f,
+            Color = new SKColor(214, 214, 214),
+            IsAntialias = true,
+        };
+        canvas.DrawRoundRect(valueRect, 8f, 8f, editorFramePaint);
+        _valueLayouts.Add(new ValueLayout(valueRect, _selectedPreset, selectedSite.Name ?? string.Empty, axisText));
+        UpdateInlineValueEditor(valueRect, _selectedPreset, selectedSite.Name ?? string.Empty, axisText);
+
+        var copyRect = new SKRect(editorRight + gap, valueY - 16f, editorRight + gap + copyWidth, valueY + 8f);
+        DrawCopyButton(canvas, copyRect);
+        _copyLayouts.Add(new CopyLayout(copyRect, axisText));
+        y = valueY + 26f;
+
+        y += 8f;
+        canvas.DrawText("Carriers", rect.Left + 20f, y + 12f, _labelPaint);
+        y += 38f;
         foreach (var carrier in preset.Graph.Carriers)
         {
             CarrierStructuralProfile profile = preset.Analysis.GetProfile(carrier.Id);
@@ -421,38 +532,24 @@ public sealed class SharedCarrierShapesPage : IVisualizerPage
 
             y += 14f;
         }
-
-        canvas.DrawText("Sites", rect.Left + 20f, y + 12f, _labelPaint);
-        y += 40f;
-        foreach (var site in preset.Graph.Sites.Select(ResolveSite))
-        {
-            string host = site.HostCarrier.Name ?? site.HostCarrier.Id.ToString();
-            string bindings = string.Join(
-                ", ",
-                site.SideAttachments.Select(
-                    attachment => $"{ShortRole(attachment.Role)}:{attachment.Carrier.Name ?? attachment.Carrier.Id.ToString()}@{FormatProportion(attachment.CarrierPosition)}"));
-            string line = $"{site.Name ?? site.Id.ToString()} on {host}@{FormatProportion(site.HostPosition)}";
-            canvas.DrawText(line, rect.Left + 20f, y, _monoPaint);
-            y += _monoPaint.TextSize + 4f;
-            PageChrome.DrawWrappedText(
-                canvas,
-                $"{bindings}  {FormatAxis(site.Applied)}",
-                rect.Left + 28f,
-                ref y,
-                rect.Width - 56f,
-                _captionPaint);
-            y += 14f;
-        }
     }
 
     private void DrawPresetButtons(SKCanvas canvas, float left, ref float y)
     {
-        float buttonWidth = 104f;
+        float buttonWidth = 42f;
         float buttonHeight = 34f;
-        float gap = 10f;
+        float gap = 8f;
+        float rowStart = left;
+        float maxRight = rowStart + 320f;
 
         foreach (var preset in Enum.GetValues<PresetKind>())
         {
+            if (left + buttonWidth > maxRight)
+            {
+                left = rowStart;
+                y += buttonHeight + 8f;
+            }
+
             var rect = new SKRect(left, y, left + buttonWidth, y + buttonHeight);
             bool selected = preset == _selectedPreset;
             canvas.DrawRoundRect(rect, 16f, 16f, selected ? _buttonSelectedFillPaint : _buttonFillPaint);
@@ -478,6 +575,11 @@ public sealed class SharedCarrierShapesPage : IVisualizerPage
         canvas.DrawRoundRect(inner, 20f, 20f, _panelStrokePaint);
         canvas.DrawLine(inner.MidX, inner.Top + 16f, inner.MidX, inner.Bottom - 16f, _sceneGuidePaint);
         canvas.DrawText("Preview only", inner.Right - 98f, inner.Top + 24f, _sceneCaptionPaint);
+        DrawLetterboxToggle(canvas, inner);
+        if (_showLetterbox)
+        {
+            DrawLetterboxGuides(canvas, inner);
+        }
         DrawToggleLegend(canvas, inner, preset);
 
         switch (_selectedPreset)
@@ -488,7 +590,41 @@ public sealed class SharedCarrierShapesPage : IVisualizerPage
             case PresetKind.BridgeH:
                 DrawBridgeHPreview(canvas, inner, preset);
                 break;
+            case PresetKind.LetterT:
+                DrawTPreview(canvas, inner, preset);
+                break;
+            case PresetKind.LetterA:
+                DrawAPreview(canvas, inner, preset);
+                break;
+            case PresetKind.LetterY:
+                DrawYPreview(canvas, inner, preset);
+                break;
+            case PresetKind.LetterL:
+                DrawLPreview(canvas, inner, preset);
+                break;
+            case PresetKind.LetterM:
+                DrawMPreview(canvas, inner, preset);
+                break;
         }
+    }
+
+    private void DrawLetterboxToggle(SKCanvas canvas, SKRect sceneRect)
+    {
+        string text = _showLetterbox ? "Guides On" : "Guides Off";
+        float width = Math.Max(92f, _buttonTextPaint.MeasureText(text) + 28f);
+        _letterboxToggleRect = new SKRect(sceneRect.Right - width - 18f, sceneRect.Top + 14f, sceneRect.Right - 18f, sceneRect.Top + 44f);
+        canvas.DrawRoundRect(_letterboxToggleRect, 14f, 14f, _buttonFillPaint);
+        canvas.DrawRoundRect(_letterboxToggleRect, 14f, 14f, _showLetterbox ? _buttonSelectedStrokePaint : _buttonStrokePaint);
+        canvas.DrawText(text, _letterboxToggleRect.MidX, _letterboxToggleRect.MidY + 4f, _buttonTextPaint);
+    }
+
+    private void DrawLetterboxGuides(SKCanvas canvas, SKRect sceneRect)
+    {
+        var guide = GetLetterboxRect(sceneRect);
+        canvas.DrawRoundRect(guide, 4f, 4f, _sceneGuidePaint);
+        canvas.DrawLine(guide.MidX, guide.Top, guide.MidX, guide.Bottom, _sceneGuidePaint);
+        float crossbarY = guide.Top + (guide.Height * 0.42f);
+        canvas.DrawLine(guide.Left, crossbarY, guide.Right, crossbarY, _sceneGuidePaint);
     }
 
     private void DrawCapitalDPreview(SKCanvas canvas, SKRect rect, ShapePreset preset)
@@ -498,20 +634,24 @@ public sealed class SharedCarrierShapesPage : IVisualizerPage
         CarrierPinSite top = ResolveSite(preset.Graph.Sites.First(site => site.Name == "Top"));
         CarrierPinSite bottom = ResolveSite(preset.Graph.Sites.First(site => site.Name == "Bottom"));
 
-        float leftX = rect.Left + 160f;
-        float minY = rect.Top + 86f;
-        float maxY = rect.Bottom - 86f;
-        float stemTopY = Lerp(minY, maxY, _dStemTopT);
-        float stemBottomY = Lerp(minY, maxY, _dStemBottomT);
-        float topY = Lerp(stemTopY, stemBottomY, NormalizeBetween(_dTopT, _dStemTopT, _dStemBottomT));
-        float bottomY = Lerp(stemTopY, stemBottomY, NormalizeBetween(_dBottomT, _dStemTopT, _dStemBottomT));
-        float midY = (topY + bottomY) * 0.5f;
+        SKPoint topEndpoint = ResolveStemEndpoint(rect, _dStemStart, LetterboxEdge.Left);
+        SKPoint bottomEndpoint = ResolveStemEndpoint(rect, _dStemEnd, LetterboxEdge.Left);
+        SKPoint stemVector = new(bottomEndpoint.X - topEndpoint.X, bottomEndpoint.Y - topEndpoint.Y);
+        SKPoint hostTangent = Normalize(stemVector);
+        if (hostTangent == SKPoint.Empty)
+        {
+            hostTangent = new SKPoint(0f, 1f);
+        }
 
-        SKPoint topPoint = new(leftX, topY);
-        SKPoint bottomPoint = new(leftX, bottomY);
-        SKPoint topEndpoint = new(leftX, stemTopY - EndpointHandleOffset);
-        SKPoint bottomEndpoint = new(leftX, stemBottomY + EndpointHandleOffset);
-        SKPoint hostTangent = new(0f, 1f);
+        SKPoint topPoint = new(
+            Lerp(topEndpoint.X, bottomEndpoint.X, _dTopT),
+            Lerp(topEndpoint.Y, bottomEndpoint.Y, _dTopT));
+        SKPoint bottomPoint = new(
+            Lerp(topEndpoint.X, bottomEndpoint.X, _dBottomT),
+            Lerp(topEndpoint.Y, bottomEndpoint.Y, _dBottomT));
+        float midX = (topPoint.X + bottomPoint.X) * 0.5f;
+        float midY = (topPoint.Y + bottomPoint.Y) * 0.5f;
+
         DrawCarrierLine(canvas, topEndpoint, topPoint, preset.CarrierColors[stem.Id], 5.6f);
         DrawSharedCarrierCurve(
             canvas,
@@ -526,7 +666,7 @@ public sealed class SharedCarrierShapesPage : IVisualizerPage
             preset.CarrierColors[stem.Id],
             5.6f);
         DrawCarrierLine(canvas, bottomPoint, bottomEndpoint, preset.CarrierColors[stem.Id], 5.6f);
-        DrawCarrierLabel(canvas, stem.Name ?? "Stem", new SKPoint(leftX - 72f, midY), preset.CarrierColors[stem.Id]);
+        DrawCarrierLabel(canvas, stem.Name ?? "Stem", new SKPoint(midX - 72f, midY), preset.CarrierColors[stem.Id]);
         DrawSharedCarrierCurve(
             canvas,
             topPoint,
@@ -539,17 +679,17 @@ public sealed class SharedCarrierShapesPage : IVisualizerPage
             hostTangent,
             preset.CarrierColors[bowl.Id],
             5.6f);
-        DrawCarrierLabel(canvas, bowl.Name ?? "Bowl", new SKPoint(rect.Right - 176f, (topY + bottomY) * 0.5f), preset.CarrierColors[bowl.Id]);
+        DrawCarrierLabel(canvas, bowl.Name ?? "Bowl", new SKPoint(rect.Right - 176f, midY), preset.CarrierColors[bowl.Id]);
 
         DrawStemEndpointHandle(canvas, topEndpoint, _dragHandle == DragHandleKind.DStemTop);
         DrawStemEndpointHandle(canvas, bottomEndpoint, _dragHandle == DragHandleKind.DStemBottom);
         DrawSite(canvas, top, "P1", topPoint, hostTangent, DragHandleKind.DTop);
         DrawSite(canvas, bottom, "P2", bottomPoint, hostTangent, DragHandleKind.DBottom);
 
-        RegisterHandle(DragHandleKind.DStemTop, topEndpoint, new SKPoint(leftX, minY - EndpointHandleOffset), new SKPoint(leftX, maxY));
-        RegisterHandle(DragHandleKind.DTop, topPoint, new SKPoint(leftX, stemTopY), new SKPoint(leftX, stemBottomY));
-        RegisterHandle(DragHandleKind.DBottom, bottomPoint, new SKPoint(leftX, stemTopY), new SKPoint(leftX, stemBottomY));
-        RegisterHandle(DragHandleKind.DStemBottom, bottomEndpoint, new SKPoint(leftX, minY), new SKPoint(leftX, maxY + EndpointHandleOffset));
+        RegisterStemHandle(DragHandleKind.DStemTop, topEndpoint, rect, LetterboxEdge.Left);
+        RegisterHandle(DragHandleKind.DTop, topPoint, topEndpoint, bottomEndpoint);
+        RegisterHandle(DragHandleKind.DBottom, bottomPoint, topEndpoint, bottomEndpoint);
+        RegisterStemHandle(DragHandleKind.DStemBottom, bottomEndpoint, rect, LetterboxEdge.Left);
     }
 
     private void DrawBridgeHPreview(SKCanvas canvas, SKRect rect, ShapePreset preset)
@@ -560,54 +700,236 @@ public sealed class SharedCarrierShapesPage : IVisualizerPage
         CarrierPinSite leftJoin = ResolveSite(preset.Graph.Sites.First(site => site.Name == "Left Join"));
         CarrierPinSite rightJoin = ResolveSite(preset.Graph.Sites.First(site => site.Name == "Right Join"));
 
-        float leftX = rect.Left + 154f;
-        float rightX = rect.Right - 154f;
-        float minY = rect.Top + 92f;
-        float maxY = rect.Bottom - 92f;
-        float leftStemTopY = Lerp(minY, maxY, _hLeftStemTopT);
-        float leftStemBottomY = Lerp(minY, maxY, _hLeftStemBottomT);
-        float rightStemTopY = Lerp(minY, maxY, _hRightStemTopT);
-        float rightStemBottomY = Lerp(minY, maxY, _hRightStemBottomT);
-        float leftMidY = Lerp(leftStemTopY, leftStemBottomY, NormalizeBetween(_hLeftT, _hLeftStemTopT, _hLeftStemBottomT));
-        float rightMidY = Lerp(rightStemTopY, rightStemBottomY, NormalizeBetween(_hRightT, _hRightStemTopT, _hRightStemBottomT));
+        SKPoint leftTopEndpoint = ResolveStemEndpoint(rect, _hLeftStemStart, LetterboxEdge.Left);
+        SKPoint leftBottomEndpoint = ResolveStemEndpoint(rect, _hLeftStemEnd, LetterboxEdge.Left);
+        SKPoint rightTopEndpoint = ResolveStemEndpoint(rect, _hRightStemStart, LetterboxEdge.Right);
+        SKPoint rightBottomEndpoint = ResolveStemEndpoint(rect, _hRightStemEnd, LetterboxEdge.Right);
+        SKPoint leftTangent = Normalize(new SKPoint(leftBottomEndpoint.X - leftTopEndpoint.X, leftBottomEndpoint.Y - leftTopEndpoint.Y));
+        SKPoint rightTangent = Normalize(new SKPoint(rightBottomEndpoint.X - rightTopEndpoint.X, rightBottomEndpoint.Y - rightTopEndpoint.Y));
+        if (leftTangent == SKPoint.Empty)
+        {
+            leftTangent = new SKPoint(0f, 1f);
+        }
 
-        DrawCarrierLine(canvas, new SKPoint(leftX, leftStemTopY), new SKPoint(leftX, leftStemBottomY), preset.CarrierColors[left.Id], 5.2f);
-        DrawCarrierLine(canvas, new SKPoint(rightX, rightStemTopY), new SKPoint(rightX, rightStemBottomY), preset.CarrierColors[right.Id], 5.2f);
+        if (rightTangent == SKPoint.Empty)
+        {
+            rightTangent = new SKPoint(0f, 1f);
+        }
 
-        SKPoint leftPoint = new(leftX, leftMidY);
-        SKPoint rightPoint = new(rightX, rightMidY);
-        SKPoint hostTangent = new(0f, 1f);
+        SKPoint leftPoint = new(
+            Lerp(leftTopEndpoint.X, leftBottomEndpoint.X, _hLeftT),
+            Lerp(leftTopEndpoint.Y, leftBottomEndpoint.Y, _hLeftT));
+        SKPoint rightPoint = new(
+            Lerp(rightTopEndpoint.X, rightBottomEndpoint.X, _hRightT),
+            Lerp(rightTopEndpoint.Y, rightBottomEndpoint.Y, _hRightT));
+        float bridgeMidY = (leftPoint.Y + rightPoint.Y) * 0.5f;
+
+        DrawCarrierLine(canvas, leftTopEndpoint, leftPoint, preset.CarrierColors[left.Id], 5.2f);
+        DrawCarrierLine(canvas, leftPoint, leftBottomEndpoint, preset.CarrierColors[left.Id], 5.2f);
+        DrawCarrierLine(canvas, rightTopEndpoint, rightPoint, preset.CarrierColors[right.Id], 5.2f);
+        DrawCarrierLine(canvas, rightPoint, rightBottomEndpoint, preset.CarrierColors[right.Id], 5.2f);
+
         DrawSharedCarrierCurve(
             canvas,
             leftPoint,
             leftJoin,
             bridge.Id,
-            hostTangent,
+            leftTangent,
             rightPoint,
             rightJoin,
             bridge.Id,
-            hostTangent,
+            rightTangent,
             preset.CarrierColors[bridge.Id],
             5.2f);
 
-        float bridgeMidY = (leftMidY + rightMidY) * 0.5f;
-        DrawCarrierLabel(canvas, left.Name ?? "Left", new SKPoint(leftX - 84f, leftMidY - 6f), preset.CarrierColors[left.Id]);
+        DrawCarrierLabel(canvas, left.Name ?? "Left", new SKPoint(leftPoint.X - 84f, leftPoint.Y - 6f), preset.CarrierColors[left.Id]);
         DrawCarrierLabel(canvas, bridge.Name ?? "Bridge", new SKPoint(rect.MidX - 24f, bridgeMidY - 18f), preset.CarrierColors[bridge.Id]);
-        DrawCarrierLabel(canvas, right.Name ?? "Right", new SKPoint(rightX + 18f, rightMidY - 6f), preset.CarrierColors[right.Id]);
+        DrawCarrierLabel(canvas, right.Name ?? "Right", new SKPoint(rightPoint.X + 18f, rightPoint.Y - 6f), preset.CarrierColors[right.Id]);
 
-        DrawStemEndpointHandle(canvas, new SKPoint(leftX, leftStemTopY - EndpointHandleOffset), _dragHandle == DragHandleKind.HLeftStemTop);
-        DrawStemEndpointHandle(canvas, new SKPoint(leftX, leftStemBottomY + EndpointHandleOffset), _dragHandle == DragHandleKind.HLeftStemBottom);
-        DrawStemEndpointHandle(canvas, new SKPoint(rightX, rightStemTopY - EndpointHandleOffset), _dragHandle == DragHandleKind.HRightStemTop);
-        DrawStemEndpointHandle(canvas, new SKPoint(rightX, rightStemBottomY + EndpointHandleOffset), _dragHandle == DragHandleKind.HRightStemBottom);
-        DrawSite(canvas, leftJoin, "P1", leftPoint, hostTangent, DragHandleKind.HLeft);
-        DrawSite(canvas, rightJoin, "P2", rightPoint, hostTangent, DragHandleKind.HRight);
+        DrawStemEndpointHandle(canvas, leftTopEndpoint, _dragHandle == DragHandleKind.HLeftStemTop);
+        DrawStemEndpointHandle(canvas, leftBottomEndpoint, _dragHandle == DragHandleKind.HLeftStemBottom);
+        DrawStemEndpointHandle(canvas, rightTopEndpoint, _dragHandle == DragHandleKind.HRightStemTop);
+        DrawStemEndpointHandle(canvas, rightBottomEndpoint, _dragHandle == DragHandleKind.HRightStemBottom);
+        DrawSite(canvas, leftJoin, "P1", leftPoint, leftTangent, DragHandleKind.HLeft);
+        DrawSite(canvas, rightJoin, "P2", rightPoint, rightTangent, DragHandleKind.HRight);
 
-        RegisterHandle(DragHandleKind.HLeftStemTop, new SKPoint(leftX, leftStemTopY - EndpointHandleOffset), new SKPoint(leftX, minY), new SKPoint(leftX, maxY));
-        RegisterHandle(DragHandleKind.HLeft, leftPoint, new SKPoint(leftX, leftStemTopY), new SKPoint(leftX, leftStemBottomY));
-        RegisterHandle(DragHandleKind.HLeftStemBottom, new SKPoint(leftX, leftStemBottomY + EndpointHandleOffset), new SKPoint(leftX, minY), new SKPoint(leftX, maxY));
-        RegisterHandle(DragHandleKind.HRightStemTop, new SKPoint(rightX, rightStemTopY - EndpointHandleOffset), new SKPoint(rightX, minY), new SKPoint(rightX, maxY));
-        RegisterHandle(DragHandleKind.HRight, rightPoint, new SKPoint(rightX, rightStemTopY), new SKPoint(rightX, rightStemBottomY));
-        RegisterHandle(DragHandleKind.HRightStemBottom, new SKPoint(rightX, rightStemBottomY + EndpointHandleOffset), new SKPoint(rightX, minY), new SKPoint(rightX, maxY));
+        RegisterStemHandle(DragHandleKind.HLeftStemTop, leftTopEndpoint, rect, LetterboxEdge.Left);
+        RegisterHandle(DragHandleKind.HLeft, leftPoint, leftTopEndpoint, leftBottomEndpoint);
+        RegisterStemHandle(DragHandleKind.HLeftStemBottom, leftBottomEndpoint, rect, LetterboxEdge.Left);
+        RegisterStemHandle(DragHandleKind.HRightStemTop, rightTopEndpoint, rect, LetterboxEdge.Right);
+        RegisterHandle(DragHandleKind.HRight, rightPoint, rightTopEndpoint, rightBottomEndpoint);
+        RegisterStemHandle(DragHandleKind.HRightStemBottom, rightBottomEndpoint, rect, LetterboxEdge.Right);
+    }
+
+    private void DrawTPreview(SKCanvas canvas, SKRect rect, ShapePreset preset)
+    {
+        var guide = GetLetterboxRect(rect);
+        CarrierIdentity stem = preset.Graph.Carriers.First(carrier => carrier.Name == "Stem");
+        CarrierIdentity bar = preset.Graph.Carriers.First(carrier => carrier.Name == "Bar");
+        CarrierPinSite basePin = ResolveSite(preset.Graph.Sites.First(site => site.Name == "Base"));
+        CarrierPinSite topPin = ResolveSite(preset.Graph.Sites.First(site => site.Name == "Crossbar"));
+        SKPoint bottomPoint = new(guide.MidX, guide.Bottom);
+        SKPoint guideTangent = new(1f, 0f);
+        SKPoint stemTangent = new(0f, 1f);
+        SKPoint topPoint = new(guide.MidX, guide.Top);
+        if (_showLetterbox)
+        {
+            topPoint = new(guide.MidX, guide.Top);
+            _tBaseDominantLength = Distance(bottomPoint, topPoint);
+            _tCrossbarRecessiveLength = Distance(topPoint, new SKPoint(guide.Left, topPoint.Y));
+            _tCrossbarDominantLength = Distance(topPoint, new SKPoint(guide.Right, topPoint.Y));
+        }
+        else if (TryResolveSideDirection(basePin, PinSideRole.Dominant, guideTangent, out SKPoint stemDirection, out float stemMagnitude))
+        {
+            float stemLength = GetPreviewRayLength(ResolveRayHandle(basePin.Name, PinSideRole.Dominant), Math.Clamp(20f + stemMagnitude * 16f, 24f, 104f));
+            topPoint = new(bottomPoint.X + (stemDirection.X * stemLength), bottomPoint.Y + (stemDirection.Y * stemLength));
+        }
+
+        SKPoint leftPoint = new(guide.Left, topPoint.Y);
+        SKPoint rightPoint = new(guide.Right, topPoint.Y);
+        if (TryResolveSideDirection(topPin, PinSideRole.Recessive, stemTangent, out SKPoint leftDirection, out float leftMagnitude))
+        {
+            float length = GetPreviewRayLength(ResolveRayHandle(topPin.Name, PinSideRole.Recessive), Math.Clamp(20f + leftMagnitude * 16f, 24f, 104f));
+            leftPoint = new(topPoint.X + (leftDirection.X * length), topPoint.Y + (leftDirection.Y * length));
+        }
+
+        if (TryResolveSideDirection(topPin, PinSideRole.Dominant, stemTangent, out SKPoint rightDirection, out float rightMagnitude))
+        {
+            float length = GetPreviewRayLength(ResolveRayHandle(topPin.Name, PinSideRole.Dominant), Math.Clamp(20f + rightMagnitude * 16f, 24f, 104f));
+            rightPoint = new(topPoint.X + (rightDirection.X * length), topPoint.Y + (rightDirection.Y * length));
+        }
+
+        DrawCarrierLine(canvas, leftPoint, rightPoint, WithAlpha(preset.CarrierColors[bar.Id], CarrierPreviewAlpha), 5.2f);
+        DrawCarrierLabel(canvas, stem.Name ?? "Stem", new SKPoint(bottomPoint.X + 14f, (bottomPoint.Y + topPoint.Y) * 0.5f), preset.CarrierColors[stem.Id]);
+        DrawCarrierLabel(canvas, bar.Name ?? "Bar", new SKPoint(guide.MidX - 10f, topPoint.Y - 12f), preset.CarrierColors[bar.Id]);
+        DrawSite(canvas, basePin, "P1", bottomPoint, guideTangent, DragHandleKind.TBase);
+        DrawSite(canvas, topPin, "P2", topPoint, stemTangent, DragHandleKind.TCrossbar);
+        RegisterHandle(DragHandleKind.TBase, bottomPoint, bottomPoint, bottomPoint);
+        RegisterHandle(DragHandleKind.TCrossbar, topPoint, topPoint, topPoint);
+    }
+
+    private void DrawLPreview(SKCanvas canvas, SKRect rect, ShapePreset preset)
+    {
+        var guide = GetLetterboxRect(rect);
+        CarrierIdentity stem = preset.Graph.Carriers.First(carrier => carrier.Name == "Stem");
+        CarrierIdentity foot = preset.Graph.Carriers.First(carrier => carrier.Name == "Foot");
+        CarrierPinSite corner = ResolveSite(preset.Graph.Sites.First(site => site.Name == "Corner"));
+        SKPoint cornerPoint = new(guide.Left, guide.Bottom);
+        SKPoint topPoint = new(guide.Left, guide.Top);
+        SKPoint rightPoint = new(guide.Right, guide.Bottom);
+        SKPoint hostTangent = new(0f, 1f);
+
+        DrawCarrierLine(canvas, topPoint, cornerPoint, preset.CarrierColors[stem.Id], 5.4f);
+        DrawCarrierLine(canvas, cornerPoint, rightPoint, WithAlpha(preset.CarrierColors[foot.Id], CarrierPreviewAlpha), 5.2f);
+        DrawCarrierLabel(canvas, stem.Name ?? "Stem", new SKPoint(topPoint.X - 68f, guide.MidY), preset.CarrierColors[stem.Id]);
+        DrawCarrierLabel(canvas, foot.Name ?? "Foot", new SKPoint(guide.MidX - 16f, guide.Bottom - 10f), preset.CarrierColors[foot.Id]);
+        DrawSite(canvas, corner, "P1", cornerPoint, hostTangent, DragHandleKind.LCorner);
+        RegisterHandle(DragHandleKind.LCorner, cornerPoint, cornerPoint, cornerPoint);
+    }
+
+    private void DrawYPreview(SKCanvas canvas, SKRect rect, ShapePreset preset)
+    {
+        var guide = GetLetterboxRect(rect);
+        CarrierIdentity stem = preset.Graph.Carriers.First(carrier => carrier.Name == "Stem");
+        CarrierIdentity fork = preset.Graph.Carriers.First(carrier => carrier.Name == "Fork");
+        CarrierPinSite junction = ResolveSite(preset.Graph.Sites.First(site => site.Name == "Junction"));
+        SKPoint junctionPoint = new(guide.MidX, guide.Top + (guide.Height * 0.46f));
+        SKPoint bottomPoint = new(guide.MidX, guide.Bottom);
+        SKPoint leftArm = new(guide.Left, guide.Top);
+        SKPoint rightArm = new(guide.Right, guide.Top);
+        SKPoint hostTangent = new(0f, 1f);
+
+        DrawCarrierLine(canvas, junctionPoint, bottomPoint, preset.CarrierColors[stem.Id], 5.4f);
+        DrawCarrierLine(canvas, junctionPoint, leftArm, WithAlpha(preset.CarrierColors[fork.Id], CarrierPreviewAlpha), 5.2f);
+        DrawCarrierLine(canvas, junctionPoint, rightArm, WithAlpha(preset.CarrierColors[fork.Id], CarrierPreviewAlpha), 5.2f);
+        DrawCarrierLabel(canvas, stem.Name ?? "Stem", new SKPoint(junctionPoint.X + 14f, guide.Bottom - 10f), preset.CarrierColors[stem.Id]);
+        DrawCarrierLabel(canvas, fork.Name ?? "Fork", new SKPoint(guide.MidX - 20f, guide.Top + 18f), preset.CarrierColors[fork.Id]);
+        DrawSite(canvas, junction, "P1", junctionPoint, hostTangent, DragHandleKind.YJunction);
+        RegisterHandle(DragHandleKind.YJunction, junctionPoint, junctionPoint, junctionPoint);
+    }
+
+    private void DrawAPreview(SKCanvas canvas, SKRect rect, ShapePreset preset)
+    {
+        var guide = GetLetterboxRect(rect);
+        CarrierIdentity leftLeg = preset.Graph.Carriers.First(carrier => carrier.Name == "Left Leg");
+        CarrierIdentity rightLeg = preset.Graph.Carriers.First(carrier => carrier.Name == "Right Leg");
+        CarrierIdentity crossbar = preset.Graph.Carriers.First(carrier => carrier.Name == "Crossbar");
+        CarrierPinSite leftBar = ResolveSite(preset.Graph.Sites.First(site => site.Name == "Left Bar"));
+        CarrierPinSite rightBar = ResolveSite(preset.Graph.Sites.First(site => site.Name == "Right Bar"));
+
+        SKPoint apex = new(guide.MidX, guide.Top);
+        SKPoint leftBase = new(guide.Left, guide.Bottom);
+        SKPoint rightBase = new(guide.Right, guide.Bottom);
+        SKPoint leftBarPoint = new(
+            Lerp(leftBase.X, apex.X, _aLeftT),
+            Lerp(leftBase.Y, apex.Y, _aLeftT));
+        SKPoint rightBarPoint = new(
+            Lerp(rightBase.X, apex.X, _aRightT),
+            Lerp(rightBase.Y, apex.Y, _aRightT));
+        SKPoint leftTangent = Normalize(new SKPoint(apex.X - leftBase.X, apex.Y - leftBase.Y));
+        SKPoint rightTangent = Normalize(new SKPoint(apex.X - rightBase.X, apex.Y - rightBase.Y));
+
+        DrawCarrierLine(canvas, leftBase, apex, preset.CarrierColors[leftLeg.Id], 5.2f);
+        DrawCarrierLine(canvas, rightBase, apex, preset.CarrierColors[rightLeg.Id], 5.2f);
+        DrawSharedCarrierCurve(
+            canvas,
+            leftBarPoint,
+            leftBar,
+            crossbar.Id,
+            leftTangent,
+            rightBarPoint,
+            rightBar,
+            crossbar.Id,
+            rightTangent,
+            preset.CarrierColors[crossbar.Id],
+            5.0f);
+        DrawCarrierLabel(canvas, leftLeg.Name ?? "Left", new SKPoint(leftBase.X - 44f, guide.MidY), preset.CarrierColors[leftLeg.Id]);
+        DrawCarrierLabel(canvas, rightLeg.Name ?? "Right", new SKPoint(rightBase.X + 12f, guide.MidY), preset.CarrierColors[rightLeg.Id]);
+        DrawCarrierLabel(canvas, crossbar.Name ?? "Crossbar", new SKPoint(guide.MidX - 28f, leftBarPoint.Y - 16f), preset.CarrierColors[crossbar.Id]);
+        DrawSite(canvas, leftBar, "P1", leftBarPoint, leftTangent, DragHandleKind.ALeft);
+        DrawSite(canvas, rightBar, "P2", rightBarPoint, rightTangent, DragHandleKind.ARight);
+        RegisterHandle(DragHandleKind.ALeft, leftBarPoint, leftBase, apex);
+        RegisterHandle(DragHandleKind.ARight, rightBarPoint, rightBase, apex);
+    }
+
+    private void DrawMPreview(SKCanvas canvas, SKRect rect, ShapePreset preset)
+    {
+        var guide = GetLetterboxRect(rect);
+        CarrierIdentity leftStem = preset.Graph.Carriers.First(carrier => carrier.Name == "Left Stem");
+        CarrierIdentity rightStem = preset.Graph.Carriers.First(carrier => carrier.Name == "Right Stem");
+        CarrierIdentity middle = preset.Graph.Carriers.First(carrier => carrier.Name == "Middle");
+        CarrierPinSite leftPeak = ResolveSite(preset.Graph.Sites.First(site => site.Name == "Left Peak"));
+        CarrierPinSite rightPeak = ResolveSite(preset.Graph.Sites.First(site => site.Name == "Right Peak"));
+
+        SKPoint leftTop = new(guide.Left, guide.Top);
+        SKPoint rightTop = new(guide.Right, guide.Top);
+        SKPoint leftBottom = new(guide.Left, guide.Bottom);
+        SKPoint rightBottom = new(guide.Right, guide.Bottom);
+        SKPoint leftPeakPoint = new(guide.Left, guide.Top + (guide.Height * 0.12f));
+        SKPoint rightPeakPoint = new(guide.Right, guide.Top + (guide.Height * 0.12f));
+        SKPoint hostTangent = new(0f, 1f);
+
+        DrawCarrierLine(canvas, leftTop, leftBottom, preset.CarrierColors[leftStem.Id], 5.2f);
+        DrawCarrierLine(canvas, rightTop, rightBottom, preset.CarrierColors[rightStem.Id], 5.2f);
+        DrawSharedCarrierCurve(
+            canvas,
+            leftPeakPoint,
+            leftPeak,
+            middle.Id,
+            hostTangent,
+            rightPeakPoint,
+            rightPeak,
+            middle.Id,
+            hostTangent,
+            preset.CarrierColors[middle.Id],
+            5.0f);
+        DrawCarrierLabel(canvas, leftStem.Name ?? "Left", new SKPoint(leftTop.X - 44f, guide.MidY), preset.CarrierColors[leftStem.Id]);
+        DrawCarrierLabel(canvas, rightStem.Name ?? "Right", new SKPoint(rightTop.X + 12f, guide.MidY), preset.CarrierColors[rightStem.Id]);
+        DrawCarrierLabel(canvas, middle.Name ?? "Middle", new SKPoint(guide.MidX - 20f, guide.Top + (guide.Height * 0.35f)), preset.CarrierColors[middle.Id]);
+        DrawSite(canvas, leftPeak, "P1", leftPeakPoint, hostTangent, DragHandleKind.MLeft);
+        DrawSite(canvas, rightPeak, "P2", rightPeakPoint, hostTangent, DragHandleKind.MRight);
+        RegisterHandle(DragHandleKind.MLeft, leftPeakPoint, leftPeakPoint, leftPeakPoint);
+        RegisterHandle(DragHandleKind.MRight, rightPeakPoint, rightPeakPoint, rightPeakPoint);
     }
 
     private void DrawSite(SKCanvas canvas, CarrierPinSite site, string label, SKPoint point, SKPoint hostTangent, DragHandleKind handleKind)
@@ -749,7 +1071,7 @@ public sealed class SharedCarrierShapesPage : IVisualizerPage
                 canvas.DrawCircle(end, 14f, _handleHaloFillPaint);
             }
 
-            RegisterHandle(handle, end, origin, new SKPoint(origin.X + direction.X * MaxPreviewRayLength, origin.Y + direction.Y * MaxPreviewRayLength));
+            RegisterRayHandle(handle, end, origin, new SKPoint(origin.X + direction.X * MaxPreviewRayLength, origin.Y + direction.Y * MaxPreviewRayLength));
         }
     }
 
@@ -932,6 +1254,47 @@ public sealed class SharedCarrierShapesPage : IVisualizerPage
         canvas.DrawText(text, rect.Left + 12f, rect.MidY + 5f, _badgeTextPaint);
     }
 
+    private void DrawCopyButton(SKCanvas canvas, SKRect rect)
+    {
+        canvas.DrawRoundRect(rect, 8f, 8f, _buttonFillPaint);
+        canvas.DrawRoundRect(rect, 8f, 8f, _buttonStrokePaint);
+        using var stroke = new SKPaint
+        {
+            Style = SKPaintStyle.Stroke,
+            StrokeWidth = 1.4f,
+            Color = new SKColor(112, 112, 112),
+            IsAntialias = true,
+        };
+        var back = new SKRect(rect.Left + 9f, rect.Top + 7f, rect.Left + 17f, rect.Top + 15f);
+        var front = new SKRect(rect.Left + 12f, rect.Top + 10f, rect.Left + 20f, rect.Top + 18f);
+        canvas.DrawRoundRect(back, 2f, 2f, stroke);
+        canvas.DrawRoundRect(front, 2f, 2f, stroke);
+    }
+
+    private string ResolveSelectedCarrierTitle(CarrierPinSite site)
+    {
+        CarrierIdentity? primaryAttachment =
+            site.DominantAttachment?.Carrier ??
+            site.RecessiveAttachment?.Carrier;
+        if (primaryAttachment is not null && primaryAttachment.Id != site.HostCarrier.Id)
+        {
+            return primaryAttachment.Name ?? primaryAttachment.Id.ToString();
+        }
+
+        return site.HostCarrier.Name ?? site.HostCarrier.Id.ToString();
+    }
+
+    private SKColor ResolveSelectedCarrierColor(ShapePreset preset, CarrierPinSite site)
+    {
+        CarrierId carrierId =
+            site.DominantAttachment?.CarrierId ??
+            site.RecessiveAttachment?.CarrierId ??
+            site.HostCarrier.Id;
+        return preset.CarrierColors.TryGetValue(carrierId, out var color)
+            ? color
+            : new SKColor(96, 96, 96);
+    }
+
     private CarrierPinSite ResolveSite(CarrierPinSite site)
     {
         if (site.Name is null ||
@@ -950,6 +1313,215 @@ public sealed class SharedCarrierShapesPage : IVisualizerPage
             : preset.Graph.Sites.First().Name ?? preset.Graph.Sites.First().Id.ToString();
         CarrierPinSite site = preset.Graph.Sites.FirstOrDefault(candidate => candidate.Name == selectedName) ?? preset.Graph.Sites.First();
         return ResolveSite(site);
+    }
+
+    private static bool TryParseAxisText(string text, out Axis axis)
+    {
+        axis = Axis.Zero;
+        var match = System.Text.RegularExpressions.Regex.Match(
+            text,
+            @"^\s*\[\s*(?<rv>-?\d+)\s*/\s*(?<ru>-?\d+)\s*\]\s*i\s*\+\s*\[\s*(?<dv>-?\d+)\s*/\s*(?<du>-?\d+)\s*\]\s*$",
+            System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+        if (!match.Success)
+        {
+            return false;
+        }
+
+        bool parsedRecessiveValue = long.TryParse(match.Groups["rv"].Value, out long recessiveValue);
+        bool parsedRecessiveUnit = long.TryParse(match.Groups["ru"].Value, out long recessiveUnit);
+        bool parsedDominantValue = long.TryParse(match.Groups["dv"].Value, out long dominantValue);
+        bool parsedDominantUnit = long.TryParse(match.Groups["du"].Value, out long dominantUnit);
+        if (!(parsedRecessiveValue && parsedRecessiveUnit && parsedDominantValue && parsedDominantUnit))
+        {
+            return false;
+        }
+
+        axis = new Axis(recessiveValue, recessiveUnit, dominantValue, dominantUnit);
+        return true;
+    }
+
+    private void EnsureInlineValueEditor()
+    {
+        if (_canvasHost is null || _inlineValueEditor is not null)
+        {
+            return;
+        }
+
+        _inlineValueEditor = new TextBox
+        {
+            BorderStyle = BorderStyle.None,
+            Font = new Font("Consolas", 11f, FontStyle.Bold),
+            Visible = false,
+            Multiline = false,
+        };
+        _inlineValueEditor.KeyDown += OnInlineValueEditorKeyDown;
+        _inlineValueEditor.Leave += OnInlineValueEditorLeave;
+        _canvasHost.Controls.Add(_inlineValueEditor);
+        _inlineValueEditor.BringToFront();
+    }
+
+    private void RemoveInlineValueEditor()
+    {
+        if (_inlineValueEditor is null)
+        {
+            return;
+        }
+
+        _inlineValueEditor.KeyDown -= OnInlineValueEditorKeyDown;
+        _inlineValueEditor.Leave -= OnInlineValueEditorLeave;
+        if (_canvasHost is not null)
+        {
+            _canvasHost.Controls.Remove(_inlineValueEditor);
+        }
+
+        _inlineValueEditor.Dispose();
+        _inlineValueEditor = null;
+        _inlineValueTarget = null;
+    }
+
+    private void UpdateInlineValueEditor(SKRect valueRect, PresetKind preset, string siteName, string axisText)
+    {
+        EnsureInlineValueEditor();
+        if (_inlineValueEditor is null || _canvasHost is null || _coords is null || string.IsNullOrWhiteSpace(siteName))
+        {
+            return;
+        }
+
+        Rectangle pixelRect = ToControlRect(valueRect);
+        _inlineValueEditor.SetBounds(pixelRect.Left + 6, pixelRect.Top + 5, Math.Max(80, pixelRect.Width - 12), Math.Max(20, pixelRect.Height - 10));
+        _inlineValueEditor.Visible = true;
+        _inlineValueEditor.BringToFront();
+
+        var target = (preset, siteName);
+        if (_inlineValueTarget != target || (!_inlineValueEditor.Focused && _inlineValueEditor.Text != axisText))
+        {
+            _inlineValueSyncing = true;
+            _inlineValueEditor.Text = axisText;
+            _inlineValueTarget = target;
+            _inlineValueSyncing = false;
+        }
+    }
+
+    private void SyncInlineValueText()
+    {
+        if (_inlineValueEditor is null || _inlineValueEditor.Focused || _inlineValueTarget is not { } target)
+        {
+            return;
+        }
+
+        ShapePreset preset = _presets[target.Preset];
+        CarrierPinSite site = ResolveSite(preset.Graph.Sites.First(candidate => candidate.Name == target.SiteName));
+        string axisText = FormatAxis(site.Applied);
+        if (_inlineValueEditor.Text == axisText)
+        {
+            return;
+        }
+
+        _inlineValueSyncing = true;
+        _inlineValueEditor.Text = axisText;
+        _inlineValueSyncing = false;
+    }
+
+    private void OnInlineValueEditorKeyDown(object? sender, KeyEventArgs e)
+    {
+        if (e.KeyCode != Keys.Enter)
+        {
+            return;
+        }
+
+        CommitInlineValueEditor();
+        e.Handled = true;
+        e.SuppressKeyPress = true;
+        _canvasHost?.Focus();
+    }
+
+    private void OnInlineValueEditorLeave(object? sender, EventArgs e)
+    {
+        if (_inlineValueSyncing)
+        {
+            return;
+        }
+
+        CommitInlineValueEditor();
+    }
+
+    private void CommitInlineValueEditor()
+    {
+        if (_inlineValueEditor is null || _inlineValueTarget is not { } target)
+        {
+            return;
+        }
+
+        string text = _inlineValueEditor.Text.Trim();
+        ShapePreset preset = _presets[target.Preset];
+        CarrierPinSite currentSite = ResolveSite(preset.Graph.Sites.First(candidate => candidate.Name == target.SiteName));
+        string fallback = FormatAxis(currentSite.Applied);
+
+        if (!TryParseAxisText(text, out var axis))
+        {
+            _inlineValueSyncing = true;
+            _inlineValueEditor.Text = fallback;
+            _inlineValueSyncing = false;
+            _canvasHost?.InvalidateCanvas();
+            return;
+        }
+
+        _siteAxisOverrides[target] = axis;
+        string committed = FormatAxis(axis);
+        if (_inlineValueEditor.Text != committed)
+        {
+            _inlineValueSyncing = true;
+            _inlineValueEditor.Text = committed;
+            _inlineValueSyncing = false;
+        }
+
+        _canvasHost?.InvalidateCanvas();
+    }
+
+    private void ToggleLetterboxMode()
+    {
+        PreserveCurrentStemPositions();
+        _showLetterbox = !_showLetterbox;
+    }
+
+    private void PreserveCurrentStemPositions()
+    {
+        if (_coords is null)
+        {
+            return;
+        }
+
+        SKRect sceneRect = GetSceneInnerRect();
+        _dStemStart = ToNormalized(sceneRect, ResolveStemEndpoint(sceneRect, _dStemStart, LetterboxEdge.Left));
+        _dStemEnd = ToNormalized(sceneRect, ResolveStemEndpoint(sceneRect, _dStemEnd, LetterboxEdge.Left));
+        _hLeftStemStart = ToNormalized(sceneRect, ResolveStemEndpoint(sceneRect, _hLeftStemStart, LetterboxEdge.Left));
+        _hLeftStemEnd = ToNormalized(sceneRect, ResolveStemEndpoint(sceneRect, _hLeftStemEnd, LetterboxEdge.Left));
+        _hRightStemStart = ToNormalized(sceneRect, ResolveStemEndpoint(sceneRect, _hRightStemStart, LetterboxEdge.Right));
+        _hRightStemEnd = ToNormalized(sceneRect, ResolveStemEndpoint(sceneRect, _hRightStemEnd, LetterboxEdge.Right));
+    }
+
+    private SKRect GetSceneInnerRect()
+    {
+        float width = _coords?.Width ?? 1220f;
+        float height = _coords?.Height ?? 920f;
+        var scenePanel = new SKRect(424f, 106f, width - 20f, height - 24f);
+        return new SKRect(scenePanel.Left + 18f, scenePanel.Top + 72f, scenePanel.Right - 18f, scenePanel.Bottom - 18f);
+    }
+
+    private Rectangle ToControlRect(SKRect rect)
+    {
+        if (_canvasHost is null || _coords is null)
+        {
+            return Rectangle.Empty;
+        }
+
+        float scaleX = _canvasHost.ClientSize.Width / _coords.Width;
+        float scaleY = _canvasHost.ClientSize.Height / _coords.Height;
+        return Rectangle.FromLTRB(
+            (int)MathF.Round(rect.Left * scaleX),
+            (int)MathF.Round(rect.Top * scaleY),
+            (int)MathF.Round(rect.Right * scaleX),
+            (int)MathF.Round(rect.Bottom * scaleY));
     }
 
     private bool IsSelectedSite(CarrierPinSite site) =>
@@ -1010,6 +1582,14 @@ public sealed class SharedCarrierShapesPage : IVisualizerPage
         "Bottom" => "P2",
         "Left Join" => "P1",
         "Right Join" => "P2",
+        "Base" => "P1",
+        "Crossbar" => "P2",
+        "Corner" => "P1",
+        "Junction" => "P1",
+        "Left Bar" => "P1",
+        "Right Bar" => "P2",
+        "Left Peak" => "P1",
+        "Right Peak" => "P2",
         _ => site.Name ?? "Pin",
     };
 
@@ -1022,6 +1602,42 @@ public sealed class SharedCarrierShapesPage : IVisualizerPage
         }
 
         return Math.Abs((float)folded);
+    }
+
+    private static SKRect GetLetterboxRect(SKRect sceneRect)
+    {
+        float size = MathF.Min(sceneRect.Width - 220f, sceneRect.Height - 132f);
+        size = MathF.Max(size, 220f);
+        float left = sceneRect.MidX - (size * 0.5f);
+        float top = sceneRect.MidY - (size * 0.5f);
+        return new SKRect(left, top, left + size, top + size);
+    }
+
+    private static SKPoint FromNormalized(SKRect rect, SKPoint normalized) =>
+        new(rect.Left + (normalized.X * rect.Width), rect.Top + (normalized.Y * rect.Height));
+
+    private static SKPoint ToNormalized(SKRect rect, SKPoint point) =>
+        new(
+            rect.Width <= 0f ? 0f : (point.X - rect.Left) / rect.Width,
+            rect.Height <= 0f ? 0f : (point.Y - rect.Top) / rect.Height);
+
+    private SKPoint ResolveStemEndpoint(SKRect sceneRect, SKPoint normalizedPoint, LetterboxEdge edge)
+    {
+        SKPoint point = FromNormalized(sceneRect, normalizedPoint);
+        if (!_showLetterbox)
+        {
+            return point;
+        }
+
+        var guide = GetLetterboxRect(sceneRect);
+        return edge switch
+        {
+            LetterboxEdge.Left => new SKPoint(guide.Left, Math.Clamp(point.Y, guide.Top, guide.Bottom)),
+            LetterboxEdge.Right => new SKPoint(guide.Right, Math.Clamp(point.Y, guide.Top, guide.Bottom)),
+            LetterboxEdge.Top => new SKPoint(Math.Clamp(point.X, guide.Left, guide.Right), guide.Top),
+            LetterboxEdge.Bottom => new SKPoint(Math.Clamp(point.X, guide.Left, guide.Right), guide.Bottom),
+            _ => point,
+        };
     }
 
     private static SKPoint Normalize(SKPoint point)
@@ -1060,13 +1676,32 @@ public sealed class SharedCarrierShapesPage : IVisualizerPage
         DragHandleKind.DBottom or DragHandleKind.DBottomRecessive or DragHandleKind.DBottomDominant => "Bottom",
         DragHandleKind.HLeft or DragHandleKind.HLeftRecessive or DragHandleKind.HLeftDominant => "Left Join",
         DragHandleKind.HRight or DragHandleKind.HRightRecessive or DragHandleKind.HRightDominant => "Right Join",
+        DragHandleKind.TBase or DragHandleKind.TBaseDominant => "Base",
+        DragHandleKind.TCrossbar or DragHandleKind.TCrossbarRecessive or DragHandleKind.TCrossbarDominant => "Crossbar",
+        DragHandleKind.YJunction or DragHandleKind.YJunctionRecessive or DragHandleKind.YJunctionDominant => "Junction",
+        DragHandleKind.LCorner or DragHandleKind.LCornerRecessive or DragHandleKind.LCornerDominant => "Corner",
+        DragHandleKind.ALeft or DragHandleKind.ALeftRecessive or DragHandleKind.ALeftDominant => "Left Bar",
+        DragHandleKind.ARight or DragHandleKind.ARightRecessive or DragHandleKind.ARightDominant => "Right Bar",
+        DragHandleKind.MLeft or DragHandleKind.MLeftRecessive or DragHandleKind.MLeftDominant => "Left Peak",
+        DragHandleKind.MRight or DragHandleKind.MRightRecessive or DragHandleKind.MRightDominant => "Right Peak",
         _ => null,
     };
 
     private void UpdateDragHandle(SKPoint pixelPoint)
     {
         var handle = _handleLayouts.FirstOrDefault(layout => layout.Target == _dragHandle);
-        if (handle is null || !TryProjectToAxis(pixelPoint, handle.AxisStart, handle.AxisEnd, out float t))
+        if (handle is null)
+        {
+            return;
+        }
+
+        if (handle.FreeMove)
+        {
+            UpdateFreeStemHandle(pixelPoint, handle);
+            return;
+        }
+
+        if (!TryProjectToAxis(pixelPoint, handle.AxisStart, handle.AxisEnd, out float t))
         {
             return;
         }
@@ -1074,70 +1709,243 @@ public sealed class SharedCarrierShapesPage : IVisualizerPage
         switch (_dragHandle)
         {
             case DragHandleKind.DStemTop:
-                _dStemTopT = ClampOrdered(t, 0f, Math.Max(0f, Math.Min(_dTopT, _dBottomT) - 0.08f));
+                _dStemStart = UpdateConstrainedStemPoint(_dStemStart, pixelPoint, handle.AxisStart, handle.AxisEnd, handle.BoundsRect);
                 break;
             case DragHandleKind.DTop:
-                _dTopT = ClampOrdered(t, _dStemTopT + 0.08f, _dBottomT - 0.08f);
+                _dTopT = ClampOrdered(t, 0f, _dBottomT - 0.08f);
                 break;
             case DragHandleKind.DBottom:
-                _dBottomT = ClampOrdered(t, _dTopT + 0.08f, _dStemBottomT - 0.08f);
+                _dBottomT = ClampOrdered(t, _dTopT + 0.08f, 1f);
                 break;
             case DragHandleKind.DStemBottom:
-                _dStemBottomT = ClampOrdered(t, Math.Min(1f, Math.Max(_dTopT, _dBottomT) + 0.08f), 1f);
+                _dStemEnd = UpdateConstrainedStemPoint(_dStemEnd, pixelPoint, handle.AxisStart, handle.AxisEnd, handle.BoundsRect);
                 break;
             case DragHandleKind.HLeftStemTop:
-                _hLeftStemTopT = ClampOrdered(t, 0f, Math.Max(0f, _hLeftT - 0.08f));
+                _hLeftStemStart = UpdateConstrainedStemPoint(_hLeftStemStart, pixelPoint, handle.AxisStart, handle.AxisEnd, handle.BoundsRect);
                 break;
             case DragHandleKind.HLeft:
-                _hLeftT = ClampOrdered(t, _hLeftStemTopT + 0.08f, _hLeftStemBottomT - 0.08f);
+                _hLeftT = ClampOrdered(t, 0f, 1f);
                 break;
             case DragHandleKind.HLeftStemBottom:
-                _hLeftStemBottomT = ClampOrdered(t, Math.Min(1f, _hLeftT + 0.08f), 1f);
+                _hLeftStemEnd = UpdateConstrainedStemPoint(_hLeftStemEnd, pixelPoint, handle.AxisStart, handle.AxisEnd, handle.BoundsRect);
                 break;
             case DragHandleKind.HRightStemTop:
-                _hRightStemTopT = ClampOrdered(t, 0f, Math.Max(0f, _hRightT - 0.08f));
+                _hRightStemStart = UpdateConstrainedStemPoint(_hRightStemStart, pixelPoint, handle.AxisStart, handle.AxisEnd, handle.BoundsRect);
                 break;
             case DragHandleKind.HRight:
-                _hRightT = ClampOrdered(t, _hRightStemTopT + 0.08f, _hRightStemBottomT - 0.08f);
+                _hRightT = ClampOrdered(t, 0f, 1f);
                 break;
             case DragHandleKind.HRightStemBottom:
-                _hRightStemBottomT = ClampOrdered(t, Math.Min(1f, _hRightT + 0.08f), 1f);
+                _hRightStemEnd = UpdateConstrainedStemPoint(_hRightStemEnd, pixelPoint, handle.AxisStart, handle.AxisEnd, handle.BoundsRect);
+                break;
+            case DragHandleKind.ALeft:
+                _aLeftT = ClampOrdered(t, 0f, 1f);
+                break;
+            case DragHandleKind.ARight:
+                _aRightT = ClampOrdered(t, 0f, 1f);
                 break;
             case DragHandleKind.DTopRecessive:
                 _dTopRecessiveLength = Math.Clamp(t * MaxPreviewRayLength, 8f, MaxPreviewRayLength);
+                UpdateSiteAxisFromPreviewLength("Top", PinSideRole.Recessive, _dTopRecessiveLength);
                 break;
             case DragHandleKind.DTopDominant:
                 _dTopDominantLength = Math.Clamp(t * MaxPreviewRayLength, 8f, MaxPreviewRayLength);
+                UpdateSiteAxisFromPreviewLength("Top", PinSideRole.Dominant, _dTopDominantLength);
                 break;
             case DragHandleKind.DBottomRecessive:
                 _dBottomRecessiveLength = Math.Clamp(t * MaxPreviewRayLength, 8f, MaxPreviewRayLength);
+                UpdateSiteAxisFromPreviewLength("Bottom", PinSideRole.Recessive, _dBottomRecessiveLength);
                 break;
             case DragHandleKind.DBottomDominant:
                 _dBottomDominantLength = Math.Clamp(t * MaxPreviewRayLength, 8f, MaxPreviewRayLength);
+                UpdateSiteAxisFromPreviewLength("Bottom", PinSideRole.Dominant, _dBottomDominantLength);
                 break;
             case DragHandleKind.HLeftRecessive:
                 _hLeftRecessiveLength = Math.Clamp(t * MaxPreviewRayLength, 8f, MaxPreviewRayLength);
+                UpdateSiteAxisFromPreviewLength("Left Join", PinSideRole.Recessive, _hLeftRecessiveLength);
                 break;
             case DragHandleKind.HLeftDominant:
                 _hLeftDominantLength = Math.Clamp(t * MaxPreviewRayLength, 8f, MaxPreviewRayLength);
+                UpdateSiteAxisFromPreviewLength("Left Join", PinSideRole.Dominant, _hLeftDominantLength);
                 break;
             case DragHandleKind.HRightRecessive:
                 _hRightRecessiveLength = Math.Clamp(t * MaxPreviewRayLength, 8f, MaxPreviewRayLength);
+                UpdateSiteAxisFromPreviewLength("Right Join", PinSideRole.Recessive, _hRightRecessiveLength);
                 break;
             case DragHandleKind.HRightDominant:
                 _hRightDominantLength = Math.Clamp(t * MaxPreviewRayLength, 8f, MaxPreviewRayLength);
+                UpdateSiteAxisFromPreviewLength("Right Join", PinSideRole.Dominant, _hRightDominantLength);
+                break;
+            case DragHandleKind.TBaseDominant:
+                _tBaseDominantLength = Math.Clamp(t * MaxPreviewRayLength, 8f, MaxPreviewRayLength);
+                UpdateSiteAxisFromPreviewLength("Base", PinSideRole.Dominant, _tBaseDominantLength);
+                break;
+            case DragHandleKind.TCrossbarRecessive:
+                _tCrossbarRecessiveLength = Math.Clamp(t * MaxPreviewRayLength, 8f, MaxPreviewRayLength);
+                UpdateSiteAxisFromPreviewLength("Crossbar", PinSideRole.Recessive, _tCrossbarRecessiveLength);
+                break;
+            case DragHandleKind.TCrossbarDominant:
+                _tCrossbarDominantLength = Math.Clamp(t * MaxPreviewRayLength, 8f, MaxPreviewRayLength);
+                UpdateSiteAxisFromPreviewLength("Crossbar", PinSideRole.Dominant, _tCrossbarDominantLength);
+                break;
+            case DragHandleKind.YJunctionRecessive:
+                _yJunctionRecessiveLength = Math.Clamp(t * MaxPreviewRayLength, 8f, MaxPreviewRayLength);
+                UpdateSiteAxisFromPreviewLength("Junction", PinSideRole.Recessive, _yJunctionRecessiveLength);
+                break;
+            case DragHandleKind.YJunctionDominant:
+                _yJunctionDominantLength = Math.Clamp(t * MaxPreviewRayLength, 8f, MaxPreviewRayLength);
+                UpdateSiteAxisFromPreviewLength("Junction", PinSideRole.Dominant, _yJunctionDominantLength);
+                break;
+            case DragHandleKind.LCornerRecessive:
+                _lCornerRecessiveLength = Math.Clamp(t * MaxPreviewRayLength, 8f, MaxPreviewRayLength);
+                UpdateSiteAxisFromPreviewLength("Corner", PinSideRole.Recessive, _lCornerRecessiveLength);
+                break;
+            case DragHandleKind.LCornerDominant:
+                _lCornerDominantLength = Math.Clamp(t * MaxPreviewRayLength, 8f, MaxPreviewRayLength);
+                UpdateSiteAxisFromPreviewLength("Corner", PinSideRole.Dominant, _lCornerDominantLength);
+                break;
+            case DragHandleKind.ALeftRecessive:
+                _aLeftRecessiveLength = Math.Clamp(t * MaxPreviewRayLength, 8f, MaxPreviewRayLength);
+                UpdateSiteAxisFromPreviewLength("Left Bar", PinSideRole.Recessive, _aLeftRecessiveLength);
+                break;
+            case DragHandleKind.ALeftDominant:
+                _aLeftDominantLength = Math.Clamp(t * MaxPreviewRayLength, 8f, MaxPreviewRayLength);
+                UpdateSiteAxisFromPreviewLength("Left Bar", PinSideRole.Dominant, _aLeftDominantLength);
+                break;
+            case DragHandleKind.ARightRecessive:
+                _aRightRecessiveLength = Math.Clamp(t * MaxPreviewRayLength, 8f, MaxPreviewRayLength);
+                UpdateSiteAxisFromPreviewLength("Right Bar", PinSideRole.Recessive, _aRightRecessiveLength);
+                break;
+            case DragHandleKind.ARightDominant:
+                _aRightDominantLength = Math.Clamp(t * MaxPreviewRayLength, 8f, MaxPreviewRayLength);
+                UpdateSiteAxisFromPreviewLength("Right Bar", PinSideRole.Dominant, _aRightDominantLength);
+                break;
+            case DragHandleKind.MLeftRecessive:
+                _mLeftRecessiveLength = Math.Clamp(t * MaxPreviewRayLength, 8f, MaxPreviewRayLength);
+                UpdateSiteAxisFromPreviewLength("Left Peak", PinSideRole.Recessive, _mLeftRecessiveLength);
+                break;
+            case DragHandleKind.MLeftDominant:
+                _mLeftDominantLength = Math.Clamp(t * MaxPreviewRayLength, 8f, MaxPreviewRayLength);
+                UpdateSiteAxisFromPreviewLength("Left Peak", PinSideRole.Dominant, _mLeftDominantLength);
+                break;
+            case DragHandleKind.MRightRecessive:
+                _mRightRecessiveLength = Math.Clamp(t * MaxPreviewRayLength, 8f, MaxPreviewRayLength);
+                UpdateSiteAxisFromPreviewLength("Right Peak", PinSideRole.Recessive, _mRightRecessiveLength);
+                break;
+            case DragHandleKind.MRightDominant:
+                _mRightDominantLength = Math.Clamp(t * MaxPreviewRayLength, 8f, MaxPreviewRayLength);
+                UpdateSiteAxisFromPreviewLength("Right Peak", PinSideRole.Dominant, _mRightDominantLength);
                 break;
         }
+    }
+
+    private void UpdateFreeStemHandle(SKPoint pixelPoint, HandleLayout handle)
+    {
+        if (handle.BoundsRect is not SKRect bounds)
+        {
+            return;
+        }
+
+        SKPoint normalized = ToNormalized(bounds, pixelPoint);
+        switch (_dragHandle)
+        {
+            case DragHandleKind.DStemTop:
+                _dStemStart = normalized;
+                break;
+            case DragHandleKind.DStemBottom:
+                _dStemEnd = normalized;
+                break;
+            case DragHandleKind.HLeftStemTop:
+                _hLeftStemStart = normalized;
+                break;
+            case DragHandleKind.HLeftStemBottom:
+                _hLeftStemEnd = normalized;
+                break;
+            case DragHandleKind.HRightStemTop:
+                _hRightStemStart = normalized;
+                break;
+            case DragHandleKind.HRightStemBottom:
+                _hRightStemEnd = normalized;
+                break;
+        }
+    }
+
+    private void UpdateSiteAxisFromPreviewLength(string siteName, PinSideRole role, float length)
+    {
+        ShapePreset preset = _presets[_selectedPreset];
+        CarrierPinSite site = ResolveSite(preset.Graph.Sites.First(candidate => candidate.Name == siteName));
+        Axis current = site.Applied;
+        long magnitude = Math.Max(0L, (long)Math.Round((length - 20f) / 16f));
+        long signedMagnitude = role == PinSideRole.Recessive
+            ? magnitude * Math.Sign(current.Recessive.Dominant)
+            : magnitude * Math.Sign(current.Dominant.Dominant);
+
+        Axis updated = role == PinSideRole.Recessive
+            ? new Axis(signedMagnitude, current.Recessive.Recessive, current.Dominant.Dominant, current.Dominant.Recessive)
+            : new Axis(current.Recessive.Dominant, current.Recessive.Recessive, signedMagnitude, current.Dominant.Recessive);
+
+        _siteAxisOverrides[(_selectedPreset, siteName)] = updated;
+        SyncInlineValueText();
+    }
+
+    private static SKPoint UpdateConstrainedStemPoint(SKPoint current, SKPoint pixelPoint, SKPoint axisStart, SKPoint axisEnd, SKRect? boundsRect)
+    {
+        if (boundsRect is not SKRect bounds)
+        {
+            return current;
+        }
+
+        if (!TryProjectToAxis(pixelPoint, axisStart, axisEnd, out float t))
+        {
+            return current;
+        }
+
+        SKPoint point = new(
+            Lerp(axisStart.X, axisEnd.X, t),
+            Lerp(axisStart.Y, axisEnd.Y, t));
+        return ToNormalized(bounds, point);
     }
 
     private HandleLayout? HitHandle(SKPoint point)
     {
         const float threshold = 18f;
-        return _handleLayouts.FirstOrDefault(layout => Distance(point, layout.Center) <= threshold);
+        return _handleLayouts
+            .Where(layout => Distance(point, layout.Center) <= threshold)
+            .OrderBy(layout => layout.Kind switch
+            {
+                HandleKind.Site => 0,
+                HandleKind.Ray => 1,
+                _ => 2,
+            })
+            .ThenBy(layout => Distance(point, layout.Center))
+            .FirstOrDefault();
     }
 
     private void RegisterHandle(DragHandleKind target, SKPoint center, SKPoint axisStart, SKPoint axisEnd) =>
-        _handleLayouts.Add(new HandleLayout(target, center, axisStart, axisEnd));
+        _handleLayouts.Add(new HandleLayout(target, center, axisStart, axisEnd, null, false, HandleKind.Site));
+
+    private void RegisterRayHandle(DragHandleKind target, SKPoint center, SKPoint axisStart, SKPoint axisEnd) =>
+        _handleLayouts.Add(new HandleLayout(target, center, axisStart, axisEnd, null, false, HandleKind.Ray));
+
+    private void RegisterStemHandle(DragHandleKind target, SKPoint center, SKRect sceneRect, LetterboxEdge edge)
+    {
+        if (_showLetterbox)
+        {
+            var guide = GetLetterboxRect(sceneRect);
+            (SKPoint axisStart, SKPoint axisEnd) = edge switch
+            {
+                LetterboxEdge.Left => (new SKPoint(guide.Left, guide.Top), new SKPoint(guide.Left, guide.Bottom)),
+                LetterboxEdge.Right => (new SKPoint(guide.Right, guide.Top), new SKPoint(guide.Right, guide.Bottom)),
+                LetterboxEdge.Top => (new SKPoint(guide.Left, guide.Top), new SKPoint(guide.Right, guide.Top)),
+                LetterboxEdge.Bottom => (new SKPoint(guide.Left, guide.Bottom), new SKPoint(guide.Right, guide.Bottom)),
+                _ => (center, center),
+            };
+            _handleLayouts.Add(new HandleLayout(target, center, axisStart, axisEnd, sceneRect, false, HandleKind.Endpoint));
+            return;
+        }
+
+        _handleLayouts.Add(new HandleLayout(target, center, SKPoint.Empty, SKPoint.Empty, sceneRect, true, HandleKind.Endpoint));
+    }
 
     private static bool TryProjectToAxis(SKPoint point, SKPoint start, SKPoint end, out float t)
     {
@@ -1199,11 +2007,29 @@ public sealed class SharedCarrierShapesPage : IVisualizerPage
         DragHandleKind.HLeftDominant => _hLeftDominantLength,
         DragHandleKind.HRightRecessive => _hRightRecessiveLength,
         DragHandleKind.HRightDominant => _hRightDominantLength,
+        DragHandleKind.TBaseDominant => _tBaseDominantLength,
+        DragHandleKind.TCrossbarRecessive => _tCrossbarRecessiveLength,
+        DragHandleKind.TCrossbarDominant => _tCrossbarDominantLength,
+        DragHandleKind.YJunctionRecessive => _yJunctionRecessiveLength,
+        DragHandleKind.YJunctionDominant => _yJunctionDominantLength,
+        DragHandleKind.LCornerRecessive => _lCornerRecessiveLength,
+        DragHandleKind.LCornerDominant => _lCornerDominantLength,
+        DragHandleKind.ALeftRecessive => _aLeftRecessiveLength,
+        DragHandleKind.ALeftDominant => _aLeftDominantLength,
+        DragHandleKind.ARightRecessive => _aRightRecessiveLength,
+        DragHandleKind.ARightDominant => _aRightDominantLength,
+        DragHandleKind.MLeftRecessive => _mLeftRecessiveLength,
+        DragHandleKind.MLeftDominant => _mLeftDominantLength,
+        DragHandleKind.MRightRecessive => _mRightRecessiveLength,
+        DragHandleKind.MRightDominant => _mRightDominantLength,
         _ => fallback,
     };
 
     private DragHandleKind ResolveRayHandle(string? siteName, PinSideRole role) => (siteName, role) switch
     {
+        ("Base", PinSideRole.Dominant) => DragHandleKind.TBaseDominant,
+        ("Crossbar", PinSideRole.Recessive) => DragHandleKind.TCrossbarRecessive,
+        ("Crossbar", PinSideRole.Dominant) => DragHandleKind.TCrossbarDominant,
         ("Top", PinSideRole.Recessive) => DragHandleKind.DTopRecessive,
         ("Top", PinSideRole.Dominant) => DragHandleKind.DTopDominant,
         ("Bottom", PinSideRole.Recessive) => DragHandleKind.DBottomRecessive,
@@ -1212,13 +2038,30 @@ public sealed class SharedCarrierShapesPage : IVisualizerPage
         ("Left Join", PinSideRole.Dominant) => DragHandleKind.HLeftDominant,
         ("Right Join", PinSideRole.Recessive) => DragHandleKind.HRightRecessive,
         ("Right Join", PinSideRole.Dominant) => DragHandleKind.HRightDominant,
+        ("Junction", PinSideRole.Recessive) => DragHandleKind.YJunctionRecessive,
+        ("Junction", PinSideRole.Dominant) => DragHandleKind.YJunctionDominant,
+        ("Corner", PinSideRole.Recessive) => DragHandleKind.LCornerRecessive,
+        ("Corner", PinSideRole.Dominant) => DragHandleKind.LCornerDominant,
+        ("Left Bar", PinSideRole.Recessive) => DragHandleKind.ALeftRecessive,
+        ("Left Bar", PinSideRole.Dominant) => DragHandleKind.ALeftDominant,
+        ("Right Bar", PinSideRole.Recessive) => DragHandleKind.ARightRecessive,
+        ("Right Bar", PinSideRole.Dominant) => DragHandleKind.ARightDominant,
+        ("Left Peak", PinSideRole.Recessive) => DragHandleKind.MLeftRecessive,
+        ("Left Peak", PinSideRole.Dominant) => DragHandleKind.MLeftDominant,
+        ("Right Peak", PinSideRole.Recessive) => DragHandleKind.MRightRecessive,
+        ("Right Peak", PinSideRole.Dominant) => DragHandleKind.MRightDominant,
         _ => DragHandleKind.None,
     };
 
     private static string GetPresetButtonText(PresetKind preset) => preset switch
     {
-        PresetKind.CapitalD => "D Bowl",
-        PresetKind.BridgeH => "H Bridge",
+        PresetKind.CapitalD => "D",
+        PresetKind.BridgeH => "H",
+        PresetKind.LetterT => "T",
+        PresetKind.LetterA => "A",
+        PresetKind.LetterY => "Y",
+        PresetKind.LetterL => "L",
+        PresetKind.LetterM => "M",
         _ => preset.ToString(),
     };
 
@@ -1226,10 +2069,20 @@ public sealed class SharedCarrierShapesPage : IVisualizerPage
     {
         var d = BuildCapitalDPreset();
         var h = BuildBridgeHPreset();
+        var t = BuildTPreset();
+        var a = BuildAPreset();
+        var y = BuildYPreset();
+        var l = BuildLPreset();
+        var m = BuildMPreset();
         return new Dictionary<PresetKind, ShapePreset>
         {
             [PresetKind.CapitalD] = d,
             [PresetKind.BridgeH] = h,
+            [PresetKind.LetterT] = t,
+            [PresetKind.LetterA] = a,
+            [PresetKind.LetterY] = y,
+            [PresetKind.LetterL] = l,
+            [PresetKind.LetterM] = m,
         };
     }
 
@@ -1300,6 +2153,161 @@ public sealed class SharedCarrierShapesPage : IVisualizerPage
             });
     }
 
+    private static ShapePreset BuildTPreset()
+    {
+        CarrierIdentity guide = CarrierIdentity.Create("Guide");
+        CarrierIdentity stem = CarrierIdentity.Create("Stem");
+        CarrierIdentity bar = CarrierIdentity.Create("Bar");
+        Axis host = Axis.FromCoordinates(Proportion.Zero, new Proportion(10));
+
+        CarrierPinSite bottom = CarrierPinSite.FromPointPinning(
+            guide,
+            host.PinAt(new Axis(0, 0, 4, -2), new Proportion(5)),
+            dominantAttachment: new CarrierSideAttachment(PinSideRole.Dominant, stem, Proportion.Zero),
+            name: "Base");
+        CarrierPinSite top = CarrierPinSite.FromPointPinning(
+            stem,
+            host.PinAt(new Axis(3, -1, 3, -1), Proportion.One),
+            new CarrierSideAttachment(PinSideRole.Recessive, bar, Proportion.Zero),
+            new CarrierSideAttachment(PinSideRole.Dominant, bar, Proportion.One),
+            name: "Crossbar");
+
+        CarrierPinGraph graph = new([guide, stem, bar], [bottom, top]);
+        return new ShapePreset(
+            "Capital T",
+            "A base pin on the bottom guide emits the stem upward. A second pin at the stem endpoint emits the shared crossbar carrier in both directions.",
+            graph,
+            graph.Analyze(),
+            new Dictionary<CarrierId, SKColor>
+            {
+                [guide.Id] = new SKColor(160, 160, 160),
+                [stem.Id] = SegmentColors.Blue.Solid,
+                [bar.Id] = SegmentColors.Orange.Solid,
+            });
+    }
+
+    private static ShapePreset BuildLPreset()
+    {
+        CarrierIdentity stem = CarrierIdentity.Create("Stem");
+        CarrierIdentity foot = CarrierIdentity.Create("Foot");
+        Axis host = Axis.FromCoordinates(Proportion.Zero, new Proportion(10));
+
+        CarrierPinSite corner = CarrierPinSite.FromPointPinning(
+            stem,
+            host.PinAt(new Axis(3, 1, 3, -1), new Proportion(10)),
+            new CarrierSideAttachment(PinSideRole.Recessive, stem, Proportion.One),
+            new CarrierSideAttachment(PinSideRole.Dominant, foot, Proportion.Zero),
+            name: "Corner");
+
+        CarrierPinGraph graph = new([stem, foot], [corner]);
+        return new ShapePreset(
+            "Capital L",
+            "A single corner pin on the stem emits one foot carrier. It is the simplest one-join letter fold on the page.",
+            graph,
+            graph.Analyze(),
+            new Dictionary<CarrierId, SKColor>
+            {
+                [stem.Id] = SegmentColors.Blue.Solid,
+                [foot.Id] = SegmentColors.Orange.Solid,
+            });
+    }
+
+    private static ShapePreset BuildYPreset()
+    {
+        CarrierIdentity stem = CarrierIdentity.Create("Stem");
+        CarrierIdentity fork = CarrierIdentity.Create("Fork");
+        Axis host = Axis.FromCoordinates(Proportion.Zero, new Proportion(10));
+
+        CarrierPinSite junction = CarrierPinSite.FromPointPinning(
+            stem,
+            host.PinAt(new Axis(2, 1, 3, -1), new Proportion(6)),
+            new CarrierSideAttachment(PinSideRole.Recessive, stem, Proportion.One),
+            new CarrierSideAttachment(PinSideRole.Dominant, fork, new Proportion(1, 2)),
+            name: "Junction");
+
+        CarrierPinGraph graph = new([stem, fork], [junction]);
+        return new ShapePreset(
+            "Capital Y",
+            "One junction pin on a stem emits a shared upper fork carrier. The preview folds that carrier into the two upper arms of a Y.",
+            graph,
+            graph.Analyze(),
+            new Dictionary<CarrierId, SKColor>
+            {
+                [stem.Id] = SegmentColors.Blue.Solid,
+                [fork.Id] = SegmentColors.Orange.Solid,
+            });
+    }
+
+    private static ShapePreset BuildAPreset()
+    {
+        CarrierIdentity leftLeg = CarrierIdentity.Create("Left Leg");
+        CarrierIdentity rightLeg = CarrierIdentity.Create("Right Leg");
+        CarrierIdentity crossbar = CarrierIdentity.Create("Crossbar");
+        Axis host = Axis.FromCoordinates(Proportion.Zero, new Proportion(10));
+        Proportion mid = new Proportion(9, 2);
+
+        CarrierPinSite leftBar = CarrierPinSite.FromPointPinning(
+            leftLeg,
+            host.PinAt(new Axis(-2, 1, -2, -1), mid),
+            new CarrierSideAttachment(PinSideRole.Recessive, leftLeg, mid),
+            new CarrierSideAttachment(PinSideRole.Dominant, crossbar, Proportion.Zero),
+            name: "Left Bar");
+        CarrierPinSite rightBar = CarrierPinSite.FromPointPinning(
+            rightLeg,
+            host.PinAt(new Axis(2, 1, 2, -1), mid),
+            new CarrierSideAttachment(PinSideRole.Recessive, rightLeg, mid),
+            new CarrierSideAttachment(PinSideRole.Dominant, crossbar, Proportion.One),
+            name: "Right Bar");
+
+        CarrierPinGraph graph = new([leftLeg, rightLeg, crossbar], [leftBar, rightBar]);
+        return new ShapePreset(
+            "Capital A",
+            "Two slanted leg carriers host a shared crossbar carrier. The apex is folded as a geometric display choice rather than a separate carrier here.",
+            graph,
+            graph.Analyze(),
+            new Dictionary<CarrierId, SKColor>
+            {
+                [leftLeg.Id] = SegmentColors.Blue.Solid,
+                [rightLeg.Id] = SegmentColors.Purple.Solid,
+                [crossbar.Id] = SegmentColors.Orange.Solid,
+            });
+    }
+
+    private static ShapePreset BuildMPreset()
+    {
+        CarrierIdentity leftStem = CarrierIdentity.Create("Left Stem");
+        CarrierIdentity rightStem = CarrierIdentity.Create("Right Stem");
+        CarrierIdentity middle = CarrierIdentity.Create("Middle");
+        Axis host = Axis.FromCoordinates(Proportion.Zero, new Proportion(10));
+        Proportion top = new Proportion(1);
+
+        CarrierPinSite leftPeak = CarrierPinSite.FromPointPinning(
+            leftStem,
+            host.PinAt(new Axis(3, 1, 3, -1), top),
+            new CarrierSideAttachment(PinSideRole.Recessive, leftStem, Proportion.Zero),
+            new CarrierSideAttachment(PinSideRole.Dominant, middle, Proportion.Zero),
+            name: "Left Peak");
+        CarrierPinSite rightPeak = CarrierPinSite.FromPointPinning(
+            rightStem,
+            host.PinAt(new Axis(-3, 1, -3, -1), top),
+            new CarrierSideAttachment(PinSideRole.Recessive, rightStem, Proportion.Zero),
+            new CarrierSideAttachment(PinSideRole.Dominant, middle, Proportion.One),
+            name: "Right Peak");
+
+        CarrierPinGraph graph = new([leftStem, rightStem, middle], [leftPeak, rightPeak]);
+        return new ShapePreset(
+            "Capital M",
+            "Two outer stems host one shared middle carrier whose planar fold becomes the inner valley of the M.",
+            graph,
+            graph.Analyze(),
+            new Dictionary<CarrierId, SKColor>
+            {
+                [leftStem.Id] = SegmentColors.Blue.Solid,
+                [rightStem.Id] = SegmentColors.Purple.Solid,
+                [middle.Id] = SegmentColors.Orange.Solid,
+            });
+    }
+
     private sealed record ShapePreset(
         string Name,
         string Description,
@@ -1308,13 +2316,20 @@ public sealed class SharedCarrierShapesPage : IVisualizerPage
         IReadOnlyDictionary<CarrierId, SKColor> CarrierColors);
 
     private sealed record ButtonLayout(SKRect Rect, PresetKind Preset);
-    private sealed record HandleLayout(DragHandleKind Target, SKPoint Center, SKPoint AxisStart, SKPoint AxisEnd);
+    private sealed record HandleLayout(DragHandleKind Target, SKPoint Center, SKPoint AxisStart, SKPoint AxisEnd, SKRect? BoundsRect = null, bool FreeMove = false, HandleKind Kind = HandleKind.Site);
     private sealed record ToggleLayout(SKRect Rect, SignToggleComponent Component);
+    private sealed record CopyLayout(SKRect Rect, string Text);
+    private sealed record ValueLayout(SKRect Rect, PresetKind Preset, string SiteName, string Text);
 
     private enum PresetKind
     {
         CapitalD,
         BridgeH,
+        LetterT,
+        LetterA,
+        LetterY,
+        LetterL,
+        LetterM,
     }
 
     private enum DragHandleKind
@@ -1338,6 +2353,29 @@ public sealed class SharedCarrierShapesPage : IVisualizerPage
         HRightStemBottom,
         HRightRecessive,
         HRightDominant,
+        TBase,
+        TBaseDominant,
+        TCrossbar,
+        TCrossbarRecessive,
+        TCrossbarDominant,
+        YJunction,
+        YJunctionRecessive,
+        YJunctionDominant,
+        LCorner,
+        LCornerRecessive,
+        LCornerDominant,
+        ALeft,
+        ALeftRecessive,
+        ALeftDominant,
+        ARight,
+        ARightRecessive,
+        ARightDominant,
+        MLeft,
+        MLeftRecessive,
+        MLeftDominant,
+        MRight,
+        MRightRecessive,
+        MRightDominant,
     }
 
     private enum SignToggleComponent
@@ -1346,5 +2384,20 @@ public sealed class SharedCarrierShapesPage : IVisualizerPage
         DominantValue,
         RecessiveValue,
         DominantUnit,
+    }
+
+    private enum LetterboxEdge
+    {
+        Left,
+        Right,
+        Top,
+        Bottom,
+    }
+
+    private enum HandleKind
+    {
+        Site,
+        Ray,
+        Endpoint,
     }
 }
