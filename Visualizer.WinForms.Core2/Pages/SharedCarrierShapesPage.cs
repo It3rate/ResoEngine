@@ -249,6 +249,7 @@ public sealed class SharedCarrierShapesPage : IVisualizerPage
     private const byte CarrierPreviewAlpha = 128;
     private const float EndpointHandleOffset = 18f;
     private const float MaxPreviewRayLength = 4000f;
+    private const float ZeroRayHandleOffset = 18f;
 
     public string Title => "Shared Carrier Shapes";
 
@@ -1042,20 +1043,26 @@ public sealed class SharedCarrierShapesPage : IVisualizerPage
 
     private void DrawSiteRay(SKCanvas canvas, SKPoint origin, SKPoint hostTangent, CarrierPinSite site, PinSideRole role, SKColor color)
     {
-        if (!TryResolveSideDirection(site, role, hostTangent, out SKPoint direction, out float magnitude))
+        bool resolved = TryResolveSideDirection(site, role, hostTangent, out SKPoint direction, out float magnitude);
+        if (!resolved && !TryResolveCollapsedSideDirection(site, role, hostTangent, out direction))
         {
             return;
         }
-        float length = GetPreviewRayLength(ResolveRayHandle(site.Name, role), Math.Clamp(20f + magnitude * 16f, 24f, 104f));
-        SKPoint end = new(origin.X + direction.X * length, origin.Y + direction.Y * length);
 
-        if (role == PinSideRole.Recessive)
+        float length = resolved
+            ? GetPreviewRayLength(ResolveRayHandle(site.Name, role), Math.Clamp(20f + magnitude * 16f, 24f, 104f))
+            : 0f;
+        SKPoint handlePoint = resolved
+            ? new(origin.X + direction.X * length, origin.Y + direction.Y * length)
+            : new(origin.X + direction.X * ZeroRayHandleOffset, origin.Y + direction.Y * ZeroRayHandleOffset);
+
+        if (resolved && role == PinSideRole.Recessive)
         {
-            DrawDotSegment(canvas, origin, end, color, 4.4f);
+            DrawDotSegment(canvas, origin, handlePoint, color, 4.4f);
         }
-        else
+        else if (resolved)
         {
-            DrawArrowSegment(canvas, origin, end, color, 4.4f);
+            DrawArrowSegment(canvas, origin, handlePoint, color, 4.4f);
         }
 
         DragHandleKind handle = ResolveRayHandle(site.Name, role);
@@ -1063,15 +1070,15 @@ public sealed class SharedCarrierShapesPage : IVisualizerPage
         {
             if (_dragHandle == handle)
             {
-                canvas.DrawCircle(end, 16f, _handleHaloFillPaint);
-                canvas.DrawCircle(end, 16f, _handleHaloStrokePaint);
+                canvas.DrawCircle(handlePoint, 16f, _handleHaloFillPaint);
+                canvas.DrawCircle(handlePoint, 16f, _handleHaloStrokePaint);
             }
             else
             {
-                canvas.DrawCircle(end, 14f, _handleHaloFillPaint);
+                canvas.DrawCircle(handlePoint, 14f, _handleHaloFillPaint);
             }
 
-            RegisterRayHandle(handle, end, origin, new SKPoint(origin.X + direction.X * MaxPreviewRayLength, origin.Y + direction.Y * MaxPreviewRayLength));
+            RegisterRayHandle(handle, handlePoint, origin, new SKPoint(origin.X + direction.X * MaxPreviewRayLength, origin.Y + direction.Y * MaxPreviewRayLength));
         }
     }
 
@@ -1088,8 +1095,8 @@ public sealed class SharedCarrierShapesPage : IVisualizerPage
         SKColor color,
         float strokeWidth)
     {
-        if (!TryResolveAttachmentDirection(startSite, carrierId, startHostTangent, out SKPoint startDirection, out float startMagnitude, out PinSideRole startRole) ||
-            !TryResolveAttachmentDirection(endSite, endCarrierId, endHostTangent, out SKPoint endDirection, out float endMagnitude, out PinSideRole endRole))
+        if (!TryResolveAttachmentBehavior(startSite, carrierId, startHostTangent, out SKPoint startDirection, out float startMagnitude, out PinSideRole startRole, out bool startHasInfluence) ||
+            !TryResolveAttachmentBehavior(endSite, endCarrierId, endHostTangent, out SKPoint endDirection, out float endMagnitude, out PinSideRole endRole, out bool endHasInfluence))
         {
             DrawCarrierLine(canvas, startPoint, endPoint, color, strokeWidth);
             return;
@@ -1097,15 +1104,32 @@ public sealed class SharedCarrierShapesPage : IVisualizerPage
 
         float startHandle = GetPreviewRayLength(ResolveRayHandle(startSite.Name, startRole), Math.Clamp(20f + startMagnitude * 16f, 24f, 104f));
         float endHandle = GetPreviewRayLength(ResolveRayHandle(endSite.Name, endRole), Math.Clamp(20f + endMagnitude * 16f, 24f, 104f));
-        // The preview treats both local rays as outward construction directions,
-        // so the shared carrier should sit on the same side of each endpoint
-        // rather than using a single start->end path orientation.
-        SKPoint control1 = new(startPoint.X + startDirection.X * startHandle, startPoint.Y + startDirection.Y * startHandle);
-        SKPoint control2 = new(endPoint.X + endDirection.X * endHandle, endPoint.Y + endDirection.Y * endHandle);
 
         using var path = new SKPath();
         path.MoveTo(startPoint);
-        path.CubicTo(control1, control2, endPoint);
+        if (startHasInfluence && endHasInfluence)
+        {
+            // The preview treats both local rays as outward construction directions,
+            // so the shared carrier should sit on the same side of each endpoint
+            // rather than using a single start->end path orientation.
+            SKPoint control1 = new(startPoint.X + startDirection.X * startHandle, startPoint.Y + startDirection.Y * startHandle);
+            SKPoint control2 = new(endPoint.X + endDirection.X * endHandle, endPoint.Y + endDirection.Y * endHandle);
+            path.CubicTo(control1, control2, endPoint);
+        }
+        else if (startHasInfluence)
+        {
+            SKPoint control = new(startPoint.X + startDirection.X * startHandle, startPoint.Y + startDirection.Y * startHandle);
+            path.QuadTo(control, endPoint);
+        }
+        else if (endHasInfluence)
+        {
+            SKPoint control = new(endPoint.X + endDirection.X * endHandle, endPoint.Y + endDirection.Y * endHandle);
+            path.QuadTo(control, endPoint);
+        }
+        else
+        {
+            path.LineTo(endPoint);
+        }
         using var paint = CreateStrokePaint(WithAlpha(color, CarrierPreviewAlpha), strokeWidth);
         canvas.DrawPath(path, paint);
     }
@@ -1147,13 +1171,48 @@ public sealed class SharedCarrierShapesPage : IVisualizerPage
         return true;
     }
 
-    private static bool TryResolveAttachmentDirection(
+    private static bool TryResolveCollapsedSideDirection(
+        CarrierPinSite site,
+        PinSideRole role,
+        SKPoint hostTangent,
+        out SKPoint direction)
+    {
+        PositionedAxisSide side = role == PinSideRole.Recessive
+            ? site.PlaceApplied().RecessiveSide
+            : site.PlaceApplied().DominantSide;
+        if (!side.HasCarrier)
+        {
+            direction = SKPoint.Empty;
+            return false;
+        }
+
+        SKPoint tangent = Normalize(hostTangent);
+        SKPoint orthogonal = new(tangent.Y, -tangent.X);
+        SKPoint basis = side.CarrierRank switch
+        {
+            0 => tangent,
+            1 => orthogonal,
+            _ => SKPoint.Empty,
+        };
+        if (basis == SKPoint.Empty)
+        {
+            direction = SKPoint.Empty;
+            return false;
+        }
+
+        int nativePositiveDirection = role == PinSideRole.Recessive ? -1 : 1;
+        direction = new(basis.X * nativePositiveDirection, basis.Y * nativePositiveDirection);
+        return true;
+    }
+
+    private static bool TryResolveAttachmentBehavior(
         CarrierPinSite site,
         CarrierId carrierId,
         SKPoint hostTangent,
         out SKPoint direction,
         out float magnitude,
-        out PinSideRole role)
+        out PinSideRole role,
+        out bool hasInfluence)
     {
         var attachment = site.SideAttachments.FirstOrDefault(candidate => candidate.CarrierId == carrierId);
         if (attachment is null)
@@ -1161,11 +1220,20 @@ public sealed class SharedCarrierShapesPage : IVisualizerPage
             direction = SKPoint.Empty;
             magnitude = 0f;
             role = PinSideRole.Dominant;
+            hasInfluence = false;
             return false;
         }
 
         role = attachment.Role;
-        return TryResolveSideDirection(site, role, hostTangent, out direction, out magnitude);
+        if (TryResolveSideDirection(site, role, hostTangent, out direction, out magnitude))
+        {
+            hasInfluence = true;
+            return true;
+        }
+
+        hasInfluence = false;
+        magnitude = 0f;
+        return TryResolveCollapsedSideDirection(site, role, hostTangent, out direction);
     }
 
     private void DrawCarrierLine(SKCanvas canvas, SKPoint start, SKPoint end, SKColor color, float strokeWidth)
@@ -1876,9 +1944,18 @@ public sealed class SharedCarrierShapesPage : IVisualizerPage
         CarrierPinSite site = ResolveSite(preset.Graph.Sites.First(candidate => candidate.Name == siteName));
         Axis current = site.Applied;
         long magnitude = Math.Max(0L, (long)Math.Round((length - 20f) / 16f));
-        long signedMagnitude = role == PinSideRole.Recessive
-            ? magnitude * Math.Sign(current.Recessive.Dominant)
-            : magnitude * Math.Sign(current.Dominant.Dominant);
+        long currentSignedValue = role == PinSideRole.Recessive
+            ? current.Recessive.Dominant
+            : current.Dominant.Dominant;
+        int sign = Math.Sign(currentSignedValue);
+        if (sign == 0 && magnitude > 0)
+        {
+            // When a side is exactly zero, dragging its handle outward should be able to
+            // re-establish a positive local value instead of getting trapped at zero.
+            sign = 1;
+        }
+
+        long signedMagnitude = magnitude * sign;
 
         Axis updated = role == PinSideRole.Recessive
             ? new Axis(signedMagnitude, current.Recessive.Recessive, current.Dominant.Dominant, current.Dominant.Recessive)
