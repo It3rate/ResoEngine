@@ -861,7 +861,7 @@ public sealed class SharedCarrierShapesPage : IVisualizerPage
     {
         foreach (var customPin in GetCustomPins(_selectedPreset))
         {
-            if (!TryResolvePreviewCarrierPoint(customPin.CarrierKey, customPin.T, out SKPoint point, out SKPoint tangent))
+            if (!TryResolvePreviewCarrierPoint(customPin.CarrierKey, customPin.T, out SKPoint point, out SKPoint tangent, useHostSamples: true))
             {
                 continue;
             }
@@ -916,6 +916,27 @@ public sealed class SharedCarrierShapesPage : IVisualizerPage
             bottom,
             stem.Id,
             hostTangent);
+        IReadOnlyList<SKPoint> stemBaseSamples = CombineSamples(
+            [topEndpoint, topPoint],
+            BuildSharedCarrierSamples(
+                topPoint,
+                top,
+                stem.Id,
+                hostTangent,
+                bottomPoint,
+                bottom,
+                stem.Id,
+                hostTangent),
+            [bottomPoint, bottomEndpoint]);
+        IReadOnlyList<SKPoint> bowlBaseSamples = BuildSharedCarrierSamples(
+            topPoint,
+            top,
+            bowl.Id,
+            hostTangent,
+            bottomPoint,
+            bottom,
+            bowl.Id,
+            hostTangent);
         IReadOnlyList<SKPoint> bowlSamples = BuildCompositeCarrierSamples(
             $"{_selectedPreset}.Bowl",
             topPoint,
@@ -941,12 +962,14 @@ public sealed class SharedCarrierShapesPage : IVisualizerPage
             CombineSamples(
                 [topEndpoint, topPoint],
                 stemSamples,
-                [bottomPoint, bottomEndpoint]));
+                [bottomPoint, bottomEndpoint]),
+            stemBaseSamples);
         RegisterPreviewCarrier(
             $"{_selectedPreset}.Bowl",
             bowl,
             bowl.Name ?? "Bowl",
-            bowlSamples);
+            bowlSamples,
+            bowlBaseSamples);
 
         DrawStemEndpointHandle(canvas, topEndpoint, _dragHandle == DragHandleKind.DStemTop);
         DrawStemEndpointHandle(canvas, bottomEndpoint, _dragHandle == DragHandleKind.DStemBottom);
@@ -1000,6 +1023,15 @@ public sealed class SharedCarrierShapesPage : IVisualizerPage
             rightJoin,
             bridge.Id,
             rightTangent);
+        IReadOnlyList<SKPoint> bridgeBaseSamples = BuildSharedCarrierSamples(
+            leftPoint,
+            leftJoin,
+            bridge.Id,
+            leftTangent,
+            rightPoint,
+            rightJoin,
+            bridge.Id,
+            rightTangent);
 
         DrawCarrierLine(canvas, leftTopEndpoint, leftPoint, preset.CarrierColors[left.Id], 5.2f);
         DrawCarrierLine(canvas, leftPoint, leftBottomEndpoint, preset.CarrierColors[left.Id], 5.2f);
@@ -1018,7 +1050,8 @@ public sealed class SharedCarrierShapesPage : IVisualizerPage
             $"{_selectedPreset}.Bridge",
             bridge,
             bridge.Name ?? "Bridge",
-            bridgeSamples);
+            bridgeSamples,
+            bridgeBaseSamples);
 
         DrawStemEndpointHandle(canvas, leftTopEndpoint, _dragHandle == DragHandleKind.HLeftStemTop);
         DrawStemEndpointHandle(canvas, leftBottomEndpoint, _dragHandle == DragHandleKind.HLeftStemBottom);
@@ -1083,12 +1116,21 @@ public sealed class SharedCarrierShapesPage : IVisualizerPage
             topPin,
             stem.Id,
             stemTangent);
+        IReadOnlyList<SKPoint> stemBaseSamples = BuildSharedCarrierSamples(
+            bottomPoint,
+            basePin,
+            stem.Id,
+            guideTangent,
+            topPoint,
+            topPin,
+            stem.Id,
+            stemTangent);
 
         DrawCarrierPath(canvas, stemSamples, preset.CarrierColors[stem.Id], 5.2f);
         DrawCarrierLine(canvas, leftPoint, rightPoint, preset.CarrierColors[bar.Id], 5.2f);
         DrawCarrierLabel(canvas, stem.Name ?? "Stem", new SKPoint(bottomPoint.X + 14f, (bottomPoint.Y + topPoint.Y) * 0.5f), preset.CarrierColors[stem.Id]);
         DrawCarrierLabel(canvas, bar.Name ?? "Bar", new SKPoint(guide.MidX - 10f, topPoint.Y - 12f), preset.CarrierColors[bar.Id]);
-        RegisterPreviewCarrier($"{_selectedPreset}.Stem", stem, stem.Name ?? "Stem", stemSamples);
+        RegisterPreviewCarrier($"{_selectedPreset}.Stem", stem, stem.Name ?? "Stem", stemSamples, stemBaseSamples);
         RegisterPreviewCarrier($"{_selectedPreset}.Bar", bar, bar.Name ?? "Bar", [leftPoint, topPoint, rightPoint]);
         DrawSite(canvas, basePin, "P1", bottomPoint, guideTangent, DragHandleKind.TBase);
         DrawSite(canvas, topPin, "P2", topPoint, stemTangent, DragHandleKind.TCrossbar);
@@ -1171,6 +1213,15 @@ public sealed class SharedCarrierShapesPage : IVisualizerPage
             rightBar,
             crossbar.Id,
             rightTangent);
+        IReadOnlyList<SKPoint> crossbarBaseSamples = BuildSharedCarrierSamples(
+            leftBarPoint,
+            leftBar,
+            crossbar.Id,
+            leftTangent,
+            rightBarPoint,
+            rightBar,
+            crossbar.Id,
+            rightTangent);
 
         DrawCarrierLine(canvas, leftBase, apex, preset.CarrierColors[leftLeg.Id], 5.2f);
         DrawCarrierLine(canvas, rightBase, apex, preset.CarrierColors[rightLeg.Id], 5.2f);
@@ -1184,7 +1235,8 @@ public sealed class SharedCarrierShapesPage : IVisualizerPage
             $"{_selectedPreset}.Crossbar",
             crossbar,
             crossbar.Name ?? "Crossbar",
-            crossbarSamples);
+            crossbarSamples,
+            crossbarBaseSamples);
         DrawSite(canvas, leftBar, "P1", leftBarPoint, leftTangent, DragHandleKind.ALeft);
         DrawSite(canvas, rightBar, "P2", rightBarPoint, rightTangent, DragHandleKind.ARight);
         RegisterHandle(DragHandleKind.ALeft, leftBarPoint, leftBase, apex);
@@ -1217,6 +1269,15 @@ public sealed class SharedCarrierShapesPage : IVisualizerPage
             rightPeak,
             middle.Id,
             hostTangent);
+        IReadOnlyList<SKPoint> middleBaseSamples = BuildSharedCarrierSamples(
+            leftPeakPoint,
+            leftPeak,
+            middle.Id,
+            hostTangent,
+            rightPeakPoint,
+            rightPeak,
+            middle.Id,
+            hostTangent);
 
         DrawCarrierLine(canvas, leftTop, leftBottom, preset.CarrierColors[leftStem.Id], 5.2f);
         DrawCarrierLine(canvas, rightTop, rightBottom, preset.CarrierColors[rightStem.Id], 5.2f);
@@ -1230,7 +1291,8 @@ public sealed class SharedCarrierShapesPage : IVisualizerPage
             $"{_selectedPreset}.Middle",
             middle,
             middle.Name ?? "Middle",
-            middleSamples);
+            middleSamples,
+            middleBaseSamples);
         DrawSite(canvas, leftPeak, "P1", leftPeakPoint, hostTangent, DragHandleKind.MLeft);
         DrawSite(canvas, rightPeak, "P2", rightPeakPoint, hostTangent, DragHandleKind.MRight);
         RegisterHandle(DragHandleKind.MLeft, leftPeakPoint, leftPeakPoint, leftPeakPoint);
@@ -1804,24 +1866,23 @@ public sealed class SharedCarrierShapesPage : IVisualizerPage
         }
     }
 
-    private void RegisterPreviewCarrier(string key, CarrierIdentity carrier, string label, IReadOnlyList<SKPoint> samples)
+    private void RegisterPreviewCarrier(
+        string key,
+        CarrierIdentity carrier,
+        string label,
+        IReadOnlyList<SKPoint> samples,
+        IReadOnlyList<SKPoint>? hostSamples = null)
     {
-        List<SKPoint> filtered = [];
-        foreach (SKPoint sample in samples)
-        {
-            if (filtered.Count == 0 || Distance(filtered[^1], sample) > 0.5f)
-            {
-                filtered.Add(sample);
-            }
-        }
+        List<SKPoint> filtered = FilterSamples(samples);
+        List<SKPoint> filteredHost = hostSamples is null ? filtered : FilterSamples(hostSamples);
 
         if (filtered.Count >= 2)
         {
-            _previewCarriers.Add(new PreviewCarrierLayout(key, carrier, label, filtered));
+            _previewCarriers.Add(new PreviewCarrierLayout(key, carrier, label, filtered, filteredHost));
         }
     }
 
-    private bool TryResolvePreviewCarrierPoint(string carrierKey, float t, out SKPoint point, out SKPoint tangent)
+    private bool TryResolvePreviewCarrierPoint(string carrierKey, float t, out SKPoint point, out SKPoint tangent, bool useHostSamples = false)
     {
         PreviewCarrierLayout? carrier = _previewCarriers.FirstOrDefault(candidate => candidate.Key == carrierKey);
         if (carrier is null)
@@ -1831,7 +1892,7 @@ public sealed class SharedCarrierShapesPage : IVisualizerPage
             return false;
         }
 
-        return TryEvaluateCarrierAt(carrier, t, out point, out tangent);
+        return TryEvaluateCarrierAt(useHostSamples ? carrier.HostSamples : carrier.Samples, t, out point, out tangent);
     }
 
     private bool TryFindNearestPreviewCarrier(
@@ -1878,6 +1939,18 @@ public sealed class SharedCarrierShapesPage : IVisualizerPage
         out float t,
         out SKPoint projectedPoint,
         out SKPoint tangent,
+        out float distance,
+        bool useHostSamples = false)
+    {
+        return TryProjectToCarrierSamples(useHostSamples ? carrier.HostSamples : carrier.Samples, point, out t, out projectedPoint, out tangent, out distance);
+    }
+
+    private static bool TryProjectToCarrierSamples(
+        IReadOnlyList<SKPoint> samples,
+        SKPoint point,
+        out float t,
+        out SKPoint projectedPoint,
+        out SKPoint tangent,
         out float distance)
     {
         t = 0f;
@@ -1885,7 +1958,7 @@ public sealed class SharedCarrierShapesPage : IVisualizerPage
         tangent = SKPoint.Empty;
         distance = float.MaxValue;
 
-        if (carrier.Samples.Count < 2)
+        if (samples.Count < 2)
         {
             return false;
         }
@@ -1896,10 +1969,10 @@ public sealed class SharedCarrierShapesPage : IVisualizerPage
         SKPoint bestPoint = SKPoint.Empty;
         SKPoint bestTangent = SKPoint.Empty;
 
-        for (int index = 0; index < carrier.Samples.Count - 1; index++)
+        for (int index = 0; index < samples.Count - 1; index++)
         {
-            SKPoint start = carrier.Samples[index];
-            SKPoint end = carrier.Samples[index + 1];
+            SKPoint start = samples[index];
+            SKPoint end = samples[index + 1];
             float segmentLength = Distance(start, end);
             if (segmentLength < 0.001f)
             {
@@ -1988,34 +2061,34 @@ public sealed class SharedCarrierShapesPage : IVisualizerPage
         return true;
     }
 
-    private static bool TryEvaluateCarrierAt(PreviewCarrierLayout carrier, float t, out SKPoint point, out SKPoint tangent)
+    private static bool TryEvaluateCarrierAt(IReadOnlyList<SKPoint> samples, float t, out SKPoint point, out SKPoint tangent)
     {
         point = SKPoint.Empty;
         tangent = SKPoint.Empty;
-        if (carrier.Samples.Count < 2)
+        if (samples.Count < 2)
         {
             return false;
         }
 
         float clampedT = Math.Clamp(t, 0f, 1f);
         float totalLength = 0f;
-        for (int index = 0; index < carrier.Samples.Count - 1; index++)
+        for (int index = 0; index < samples.Count - 1; index++)
         {
-            totalLength += Distance(carrier.Samples[index], carrier.Samples[index + 1]);
+            totalLength += Distance(samples[index], samples[index + 1]);
         }
 
         if (totalLength < 0.001f)
         {
-            point = carrier.Samples[0];
+            point = samples[0];
             return false;
         }
 
         float target = totalLength * clampedT;
         float travelled = 0f;
-        for (int index = 0; index < carrier.Samples.Count - 1; index++)
+        for (int index = 0; index < samples.Count - 1; index++)
         {
-            SKPoint start = carrier.Samples[index];
-            SKPoint end = carrier.Samples[index + 1];
+            SKPoint start = samples[index];
+            SKPoint end = samples[index + 1];
             float segmentLength = Distance(start, end);
             if (segmentLength < 0.001f)
             {
@@ -2035,11 +2108,25 @@ public sealed class SharedCarrierShapesPage : IVisualizerPage
             travelled += segmentLength;
         }
 
-        point = carrier.Samples[^1];
+        point = samples[^1];
         tangent = Normalize(new SKPoint(
-            carrier.Samples[^1].X - carrier.Samples[^2].X,
-            carrier.Samples[^1].Y - carrier.Samples[^2].Y));
+            samples[^1].X - samples[^2].X,
+            samples[^1].Y - samples[^2].Y));
         return true;
+    }
+
+    private static List<SKPoint> FilterSamples(IReadOnlyList<SKPoint> samples)
+    {
+        List<SKPoint> filtered = [];
+        foreach (SKPoint sample in samples)
+        {
+            if (filtered.Count == 0 || Distance(filtered[^1], sample) > 0.5f)
+            {
+                filtered.Add(sample);
+            }
+        }
+
+        return filtered;
     }
 
     private static IReadOnlyList<SKPoint> CombineSamples(params IReadOnlyList<SKPoint>[] parts)
@@ -3081,7 +3168,7 @@ public sealed class SharedCarrierShapesPage : IVisualizerPage
 
         PreviewCarrierLayout? carrier = _previewCarriers.FirstOrDefault(candidate => candidate.Key == handle.CarrierKey);
         if (carrier is null ||
-            !TryProjectToCarrier(carrier, pixelPoint, out float t, out _, out _, out _))
+            !TryProjectToCarrier(carrier, pixelPoint, out float t, out _, out _, out _, useHostSamples: true))
         {
             return;
         }
@@ -3637,7 +3724,12 @@ public sealed class SharedCarrierShapesPage : IVisualizerPage
     private sealed record CopyLayout(SKRect Rect, string Text);
     private sealed record ValueLayout(SKRect Rect, PresetKind Preset, string SiteName, string Text);
     private sealed record ActionLayout(SKRect Rect, SceneAction Action);
-    private sealed record PreviewCarrierLayout(string Key, CarrierIdentity Carrier, string Label, IReadOnlyList<SKPoint> Samples);
+    private sealed record PreviewCarrierLayout(
+        string Key,
+        CarrierIdentity Carrier,
+        string Label,
+        IReadOnlyList<SKPoint> Samples,
+        IReadOnlyList<SKPoint> HostSamples);
 
     private sealed class CustomPreviewPin
     {
