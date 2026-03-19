@@ -293,4 +293,62 @@ public class RecursivePinningTests
         Assert.False(routing.HasNonHostThroughCarrier);
         Assert.True(routing.HasCrossShapedProposal);
     }
+
+    [Fact]
+    public void CarrierPinGraphAnalysis_CanExposeSiteRoutingSummaries()
+    {
+        var stem = CarrierIdentity.Create("Stem");
+        var bar = CarrierIdentity.Create("Bar");
+        var host = Axis.FromCoordinates(Proportion.Zero, new Proportion(10));
+
+        var site = CarrierPinSite.FromPointPinning(
+            stem,
+            host.PinAt(new Axis(3, -1, 3, -1), new Proportion(5)),
+            new CarrierSideAttachment(PinSideRole.Recessive, bar, Proportion.Zero),
+            new CarrierSideAttachment(PinSideRole.Dominant, bar, Proportion.One),
+            name: "Cross");
+
+        var analysis = new CarrierPinGraph([stem, bar], [site]).Analyze();
+        var siteProfile = analysis.GetSiteProfile(site.Id);
+
+        Assert.Equal(CarrierJunctionSummary.Cross, siteProfile.Summary);
+        Assert.True(siteProfile.HostContinues);
+        Assert.True(siteProfile.HasTrueCross);
+        Assert.Equal(2, siteProfile.ParticipatingCarriers.Count);
+        Assert.Equal(2, siteProfile.ThroughCarriers.Count);
+    }
+
+    [Fact]
+    public void CarrierPinGraphAnalysis_CanCountCarrierThroughAndCrossSites()
+    {
+        var stem = CarrierIdentity.Create("Stem");
+        var bar = CarrierIdentity.Create("Bar");
+        var host = Axis.FromCoordinates(Proportion.Zero, new Proportion(10));
+
+        var cross = CarrierPinSite.FromPointPinning(
+            stem,
+            host.PinAt(new Axis(3, -1, 3, -1), new Proportion(5)),
+            new CarrierSideAttachment(PinSideRole.Recessive, bar, Proportion.Zero),
+            new CarrierSideAttachment(PinSideRole.Dominant, bar, Proportion.One),
+            name: "Cross");
+        var branch = CarrierPinSite.FromPointPinning(
+            stem,
+            host.PinAt(new Axis(0, 0, 3, -1), new Proportion(8)),
+            dominantAttachment: new CarrierSideAttachment(PinSideRole.Dominant, bar, new Proportion(2)),
+            name: "Branch");
+
+        var analysis = new CarrierPinGraph([stem, bar], [cross, branch]).Analyze();
+        var stemProfile = analysis.GetProfile(stem.Id);
+        var barProfile = analysis.GetProfile(bar.Id);
+
+        Assert.Equal(2, stemProfile.ParticipatingSiteCount);
+        Assert.Equal(2, stemProfile.ThroughSiteCount);
+        Assert.Equal(1, stemProfile.CrossSiteCount);
+        Assert.Equal(1, stemProfile.BranchSiteCount);
+
+        Assert.Equal(2, barProfile.ParticipatingSiteCount);
+        Assert.Equal(1, barProfile.ThroughSiteCount);
+        Assert.Equal(1, barProfile.CrossSiteCount);
+        Assert.Equal(1, barProfile.BranchSiteCount);
+    }
 }

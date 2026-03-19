@@ -121,6 +121,10 @@ public sealed class CarrierPinGraph
 
     public CarrierPinGraphAnalysis Analyze()
     {
+        CarrierSiteStructuralProfile[] siteProfiles = Sites
+            .Select(site => new CarrierSiteStructuralProfile(site, site.ResolveRouting()))
+            .ToArray();
+
         CarrierStructuralProfile[] profiles = Carriers
             .Select(
                 carrier => new CarrierStructuralProfile(
@@ -132,10 +136,16 @@ public sealed class CarrierPinGraph
                         .Select(site => site.HostCarrier)
                         .DistinctBy(host => host.Id)
                         .ToArray(),
+                    siteProfiles
+                        .Where(profile => profile.Participates(carrier.Id))
+                        .ToArray(),
+                    siteProfiles
+                        .Where(profile => profile.CarriesThrough(carrier.Id))
+                        .ToArray(),
                     ParticipatesInRecursiveCycle(carrier.Id)))
             .ToArray();
 
-        return new CarrierPinGraphAnalysis(profiles);
+        return new CarrierPinGraphAnalysis(profiles, siteProfiles);
     }
 
     private bool HasCycleFrom(
