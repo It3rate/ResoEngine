@@ -4,6 +4,8 @@ using ResoEngine.Visualizer.Core;
 using ResoEngine.Visualizer.Input;
 using SkiaSharp;
 using System.Drawing;
+using System.Globalization;
+using System.Text;
 using System.Windows.Forms;
 
 namespace ResoEngine.Visualizer.Pages;
@@ -16,7 +18,10 @@ public sealed class SharedCarrierShapesPage : IVisualizerPage
     private readonly List<ToggleLayout> _toggleLayouts = [];
     private readonly List<CopyLayout> _copyLayouts = [];
     private readonly List<ValueLayout> _valueLayouts = [];
+    private readonly List<ActionLayout> _actionLayouts = [];
+    private readonly List<PreviewCarrierLayout> _previewCarriers = [];
     private readonly Dictionary<(PresetKind Preset, string SiteName), Axis> _siteAxisOverrides = [];
+    private readonly Dictionary<PresetKind, List<CustomPreviewPin>> _customPins = [];
     private readonly Dictionary<PresetKind, string> _selectedSiteByPreset = new()
     {
         [PresetKind.CapitalD] = "Top",
@@ -33,10 +38,12 @@ public sealed class SharedCarrierShapesPage : IVisualizerPage
     private TextBox? _inlineValueEditor;
     private (PresetKind Preset, string SiteName)? _inlineValueTarget;
     private bool _inlineValueSyncing;
+    private HandleLayout? _activeHandleLayout;
     private SKRect _letterboxToggleRect;
     private PresetKind _selectedPreset = PresetKind.CapitalD;
     private DragHandleKind _dragHandle;
     private bool _showLetterbox = true;
+    private bool _addPinArmed;
     private SKPoint _dStemStart = new(0.22f, 0.12f);
     private SKPoint _dStemEnd = new(0.22f, 0.88f);
     private float _dTopT;
@@ -250,6 +257,8 @@ public sealed class SharedCarrierShapesPage : IVisualizerPage
     private const float EndpointHandleOffset = 18f;
     private const float MaxPreviewRayLength = 4000f;
     private const float ZeroRayHandleOffset = 18f;
+    private const float CarrierHitThreshold = 18f;
+    private static readonly Axis PreviewHostAxis = Axis.FromCoordinates(Proportion.Zero, new Proportion(100));
 
     public string Title => "Shared Carrier Shapes";
 
@@ -267,6 +276,8 @@ public sealed class SharedCarrierShapesPage : IVisualizerPage
         _toggleLayouts.Clear();
         _copyLayouts.Clear();
         _valueLayouts.Clear();
+        _actionLayouts.Clear();
+        _previewCarriers.Clear();
 
         float width = _coords?.Width ?? 1220f;
         float height = _coords?.Height ?? 920f;
@@ -295,6 +306,27 @@ public sealed class SharedCarrierShapesPage : IVisualizerPage
         if (button is not null)
         {
             _selectedPreset = button.Preset;
+            _addPinArmed = false;
+            _canvasHost?.InvalidateCanvas();
+            return true;
+        }
+
+        var action = _actionLayouts.FirstOrDefault(layout => layout.Rect.Contains(pixelPoint));
+        if (action is not null)
+        {
+            switch (action.Action)
+            {
+                case SceneAction.AddPin:
+                    _addPinArmed = !_addPinArmed;
+                    break;
+                case SceneAction.Trash:
+                    RemoveSelectedCustomPin();
+                    break;
+                case SceneAction.CopyStructure:
+                    CopyTextToClipboard(SerializeCurrentStructure());
+                    break;
+            }
+
             _canvasHost?.InvalidateCanvas();
             return true;
         }
@@ -309,14 +341,7 @@ public sealed class SharedCarrierShapesPage : IVisualizerPage
         var copy = _copyLayouts.FirstOrDefault(layout => layout.Rect.Contains(pixelPoint));
         if (copy is not null)
         {
-            try
-            {
-                Clipboard.SetText(copy.Text);
-            }
-            catch
-            {
-                // Ignore clipboard failures in the visualizer.
-            }
+            CopyTextToClipboard(copy.Text);
 
             return true;
         }
@@ -329,19 +354,26 @@ public sealed class SharedCarrierShapesPage : IVisualizerPage
             return true;
         }
 
+        if (_addPinArmed && TryAddCustomPin(pixelPoint))
+        {
+            _canvasHost?.InvalidateCanvas();
+            return true;
+        }
+
         var handle = HitHandle(pixelPoint);
         if (handle is null)
         {
             return false;
         }
 
-        string? selectedSite = ResolveSelectedSite(handle.Target);
+        string? selectedSite = handle.SiteName ?? ResolveSelectedSite(handle.Target);
         if (selectedSite is not null)
         {
             _selectedSiteByPreset[_selectedPreset] = selectedSite;
         }
 
         _dragHandle = handle.Target;
+        _activeHandleLayout = handle;
         _canvasHost?.InvalidateCanvas();
         return true;
     }
@@ -363,6 +395,8 @@ public sealed class SharedCarrierShapesPage : IVisualizerPage
 
         _canvasHost.Cursor = _buttonLayouts.Any(layout => layout.Rect.Contains(pixelPoint))
             ? Cursors.Hand
+            : _actionLayouts.Any(layout => layout.Rect.Contains(pixelPoint))
+                ? Cursors.Hand
             : _letterboxToggleRect.Contains(pixelPoint)
                 ? Cursors.Hand
             : _copyLayouts.Any(layout => layout.Rect.Contains(pixelPoint))
@@ -371,6 +405,8 @@ public sealed class SharedCarrierShapesPage : IVisualizerPage
                 ? Cursors.IBeam
             : _toggleLayouts.Any(layout => layout.Rect.Contains(pixelPoint))
                 ? Cursors.Hand
+            : _addPinArmed && TryFindNearestPreviewCarrier(pixelPoint, out _, out _, out _, out _, out float carrierDistance) && carrierDistance <= CarrierHitThreshold
+                ? Cursors.Cross
             : HitHandle(pixelPoint) is not null
                 ? Cursors.SizeAll
                 : Cursors.Default;
@@ -379,6 +415,7 @@ public sealed class SharedCarrierShapesPage : IVisualizerPage
     public void OnPointerUp(SKPoint pixelPoint)
     {
         _dragHandle = DragHandleKind.None;
+        _activeHandleLayout = null;
         SyncInlineValueText();
         if (_canvasHost is not null)
         {
@@ -394,9 +431,12 @@ public sealed class SharedCarrierShapesPage : IVisualizerPage
         _toggleLayouts.Clear();
         _copyLayouts.Clear();
         _valueLayouts.Clear();
+        _actionLayouts.Clear();
+        _previewCarriers.Clear();
         _coords = null;
         _canvasHost = null;
         _dragHandle = DragHandleKind.None;
+        _activeHandleLayout = null;
     }
 
     public void Dispose()
@@ -455,10 +495,12 @@ public sealed class SharedCarrierShapesPage : IVisualizerPage
         canvas.DrawText(line, rect.Left + 20f, y, _monoPaint);
         y += _monoPaint.TextSize + 4f;
 
-        string bindings = string.Join(
-            ", ",
-            selectedSite.SideAttachments.Select(
-                attachment => $"{ShortRole(attachment.Role)}:{attachment.Carrier.Name ?? attachment.Carrier.Id.ToString()}@{FormatProportion(attachment.CarrierPosition)}"));
+        string bindings = selectedSite.SideAttachments.Count == 0
+            ? "unbound side attachments"
+            : string.Join(
+                ", ",
+                selectedSite.SideAttachments.Select(
+                    attachment => $"{ShortRole(attachment.Role)}:{attachment.Carrier.Name ?? attachment.Carrier.Id.ToString()}@{FormatProportion(attachment.CarrierPosition)}"));
         PageChrome.DrawWrappedText(
             canvas,
             bindings,
@@ -607,6 +649,9 @@ public sealed class SharedCarrierShapesPage : IVisualizerPage
                 DrawMPreview(canvas, inner, preset);
                 break;
         }
+
+        DrawCustomPins(canvas, preset);
+        DrawSceneActions(canvas, inner);
     }
 
     private void DrawLetterboxToggle(SKCanvas canvas, SKRect sceneRect)
@@ -626,6 +671,114 @@ public sealed class SharedCarrierShapesPage : IVisualizerPage
         canvas.DrawLine(guide.MidX, guide.Top, guide.MidX, guide.Bottom, _sceneGuidePaint);
         float crossbarY = guide.Top + (guide.Height * 0.42f);
         canvas.DrawLine(guide.Left, crossbarY, guide.Right, crossbarY, _sceneGuidePaint);
+    }
+
+    private void DrawSceneActions(SKCanvas canvas, SKRect sceneRect)
+    {
+        float buttonWidth = 108f;
+        float buttonHeight = 36f;
+        float gap = 10f;
+        float top = sceneRect.Bottom - buttonHeight - 12f;
+        float left = sceneRect.Left + 16f;
+
+        DrawSceneActionButton(canvas, new SKRect(left, top, left + buttonWidth, top + buttonHeight), SceneAction.AddPin, "Pin", _addPinArmed);
+        left += buttonWidth + gap;
+        DrawSceneActionButton(canvas, new SKRect(left, top, left + buttonWidth, top + buttonHeight), SceneAction.Trash, "Trash", false, HasSelectedCustomPin());
+        left += buttonWidth + gap;
+        DrawSceneActionButton(canvas, new SKRect(left, top, left + buttonWidth, top + buttonHeight), SceneAction.CopyStructure, "Copy", false);
+    }
+
+    private void DrawSceneActionButton(SKCanvas canvas, SKRect rect, SceneAction action, string text, bool selected, bool enabled = true)
+    {
+        using var fill = new SKPaint
+        {
+            Style = SKPaintStyle.Fill,
+            Color = enabled
+                ? (selected ? new SKColor(239, 246, 255) : new SKColor(255, 255, 255, 242))
+                : new SKColor(248, 248, 248, 180),
+            IsAntialias = true,
+        };
+        using var stroke = new SKPaint
+        {
+            Style = SKPaintStyle.Stroke,
+            StrokeWidth = selected ? 1.4f : 1.2f,
+            Color = enabled
+                ? (selected ? new SKColor(110, 158, 220) : new SKColor(214, 214, 214))
+                : new SKColor(224, 224, 224, 180),
+            IsAntialias = true,
+        };
+        using var textPaint = new SKPaint
+        {
+            Color = enabled ? new SKColor(68, 68, 68) : new SKColor(156, 156, 156),
+            TextSize = 12f,
+            Typeface = SKTypeface.FromFamilyName(VisualStyle.FontFamily, SKFontStyle.Bold),
+            TextAlign = SKTextAlign.Center,
+            IsAntialias = true,
+        };
+
+        canvas.DrawRoundRect(rect, 16f, 16f, fill);
+        canvas.DrawRoundRect(rect, 16f, 16f, stroke);
+        DrawSceneActionIcon(canvas, action, new SKPoint(rect.Left + 20f, rect.MidY), enabled);
+        canvas.DrawText(text, rect.MidX + 10f, rect.MidY + 4f, textPaint);
+        _actionLayouts.Add(new ActionLayout(rect, action));
+    }
+
+    private void DrawSceneActionIcon(SKCanvas canvas, SceneAction action, SKPoint center, bool enabled)
+    {
+        SKColor color = enabled ? new SKColor(112, 112, 112) : new SKColor(166, 166, 166);
+        using var stroke = new SKPaint
+        {
+            Style = SKPaintStyle.Stroke,
+            StrokeWidth = 1.8f,
+            Color = color,
+            StrokeCap = SKStrokeCap.Round,
+            IsAntialias = true,
+        };
+
+        switch (action)
+        {
+            case SceneAction.AddPin:
+                canvas.DrawCircle(center, 9f, stroke);
+                canvas.DrawLine(center.X - 4f, center.Y, center.X + 4f, center.Y, stroke);
+                canvas.DrawLine(center.X, center.Y - 4f, center.X, center.Y + 4f, stroke);
+                break;
+            case SceneAction.Trash:
+                canvas.DrawRect(new SKRect(center.X - 6f, center.Y - 5f, center.X + 6f, center.Y + 6f), stroke);
+                canvas.DrawLine(center.X - 8f, center.Y - 7f, center.X + 8f, center.Y - 7f, stroke);
+                canvas.DrawLine(center.X - 3f, center.Y - 10f, center.X + 3f, center.Y - 10f, stroke);
+                canvas.DrawLine(center.X - 2f, center.Y - 2f, center.X - 2f, center.Y + 4f, stroke);
+                canvas.DrawLine(center.X + 2f, center.Y - 2f, center.X + 2f, center.Y + 4f, stroke);
+                break;
+            case SceneAction.CopyStructure:
+                canvas.DrawRoundRect(new SKRect(center.X - 5f, center.Y - 4f, center.X + 3f, center.Y + 6f), 2f, 2f, stroke);
+                canvas.DrawRoundRect(new SKRect(center.X - 1f, center.Y - 8f, center.X + 7f, center.Y + 2f), 2f, 2f, stroke);
+                break;
+        }
+    }
+
+    private void DrawCustomPins(SKCanvas canvas, ShapePreset preset)
+    {
+        foreach (var customPin in GetCustomPins(_selectedPreset))
+        {
+            if (!TryResolvePreviewCarrierPoint(customPin.CarrierKey, customPin.T, out SKPoint point, out SKPoint tangent))
+            {
+                continue;
+            }
+
+            CarrierPinSite site = BuildCustomSite(customPin);
+            DrawSite(
+                canvas,
+                site,
+                customPin.Name,
+                point,
+                tangent,
+                DragHandleKind.CustomSite,
+                DragHandleKind.CustomRecessive,
+                DragHandleKind.CustomDominant,
+                customPin.Name,
+                customPin.CarrierKey);
+            RegisterHandle(DragHandleKind.CustomSite, point, point, point, siteName: customPin.Name, carrierKey: customPin.CarrierKey);
+        }
     }
 
     private void DrawCapitalDPreview(SKCanvas canvas, SKRect rect, ShapePreset preset)
@@ -681,6 +834,20 @@ public sealed class SharedCarrierShapesPage : IVisualizerPage
             preset.CarrierColors[bowl.Id],
             5.6f);
         DrawCarrierLabel(canvas, bowl.Name ?? "Bowl", new SKPoint(rect.Right - 176f, midY), preset.CarrierColors[bowl.Id]);
+
+        RegisterPreviewCarrier(
+            $"{_selectedPreset}.Stem",
+            stem,
+            stem.Name ?? "Stem",
+            CombineSamples(
+                [topEndpoint, topPoint],
+                BuildSharedCarrierSamples(topPoint, top, stem.Id, hostTangent, bottomPoint, bottom, stem.Id, hostTangent),
+                [bottomPoint, bottomEndpoint]));
+        RegisterPreviewCarrier(
+            $"{_selectedPreset}.Bowl",
+            bowl,
+            bowl.Name ?? "Bowl",
+            BuildSharedCarrierSamples(topPoint, top, bowl.Id, hostTangent, bottomPoint, bottom, bowl.Id, hostTangent));
 
         DrawStemEndpointHandle(canvas, topEndpoint, _dragHandle == DragHandleKind.DStemTop);
         DrawStemEndpointHandle(canvas, bottomEndpoint, _dragHandle == DragHandleKind.DStemBottom);
@@ -747,6 +914,14 @@ public sealed class SharedCarrierShapesPage : IVisualizerPage
         DrawCarrierLabel(canvas, bridge.Name ?? "Bridge", new SKPoint(rect.MidX - 24f, bridgeMidY - 18f), preset.CarrierColors[bridge.Id]);
         DrawCarrierLabel(canvas, right.Name ?? "Right", new SKPoint(rightPoint.X + 18f, rightPoint.Y - 6f), preset.CarrierColors[right.Id]);
 
+        RegisterPreviewCarrier($"{_selectedPreset}.LeftStem", left, left.Name ?? "Left Stem", [leftTopEndpoint, leftPoint, leftBottomEndpoint]);
+        RegisterPreviewCarrier($"{_selectedPreset}.RightStem", right, right.Name ?? "Right Stem", [rightTopEndpoint, rightPoint, rightBottomEndpoint]);
+        RegisterPreviewCarrier(
+            $"{_selectedPreset}.Bridge",
+            bridge,
+            bridge.Name ?? "Bridge",
+            BuildSharedCarrierSamples(leftPoint, leftJoin, bridge.Id, leftTangent, rightPoint, rightJoin, bridge.Id, rightTangent));
+
         DrawStemEndpointHandle(canvas, leftTopEndpoint, _dragHandle == DragHandleKind.HLeftStemTop);
         DrawStemEndpointHandle(canvas, leftBottomEndpoint, _dragHandle == DragHandleKind.HLeftStemBottom);
         DrawStemEndpointHandle(canvas, rightTopEndpoint, _dragHandle == DragHandleKind.HRightStemTop);
@@ -803,6 +978,8 @@ public sealed class SharedCarrierShapesPage : IVisualizerPage
         DrawCarrierLine(canvas, leftPoint, rightPoint, WithAlpha(preset.CarrierColors[bar.Id], CarrierPreviewAlpha), 5.2f);
         DrawCarrierLabel(canvas, stem.Name ?? "Stem", new SKPoint(bottomPoint.X + 14f, (bottomPoint.Y + topPoint.Y) * 0.5f), preset.CarrierColors[stem.Id]);
         DrawCarrierLabel(canvas, bar.Name ?? "Bar", new SKPoint(guide.MidX - 10f, topPoint.Y - 12f), preset.CarrierColors[bar.Id]);
+        RegisterPreviewCarrier($"{_selectedPreset}.Stem", stem, stem.Name ?? "Stem", [bottomPoint, topPoint]);
+        RegisterPreviewCarrier($"{_selectedPreset}.Bar", bar, bar.Name ?? "Bar", [leftPoint, topPoint, rightPoint]);
         DrawSite(canvas, basePin, "P1", bottomPoint, guideTangent, DragHandleKind.TBase);
         DrawSite(canvas, topPin, "P2", topPoint, stemTangent, DragHandleKind.TCrossbar);
         RegisterHandle(DragHandleKind.TBase, bottomPoint, bottomPoint, bottomPoint);
@@ -824,6 +1001,8 @@ public sealed class SharedCarrierShapesPage : IVisualizerPage
         DrawCarrierLine(canvas, cornerPoint, rightPoint, WithAlpha(preset.CarrierColors[foot.Id], CarrierPreviewAlpha), 5.2f);
         DrawCarrierLabel(canvas, stem.Name ?? "Stem", new SKPoint(topPoint.X - 68f, guide.MidY), preset.CarrierColors[stem.Id]);
         DrawCarrierLabel(canvas, foot.Name ?? "Foot", new SKPoint(guide.MidX - 16f, guide.Bottom - 10f), preset.CarrierColors[foot.Id]);
+        RegisterPreviewCarrier($"{_selectedPreset}.Stem", stem, stem.Name ?? "Stem", [topPoint, cornerPoint]);
+        RegisterPreviewCarrier($"{_selectedPreset}.Foot", foot, foot.Name ?? "Foot", [cornerPoint, rightPoint]);
         DrawSite(canvas, corner, "P1", cornerPoint, hostTangent, DragHandleKind.LCorner);
         RegisterHandle(DragHandleKind.LCorner, cornerPoint, cornerPoint, cornerPoint);
     }
@@ -845,6 +1024,9 @@ public sealed class SharedCarrierShapesPage : IVisualizerPage
         DrawCarrierLine(canvas, junctionPoint, rightArm, WithAlpha(preset.CarrierColors[fork.Id], CarrierPreviewAlpha), 5.2f);
         DrawCarrierLabel(canvas, stem.Name ?? "Stem", new SKPoint(junctionPoint.X + 14f, guide.Bottom - 10f), preset.CarrierColors[stem.Id]);
         DrawCarrierLabel(canvas, fork.Name ?? "Fork", new SKPoint(guide.MidX - 20f, guide.Top + 18f), preset.CarrierColors[fork.Id]);
+        RegisterPreviewCarrier($"{_selectedPreset}.Stem", stem, stem.Name ?? "Stem", [junctionPoint, bottomPoint]);
+        RegisterPreviewCarrier($"{_selectedPreset}.ForkLeft", fork, fork.Name ?? "Fork", [junctionPoint, leftArm]);
+        RegisterPreviewCarrier($"{_selectedPreset}.ForkRight", fork, fork.Name ?? "Fork", [junctionPoint, rightArm]);
         DrawSite(canvas, junction, "P1", junctionPoint, hostTangent, DragHandleKind.YJunction);
         RegisterHandle(DragHandleKind.YJunction, junctionPoint, junctionPoint, junctionPoint);
     }
@@ -887,6 +1069,13 @@ public sealed class SharedCarrierShapesPage : IVisualizerPage
         DrawCarrierLabel(canvas, leftLeg.Name ?? "Left", new SKPoint(leftBase.X - 44f, guide.MidY), preset.CarrierColors[leftLeg.Id]);
         DrawCarrierLabel(canvas, rightLeg.Name ?? "Right", new SKPoint(rightBase.X + 12f, guide.MidY), preset.CarrierColors[rightLeg.Id]);
         DrawCarrierLabel(canvas, crossbar.Name ?? "Crossbar", new SKPoint(guide.MidX - 28f, leftBarPoint.Y - 16f), preset.CarrierColors[crossbar.Id]);
+        RegisterPreviewCarrier($"{_selectedPreset}.LeftLeg", leftLeg, leftLeg.Name ?? "Left Leg", [leftBase, apex]);
+        RegisterPreviewCarrier($"{_selectedPreset}.RightLeg", rightLeg, rightLeg.Name ?? "Right Leg", [rightBase, apex]);
+        RegisterPreviewCarrier(
+            $"{_selectedPreset}.Crossbar",
+            crossbar,
+            crossbar.Name ?? "Crossbar",
+            BuildSharedCarrierSamples(leftBarPoint, leftBar, crossbar.Id, leftTangent, rightBarPoint, rightBar, crossbar.Id, rightTangent));
         DrawSite(canvas, leftBar, "P1", leftBarPoint, leftTangent, DragHandleKind.ALeft);
         DrawSite(canvas, rightBar, "P2", rightBarPoint, rightTangent, DragHandleKind.ARight);
         RegisterHandle(DragHandleKind.ALeft, leftBarPoint, leftBase, apex);
@@ -927,15 +1116,32 @@ public sealed class SharedCarrierShapesPage : IVisualizerPage
         DrawCarrierLabel(canvas, leftStem.Name ?? "Left", new SKPoint(leftTop.X - 44f, guide.MidY), preset.CarrierColors[leftStem.Id]);
         DrawCarrierLabel(canvas, rightStem.Name ?? "Right", new SKPoint(rightTop.X + 12f, guide.MidY), preset.CarrierColors[rightStem.Id]);
         DrawCarrierLabel(canvas, middle.Name ?? "Middle", new SKPoint(guide.MidX - 20f, guide.Top + (guide.Height * 0.35f)), preset.CarrierColors[middle.Id]);
+        RegisterPreviewCarrier($"{_selectedPreset}.LeftStem", leftStem, leftStem.Name ?? "Left Stem", [leftTop, leftBottom]);
+        RegisterPreviewCarrier($"{_selectedPreset}.RightStem", rightStem, rightStem.Name ?? "Right Stem", [rightTop, rightBottom]);
+        RegisterPreviewCarrier(
+            $"{_selectedPreset}.Middle",
+            middle,
+            middle.Name ?? "Middle",
+            BuildSharedCarrierSamples(leftPeakPoint, leftPeak, middle.Id, hostTangent, rightPeakPoint, rightPeak, middle.Id, hostTangent));
         DrawSite(canvas, leftPeak, "P1", leftPeakPoint, hostTangent, DragHandleKind.MLeft);
         DrawSite(canvas, rightPeak, "P2", rightPeakPoint, hostTangent, DragHandleKind.MRight);
         RegisterHandle(DragHandleKind.MLeft, leftPeakPoint, leftPeakPoint, leftPeakPoint);
         RegisterHandle(DragHandleKind.MRight, rightPeakPoint, rightPeakPoint, rightPeakPoint);
     }
 
-    private void DrawSite(SKCanvas canvas, CarrierPinSite site, string label, SKPoint point, SKPoint hostTangent, DragHandleKind handleKind)
+    private void DrawSite(
+        SKCanvas canvas,
+        CarrierPinSite site,
+        string label,
+        SKPoint point,
+        SKPoint hostTangent,
+        DragHandleKind handleKind,
+        DragHandleKind? recessiveHandle = null,
+        DragHandleKind? dominantHandle = null,
+        string? siteName = null,
+        string? carrierKey = null)
     {
-        bool selected = IsSelectedSite(site);
+        bool selected = IsSelectedSite(siteName ?? site.Name);
         if (_dragHandle == handleKind)
         {
             canvas.DrawCircle(point, 18f, _handleHaloFillPaint);
@@ -951,8 +1157,26 @@ public sealed class SharedCarrierShapesPage : IVisualizerPage
             canvas.DrawCircle(point, 16f, _handleHaloFillPaint);
         }
 
-        DrawSiteRay(canvas, point, hostTangent, site, PinSideRole.Recessive, RecessiveRayColor);
-        DrawSiteRay(canvas, point, hostTangent, site, PinSideRole.Dominant, DominantRayColor);
+        DrawSiteRay(
+            canvas,
+            point,
+            hostTangent,
+            site,
+            PinSideRole.Recessive,
+            RecessiveRayColor,
+            recessiveHandle ?? ResolveRayHandle(site.Name, PinSideRole.Recessive),
+            siteName ?? site.Name,
+            carrierKey);
+        DrawSiteRay(
+            canvas,
+            point,
+            hostTangent,
+            site,
+            PinSideRole.Dominant,
+            DominantRayColor,
+            dominantHandle ?? ResolveRayHandle(site.Name, PinSideRole.Dominant),
+            siteName ?? site.Name,
+            carrierKey);
         canvas.DrawCircle(point, 11f, _pinFillPaint);
         canvas.DrawCircle(point, 11f, _pinStrokePaint);
         canvas.DrawText(label, point.X + 14f, point.Y - 14f, _pinLabelPaint);
@@ -1041,7 +1265,16 @@ public sealed class SharedCarrierShapesPage : IVisualizerPage
         canvas.DrawCircle(center, radius, stroke);
     }
 
-    private void DrawSiteRay(SKCanvas canvas, SKPoint origin, SKPoint hostTangent, CarrierPinSite site, PinSideRole role, SKColor color)
+    private void DrawSiteRay(
+        SKCanvas canvas,
+        SKPoint origin,
+        SKPoint hostTangent,
+        CarrierPinSite site,
+        PinSideRole role,
+        SKColor color,
+        DragHandleKind handle,
+        string? siteName,
+        string? carrierKey = null)
     {
         bool resolved = TryResolveSideDirection(site, role, hostTangent, out SKPoint direction, out float magnitude);
         if (!resolved && !TryResolveCollapsedSideDirection(site, role, hostTangent, out direction))
@@ -1050,7 +1283,7 @@ public sealed class SharedCarrierShapesPage : IVisualizerPage
         }
 
         float length = resolved
-            ? GetPreviewRayLength(ResolveRayHandle(site.Name, role), Math.Clamp(20f + magnitude * 16f, 24f, 104f))
+            ? GetPreviewRayLength(handle, Math.Clamp(20f + magnitude * 16f, 24f, 104f), siteName)
             : 0f;
         SKPoint handlePoint = resolved
             ? new(origin.X + direction.X * length, origin.Y + direction.Y * length)
@@ -1065,10 +1298,10 @@ public sealed class SharedCarrierShapesPage : IVisualizerPage
             DrawArrowSegment(canvas, origin, handlePoint, color, 4.4f);
         }
 
-        DragHandleKind handle = ResolveRayHandle(site.Name, role);
         if (handle != DragHandleKind.None)
         {
-            if (_dragHandle == handle)
+            bool active = _dragHandle == handle && (_activeHandleLayout?.SiteName is null || _activeHandleLayout.SiteName == siteName);
+            if (active)
             {
                 canvas.DrawCircle(handlePoint, 16f, _handleHaloFillPaint);
                 canvas.DrawCircle(handlePoint, 16f, _handleHaloStrokePaint);
@@ -1078,7 +1311,14 @@ public sealed class SharedCarrierShapesPage : IVisualizerPage
                 canvas.DrawCircle(handlePoint, 14f, _handleHaloFillPaint);
             }
 
-            RegisterRayHandle(handle, handlePoint, origin, new SKPoint(origin.X + direction.X * MaxPreviewRayLength, origin.Y + direction.Y * MaxPreviewRayLength));
+            RegisterRayHandle(
+                handle,
+                handlePoint,
+                origin,
+                new SKPoint(origin.X + direction.X * MaxPreviewRayLength, origin.Y + direction.Y * MaxPreviewRayLength),
+                siteName,
+                role,
+                carrierKey);
         }
     }
 
@@ -1095,43 +1335,11 @@ public sealed class SharedCarrierShapesPage : IVisualizerPage
         SKColor color,
         float strokeWidth)
     {
-        if (!TryResolveAttachmentBehavior(startSite, carrierId, startHostTangent, out SKPoint startDirection, out float startMagnitude, out PinSideRole startRole, out bool startHasInfluence) ||
-            !TryResolveAttachmentBehavior(endSite, endCarrierId, endHostTangent, out SKPoint endDirection, out float endMagnitude, out PinSideRole endRole, out bool endHasInfluence))
-        {
-            DrawCarrierLine(canvas, startPoint, endPoint, color, strokeWidth);
-            return;
-        }
-
-        float startHandle = GetPreviewRayLength(ResolveRayHandle(startSite.Name, startRole), Math.Clamp(20f + startMagnitude * 16f, 24f, 104f));
-        float endHandle = GetPreviewRayLength(ResolveRayHandle(endSite.Name, endRole), Math.Clamp(20f + endMagnitude * 16f, 24f, 104f));
-
-        using var path = new SKPath();
-        path.MoveTo(startPoint);
-        if (startHasInfluence && endHasInfluence)
-        {
-            // The preview treats both local rays as outward construction directions,
-            // so the shared carrier should sit on the same side of each endpoint
-            // rather than using a single start->end path orientation.
-            SKPoint control1 = new(startPoint.X + startDirection.X * startHandle, startPoint.Y + startDirection.Y * startHandle);
-            SKPoint control2 = new(endPoint.X + endDirection.X * endHandle, endPoint.Y + endDirection.Y * endHandle);
-            path.CubicTo(control1, control2, endPoint);
-        }
-        else if (startHasInfluence)
-        {
-            SKPoint control = new(startPoint.X + startDirection.X * startHandle, startPoint.Y + startDirection.Y * startHandle);
-            path.QuadTo(control, endPoint);
-        }
-        else if (endHasInfluence)
-        {
-            SKPoint control = new(endPoint.X + endDirection.X * endHandle, endPoint.Y + endDirection.Y * endHandle);
-            path.QuadTo(control, endPoint);
-        }
-        else
-        {
-            path.LineTo(endPoint);
-        }
-        using var paint = CreateStrokePaint(WithAlpha(color, CarrierPreviewAlpha), strokeWidth);
-        canvas.DrawPath(path, paint);
+        DrawCarrierPath(
+            canvas,
+            BuildSharedCarrierSamples(startPoint, startSite, carrierId, startHostTangent, endPoint, endSite, endCarrierId, endHostTangent),
+            color,
+            strokeWidth);
     }
 
     private static bool TryResolveSideDirection(
@@ -1240,6 +1448,304 @@ public sealed class SharedCarrierShapesPage : IVisualizerPage
     {
         using var paint = CreateStrokePaint(WithAlpha(color, CarrierPreviewAlpha), strokeWidth);
         canvas.DrawLine(start, end, paint);
+    }
+
+    private void DrawCarrierPath(SKCanvas canvas, IReadOnlyList<SKPoint> samples, SKColor color, float strokeWidth)
+    {
+        if (samples.Count < 2)
+        {
+            return;
+        }
+
+        using var paint = CreateStrokePaint(WithAlpha(color, CarrierPreviewAlpha), strokeWidth);
+        using var path = new SKPath();
+        path.MoveTo(samples[0]);
+        for (int index = 1; index < samples.Count; index++)
+        {
+            path.LineTo(samples[index]);
+        }
+
+        canvas.DrawPath(path, paint);
+    }
+
+    private IReadOnlyList<SKPoint> BuildSharedCarrierSamples(
+        SKPoint startPoint,
+        CarrierPinSite startSite,
+        CarrierId carrierId,
+        SKPoint startHostTangent,
+        SKPoint endPoint,
+        CarrierPinSite endSite,
+        CarrierId endCarrierId,
+        SKPoint endHostTangent)
+    {
+        if (!TryResolveAttachmentBehavior(startSite, carrierId, startHostTangent, out SKPoint startDirection, out float startMagnitude, out PinSideRole startRole, out bool startHasInfluence) ||
+            !TryResolveAttachmentBehavior(endSite, endCarrierId, endHostTangent, out SKPoint endDirection, out float endMagnitude, out PinSideRole endRole, out bool endHasInfluence))
+        {
+            return [startPoint, endPoint];
+        }
+
+        float startHandle = GetPreviewRayLength(
+            ResolveRayHandle(startSite.Name, startRole),
+            Math.Clamp(20f + startMagnitude * 16f, 24f, 104f),
+            startSite.Name);
+        float endHandle = GetPreviewRayLength(
+            ResolveRayHandle(endSite.Name, endRole),
+            Math.Clamp(20f + endMagnitude * 16f, 24f, 104f),
+            endSite.Name);
+
+        if (startHasInfluence && endHasInfluence)
+        {
+            SKPoint control1 = new(startPoint.X + startDirection.X * startHandle, startPoint.Y + startDirection.Y * startHandle);
+            SKPoint control2 = new(endPoint.X + endDirection.X * endHandle, endPoint.Y + endDirection.Y * endHandle);
+            return SampleCubic(startPoint, control1, control2, endPoint, 24);
+        }
+
+        if (startHasInfluence)
+        {
+            SKPoint control = new(startPoint.X + startDirection.X * startHandle, startPoint.Y + startDirection.Y * startHandle);
+            return SampleQuadratic(startPoint, control, endPoint, 18);
+        }
+
+        if (endHasInfluence)
+        {
+            SKPoint control = new(endPoint.X + endDirection.X * endHandle, endPoint.Y + endDirection.Y * endHandle);
+            return SampleQuadratic(startPoint, control, endPoint, 18);
+        }
+
+        return [startPoint, endPoint];
+    }
+
+    private void RegisterPreviewCarrier(string key, CarrierIdentity carrier, string label, IReadOnlyList<SKPoint> samples)
+    {
+        List<SKPoint> filtered = [];
+        foreach (SKPoint sample in samples)
+        {
+            if (filtered.Count == 0 || Distance(filtered[^1], sample) > 0.5f)
+            {
+                filtered.Add(sample);
+            }
+        }
+
+        if (filtered.Count >= 2)
+        {
+            _previewCarriers.Add(new PreviewCarrierLayout(key, carrier, label, filtered));
+        }
+    }
+
+    private bool TryResolvePreviewCarrierPoint(string carrierKey, float t, out SKPoint point, out SKPoint tangent)
+    {
+        PreviewCarrierLayout? carrier = _previewCarriers.FirstOrDefault(candidate => candidate.Key == carrierKey);
+        if (carrier is null)
+        {
+            point = SKPoint.Empty;
+            tangent = SKPoint.Empty;
+            return false;
+        }
+
+        return TryEvaluateCarrierAt(carrier, t, out point, out tangent);
+    }
+
+    private bool TryFindNearestPreviewCarrier(
+        SKPoint point,
+        out PreviewCarrierLayout carrier,
+        out float t,
+        out SKPoint projectedPoint,
+        out SKPoint tangent,
+        out float distance)
+    {
+        carrier = null!;
+        t = 0f;
+        projectedPoint = SKPoint.Empty;
+        tangent = SKPoint.Empty;
+        distance = float.MaxValue;
+
+        bool found = false;
+        foreach (var candidate in _previewCarriers)
+        {
+            if (!TryProjectToCarrier(candidate, point, out float candidateT, out SKPoint candidatePoint, out SKPoint candidateTangent, out float candidateDistance))
+            {
+                continue;
+            }
+
+            if (candidateDistance >= distance)
+            {
+                continue;
+            }
+
+            found = true;
+            carrier = candidate;
+            t = candidateT;
+            projectedPoint = candidatePoint;
+            tangent = candidateTangent;
+            distance = candidateDistance;
+        }
+
+        return found;
+    }
+
+    private static bool TryProjectToCarrier(
+        PreviewCarrierLayout carrier,
+        SKPoint point,
+        out float t,
+        out SKPoint projectedPoint,
+        out SKPoint tangent,
+        out float distance)
+    {
+        t = 0f;
+        projectedPoint = SKPoint.Empty;
+        tangent = SKPoint.Empty;
+        distance = float.MaxValue;
+
+        if (carrier.Samples.Count < 2)
+        {
+            return false;
+        }
+
+        float bestAlong = 0f;
+        float totalLength = 0f;
+        float bestDistance = float.MaxValue;
+        SKPoint bestPoint = SKPoint.Empty;
+        SKPoint bestTangent = SKPoint.Empty;
+
+        for (int index = 0; index < carrier.Samples.Count - 1; index++)
+        {
+            SKPoint start = carrier.Samples[index];
+            SKPoint end = carrier.Samples[index + 1];
+            float segmentLength = Distance(start, end);
+            if (segmentLength < 0.001f)
+            {
+                continue;
+            }
+
+            if (TryProjectToAxis(point, start, end, out float localT))
+            {
+                SKPoint candidate = new(
+                    Lerp(start.X, end.X, localT),
+                    Lerp(start.Y, end.Y, localT));
+                float candidateDistance = Distance(point, candidate);
+                if (candidateDistance < bestDistance)
+                {
+                    bestDistance = candidateDistance;
+                    bestAlong = totalLength + (segmentLength * localT);
+                    bestPoint = candidate;
+                    bestTangent = Normalize(new SKPoint(end.X - start.X, end.Y - start.Y));
+                }
+            }
+
+            totalLength += segmentLength;
+        }
+
+        if (bestDistance == float.MaxValue)
+        {
+            return false;
+        }
+
+        t = totalLength <= 0.001f ? 0f : bestAlong / totalLength;
+        projectedPoint = bestPoint;
+        tangent = bestTangent;
+        distance = bestDistance;
+        return true;
+    }
+
+    private static bool TryEvaluateCarrierAt(PreviewCarrierLayout carrier, float t, out SKPoint point, out SKPoint tangent)
+    {
+        point = SKPoint.Empty;
+        tangent = SKPoint.Empty;
+        if (carrier.Samples.Count < 2)
+        {
+            return false;
+        }
+
+        float clampedT = Math.Clamp(t, 0f, 1f);
+        float totalLength = 0f;
+        for (int index = 0; index < carrier.Samples.Count - 1; index++)
+        {
+            totalLength += Distance(carrier.Samples[index], carrier.Samples[index + 1]);
+        }
+
+        if (totalLength < 0.001f)
+        {
+            point = carrier.Samples[0];
+            return false;
+        }
+
+        float target = totalLength * clampedT;
+        float travelled = 0f;
+        for (int index = 0; index < carrier.Samples.Count - 1; index++)
+        {
+            SKPoint start = carrier.Samples[index];
+            SKPoint end = carrier.Samples[index + 1];
+            float segmentLength = Distance(start, end);
+            if (segmentLength < 0.001f)
+            {
+                continue;
+            }
+
+            if (travelled + segmentLength >= target)
+            {
+                float localT = (target - travelled) / segmentLength;
+                point = new(
+                    Lerp(start.X, end.X, localT),
+                    Lerp(start.Y, end.Y, localT));
+                tangent = Normalize(new SKPoint(end.X - start.X, end.Y - start.Y));
+                return true;
+            }
+
+            travelled += segmentLength;
+        }
+
+        point = carrier.Samples[^1];
+        tangent = Normalize(new SKPoint(
+            carrier.Samples[^1].X - carrier.Samples[^2].X,
+            carrier.Samples[^1].Y - carrier.Samples[^2].Y));
+        return true;
+    }
+
+    private static IReadOnlyList<SKPoint> CombineSamples(params IReadOnlyList<SKPoint>[] parts)
+    {
+        List<SKPoint> combined = [];
+        foreach (var part in parts)
+        {
+            foreach (SKPoint point in part)
+            {
+                if (combined.Count == 0 || Distance(combined[^1], point) > 0.5f)
+                {
+                    combined.Add(point);
+                }
+            }
+        }
+
+        return combined;
+    }
+
+    private static IReadOnlyList<SKPoint> SampleQuadratic(SKPoint start, SKPoint control, SKPoint end, int segments)
+    {
+        List<SKPoint> samples = [];
+        for (int index = 0; index <= segments; index++)
+        {
+            float t = index / (float)segments;
+            float mt = 1f - t;
+            samples.Add(new SKPoint(
+                (mt * mt * start.X) + (2f * mt * t * control.X) + (t * t * end.X),
+                (mt * mt * start.Y) + (2f * mt * t * control.Y) + (t * t * end.Y)));
+        }
+
+        return samples;
+    }
+
+    private static IReadOnlyList<SKPoint> SampleCubic(SKPoint start, SKPoint control1, SKPoint control2, SKPoint end, int segments)
+    {
+        List<SKPoint> samples = [];
+        for (int index = 0; index <= segments; index++)
+        {
+            float t = index / (float)segments;
+            float mt = 1f - t;
+            samples.Add(new SKPoint(
+                (mt * mt * mt * start.X) + (3f * mt * mt * t * control1.X) + (3f * mt * t * t * control2.X) + (t * t * t * end.X),
+                (mt * mt * mt * start.Y) + (3f * mt * mt * t * control1.Y) + (3f * mt * t * t * control2.Y) + (t * t * t * end.Y)));
+        }
+
+        return samples;
     }
 
     private void DrawCarrierLabel(SKCanvas canvas, string label, SKPoint point, SKColor color)
@@ -1363,6 +1869,29 @@ public sealed class SharedCarrierShapesPage : IVisualizerPage
             : new SKColor(96, 96, 96);
     }
 
+    private List<CustomPreviewPin> GetCustomPins(PresetKind preset)
+    {
+        if (!_customPins.TryGetValue(preset, out var pins))
+        {
+            pins = [];
+            _customPins[preset] = pins;
+        }
+
+        return pins;
+    }
+
+    private bool TryGetCustomPin(PresetKind preset, string siteName, out CustomPreviewPin? pin)
+    {
+        pin = GetCustomPins(preset).FirstOrDefault(candidate => string.Equals(candidate.Name, siteName, StringComparison.Ordinal));
+        return pin is not null;
+    }
+
+    private CarrierPinSite BuildCustomSite(CustomPreviewPin pin) =>
+        CarrierPinSite.FromPointPinning(
+            pin.HostCarrier,
+            PreviewHostAxis.PinAt(pin.Axis, ToPreviewProportion(pin.T)),
+            name: pin.Name);
+
     private CarrierPinSite ResolveSite(CarrierPinSite site)
     {
         if (site.Name is null ||
@@ -1374,13 +1903,90 @@ public sealed class SharedCarrierShapesPage : IVisualizerPage
         return new CarrierPinSite(site.Id, site.HostCarrier, new PointPinning<Axis, Axis>(site.Host, applied, site.HostPosition), site.SideAttachments, site.Name);
     }
 
+    private CarrierPinSite FindSite(ShapePreset preset, string siteName)
+    {
+        CarrierPinSite? presetSite = preset.Graph.Sites.FirstOrDefault(candidate => candidate.Name == siteName);
+        if (presetSite is not null)
+        {
+            return ResolveSite(presetSite);
+        }
+
+        if (TryGetCustomPin(_selectedPreset, siteName, out var customPin) && customPin is not null)
+        {
+            return BuildCustomSite(customPin);
+        }
+
+        return ResolveSite(preset.Graph.Sites.First());
+    }
+
     private CarrierPinSite GetSelectedSite(ShapePreset preset)
     {
         string selectedName = _selectedSiteByPreset.TryGetValue(_selectedPreset, out var name)
             ? name
             : preset.Graph.Sites.First().Name ?? preset.Graph.Sites.First().Id.ToString();
-        CarrierPinSite site = preset.Graph.Sites.FirstOrDefault(candidate => candidate.Name == selectedName) ?? preset.Graph.Sites.First();
-        return ResolveSite(site);
+        return FindSite(preset, selectedName);
+    }
+
+    private bool UpdateSiteAxis(PresetKind preset, string siteName, Axis axis)
+    {
+        if (TryGetCustomPin(preset, siteName, out var customPin) && customPin is not null)
+        {
+            customPin.Axis = axis;
+            SyncInlineValueText();
+            return true;
+        }
+
+        _siteAxisOverrides[(preset, siteName)] = axis;
+        SyncInlineValueText();
+        return true;
+    }
+
+    private bool HasSelectedCustomPin() =>
+        _selectedSiteByPreset.TryGetValue(_selectedPreset, out var selectedName) &&
+        TryGetCustomPin(_selectedPreset, selectedName, out _);
+
+    private bool RemoveSelectedCustomPin()
+    {
+        if (!_selectedSiteByPreset.TryGetValue(_selectedPreset, out var selectedName))
+        {
+            return false;
+        }
+
+        List<CustomPreviewPin> pins = GetCustomPins(_selectedPreset);
+        int index = pins.FindIndex(candidate => candidate.Name == selectedName);
+        if (index < 0)
+        {
+            return false;
+        }
+
+        pins.RemoveAt(index);
+        _selectedSiteByPreset[_selectedPreset] = _presets[_selectedPreset].Graph.Sites.First().Name ?? string.Empty;
+        return true;
+    }
+
+    private bool TryAddCustomPin(SKPoint point)
+    {
+        if (!TryFindNearestPreviewCarrier(point, out var carrier, out float t, out _, out _, out float distance) ||
+            distance > CarrierHitThreshold)
+        {
+            return false;
+        }
+
+        ShapePreset preset = _presets[_selectedPreset];
+        Axis axis = GetSelectedSite(preset).Applied;
+        string name = NextCustomPinName(_selectedPreset);
+        GetCustomPins(_selectedPreset).Add(
+            new CustomPreviewPin
+            {
+                Name = name,
+                CarrierKey = carrier.Key,
+                HostCarrier = carrier.Carrier,
+                T = t,
+                Axis = axis,
+            });
+        _selectedSiteByPreset[_selectedPreset] = name;
+        _addPinArmed = false;
+        return true;
     }
 
     private static bool TryParseAxisText(string text, out Axis axis)
@@ -1478,7 +2084,7 @@ public sealed class SharedCarrierShapesPage : IVisualizerPage
         }
 
         ShapePreset preset = _presets[target.Preset];
-        CarrierPinSite site = ResolveSite(preset.Graph.Sites.First(candidate => candidate.Name == target.SiteName));
+        CarrierPinSite site = FindSite(preset, target.SiteName);
         string axisText = FormatAxis(site.Applied);
         if (_inlineValueEditor.Text == axisText)
         {
@@ -1522,7 +2128,7 @@ public sealed class SharedCarrierShapesPage : IVisualizerPage
 
         string text = _inlineValueEditor.Text.Trim();
         ShapePreset preset = _presets[target.Preset];
-        CarrierPinSite currentSite = ResolveSite(preset.Graph.Sites.First(candidate => candidate.Name == target.SiteName));
+        CarrierPinSite currentSite = FindSite(preset, target.SiteName);
         string fallback = FormatAxis(currentSite.Applied);
 
         if (!TryParseAxisText(text, out var axis))
@@ -1534,7 +2140,7 @@ public sealed class SharedCarrierShapesPage : IVisualizerPage
             return;
         }
 
-        _siteAxisOverrides[target] = axis;
+        UpdateSiteAxis(target.Preset, target.SiteName, axis);
         string committed = FormatAxis(axis);
         if (_inlineValueEditor.Text != committed)
         {
@@ -1593,9 +2199,12 @@ public sealed class SharedCarrierShapesPage : IVisualizerPage
     }
 
     private bool IsSelectedSite(CarrierPinSite site) =>
-        site.Name is not null &&
+        IsSelectedSite(site.Name);
+
+    private bool IsSelectedSite(string? siteName) =>
+        siteName is not null &&
         _selectedSiteByPreset.TryGetValue(_selectedPreset, out var selectedName) &&
-        string.Equals(selectedName, site.Name, StringComparison.Ordinal);
+        string.Equals(selectedName, siteName, StringComparison.Ordinal);
 
     private void ToggleSelectedComponent(SignToggleComponent component)
     {
@@ -1632,7 +2241,7 @@ public sealed class SharedCarrierShapesPage : IVisualizerPage
             _ => axis,
         };
 
-        _siteAxisOverrides[(_selectedPreset, selectedSite.Name)] = updated;
+        UpdateSiteAxis(_selectedPreset, selectedSite.Name, updated);
     }
 
     private static long FlipSign(long value) => value == 0 ? 0 : -value;
@@ -1724,6 +2333,105 @@ public sealed class SharedCarrierShapesPage : IVisualizerPage
             IsAntialias = true,
         };
 
+    private static Proportion ToPreviewProportion(float t) =>
+        new((long)Math.Round(Math.Clamp(t, 0f, 1f) * 1000f), 1000);
+
+    private static string FormatFloat(float value) => value.ToString("0.###", CultureInfo.InvariantCulture);
+
+    private string NextCustomPinName(PresetKind preset)
+    {
+        int next = _presets[preset].Graph.Sites.Count + 1;
+        foreach (var customPin in GetCustomPins(preset))
+        {
+            if (customPin.Name.StartsWith("P", StringComparison.Ordinal) &&
+                int.TryParse(customPin.Name[1..], out int parsed))
+            {
+                next = Math.Max(next, parsed + 1);
+            }
+        }
+
+        return $"P{next}";
+    }
+
+    private void CopyTextToClipboard(string text)
+    {
+        try
+        {
+            Clipboard.SetText(text);
+        }
+        catch
+        {
+            // Ignore clipboard failures in the visualizer.
+        }
+    }
+
+    private string SerializeCurrentStructure()
+    {
+        ShapePreset preset = _presets[_selectedPreset];
+        var builder = new StringBuilder();
+        builder.AppendLine("SharedCarrierScene");
+        builder.AppendLine($"preset: {GetPresetButtonText(_selectedPreset)}");
+        builder.AppendLine($"guides: {(_showLetterbox ? "on" : "off")}");
+        if (_selectedSiteByPreset.TryGetValue(_selectedPreset, out var selectedName))
+        {
+            builder.AppendLine($"selected: {selectedName}");
+        }
+
+        builder.AppendLine("geometry:");
+        foreach (string line in SerializePresetGeometry(_selectedPreset))
+        {
+            builder.AppendLine($"  {line}");
+        }
+
+        builder.AppendLine("sites:");
+        foreach (CarrierPinSite site in preset.Graph.Sites.Select(ResolveSite))
+        {
+            builder.AppendLine($"  - kind: preset");
+            builder.AppendLine($"    name: {site.Name}");
+            builder.AppendLine($"    hostCarrier: {site.HostCarrier.Name ?? site.HostCarrier.Id.ToString()}");
+            builder.AppendLine($"    hostPosition: {FormatProportion(site.HostPosition)}");
+            builder.AppendLine($"    axis: {FormatAxis(site.Applied)}");
+        }
+
+        foreach (CustomPreviewPin pin in GetCustomPins(_selectedPreset))
+        {
+            builder.AppendLine($"  - kind: custom");
+            builder.AppendLine($"    name: {pin.Name}");
+            builder.AppendLine($"    hostCarrier: {pin.HostCarrier.Name ?? pin.HostCarrier.Id.ToString()}");
+            builder.AppendLine($"    previewCarrier: {pin.CarrierKey}");
+            builder.AppendLine($"    t: {FormatFloat(pin.T)}");
+            builder.AppendLine($"    axis: {FormatAxis(pin.Axis)}");
+        }
+
+        return builder.ToString();
+    }
+
+    private IEnumerable<string> SerializePresetGeometry(PresetKind preset) => preset switch
+    {
+        PresetKind.CapitalD => new[]
+        {
+            $"dStemStart: [{FormatFloat(_dStemStart.X)}, {FormatFloat(_dStemStart.Y)}]",
+            $"dStemEnd: [{FormatFloat(_dStemEnd.X)}, {FormatFloat(_dStemEnd.Y)}]",
+            $"dTopT: {FormatFloat(_dTopT)}",
+            $"dBottomT: {FormatFloat(_dBottomT)}",
+        },
+        PresetKind.BridgeH => new[]
+        {
+            $"hLeftStemStart: [{FormatFloat(_hLeftStemStart.X)}, {FormatFloat(_hLeftStemStart.Y)}]",
+            $"hLeftStemEnd: [{FormatFloat(_hLeftStemEnd.X)}, {FormatFloat(_hLeftStemEnd.Y)}]",
+            $"hLeftT: {FormatFloat(_hLeftT)}",
+            $"hRightStemStart: [{FormatFloat(_hRightStemStart.X)}, {FormatFloat(_hRightStemStart.Y)}]",
+            $"hRightStemEnd: [{FormatFloat(_hRightStemEnd.X)}, {FormatFloat(_hRightStemEnd.Y)}]",
+            $"hRightT: {FormatFloat(_hRightT)}",
+        },
+        PresetKind.LetterA => new[]
+        {
+            $"aLeftT: {FormatFloat(_aLeftT)}",
+            $"aRightT: {FormatFloat(_aRightT)}",
+        },
+        _ => ["(no extra geometry state)"],
+    };
+
     private static string FormatAxis(Axis axis) => $"[{axis.Recessive}]i + [{axis.Dominant}]";
 
     private static string FormatProportion(Proportion? value)
@@ -1757,9 +2465,15 @@ public sealed class SharedCarrierShapesPage : IVisualizerPage
 
     private void UpdateDragHandle(SKPoint pixelPoint)
     {
-        var handle = _handleLayouts.FirstOrDefault(layout => layout.Target == _dragHandle);
+        var handle = _activeHandleLayout ?? _handleLayouts.FirstOrDefault(layout => layout.Target == _dragHandle);
         if (handle is null)
         {
+            return;
+        }
+
+        if (_dragHandle == DragHandleKind.CustomSite)
+        {
+            UpdateCustomSiteHandle(pixelPoint, handle);
             return;
         }
 
@@ -1771,6 +2485,17 @@ public sealed class SharedCarrierShapesPage : IVisualizerPage
 
         if (!TryProjectToAxis(pixelPoint, handle.AxisStart, handle.AxisEnd, out float t))
         {
+            return;
+        }
+
+        if ((_dragHandle == DragHandleKind.CustomRecessive || _dragHandle == DragHandleKind.CustomDominant) &&
+            handle.SiteName is not null)
+        {
+            float length = Math.Clamp(t * MaxPreviewRayLength, 8f, MaxPreviewRayLength);
+            UpdateSiteAxisFromPreviewLength(
+                handle.SiteName,
+                _dragHandle == DragHandleKind.CustomRecessive ? PinSideRole.Recessive : PinSideRole.Dominant,
+                length);
             return;
         }
 
@@ -1907,6 +2632,26 @@ public sealed class SharedCarrierShapesPage : IVisualizerPage
         }
     }
 
+    private void UpdateCustomSiteHandle(SKPoint pixelPoint, HandleLayout handle)
+    {
+        if (handle.SiteName is null ||
+            handle.CarrierKey is null ||
+            !TryGetCustomPin(_selectedPreset, handle.SiteName, out var customPin) ||
+            customPin is null)
+        {
+            return;
+        }
+
+        PreviewCarrierLayout? carrier = _previewCarriers.FirstOrDefault(candidate => candidate.Key == handle.CarrierKey);
+        if (carrier is null ||
+            !TryProjectToCarrier(carrier, pixelPoint, out float t, out _, out _, out _))
+        {
+            return;
+        }
+
+        customPin.T = t;
+    }
+
     private void UpdateFreeStemHandle(SKPoint pixelPoint, HandleLayout handle)
     {
         if (handle.BoundsRect is not SKRect bounds)
@@ -1941,7 +2686,7 @@ public sealed class SharedCarrierShapesPage : IVisualizerPage
     private void UpdateSiteAxisFromPreviewLength(string siteName, PinSideRole role, float length)
     {
         ShapePreset preset = _presets[_selectedPreset];
-        CarrierPinSite site = ResolveSite(preset.Graph.Sites.First(candidate => candidate.Name == siteName));
+        CarrierPinSite site = FindSite(preset, siteName);
         Axis current = site.Applied;
         long magnitude = Math.Max(0L, (long)Math.Round((length - 20f) / 16f));
         long currentSignedValue = role == PinSideRole.Recessive
@@ -1961,8 +2706,7 @@ public sealed class SharedCarrierShapesPage : IVisualizerPage
             ? new Axis(signedMagnitude, current.Recessive.Recessive, current.Dominant.Dominant, current.Dominant.Recessive)
             : new Axis(current.Recessive.Dominant, current.Recessive.Recessive, signedMagnitude, current.Dominant.Recessive);
 
-        _siteAxisOverrides[(_selectedPreset, siteName)] = updated;
-        SyncInlineValueText();
+        UpdateSiteAxis(_selectedPreset, siteName, updated);
     }
 
     private static SKPoint UpdateConstrainedStemPoint(SKPoint current, SKPoint pixelPoint, SKPoint axisStart, SKPoint axisEnd, SKRect? boundsRect)
@@ -1998,11 +2742,24 @@ public sealed class SharedCarrierShapesPage : IVisualizerPage
             .FirstOrDefault();
     }
 
-    private void RegisterHandle(DragHandleKind target, SKPoint center, SKPoint axisStart, SKPoint axisEnd) =>
-        _handleLayouts.Add(new HandleLayout(target, center, axisStart, axisEnd, null, false, HandleKind.Site));
+    private void RegisterHandle(
+        DragHandleKind target,
+        SKPoint center,
+        SKPoint axisStart,
+        SKPoint axisEnd,
+        string? siteName = null,
+        string? carrierKey = null) =>
+        _handleLayouts.Add(new HandleLayout(target, center, axisStart, axisEnd, null, false, HandleKind.Site, siteName, null, carrierKey));
 
-    private void RegisterRayHandle(DragHandleKind target, SKPoint center, SKPoint axisStart, SKPoint axisEnd) =>
-        _handleLayouts.Add(new HandleLayout(target, center, axisStart, axisEnd, null, false, HandleKind.Ray));
+    private void RegisterRayHandle(
+        DragHandleKind target,
+        SKPoint center,
+        SKPoint axisStart,
+        SKPoint axisEnd,
+        string? siteName = null,
+        PinSideRole? sideRole = null,
+        string? carrierKey = null) =>
+        _handleLayouts.Add(new HandleLayout(target, center, axisStart, axisEnd, null, false, HandleKind.Ray, siteName, sideRole, carrierKey));
 
     private void RegisterStemHandle(DragHandleKind target, SKPoint center, SKRect sceneRect, LetterboxEdge edge)
     {
@@ -2074,33 +2831,48 @@ public sealed class SharedCarrierShapesPage : IVisualizerPage
 
     private static SKColor WithAlpha(SKColor color, byte alpha) => new(color.Red, color.Green, color.Blue, alpha);
 
-    private float GetPreviewRayLength(DragHandleKind handleKind, float fallback) => handleKind switch
+    private float GetPreviewRayLength(DragHandleKind handleKind, float fallback, string? siteName = null)
     {
-        DragHandleKind.DTopRecessive => _dTopRecessiveLength,
-        DragHandleKind.DTopDominant => _dTopDominantLength,
-        DragHandleKind.DBottomRecessive => _dBottomRecessiveLength,
-        DragHandleKind.DBottomDominant => _dBottomDominantLength,
-        DragHandleKind.HLeftRecessive => _hLeftRecessiveLength,
-        DragHandleKind.HLeftDominant => _hLeftDominantLength,
-        DragHandleKind.HRightRecessive => _hRightRecessiveLength,
-        DragHandleKind.HRightDominant => _hRightDominantLength,
-        DragHandleKind.TBaseDominant => _tBaseDominantLength,
-        DragHandleKind.TCrossbarRecessive => _tCrossbarRecessiveLength,
-        DragHandleKind.TCrossbarDominant => _tCrossbarDominantLength,
-        DragHandleKind.YJunctionRecessive => _yJunctionRecessiveLength,
-        DragHandleKind.YJunctionDominant => _yJunctionDominantLength,
-        DragHandleKind.LCornerRecessive => _lCornerRecessiveLength,
-        DragHandleKind.LCornerDominant => _lCornerDominantLength,
-        DragHandleKind.ALeftRecessive => _aLeftRecessiveLength,
-        DragHandleKind.ALeftDominant => _aLeftDominantLength,
-        DragHandleKind.ARightRecessive => _aRightRecessiveLength,
-        DragHandleKind.ARightDominant => _aRightDominantLength,
-        DragHandleKind.MLeftRecessive => _mLeftRecessiveLength,
-        DragHandleKind.MLeftDominant => _mLeftDominantLength,
-        DragHandleKind.MRightRecessive => _mRightRecessiveLength,
-        DragHandleKind.MRightDominant => _mRightDominantLength,
-        _ => fallback,
-    };
+        if ((handleKind == DragHandleKind.CustomRecessive || handleKind == DragHandleKind.CustomDominant) &&
+            siteName is not null &&
+            TryGetCustomPin(_selectedPreset, siteName, out var customPin) &&
+            customPin is not null)
+        {
+            Axis axis = customPin.Axis;
+            long magnitude = handleKind == DragHandleKind.CustomRecessive
+                ? Math.Abs(axis.Recessive.Dominant)
+                : Math.Abs(axis.Dominant.Dominant);
+            return Math.Clamp(20f + (magnitude * 16f), 8f, MaxPreviewRayLength);
+        }
+
+        return handleKind switch
+        {
+            DragHandleKind.DTopRecessive => _dTopRecessiveLength,
+            DragHandleKind.DTopDominant => _dTopDominantLength,
+            DragHandleKind.DBottomRecessive => _dBottomRecessiveLength,
+            DragHandleKind.DBottomDominant => _dBottomDominantLength,
+            DragHandleKind.HLeftRecessive => _hLeftRecessiveLength,
+            DragHandleKind.HLeftDominant => _hLeftDominantLength,
+            DragHandleKind.HRightRecessive => _hRightRecessiveLength,
+            DragHandleKind.HRightDominant => _hRightDominantLength,
+            DragHandleKind.TBaseDominant => _tBaseDominantLength,
+            DragHandleKind.TCrossbarRecessive => _tCrossbarRecessiveLength,
+            DragHandleKind.TCrossbarDominant => _tCrossbarDominantLength,
+            DragHandleKind.YJunctionRecessive => _yJunctionRecessiveLength,
+            DragHandleKind.YJunctionDominant => _yJunctionDominantLength,
+            DragHandleKind.LCornerRecessive => _lCornerRecessiveLength,
+            DragHandleKind.LCornerDominant => _lCornerDominantLength,
+            DragHandleKind.ALeftRecessive => _aLeftRecessiveLength,
+            DragHandleKind.ALeftDominant => _aLeftDominantLength,
+            DragHandleKind.ARightRecessive => _aRightRecessiveLength,
+            DragHandleKind.ARightDominant => _aRightDominantLength,
+            DragHandleKind.MLeftRecessive => _mLeftRecessiveLength,
+            DragHandleKind.MLeftDominant => _mLeftDominantLength,
+            DragHandleKind.MRightRecessive => _mRightRecessiveLength,
+            DragHandleKind.MRightDominant => _mRightDominantLength,
+            _ => fallback,
+        };
+    }
 
     private DragHandleKind ResolveRayHandle(string? siteName, PinSideRole role) => (siteName, role) switch
     {
@@ -2393,10 +3165,31 @@ public sealed class SharedCarrierShapesPage : IVisualizerPage
         IReadOnlyDictionary<CarrierId, SKColor> CarrierColors);
 
     private sealed record ButtonLayout(SKRect Rect, PresetKind Preset);
-    private sealed record HandleLayout(DragHandleKind Target, SKPoint Center, SKPoint AxisStart, SKPoint AxisEnd, SKRect? BoundsRect = null, bool FreeMove = false, HandleKind Kind = HandleKind.Site);
+    private sealed record HandleLayout(
+        DragHandleKind Target,
+        SKPoint Center,
+        SKPoint AxisStart,
+        SKPoint AxisEnd,
+        SKRect? BoundsRect = null,
+        bool FreeMove = false,
+        HandleKind Kind = HandleKind.Site,
+        string? SiteName = null,
+        PinSideRole? SideRole = null,
+        string? CarrierKey = null);
     private sealed record ToggleLayout(SKRect Rect, SignToggleComponent Component);
     private sealed record CopyLayout(SKRect Rect, string Text);
     private sealed record ValueLayout(SKRect Rect, PresetKind Preset, string SiteName, string Text);
+    private sealed record ActionLayout(SKRect Rect, SceneAction Action);
+    private sealed record PreviewCarrierLayout(string Key, CarrierIdentity Carrier, string Label, IReadOnlyList<SKPoint> Samples);
+
+    private sealed class CustomPreviewPin
+    {
+        public required string Name { get; init; }
+        public required string CarrierKey { get; set; }
+        public required CarrierIdentity HostCarrier { get; set; }
+        public required float T { get; set; }
+        public required Axis Axis { get; set; }
+    }
 
     private enum PresetKind
     {
@@ -2453,6 +3246,9 @@ public sealed class SharedCarrierShapesPage : IVisualizerPage
         MRight,
         MRightRecessive,
         MRightDominant,
+        CustomSite,
+        CustomRecessive,
+        CustomDominant,
     }
 
     private enum SignToggleComponent
@@ -2476,5 +3272,12 @@ public sealed class SharedCarrierShapesPage : IVisualizerPage
         Site,
         Ray,
         Endpoint,
+    }
+
+    private enum SceneAction
+    {
+        AddPin,
+        Trash,
+        CopyStructure,
     }
 }
