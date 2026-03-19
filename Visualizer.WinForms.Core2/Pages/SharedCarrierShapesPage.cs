@@ -11,6 +11,13 @@ public sealed class SharedCarrierShapesPage : IVisualizerPage
     private readonly IReadOnlyDictionary<PresetKind, ShapePreset> _presets = BuildPresets();
     private readonly List<ButtonLayout> _buttonLayouts = [];
     private readonly List<HandleLayout> _handleLayouts = [];
+    private readonly List<ToggleLayout> _toggleLayouts = [];
+    private readonly Dictionary<(PresetKind Preset, string SiteName), Axis> _siteAxisOverrides = [];
+    private readonly Dictionary<PresetKind, string> _selectedSiteByPreset = new()
+    {
+        [PresetKind.CapitalD] = "Top",
+        [PresetKind.BridgeH] = "Left Join",
+    };
 
     private CoordinateSystem? _coords;
     private SkiaCanvas? _canvasHost;
@@ -217,6 +224,7 @@ public sealed class SharedCarrierShapesPage : IVisualizerPage
     {
         _buttonLayouts.Clear();
         _handleLayouts.Clear();
+        _toggleLayouts.Clear();
 
         float width = _coords?.Width ?? 1220f;
         float height = _coords?.Height ?? 920f;
@@ -249,10 +257,24 @@ public sealed class SharedCarrierShapesPage : IVisualizerPage
             return true;
         }
 
+        var toggle = _toggleLayouts.FirstOrDefault(layout => layout.Rect.Contains(pixelPoint));
+        if (toggle is not null)
+        {
+            ToggleSelectedComponent(toggle.Component);
+            _canvasHost?.InvalidateCanvas();
+            return true;
+        }
+
         var handle = HitHandle(pixelPoint);
         if (handle is null)
         {
             return false;
+        }
+
+        string? selectedSite = ResolveSelectedSite(handle.Target);
+        if (selectedSite is not null)
+        {
+            _selectedSiteByPreset[_selectedPreset] = selectedSite;
         }
 
         _dragHandle = handle.Target;
@@ -270,15 +292,17 @@ public sealed class SharedCarrierShapesPage : IVisualizerPage
         if (_dragHandle != DragHandleKind.None)
         {
             UpdateDragHandle(pixelPoint);
-            _canvasHost.Cursor = Cursors.SizeNS;
+            _canvasHost.Cursor = Cursors.SizeAll;
             _canvasHost.InvalidateCanvas();
             return;
         }
 
         _canvasHost.Cursor = _buttonLayouts.Any(layout => layout.Rect.Contains(pixelPoint))
             ? Cursors.Hand
+            : _toggleLayouts.Any(layout => layout.Rect.Contains(pixelPoint))
+                ? Cursors.Hand
             : HitHandle(pixelPoint) is not null
-                ? Cursors.SizeNS
+                ? Cursors.SizeAll
                 : Cursors.Default;
     }
 
@@ -295,6 +319,7 @@ public sealed class SharedCarrierShapesPage : IVisualizerPage
     {
         _buttonLayouts.Clear();
         _handleLayouts.Clear();
+        _toggleLayouts.Clear();
         _coords = null;
         _canvasHost = null;
         _dragHandle = DragHandleKind.None;
@@ -399,7 +424,7 @@ public sealed class SharedCarrierShapesPage : IVisualizerPage
 
         canvas.DrawText("Sites", rect.Left + 20f, y + 12f, _labelPaint);
         y += 40f;
-        foreach (var site in preset.Graph.Sites)
+        foreach (var site in preset.Graph.Sites.Select(ResolveSite))
         {
             string host = site.HostCarrier.Name ?? site.HostCarrier.Id.ToString();
             string bindings = string.Join(
@@ -453,6 +478,7 @@ public sealed class SharedCarrierShapesPage : IVisualizerPage
         canvas.DrawRoundRect(inner, 20f, 20f, _panelStrokePaint);
         canvas.DrawLine(inner.MidX, inner.Top + 16f, inner.MidX, inner.Bottom - 16f, _sceneGuidePaint);
         canvas.DrawText("Preview only", inner.Right - 98f, inner.Top + 24f, _sceneCaptionPaint);
+        DrawToggleLegend(canvas, inner, preset);
 
         switch (_selectedPreset)
         {
@@ -469,8 +495,8 @@ public sealed class SharedCarrierShapesPage : IVisualizerPage
     {
         CarrierIdentity stem = preset.Graph.Carriers.First(carrier => carrier.Name == "Stem");
         CarrierIdentity bowl = preset.Graph.Carriers.First(carrier => carrier.Name == "Bowl");
-        CarrierPinSite top = preset.Graph.Sites.First(site => site.Name == "Top");
-        CarrierPinSite bottom = preset.Graph.Sites.First(site => site.Name == "Bottom");
+        CarrierPinSite top = ResolveSite(preset.Graph.Sites.First(site => site.Name == "Top"));
+        CarrierPinSite bottom = ResolveSite(preset.Graph.Sites.First(site => site.Name == "Bottom"));
 
         float leftX = rect.Left + 160f;
         float minY = rect.Top + 86f;
@@ -479,14 +505,28 @@ public sealed class SharedCarrierShapesPage : IVisualizerPage
         float stemBottomY = Lerp(minY, maxY, _dStemBottomT);
         float topY = Lerp(stemTopY, stemBottomY, NormalizeBetween(_dTopT, _dStemTopT, _dStemBottomT));
         float bottomY = Lerp(stemTopY, stemBottomY, NormalizeBetween(_dBottomT, _dStemTopT, _dStemBottomT));
-        float midY = (stemTopY + stemBottomY) * 0.5f;
-
-        DrawCarrierLine(canvas, new SKPoint(leftX, stemTopY), new SKPoint(leftX, stemBottomY), preset.CarrierColors[stem.Id], 5.6f);
-        DrawCarrierLabel(canvas, stem.Name ?? "Stem", new SKPoint(leftX - 72f, midY), preset.CarrierColors[stem.Id]);
+        float midY = (topY + bottomY) * 0.5f;
 
         SKPoint topPoint = new(leftX, topY);
         SKPoint bottomPoint = new(leftX, bottomY);
+        SKPoint topEndpoint = new(leftX, stemTopY - EndpointHandleOffset);
+        SKPoint bottomEndpoint = new(leftX, stemBottomY + EndpointHandleOffset);
         SKPoint hostTangent = new(0f, 1f);
+        DrawCarrierLine(canvas, topEndpoint, topPoint, preset.CarrierColors[stem.Id], 5.6f);
+        DrawSharedCarrierCurve(
+            canvas,
+            topPoint,
+            top,
+            stem.Id,
+            hostTangent,
+            bottomPoint,
+            bottom,
+            stem.Id,
+            hostTangent,
+            preset.CarrierColors[stem.Id],
+            5.6f);
+        DrawCarrierLine(canvas, bottomPoint, bottomEndpoint, preset.CarrierColors[stem.Id], 5.6f);
+        DrawCarrierLabel(canvas, stem.Name ?? "Stem", new SKPoint(leftX - 72f, midY), preset.CarrierColors[stem.Id]);
         DrawSharedCarrierCurve(
             canvas,
             topPoint,
@@ -501,15 +541,15 @@ public sealed class SharedCarrierShapesPage : IVisualizerPage
             5.6f);
         DrawCarrierLabel(canvas, bowl.Name ?? "Bowl", new SKPoint(rect.Right - 176f, (topY + bottomY) * 0.5f), preset.CarrierColors[bowl.Id]);
 
-        DrawStemEndpointHandle(canvas, new SKPoint(leftX, stemTopY - EndpointHandleOffset), _dragHandle == DragHandleKind.DStemTop);
-        DrawStemEndpointHandle(canvas, new SKPoint(leftX, stemBottomY + EndpointHandleOffset), _dragHandle == DragHandleKind.DStemBottom);
+        DrawStemEndpointHandle(canvas, topEndpoint, _dragHandle == DragHandleKind.DStemTop);
+        DrawStemEndpointHandle(canvas, bottomEndpoint, _dragHandle == DragHandleKind.DStemBottom);
         DrawSite(canvas, top, "P1", topPoint, hostTangent, DragHandleKind.DTop);
         DrawSite(canvas, bottom, "P2", bottomPoint, hostTangent, DragHandleKind.DBottom);
 
-        RegisterHandle(DragHandleKind.DStemTop, new SKPoint(leftX, stemTopY - EndpointHandleOffset), new SKPoint(leftX, minY), new SKPoint(leftX, maxY));
+        RegisterHandle(DragHandleKind.DStemTop, topEndpoint, new SKPoint(leftX, minY - EndpointHandleOffset), new SKPoint(leftX, maxY));
         RegisterHandle(DragHandleKind.DTop, topPoint, new SKPoint(leftX, stemTopY), new SKPoint(leftX, stemBottomY));
         RegisterHandle(DragHandleKind.DBottom, bottomPoint, new SKPoint(leftX, stemTopY), new SKPoint(leftX, stemBottomY));
-        RegisterHandle(DragHandleKind.DStemBottom, new SKPoint(leftX, stemBottomY + EndpointHandleOffset), new SKPoint(leftX, minY), new SKPoint(leftX, maxY));
+        RegisterHandle(DragHandleKind.DStemBottom, bottomEndpoint, new SKPoint(leftX, minY), new SKPoint(leftX, maxY + EndpointHandleOffset));
     }
 
     private void DrawBridgeHPreview(SKCanvas canvas, SKRect rect, ShapePreset preset)
@@ -517,8 +557,8 @@ public sealed class SharedCarrierShapesPage : IVisualizerPage
         CarrierIdentity left = preset.Graph.Carriers.First(carrier => carrier.Name == "Left Stem");
         CarrierIdentity right = preset.Graph.Carriers.First(carrier => carrier.Name == "Right Stem");
         CarrierIdentity bridge = preset.Graph.Carriers.First(carrier => carrier.Name == "Bridge");
-        CarrierPinSite leftJoin = preset.Graph.Sites.First(site => site.Name == "Left Join");
-        CarrierPinSite rightJoin = preset.Graph.Sites.First(site => site.Name == "Right Join");
+        CarrierPinSite leftJoin = ResolveSite(preset.Graph.Sites.First(site => site.Name == "Left Join"));
+        CarrierPinSite rightJoin = ResolveSite(preset.Graph.Sites.First(site => site.Name == "Right Join"));
 
         float leftX = rect.Left + 154f;
         float rightX = rect.Right - 154f;
@@ -572,7 +612,13 @@ public sealed class SharedCarrierShapesPage : IVisualizerPage
 
     private void DrawSite(SKCanvas canvas, CarrierPinSite site, string label, SKPoint point, SKPoint hostTangent, DragHandleKind handleKind)
     {
+        bool selected = IsSelectedSite(site);
         if (_dragHandle == handleKind)
+        {
+            canvas.DrawCircle(point, 18f, _handleHaloFillPaint);
+            canvas.DrawCircle(point, 18f, _handleHaloStrokePaint);
+        }
+        else if (selected)
         {
             canvas.DrawCircle(point, 18f, _handleHaloFillPaint);
             canvas.DrawCircle(point, 18f, _handleHaloStrokePaint);
@@ -587,6 +633,69 @@ public sealed class SharedCarrierShapesPage : IVisualizerPage
         canvas.DrawCircle(point, 11f, _pinFillPaint);
         canvas.DrawCircle(point, 11f, _pinStrokePaint);
         canvas.DrawText(label, point.X + 14f, point.Y - 14f, _pinLabelPaint);
+    }
+
+    private void DrawToggleLegend(SKCanvas canvas, SKRect sceneRect, ShapePreset preset)
+    {
+        CarrierPinSite site = GetSelectedSite(preset);
+        float cellWidth = 44f;
+        float cellHeight = 32f;
+        float gap = 6f;
+
+        var items = new (SignToggleComponent Component, string Label, string Sign, SKColor Accent)[]
+        {
+            (SignToggleComponent.RecessiveUnit, "i", FormatSign(site.Applied.Recessive.Recessive), RecessiveRayColor),
+            (SignToggleComponent.DominantValue, "uV", FormatSign(site.Applied.Dominant.Dominant), DominantRayColor),
+            (SignToggleComponent.RecessiveValue, "iV", FormatSign(site.Applied.Recessive.Dominant), RecessiveRayColor),
+            (SignToggleComponent.DominantUnit, "u", FormatSign(site.Applied.Dominant.Recessive), DominantRayColor),
+        };
+
+        float startX = sceneRect.Left + 10f;
+        float startY = sceneRect.Top + 10f;
+        for (int index = 0; index < items.Length; index++)
+        {
+            int row = index / 2;
+            int col = index % 2;
+            var cellRect = new SKRect(
+                startX + (col * (cellWidth + gap)),
+                startY + (row * (cellHeight + gap)),
+                startX + (col * (cellWidth + gap)) + cellWidth,
+                startY + (row * (cellHeight + gap)) + cellHeight);
+            DrawToggleCell(canvas, cellRect, items[index].Label, items[index].Sign, items[index].Accent);
+            _toggleLayouts.Add(new ToggleLayout(cellRect, items[index].Component));
+        }
+    }
+
+    private void DrawToggleCell(SKCanvas canvas, SKRect rect, string label, string sign, SKColor accent)
+    {
+        canvas.DrawRoundRect(rect, 10f, 10f, _buttonFillPaint);
+        canvas.DrawRoundRect(rect, 10f, 10f, _buttonStrokePaint);
+        using var accentPaint = new SKPaint
+        {
+            Style = SKPaintStyle.Fill,
+            Color = accent,
+            IsAntialias = true,
+        };
+        canvas.DrawRoundRect(new SKRect(rect.Left + 6f, rect.Top + 6f, rect.Left + 10f, rect.Bottom - 6f), 2f, 2f, accentPaint);
+
+        using var labelPaint = new SKPaint
+        {
+            Color = accent,
+            TextSize = 11f,
+            Typeface = SKTypeface.FromFamilyName(VisualStyle.FontFamily, SKFontStyle.Bold),
+            IsAntialias = true,
+        };
+        using var signPaint = new SKPaint
+        {
+            Color = new SKColor(66, 66, 66),
+            TextSize = 16f,
+            Typeface = SKTypeface.FromFamilyName(VisualStyle.FontFamily, SKFontStyle.Bold),
+            IsAntialias = true,
+        };
+
+        canvas.DrawText(label, rect.Left + 15f, rect.Top + 14f, labelPaint);
+        float signWidth = signPaint.MeasureText(sign);
+        canvas.DrawText(sign, rect.Right - signWidth - 10f, rect.MidY + 6f, signPaint);
     }
 
     private void DrawStemEndpointHandle(SKCanvas canvas, SKPoint center, bool selected)
@@ -823,6 +932,87 @@ public sealed class SharedCarrierShapesPage : IVisualizerPage
         canvas.DrawText(text, rect.Left + 12f, rect.MidY + 5f, _badgeTextPaint);
     }
 
+    private CarrierPinSite ResolveSite(CarrierPinSite site)
+    {
+        if (site.Name is null ||
+            !_siteAxisOverrides.TryGetValue((_selectedPreset, site.Name), out var applied))
+        {
+            return site;
+        }
+
+        return new CarrierPinSite(site.Id, site.HostCarrier, new PointPinning<Axis, Axis>(site.Host, applied, site.HostPosition), site.SideAttachments, site.Name);
+    }
+
+    private CarrierPinSite GetSelectedSite(ShapePreset preset)
+    {
+        string selectedName = _selectedSiteByPreset.TryGetValue(_selectedPreset, out var name)
+            ? name
+            : preset.Graph.Sites.First().Name ?? preset.Graph.Sites.First().Id.ToString();
+        CarrierPinSite site = preset.Graph.Sites.FirstOrDefault(candidate => candidate.Name == selectedName) ?? preset.Graph.Sites.First();
+        return ResolveSite(site);
+    }
+
+    private bool IsSelectedSite(CarrierPinSite site) =>
+        site.Name is not null &&
+        _selectedSiteByPreset.TryGetValue(_selectedPreset, out var selectedName) &&
+        string.Equals(selectedName, site.Name, StringComparison.Ordinal);
+
+    private void ToggleSelectedComponent(SignToggleComponent component)
+    {
+        ShapePreset preset = _presets[_selectedPreset];
+        CarrierPinSite selectedSite = GetSelectedSite(preset);
+        if (selectedSite.Name is null)
+        {
+            return;
+        }
+
+        Axis axis = selectedSite.Applied;
+        Axis updated = component switch
+        {
+            SignToggleComponent.RecessiveUnit => new Axis(
+                axis.Recessive.Dominant,
+                FlipSign(axis.Recessive.Recessive),
+                axis.Dominant.Dominant,
+                axis.Dominant.Recessive),
+            SignToggleComponent.DominantValue => new Axis(
+                axis.Recessive.Dominant,
+                axis.Recessive.Recessive,
+                FlipSign(axis.Dominant.Dominant),
+                axis.Dominant.Recessive),
+            SignToggleComponent.RecessiveValue => new Axis(
+                FlipSign(axis.Recessive.Dominant),
+                axis.Recessive.Recessive,
+                axis.Dominant.Dominant,
+                axis.Dominant.Recessive),
+            SignToggleComponent.DominantUnit => new Axis(
+                axis.Recessive.Dominant,
+                axis.Recessive.Recessive,
+                axis.Dominant.Dominant,
+                FlipSign(axis.Dominant.Recessive)),
+            _ => axis,
+        };
+
+        _siteAxisOverrides[(_selectedPreset, selectedSite.Name)] = updated;
+    }
+
+    private static long FlipSign(long value) => value == 0 ? 0 : -value;
+
+    private static string FormatSign(long value) => value switch
+    {
+        < 0 => "-",
+        > 0 => "+",
+        _ => "0",
+    };
+
+    private static string GetSelectedSiteLabel(CarrierPinSite site) => site.Name switch
+    {
+        "Top" => "P1",
+        "Bottom" => "P2",
+        "Left Join" => "P1",
+        "Right Join" => "P2",
+        _ => site.Name ?? "Pin",
+    };
+
     private static float SafeMagnitude(Proportion magnitude)
     {
         decimal folded = magnitude.Fold();
@@ -864,6 +1054,15 @@ public sealed class SharedCarrierShapesPage : IVisualizerPage
             : $"{value.Dominant}/{value.Recessive}";
     }
 
+    private static string? ResolveSelectedSite(DragHandleKind handleKind) => handleKind switch
+    {
+        DragHandleKind.DTop or DragHandleKind.DTopRecessive or DragHandleKind.DTopDominant => "Top",
+        DragHandleKind.DBottom or DragHandleKind.DBottomRecessive or DragHandleKind.DBottomDominant => "Bottom",
+        DragHandleKind.HLeft or DragHandleKind.HLeftRecessive or DragHandleKind.HLeftDominant => "Left Join",
+        DragHandleKind.HRight or DragHandleKind.HRightRecessive or DragHandleKind.HRightDominant => "Right Join",
+        _ => null,
+    };
+
     private void UpdateDragHandle(SKPoint pixelPoint)
     {
         var handle = _handleLayouts.FirstOrDefault(layout => layout.Target == _dragHandle);
@@ -875,34 +1074,34 @@ public sealed class SharedCarrierShapesPage : IVisualizerPage
         switch (_dragHandle)
         {
             case DragHandleKind.DStemTop:
-                _dStemTopT = Math.Clamp(t, 0f, Math.Min(_dTopT, _dBottomT) - 0.08f);
+                _dStemTopT = ClampOrdered(t, 0f, Math.Max(0f, Math.Min(_dTopT, _dBottomT) - 0.08f));
                 break;
             case DragHandleKind.DTop:
-                _dTopT = Math.Clamp(t, _dStemTopT + 0.08f, _dBottomT - 0.08f);
+                _dTopT = ClampOrdered(t, _dStemTopT + 0.08f, _dBottomT - 0.08f);
                 break;
             case DragHandleKind.DBottom:
-                _dBottomT = Math.Clamp(t, _dTopT + 0.08f, _dStemBottomT - 0.08f);
+                _dBottomT = ClampOrdered(t, _dTopT + 0.08f, _dStemBottomT - 0.08f);
                 break;
             case DragHandleKind.DStemBottom:
-                _dStemBottomT = Math.Clamp(t, Math.Max(_dTopT, _dBottomT) + 0.08f, 1f);
+                _dStemBottomT = ClampOrdered(t, Math.Min(1f, Math.Max(_dTopT, _dBottomT) + 0.08f), 1f);
                 break;
             case DragHandleKind.HLeftStemTop:
-                _hLeftStemTopT = Math.Clamp(t, 0f, _hLeftT - 0.08f);
+                _hLeftStemTopT = ClampOrdered(t, 0f, Math.Max(0f, _hLeftT - 0.08f));
                 break;
             case DragHandleKind.HLeft:
-                _hLeftT = Math.Clamp(t, _hLeftStemTopT + 0.08f, _hLeftStemBottomT - 0.08f);
+                _hLeftT = ClampOrdered(t, _hLeftStemTopT + 0.08f, _hLeftStemBottomT - 0.08f);
                 break;
             case DragHandleKind.HLeftStemBottom:
-                _hLeftStemBottomT = Math.Clamp(t, _hLeftT + 0.08f, 1f);
+                _hLeftStemBottomT = ClampOrdered(t, Math.Min(1f, _hLeftT + 0.08f), 1f);
                 break;
             case DragHandleKind.HRightStemTop:
-                _hRightStemTopT = Math.Clamp(t, 0f, _hRightT - 0.08f);
+                _hRightStemTopT = ClampOrdered(t, 0f, Math.Max(0f, _hRightT - 0.08f));
                 break;
             case DragHandleKind.HRight:
-                _hRightT = Math.Clamp(t, _hRightStemTopT + 0.08f, _hRightStemBottomT - 0.08f);
+                _hRightT = ClampOrdered(t, _hRightStemTopT + 0.08f, _hRightStemBottomT - 0.08f);
                 break;
             case DragHandleKind.HRightStemBottom:
-                _hRightStemBottomT = Math.Clamp(t, _hRightT + 0.08f, 1f);
+                _hRightStemBottomT = ClampOrdered(t, Math.Min(1f, _hRightT + 0.08f), 1f);
                 break;
             case DragHandleKind.DTopRecessive:
                 _dTopRecessiveLength = Math.Clamp(t * MaxPreviewRayLength, 8f, MaxPreviewRayLength);
@@ -961,6 +1160,16 @@ public sealed class SharedCarrierShapesPage : IVisualizerPage
         float dx = right.X - left.X;
         float dy = right.Y - left.Y;
         return MathF.Sqrt(dx * dx + dy * dy);
+    }
+
+    private static float ClampOrdered(float value, float min, float max)
+    {
+        if (max < min)
+        {
+            max = min;
+        }
+
+        return Math.Clamp(value, min, max);
     }
 
     private static float Lerp(float start, float end, float t) => start + ((end - start) * t);
@@ -1100,6 +1309,7 @@ public sealed class SharedCarrierShapesPage : IVisualizerPage
 
     private sealed record ButtonLayout(SKRect Rect, PresetKind Preset);
     private sealed record HandleLayout(DragHandleKind Target, SKPoint Center, SKPoint AxisStart, SKPoint AxisEnd);
+    private sealed record ToggleLayout(SKRect Rect, SignToggleComponent Component);
 
     private enum PresetKind
     {
@@ -1128,5 +1338,13 @@ public sealed class SharedCarrierShapesPage : IVisualizerPage
         HRightStemBottom,
         HRightRecessive,
         HRightDominant,
+    }
+
+    private enum SignToggleComponent
+    {
+        RecessiveUnit,
+        DominantValue,
+        RecessiveValue,
+        DominantUnit,
     }
 }
