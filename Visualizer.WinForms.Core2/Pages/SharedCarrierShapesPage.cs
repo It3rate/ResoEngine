@@ -1436,9 +1436,14 @@ public sealed class SharedCarrierShapesPage : IVisualizerPage
         string? carrierKey = null)
     {
         bool resolved = TryResolveSideDirection(site, role, hostTangent, out SKPoint direction, out float magnitude);
-        if (!resolved && !TryResolveCollapsedSideDirection(site, role, hostTangent, out direction))
+        if (!TryResolveCollapsedSideDirection(site, role, hostTangent, out SKPoint stableDirection))
         {
             return;
+        }
+
+        if (!resolved)
+        {
+            direction = stableDirection;
         }
 
         float length = resolved
@@ -1473,8 +1478,8 @@ public sealed class SharedCarrierShapesPage : IVisualizerPage
             RegisterRayHandle(
                 handle,
                 handlePoint,
-                origin,
-                new SKPoint(origin.X + direction.X * MaxPreviewRayLength, origin.Y + direction.Y * MaxPreviewRayLength),
+                new SKPoint(origin.X - stableDirection.X * MaxPreviewRayLength, origin.Y - stableDirection.Y * MaxPreviewRayLength),
+                new SKPoint(origin.X + stableDirection.X * MaxPreviewRayLength, origin.Y + stableDirection.Y * MaxPreviewRayLength),
                 siteName,
                 role,
                 carrierKey);
@@ -2698,11 +2703,13 @@ public sealed class SharedCarrierShapesPage : IVisualizerPage
 
     private void UpdateDragHandle(SKPoint pixelPoint)
     {
-        var handle = _activeHandleLayout ?? _handleLayouts.FirstOrDefault(layout => layout.Target == _dragHandle);
+        var handle = ResolveActiveHandleLayout();
         if (handle is null)
         {
             return;
         }
+
+        _activeHandleLayout = handle;
 
         if (_dragHandle == DragHandleKind.CustomSite)
         {
@@ -2716,19 +2723,14 @@ public sealed class SharedCarrierShapesPage : IVisualizerPage
             return;
         }
 
-        if (!TryProjectToAxis(pixelPoint, handle.AxisStart, handle.AxisEnd, out float t))
+        if (handle.Kind == HandleKind.Ray)
         {
+            ApplyRayDrag(pixelPoint, handle);
             return;
         }
 
-        if ((_dragHandle == DragHandleKind.CustomRecessive || _dragHandle == DragHandleKind.CustomDominant) &&
-            handle.SiteName is not null)
+        if (!TryProjectToAxis(pixelPoint, handle.AxisStart, handle.AxisEnd, out float t))
         {
-            float length = Math.Clamp(t * MaxPreviewRayLength, 8f, MaxPreviewRayLength);
-            UpdateSiteAxisFromPreviewLength(
-                handle.SiteName,
-                _dragHandle == DragHandleKind.CustomRecessive ? PinSideRole.Recessive : PinSideRole.Dominant,
-                length);
             return;
         }
 
@@ -2770,97 +2772,116 @@ public sealed class SharedCarrierShapesPage : IVisualizerPage
             case DragHandleKind.ARight:
                 _aRightT = ClampOrdered(t, 0f, 1f);
                 break;
+        }
+    }
+
+    private HandleLayout? ResolveActiveHandleLayout()
+    {
+        HandleLayout? active = _activeHandleLayout;
+        HandleLayout? current = _handleLayouts.FirstOrDefault(
+            layout =>
+                layout.Target == _dragHandle &&
+                (active is null || layout.SiteName == active.SiteName) &&
+                (active is null || layout.SideRole == active.SideRole) &&
+                (active is null || layout.CarrierKey == active.CarrierKey));
+        return current ?? active ?? _handleLayouts.FirstOrDefault(layout => layout.Target == _dragHandle);
+    }
+
+    private void ApplyRayDrag(SKPoint pixelPoint, HandleLayout handle)
+    {
+        if (!TryProjectToSignedAxisDistance(pixelPoint, handle.AxisStart, handle.AxisEnd, out float signedDistance))
+        {
+            return;
+        }
+
+        if ((_dragHandle == DragHandleKind.CustomRecessive || _dragHandle == DragHandleKind.CustomDominant) &&
+            handle.SiteName is not null)
+        {
+            UpdateSiteAxisFromPreviewDistance(
+                handle.SiteName,
+                _dragHandle == DragHandleKind.CustomRecessive ? PinSideRole.Recessive : PinSideRole.Dominant,
+                signedDistance);
+            return;
+        }
+
+        float magnitude = Math.Clamp(Math.Abs(signedDistance), 0f, MaxPreviewRayLength);
+
+        void Apply(string siteName, PinSideRole role, Action<float> assign)
+        {
+            assign(magnitude);
+            UpdateSiteAxisFromPreviewDistance(siteName, role, signedDistance);
+        }
+
+        switch (_dragHandle)
+        {
             case DragHandleKind.DTopRecessive:
-                _dTopRecessiveLength = Math.Clamp(t * MaxPreviewRayLength, 8f, MaxPreviewRayLength);
-                UpdateSiteAxisFromPreviewLength("Top", PinSideRole.Recessive, _dTopRecessiveLength);
+                Apply("Top", PinSideRole.Recessive, value => _dTopRecessiveLength = value);
                 break;
             case DragHandleKind.DTopDominant:
-                _dTopDominantLength = Math.Clamp(t * MaxPreviewRayLength, 8f, MaxPreviewRayLength);
-                UpdateSiteAxisFromPreviewLength("Top", PinSideRole.Dominant, _dTopDominantLength);
+                Apply("Top", PinSideRole.Dominant, value => _dTopDominantLength = value);
                 break;
             case DragHandleKind.DBottomRecessive:
-                _dBottomRecessiveLength = Math.Clamp(t * MaxPreviewRayLength, 8f, MaxPreviewRayLength);
-                UpdateSiteAxisFromPreviewLength("Bottom", PinSideRole.Recessive, _dBottomRecessiveLength);
+                Apply("Bottom", PinSideRole.Recessive, value => _dBottomRecessiveLength = value);
                 break;
             case DragHandleKind.DBottomDominant:
-                _dBottomDominantLength = Math.Clamp(t * MaxPreviewRayLength, 8f, MaxPreviewRayLength);
-                UpdateSiteAxisFromPreviewLength("Bottom", PinSideRole.Dominant, _dBottomDominantLength);
+                Apply("Bottom", PinSideRole.Dominant, value => _dBottomDominantLength = value);
                 break;
             case DragHandleKind.HLeftRecessive:
-                _hLeftRecessiveLength = Math.Clamp(t * MaxPreviewRayLength, 8f, MaxPreviewRayLength);
-                UpdateSiteAxisFromPreviewLength("Left Join", PinSideRole.Recessive, _hLeftRecessiveLength);
+                Apply("Left Join", PinSideRole.Recessive, value => _hLeftRecessiveLength = value);
                 break;
             case DragHandleKind.HLeftDominant:
-                _hLeftDominantLength = Math.Clamp(t * MaxPreviewRayLength, 8f, MaxPreviewRayLength);
-                UpdateSiteAxisFromPreviewLength("Left Join", PinSideRole.Dominant, _hLeftDominantLength);
+                Apply("Left Join", PinSideRole.Dominant, value => _hLeftDominantLength = value);
                 break;
             case DragHandleKind.HRightRecessive:
-                _hRightRecessiveLength = Math.Clamp(t * MaxPreviewRayLength, 8f, MaxPreviewRayLength);
-                UpdateSiteAxisFromPreviewLength("Right Join", PinSideRole.Recessive, _hRightRecessiveLength);
+                Apply("Right Join", PinSideRole.Recessive, value => _hRightRecessiveLength = value);
                 break;
             case DragHandleKind.HRightDominant:
-                _hRightDominantLength = Math.Clamp(t * MaxPreviewRayLength, 8f, MaxPreviewRayLength);
-                UpdateSiteAxisFromPreviewLength("Right Join", PinSideRole.Dominant, _hRightDominantLength);
+                Apply("Right Join", PinSideRole.Dominant, value => _hRightDominantLength = value);
                 break;
             case DragHandleKind.TBaseDominant:
-                _tBaseDominantLength = Math.Clamp(t * MaxPreviewRayLength, 8f, MaxPreviewRayLength);
-                UpdateSiteAxisFromPreviewLength("Base", PinSideRole.Dominant, _tBaseDominantLength);
+                Apply("Base", PinSideRole.Dominant, value => _tBaseDominantLength = value);
                 break;
             case DragHandleKind.TCrossbarRecessive:
-                _tCrossbarRecessiveLength = Math.Clamp(t * MaxPreviewRayLength, 8f, MaxPreviewRayLength);
-                UpdateSiteAxisFromPreviewLength("Crossbar", PinSideRole.Recessive, _tCrossbarRecessiveLength);
+                Apply("Crossbar", PinSideRole.Recessive, value => _tCrossbarRecessiveLength = value);
                 break;
             case DragHandleKind.TCrossbarDominant:
-                _tCrossbarDominantLength = Math.Clamp(t * MaxPreviewRayLength, 8f, MaxPreviewRayLength);
-                UpdateSiteAxisFromPreviewLength("Crossbar", PinSideRole.Dominant, _tCrossbarDominantLength);
+                Apply("Crossbar", PinSideRole.Dominant, value => _tCrossbarDominantLength = value);
                 break;
             case DragHandleKind.YJunctionRecessive:
-                _yJunctionRecessiveLength = Math.Clamp(t * MaxPreviewRayLength, 8f, MaxPreviewRayLength);
-                UpdateSiteAxisFromPreviewLength("Junction", PinSideRole.Recessive, _yJunctionRecessiveLength);
+                Apply("Junction", PinSideRole.Recessive, value => _yJunctionRecessiveLength = value);
                 break;
             case DragHandleKind.YJunctionDominant:
-                _yJunctionDominantLength = Math.Clamp(t * MaxPreviewRayLength, 8f, MaxPreviewRayLength);
-                UpdateSiteAxisFromPreviewLength("Junction", PinSideRole.Dominant, _yJunctionDominantLength);
+                Apply("Junction", PinSideRole.Dominant, value => _yJunctionDominantLength = value);
                 break;
             case DragHandleKind.LCornerRecessive:
-                _lCornerRecessiveLength = Math.Clamp(t * MaxPreviewRayLength, 8f, MaxPreviewRayLength);
-                UpdateSiteAxisFromPreviewLength("Corner", PinSideRole.Recessive, _lCornerRecessiveLength);
+                Apply("Corner", PinSideRole.Recessive, value => _lCornerRecessiveLength = value);
                 break;
             case DragHandleKind.LCornerDominant:
-                _lCornerDominantLength = Math.Clamp(t * MaxPreviewRayLength, 8f, MaxPreviewRayLength);
-                UpdateSiteAxisFromPreviewLength("Corner", PinSideRole.Dominant, _lCornerDominantLength);
+                Apply("Corner", PinSideRole.Dominant, value => _lCornerDominantLength = value);
                 break;
             case DragHandleKind.ALeftRecessive:
-                _aLeftRecessiveLength = Math.Clamp(t * MaxPreviewRayLength, 8f, MaxPreviewRayLength);
-                UpdateSiteAxisFromPreviewLength("Left Bar", PinSideRole.Recessive, _aLeftRecessiveLength);
+                Apply("Left Bar", PinSideRole.Recessive, value => _aLeftRecessiveLength = value);
                 break;
             case DragHandleKind.ALeftDominant:
-                _aLeftDominantLength = Math.Clamp(t * MaxPreviewRayLength, 8f, MaxPreviewRayLength);
-                UpdateSiteAxisFromPreviewLength("Left Bar", PinSideRole.Dominant, _aLeftDominantLength);
+                Apply("Left Bar", PinSideRole.Dominant, value => _aLeftDominantLength = value);
                 break;
             case DragHandleKind.ARightRecessive:
-                _aRightRecessiveLength = Math.Clamp(t * MaxPreviewRayLength, 8f, MaxPreviewRayLength);
-                UpdateSiteAxisFromPreviewLength("Right Bar", PinSideRole.Recessive, _aRightRecessiveLength);
+                Apply("Right Bar", PinSideRole.Recessive, value => _aRightRecessiveLength = value);
                 break;
             case DragHandleKind.ARightDominant:
-                _aRightDominantLength = Math.Clamp(t * MaxPreviewRayLength, 8f, MaxPreviewRayLength);
-                UpdateSiteAxisFromPreviewLength("Right Bar", PinSideRole.Dominant, _aRightDominantLength);
+                Apply("Right Bar", PinSideRole.Dominant, value => _aRightDominantLength = value);
                 break;
             case DragHandleKind.MLeftRecessive:
-                _mLeftRecessiveLength = Math.Clamp(t * MaxPreviewRayLength, 8f, MaxPreviewRayLength);
-                UpdateSiteAxisFromPreviewLength("Left Peak", PinSideRole.Recessive, _mLeftRecessiveLength);
+                Apply("Left Peak", PinSideRole.Recessive, value => _mLeftRecessiveLength = value);
                 break;
             case DragHandleKind.MLeftDominant:
-                _mLeftDominantLength = Math.Clamp(t * MaxPreviewRayLength, 8f, MaxPreviewRayLength);
-                UpdateSiteAxisFromPreviewLength("Left Peak", PinSideRole.Dominant, _mLeftDominantLength);
+                Apply("Left Peak", PinSideRole.Dominant, value => _mLeftDominantLength = value);
                 break;
             case DragHandleKind.MRightRecessive:
-                _mRightRecessiveLength = Math.Clamp(t * MaxPreviewRayLength, 8f, MaxPreviewRayLength);
-                UpdateSiteAxisFromPreviewLength("Right Peak", PinSideRole.Recessive, _mRightRecessiveLength);
+                Apply("Right Peak", PinSideRole.Recessive, value => _mRightRecessiveLength = value);
                 break;
             case DragHandleKind.MRightDominant:
-                _mRightDominantLength = Math.Clamp(t * MaxPreviewRayLength, 8f, MaxPreviewRayLength);
-                UpdateSiteAxisFromPreviewLength("Right Peak", PinSideRole.Dominant, _mRightDominantLength);
+                Apply("Right Peak", PinSideRole.Dominant, value => _mRightDominantLength = value);
                 break;
         }
     }
@@ -2916,24 +2937,15 @@ public sealed class SharedCarrierShapesPage : IVisualizerPage
         }
     }
 
-    private void UpdateSiteAxisFromPreviewLength(string siteName, PinSideRole role, float length)
+    private void UpdateSiteAxisFromPreviewDistance(string siteName, PinSideRole role, float signedDistance)
     {
         ShapePreset preset = _presets[_selectedPreset];
         CarrierPinSite site = FindSite(preset, siteName);
         Axis current = site.Applied;
-        long magnitude = Math.Max(0L, (long)Math.Round((length - 20f) / 16f));
-        long currentSignedValue = role == PinSideRole.Recessive
-            ? current.Recessive.Dominant
-            : current.Dominant.Dominant;
-        int sign = Math.Sign(currentSignedValue);
-        if (sign == 0 && magnitude > 0)
-        {
-            // When a side is exactly zero, dragging its handle outward should be able to
-            // re-establish a positive local value instead of getting trapped at zero.
-            sign = 1;
-        }
-
-        long signedMagnitude = magnitude * sign;
+        float absoluteDistance = Math.Abs(signedDistance);
+        long magnitude = Math.Max(0L, (long)Math.Round((absoluteDistance - 20f) / 16f));
+        int sign = Math.Sign(signedDistance);
+        long signedMagnitude = magnitude == 0 ? 0 : magnitude * sign;
 
         Axis updated = role == PinSideRole.Recessive
             ? new Axis(signedMagnitude, current.Recessive.Recessive, current.Dominant.Dominant, current.Dominant.Recessive)
@@ -3027,6 +3039,24 @@ public sealed class SharedCarrierShapesPage : IVisualizerPage
 
         t = ((point.X - start.X) * dx + (point.Y - start.Y) * dy) / lengthSquared;
         t = Math.Clamp(t, 0f, 1f);
+        return true;
+    }
+
+    private static bool TryProjectToSignedAxisDistance(SKPoint point, SKPoint start, SKPoint end, out float signedDistance)
+    {
+        float dx = end.X - start.X;
+        float dy = end.Y - start.Y;
+        float lengthSquared = dx * dx + dy * dy;
+        if (lengthSquared < 0.001f)
+        {
+            signedDistance = 0f;
+            return false;
+        }
+
+        float t = ((point.X - start.X) * dx + (point.Y - start.Y) * dy) / lengthSquared;
+        t = Math.Clamp(t, 0f, 1f);
+        float axisLength = MathF.Sqrt(lengthSquared);
+        signedDistance = (t - 0.5f) * axisLength;
         return true;
     }
 
