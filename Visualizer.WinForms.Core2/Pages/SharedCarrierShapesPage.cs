@@ -16,6 +16,7 @@ public sealed class SharedCarrierShapesPage : IVisualizerPage
     private readonly List<ButtonLayout> _buttonLayouts = [];
     private readonly List<HandleLayout> _handleLayouts = [];
     private readonly List<ToggleLayout> _toggleLayouts = [];
+    private readonly List<BindingToggleLayout> _bindingLayouts = [];
     private readonly List<CopyLayout> _copyLayouts = [];
     private readonly List<ValueLayout> _valueLayouts = [];
     private readonly List<ActionLayout> _actionLayouts = [];
@@ -274,6 +275,7 @@ public sealed class SharedCarrierShapesPage : IVisualizerPage
         _buttonLayouts.Clear();
         _handleLayouts.Clear();
         _toggleLayouts.Clear();
+        _bindingLayouts.Clear();
         _copyLayouts.Clear();
         _valueLayouts.Clear();
         _actionLayouts.Clear();
@@ -354,6 +356,14 @@ public sealed class SharedCarrierShapesPage : IVisualizerPage
             return true;
         }
 
+        var binding = _bindingLayouts.FirstOrDefault(layout => layout.Rect.Contains(pixelPoint));
+        if (binding is not null)
+        {
+            UpdateSelectedBinding(binding.Role, binding.Mode);
+            _canvasHost?.InvalidateCanvas();
+            return true;
+        }
+
         if (_addPinArmed && TryAddCustomPin(pixelPoint))
         {
             _canvasHost?.InvalidateCanvas();
@@ -405,6 +415,8 @@ public sealed class SharedCarrierShapesPage : IVisualizerPage
                 ? Cursors.IBeam
             : _toggleLayouts.Any(layout => layout.Rect.Contains(pixelPoint))
                 ? Cursors.Hand
+            : _bindingLayouts.Any(layout => layout.Rect.Contains(pixelPoint))
+                ? Cursors.Hand
             : _addPinArmed && TryFindNearestPreviewCarrier(pixelPoint, out _, out _, out _, out _, out float carrierDistance) && carrierDistance <= CarrierHitThreshold
                 ? Cursors.Cross
             : HitHandle(pixelPoint) is not null
@@ -429,6 +441,7 @@ public sealed class SharedCarrierShapesPage : IVisualizerPage
         _buttonLayouts.Clear();
         _handleLayouts.Clear();
         _toggleLayouts.Clear();
+        _bindingLayouts.Clear();
         _copyLayouts.Clear();
         _valueLayouts.Clear();
         _actionLayouts.Clear();
@@ -526,6 +539,22 @@ public sealed class SharedCarrierShapesPage : IVisualizerPage
             PageChrome.DrawWrappedText(
                 canvas,
                 $"carriers: {participants}",
+                rect.Left + 28f,
+                ref y,
+                rect.Width - 56f,
+                _captionPaint);
+        }
+
+        if (selectedSite.Name is not null &&
+            TryGetCustomPin(_selectedPreset, selectedSite.Name, out var customPin) &&
+            customPin is not null)
+        {
+            string modeSummary =
+                $"modes: i {DescribeBindingMode(customPin.RecessiveBinding)}, " +
+                $"u {DescribeBindingMode(customPin.DominantBinding)}";
+            PageChrome.DrawWrappedText(
+                canvas,
+                modeSummary,
                 rect.Left + 28f,
                 ref y,
                 rect.Width - 56f,
@@ -1259,6 +1288,13 @@ public sealed class SharedCarrierShapesPage : IVisualizerPage
             DrawToggleCell(canvas, cellRect, items[index].Label, items[index].Sign, items[index].Accent);
             _toggleLayouts.Add(new ToggleLayout(cellRect, items[index].Component));
         }
+
+        if (site.Name is not null &&
+            TryGetCustomPin(_selectedPreset, site.Name, out var customPin) &&
+            customPin is not null)
+        {
+            DrawBindingLegend(canvas, customPin, startX, startY + (2f * (cellHeight + gap)) + 4f);
+        }
     }
 
     private void DrawToggleCell(SKCanvas canvas, SKRect rect, string label, string sign, SKColor accent)
@@ -1291,6 +1327,81 @@ public sealed class SharedCarrierShapesPage : IVisualizerPage
         canvas.DrawText(label, rect.Left + 15f, rect.Top + 14f, labelPaint);
         float signWidth = signPaint.MeasureText(sign);
         canvas.DrawText(sign, rect.Right - signWidth - 10f, rect.MidY + 6f, signPaint);
+    }
+
+    private void DrawBindingLegend(SKCanvas canvas, CustomPreviewPin pin, float startX, float startY)
+    {
+        float labelWidth = 14f;
+        float cellWidth = 22f;
+        float cellHeight = 20f;
+        float gap = 4f;
+        var rows = new (PinSideRole Role, string Label, SKColor Accent, PreviewBindingMode Selected)[]
+        {
+            (PinSideRole.Recessive, "i", RecessiveRayColor, pin.RecessiveBinding),
+            (PinSideRole.Dominant, "u", DominantRayColor, pin.DominantBinding),
+        };
+        var modes = new[]
+        {
+            PreviewBindingMode.Host,
+            PreviewBindingMode.New,
+            PreviewBindingMode.Link,
+        };
+
+        using var labelPaint = new SKPaint
+        {
+            Color = new SKColor(84, 84, 84),
+            TextSize = 11f,
+            Typeface = SKTypeface.FromFamilyName(VisualStyle.FontFamily, SKFontStyle.Bold),
+            IsAntialias = true,
+        };
+
+        for (int row = 0; row < rows.Length; row++)
+        {
+            float rowTop = startY + (row * (cellHeight + gap));
+            canvas.DrawText(rows[row].Label, startX, rowTop + 14f, labelPaint);
+
+            for (int col = 0; col < modes.Length; col++)
+            {
+                PreviewBindingMode mode = modes[col];
+                var rect = new SKRect(
+                    startX + labelWidth + 4f + (col * (cellWidth + gap)),
+                    rowTop,
+                    startX + labelWidth + 4f + (col * (cellWidth + gap)) + cellWidth,
+                    rowTop + cellHeight);
+                bool selected = mode == rows[row].Selected;
+                DrawBindingCell(canvas, rect, FormatBindingMode(mode), rows[row].Accent, selected);
+                _bindingLayouts.Add(new BindingToggleLayout(rect, rows[row].Role, mode));
+            }
+        }
+    }
+
+    private void DrawBindingCell(SKCanvas canvas, SKRect rect, string text, SKColor accent, bool selected)
+    {
+        using var fill = new SKPaint
+        {
+            Style = SKPaintStyle.Fill,
+            Color = selected ? new SKColor(accent.Red, accent.Green, accent.Blue, 28) : new SKColor(255, 255, 255, 220),
+            IsAntialias = true,
+        };
+        using var stroke = new SKPaint
+        {
+            Style = SKPaintStyle.Stroke,
+            StrokeWidth = selected ? 1.6f : 1.1f,
+            Color = selected ? accent : new SKColor(214, 214, 214),
+            IsAntialias = true,
+        };
+        using var textPaint = new SKPaint
+        {
+            Color = selected ? accent : new SKColor(102, 102, 102),
+            TextSize = 10f,
+            Typeface = SKTypeface.FromFamilyName(VisualStyle.FontFamily, SKFontStyle.Bold),
+            IsAntialias = true,
+            TextAlign = SKTextAlign.Center,
+        };
+
+        canvas.DrawRoundRect(rect, 7f, 7f, fill);
+        canvas.DrawRoundRect(rect, 7f, 7f, stroke);
+        canvas.DrawText(text, rect.MidX, rect.MidY + 4f, textPaint);
     }
 
     private void DrawStemEndpointHandle(SKCanvas canvas, SKPoint center, bool selected)
@@ -1938,7 +2049,29 @@ public sealed class SharedCarrierShapesPage : IVisualizerPage
         CarrierPinSite.FromPointPinning(
             pin.HostCarrier,
             PreviewHostAxis.PinAt(pin.Axis, ToPreviewProportion(pin.T)),
+            ResolveCustomAttachment(pin, PinSideRole.Recessive),
+            ResolveCustomAttachment(pin, PinSideRole.Dominant),
             name: pin.Name);
+
+    private CarrierSideAttachment ResolveCustomAttachment(CustomPreviewPin pin, PinSideRole role)
+    {
+        PreviewBindingMode mode = role == PinSideRole.Recessive ? pin.RecessiveBinding : pin.DominantBinding;
+        CarrierIdentity carrier = mode switch
+        {
+            PreviewBindingMode.Host => pin.HostCarrier,
+            PreviewBindingMode.New => role == PinSideRole.Recessive ? pin.RecessiveCarrier : pin.DominantCarrier,
+            PreviewBindingMode.Link => pin.LinkedCarrier,
+            _ => pin.HostCarrier,
+        };
+
+        Proportion position = mode == PreviewBindingMode.Host
+            ? ToPreviewProportion(pin.T)
+            : role == PinSideRole.Recessive
+                ? Proportion.Zero
+                : Proportion.One;
+
+        return new CarrierSideAttachment(role, carrier, position, $"{pin.Name}.{ShortRole(role)}");
+    }
 
     private CarrierPinSite ResolveSite(CarrierPinSite site)
     {
@@ -1999,6 +2132,25 @@ public sealed class SharedCarrierShapesPage : IVisualizerPage
         return true;
     }
 
+    private void UpdateSelectedBinding(PinSideRole role, PreviewBindingMode mode)
+    {
+        if (!_selectedSiteByPreset.TryGetValue(_selectedPreset, out var selectedName) ||
+            !TryGetCustomPin(_selectedPreset, selectedName, out var customPin) ||
+            customPin is null)
+        {
+            return;
+        }
+
+        if (role == PinSideRole.Recessive)
+        {
+            customPin.RecessiveBinding = mode;
+        }
+        else
+        {
+            customPin.DominantBinding = mode;
+        }
+    }
+
     private bool HasSelectedCustomPin() =>
         _selectedSiteByPreset.TryGetValue(_selectedPreset, out var selectedName) &&
         TryGetCustomPin(_selectedPreset, selectedName, out _);
@@ -2041,6 +2193,11 @@ public sealed class SharedCarrierShapesPage : IVisualizerPage
                 HostCarrier = carrier.Carrier,
                 T = t,
                 Axis = axis,
+                RecessiveBinding = PreviewBindingMode.Host,
+                DominantBinding = PreviewBindingMode.New,
+                RecessiveCarrier = CarrierIdentity.Create($"{name} i"),
+                DominantCarrier = CarrierIdentity.Create($"{name} u"),
+                LinkedCarrier = CarrierIdentity.Create($"{name} link"),
             });
         _selectedSiteByPreset[_selectedPreset] = name;
         _addPinArmed = false;
@@ -2311,6 +2468,22 @@ public sealed class SharedCarrierShapesPage : IVisualizerPage
         _ => "0",
     };
 
+    private static string FormatBindingMode(PreviewBindingMode mode) => mode switch
+    {
+        PreviewBindingMode.Host => "H",
+        PreviewBindingMode.New => "N",
+        PreviewBindingMode.Link => "L",
+        _ => mode.ToString(),
+    };
+
+    private static string DescribeBindingMode(PreviewBindingMode mode) => mode switch
+    {
+        PreviewBindingMode.Host => "host",
+        PreviewBindingMode.New => "new",
+        PreviewBindingMode.Link => "link",
+        _ => mode.ToString(),
+    };
+
     private static string GetSelectedSiteLabel(CarrierPinSite site) => site.Name switch
     {
         "Top" => "P1",
@@ -2459,6 +2632,8 @@ public sealed class SharedCarrierShapesPage : IVisualizerPage
             builder.AppendLine($"    previewCarrier: {pin.CarrierKey}");
             builder.AppendLine($"    t: {FormatFloat(pin.T)}");
             builder.AppendLine($"    axis: {FormatAxis(pin.Axis)}");
+            builder.AppendLine($"    recessiveBinding: {DescribeBindingMode(pin.RecessiveBinding)}");
+            builder.AppendLine($"    dominantBinding: {DescribeBindingMode(pin.DominantBinding)}");
         }
 
         return builder.ToString();
@@ -3245,6 +3420,7 @@ public sealed class SharedCarrierShapesPage : IVisualizerPage
         PinSideRole? SideRole = null,
         string? CarrierKey = null);
     private sealed record ToggleLayout(SKRect Rect, SignToggleComponent Component);
+    private sealed record BindingToggleLayout(SKRect Rect, PinSideRole Role, PreviewBindingMode Mode);
     private sealed record CopyLayout(SKRect Rect, string Text);
     private sealed record ValueLayout(SKRect Rect, PresetKind Preset, string SiteName, string Text);
     private sealed record ActionLayout(SKRect Rect, SceneAction Action);
@@ -3257,6 +3433,11 @@ public sealed class SharedCarrierShapesPage : IVisualizerPage
         public required CarrierIdentity HostCarrier { get; set; }
         public required float T { get; set; }
         public required Axis Axis { get; set; }
+        public required PreviewBindingMode RecessiveBinding { get; set; }
+        public required PreviewBindingMode DominantBinding { get; set; }
+        public required CarrierIdentity RecessiveCarrier { get; init; }
+        public required CarrierIdentity DominantCarrier { get; init; }
+        public required CarrierIdentity LinkedCarrier { get; init; }
     }
 
     private enum PresetKind
@@ -3325,6 +3506,13 @@ public sealed class SharedCarrierShapesPage : IVisualizerPage
         DominantValue,
         RecessiveValue,
         DominantUnit,
+    }
+
+    private enum PreviewBindingMode
+    {
+        Host,
+        New,
+        Link,
     }
 
     private enum LetterboxEdge
