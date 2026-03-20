@@ -6,7 +6,7 @@ Within [README.md](./README.md), this file is the primary source of truth.
 Supporting material is organized alongside it:
 
 - `Appendices/` for narrower implementation-aligned rule sheets
-- `Proposals/` for exploratory conceptual work not yet promoted into the main axioms
+- `Proposals/` for curated exploratory conceptual work not yet promoted into the main axioms
 - `Plans/` for implementation planning
 - `Legacy/` for historical source documents preserved for provenance
 

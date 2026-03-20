@@ -1,10 +1,10 @@
 # Pinning Proposal
 
 This document is a provisional proposal for a broader pinning-centered rewrite of Core 2 behavior.
-It is intentionally more thorough than the narrower appendix files:
+It is intentionally more thorough than the earlier stepping-stone notes now kept in legacy:
 
-- [PinningAxisRules.md](./PinningAxisRules.md)
-- [PinsAsDynamicLocalEvents.md](./PinsAsDynamicLocalEvents.md)
+- [PinningAxisRules.md](../Legacy/PinningAxisRules.md)
+- [PinsAsDynamicLocalEvents.md](../Legacy/PinsAsDynamicLocalEvents.md)
 
 It is not yet part of the consolidated axioms in:
 

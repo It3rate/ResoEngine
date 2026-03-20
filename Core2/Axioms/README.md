@@ -18,11 +18,11 @@ If a concept is considered settled enough to feed back into the AI, it belongs t
 - `Appendices/`
   Narrow implementation-aligned rule sheets that elaborate one area without replacing the main spec. These often track focused behavior in `Core2`, `Core2.Symbolics`, or `Core2.Interpretation`.
 - `Proposals/`
-  Exploratory conceptual documents. These are useful design references but are not themselves the source of truth.
+  Exploratory conceptual documents. These are useful design references but are not themselves the source of truth. See [Proposals/README.md](./Proposals/README.md) for the curated active set.
 - `Plans/`
   Implementation planning documents.
 - `Legacy/`
-  Older merged source documents retained for provenance after consolidation into the main prompt axioms.
+  Older merged source documents retained for provenance after consolidation into the main prompt axioms. See [Legacy/README.md](./Legacy/README.md) before treating anything there as active guidance.
 
 ## Maintenance rule
 
