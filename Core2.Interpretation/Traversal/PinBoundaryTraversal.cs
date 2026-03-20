@@ -1,6 +1,7 @@
 using Core2.Elements;
+using Core2.Repetition;
 
-namespace Core2.Repetition;
+namespace Core2.Interpretation.Traversal;
 
 internal static class PinBoundaryTraversal
 {

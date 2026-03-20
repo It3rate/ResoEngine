@@ -1,3 +1,4 @@
+using Core2.Interpretation.Traversal;
 using Core2.Repetition;
 
 namespace Applied.Geometry.Utils;

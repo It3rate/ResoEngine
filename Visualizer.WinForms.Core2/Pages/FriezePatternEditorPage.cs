@@ -1,6 +1,7 @@
 using Applied.Geometry.Frieze;
 using Applied.Geometry.Utils;
 using Core2.Elements;
+using Core2.Interpretation.Traversal;
 using Core2.Repetition;
 using ResoEngine.Visualizer.Adapt;
 using ResoEngine.Visualizer.Controls;
