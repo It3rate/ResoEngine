@@ -1,7 +1,7 @@
 using Core2.Elements;
-using Core2.Repetition;
+using Core2.Units;
 
-namespace Core2.Units;
+namespace Core2.Symbolics.Repetition;
 
 internal static class QuantityPowerResolver
 {

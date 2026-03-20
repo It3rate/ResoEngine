@@ -1,5 +1,4 @@
 using Core2.Algebra;
-using Core2.Repetition;
 using System.Numerics;
 
 namespace Core2.Elements;
@@ -55,12 +54,6 @@ public readonly record struct Scalar(decimal Value) : IElement, IComparable<Scal
         return new(left.Value / right.Value);
     }
 
-    public InverseContinuationResult<Scalar> InverseContinue(
-        int degree,
-        InverseContinuationRule rule = InverseContinuationRule.Principal,
-        Scalar? reference = null) =>
-        InverseContinuationEngine.InverseContinue(this, degree, rule, reference);
-
     public long ToLongExact()
     {
         if (decimal.Truncate(Value) != Value || Value < long.MinValue || Value > long.MaxValue)
@@ -100,12 +93,6 @@ public readonly record struct Scalar(decimal Value) : IElement, IComparable<Scal
     public Proportion Pin(Scalar support) => new(ToLongExact(), support.ToLongExact());
 
     public Proportion Pin(long support) => new(ToLongExact(), support);
-
-    public PowerResult<Scalar> TryPow(
-        Proportion exponent,
-        InverseContinuationRule rule = InverseContinuationRule.Principal,
-        Scalar? reference = null) =>
-        PowerEngine.Pow(this, exponent, rule, reference);
 
     public Scalar Abs() => new(decimal.Abs(Value));
 

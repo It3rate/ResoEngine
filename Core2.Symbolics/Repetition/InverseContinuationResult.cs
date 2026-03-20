@@ -1,6 +1,6 @@
 using Core2.Branching;
 
-namespace Core2.Repetition;
+namespace Core2.Symbolics.Repetition;
 
 public readonly record struct InverseContinuationTension(
     InverseContinuationTensionKind Kind,

@@ -1,7 +1,7 @@
 using Core2.Algebra;
 using Core2.Elements;
 
-namespace Core2.Repetition;
+namespace Core2.Symbolics.Repetition;
 
 public static class RepetitionEngine
 {

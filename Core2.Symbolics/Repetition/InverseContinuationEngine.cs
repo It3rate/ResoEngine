@@ -1,8 +1,9 @@
 using System.Numerics;
 using Core2.Algebra;
 using Core2.Elements;
+using Core2.Repetition;
 
-namespace Core2.Repetition;
+namespace Core2.Symbolics.Repetition;
 
 public static class InverseContinuationEngine
 {

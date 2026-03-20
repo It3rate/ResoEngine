@@ -1,4 +1,4 @@
-namespace Core2.Repetition;
+namespace Core2.Symbolics.Repetition;
 
 public enum InverseContinuationRule
 {

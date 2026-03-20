@@ -3,7 +3,7 @@ using Core2.Branching;
 using Core2.Elements;
 using System.Numerics;
 
-namespace Core2.Repetition;
+namespace Core2.Symbolics.Repetition;
 
 public static class PowerEngine
 {

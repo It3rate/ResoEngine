@@ -38,20 +38,6 @@ public sealed record Area(Axis Recessive, Axis Dominant)
 
     public Area Oppose() => ApplyOpposition();
 
-    public InverseContinuationResult<Axis> InverseContinue(
-        int degree,
-        AreaInverseContinuationMode mode = AreaInverseContinuationMode.FoldFirst,
-        InverseContinuationRule rule = InverseContinuationRule.Principal,
-        Axis? foldedReference = null) =>
-        InverseContinuationEngine.InverseContinue(this, degree, mode, rule, foldedReference);
-
-    public PowerResult<Axis> TryPow(
-        Proportion exponent,
-        AreaInverseContinuationMode mode = AreaInverseContinuationMode.FoldFirst,
-        InverseContinuationRule rule = InverseContinuationRule.Principal,
-        Axis? foldedReference = null) =>
-        PowerEngine.Pow(this, exponent, mode, rule, foldedReference);
-
     public Area Mirror() => FromPair(Table.Mirror(Recessive, Dominant));
 
     public Area SwapUnitRoles() => Mirror();

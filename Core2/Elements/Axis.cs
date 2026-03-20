@@ -139,18 +139,6 @@ public sealed record Axis(Proportion Recessive, Proportion Dominant, AxisBasis B
     public PinnedPair<Proportion, Proportion> AsPinnedPair() =>
         new(Recessive, Dominant, Relation);
 
-    public InverseContinuationResult<Axis> InverseContinue(
-        int degree,
-        InverseContinuationRule rule = InverseContinuationRule.Principal,
-        Axis? reference = null) =>
-        InverseContinuationEngine.InverseContinue(this, degree, rule, reference);
-
-    public PowerResult<Axis> TryPow(
-        Proportion exponent,
-        InverseContinuationRule rule = InverseContinuationRule.Principal,
-        Axis? reference = null) =>
-        PowerEngine.Pow(this, exponent, rule, reference);
-
     /// <summary>
     /// Returns the geometric overlap clipped into the left operand's direction/support frame.
     /// Use TryIntersect(...) if you need to distinguish "no overlap" from a point result.

@@ -1,5 +1,4 @@
 using Core2.Algebra;
-using Core2.Repetition;
 using System.Numerics;
 
 namespace Core2.Elements;
@@ -61,18 +60,6 @@ public sealed record Proportion : IElement, IComparable<Proportion>, IComparable
     public Axis Pin(Proportion other) => new(this, other);
 
     public PointPinning<Proportion, Proportion> PinAt(Proportion other, Proportion position) => new(this, other, position);
-
-    public InverseContinuationResult<Proportion> InverseContinue(
-        int degree,
-        InverseContinuationRule rule = InverseContinuationRule.Principal,
-        Proportion? reference = null) =>
-        InverseContinuationEngine.InverseContinue(this, degree, rule, reference);
-
-    public PowerResult<Proportion> TryPow(
-        Proportion exponent,
-        InverseContinuationRule rule = InverseContinuationRule.Principal,
-        Proportion? reference = null) =>
-        PowerEngine.Pow(this, exponent, rule, reference);
 
     public static Proportion operator +(Proportion left, Proportion right) =>
         new(
