@@ -658,4 +658,48 @@ public class SymbolicGrammarTermTests
         Assert.True(reduced.Environment.TryResolve("turn", out var turn));
         Assert.Equal(Axis.I, Assert.IsType<ElementLiteralTerm>(turn).Value);
     }
+
+    [Fact]
+    public void SymbolicInspector_ProducesPerStepTraceForProgramSequence()
+    {
+        var report = SymbolicInspector.Inspect("let stem = 1; let turn = i; turn");
+
+        Assert.False(report.HasError);
+        Assert.Equal(3, report.Steps.Count);
+        Assert.Equal("let stem", report.Steps[0].Label);
+        Assert.Equal("let turn", report.Steps[1].Label);
+        Assert.Equal("emit", report.Steps[2].Label);
+        Assert.Equal("i", SymbolicTermFormatter.Format(report.FinalStep!.Reduction.Output!));
+    }
+
+    [Fact]
+    public void SymbolicInspector_EvaluatesConstraintInsideCommitStep()
+    {
+        var report = SymbolicInspector.Inspect("commit choice = constraints{prefer(glyph, branch{1 | i} == i, 2/1)}; choice");
+
+        Assert.False(report.HasError);
+        Assert.Equal(2, report.Steps.Count);
+
+        var commitStep = report.Steps[0];
+        Assert.Equal("commit choice", commitStep.Label);
+        Assert.NotNull(commitStep.Evaluation);
+        Assert.NotNull(commitStep.Negotiation);
+        Assert.Equal(ConstraintNegotiationStatus.Selected, commitStep.Negotiation!.Status);
+        Assert.Equal("i", SymbolicTermFormatter.Format(commitStep.Negotiation.SelectedCandidate!));
+
+        Assert.True(report.FinalEnvironment.TryResolve("choice", out var choice));
+        Assert.NotNull(choice);
+        Assert.Equal("i", SymbolicTermFormatter.Format(choice!));
+    }
+
+    [Fact]
+    public void SymbolicInspector_ReturnsParseErrorsAsReportState()
+    {
+        var report = SymbolicInspector.Inspect("let stem = ");
+
+        Assert.True(report.HasError);
+        Assert.NotNull(report.Error);
+        Assert.Empty(report.Steps);
+        Assert.Null(report.Parsed);
+    }
 }

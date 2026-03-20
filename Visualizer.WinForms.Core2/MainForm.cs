@@ -102,6 +102,7 @@ public class MainForm : Form
 
         _pageManager = new PageManager(_canvas, _navBar, hitTest);
         _pageManager.CurrentPageChanged += page => UpdatePageName(page);
+        _pageManager.AddPage(new SymbolicWorkbenchPage());
         _pageManager.AddPage(new SharedCarrierShapesPage());
         _pageManager.AddPage(new AxisPinningGeometryPage());
         _pageManager.AddPage(new PinningAxisPage());
