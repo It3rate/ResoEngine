@@ -4,6 +4,8 @@ These are the active conceptual proposals that still read as live design work ra
 
 ## Read first
 
+- [SymbolicGrammarProposal.md](./SymbolicGrammarProposal.md)
+  Core 2 native symbolic terms, equations, constraints, and shorthand direction.
 - [PinningProposal.md](./PinningProposal.md)
   Broad umbrella proposal for pinning as a foundational mechanism.
 - [PositionedPinningProposal.md](./PositionedPinningProposal.md)
@@ -17,6 +19,11 @@ These are the active conceptual proposals that still read as live design work ra
 
 - [PropagationProposal.md](./PropagationProposal.md)
   Broader tension-propagation and scattering proposal that has not yet been folded into the main prompt axioms.
+
+## Related planning notes
+
+- [../Plans/SymbolicGrammarFollowups.md](../Plans/SymbolicGrammarFollowups.md)
+  Deferred questions and non-blocking design follow-ups for the first symbolic grammar pass.
 
 ## Historical note
 
