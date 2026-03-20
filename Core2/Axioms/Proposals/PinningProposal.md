@@ -3,12 +3,12 @@
 This document is a provisional proposal for a broader pinning-centered rewrite of Core 2 behavior.
 It is intentionally more thorough than the narrower appendix files:
 
-- [PinningAxisRules.md](C:/Users/Robin/source/repos/ResoEngine/Core2/Axioms/PinningAxisRules.md)
-- [PinsAsDynamicLocalEvents.md](C:/Users/Robin/source/repos/ResoEngine/Core2/Axioms/PinsAsDynamicLocalEvents.md)
+- [PinningAxisRules.md](./PinningAxisRules.md)
+- [PinsAsDynamicLocalEvents.md](./PinsAsDynamicLocalEvents.md)
 
 It is not yet part of the consolidated axioms in:
 
-- [PromptAxioms.md](C:/Users/Robin/source/repos/ResoEngine/Core2/Axioms/PromptAxioms.md)
+- [PromptAxioms.md](../PromptAxioms.md)
 
 Its purpose is to define a conceptual target for a later implementation and for eventual integration into the main Core 2 axioms.
 

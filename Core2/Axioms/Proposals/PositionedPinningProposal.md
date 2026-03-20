@@ -9,8 +9,8 @@ This document is a focused proposal for one specific extension of the newer pinn
 
 It is intended to sit beside, not replace, the broader pinning documents:
 
-- [PinningProposal.md](C:/Users/Robin/source/repos/ResoEngine/Core2/Axioms/PinningProposal.md)
-- [PinsAsDynamicLocalEvents.md](C:/Users/Robin/source/repos/ResoEngine/Core2/Axioms/PinsAsDynamicLocalEvents.md)
+- [PinningProposal.md](./PinningProposal.md)
+- [PinsAsDynamicLocalEvents.md](./PinsAsDynamicLocalEvents.md)
 
 This file is a proposal, not final doctrine.
 It tries to capture the direction of the system before the next major code integration.

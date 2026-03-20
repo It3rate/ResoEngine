@@ -3,9 +3,9 @@
 This document is a focused proposal for the next conceptual layer after positioned pinning.
 It is intended to sit beside:
 
-- [PinningProposal.md](C:/Users/Robin/source/repos/ResoEngine/Core2/Axioms/PinningProposal.md)
-- [PositionedPinningProposal.md](C:/Users/Robin/source/repos/ResoEngine/Core2/Axioms/PositionedPinningProposal.md)
-- [PromptAxioms.md](C:/Users/Robin/source/repos/ResoEngine/Core2/Axioms/PromptAxioms.md)
+- [PinningProposal.md](./PinningProposal.md)
+- [PositionedPinningProposal.md](./PositionedPinningProposal.md)
+- [PromptAxioms.md](../PromptAxioms.md)
 
 This file is a proposal, not settled doctrine.
 Its purpose is to clarify how recursive pinning, loops, and shared carriers may be represented without forcing Core 2 itself to guess one geometric embedding.

@@ -3,10 +3,10 @@
 This document is a focused proposal for the next layer after recursive pinning and shared carrier identity.
 It is intended to sit beside:
 
-- [PinningProposal.md](C:/Users/Robin/source/repos/ResoEngine/Core2/Axioms/PinningProposal.md)
-- [PositionedPinningProposal.md](C:/Users/Robin/source/repos/ResoEngine/Core2/Axioms/PositionedPinningProposal.md)
-- [RecursivePinningProposal.md](C:/Users/Robin/source/repos/ResoEngine/Core2/Axioms/RecursivePinningProposal.md)
-- [PromptAxioms.md](C:/Users/Robin/source/repos/ResoEngine/Core2/Axioms/PromptAxioms.md)
+- [PinningProposal.md](./PinningProposal.md)
+- [PositionedPinningProposal.md](./PositionedPinningProposal.md)
+- [RecursivePinningProposal.md](./RecursivePinningProposal.md)
+- [PromptAxioms.md](../PromptAxioms.md)
 
 This file is a proposal, not final doctrine.
 Its purpose is to clarify how a pinned site decides:

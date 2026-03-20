@@ -1,8 +1,14 @@
 # Core 2 Prompt Axioms
 
-This file is a consolidated reference-friendly rewrite of the current Core 2 axioms and implementation-aligned appendices.
-It matches the content of [PromptAxioms.txt](C:/Users/Robin/source/repos/ResoEngine/Core2/Axioms/PromptAxioms.txt) but is formatted for easier reading.
-The original markdown files in `Core2/Axioms` remain useful and should not be deleted.
+This file is the living consolidated specification for Core 2.
+It matches the content of [PromptAxioms.txt](./PromptAxioms.txt) but is formatted for easier reading.
+Within [README.md](./README.md), this file is the primary source of truth.
+Supporting material is organized alongside it:
+
+- `Appendices/` for narrower implementation-aligned rule sheets
+- `Proposals/` for exploratory conceptual work not yet promoted into the main axioms
+- `Plans/` for implementation planning
+- `Legacy/` for historical source documents preserved for provenance
 
 Parts I through VIII are general Core 2 system axioms.  
 Part IX is a directed-segment appendix aligned to the current geometry and boolean implementation.  

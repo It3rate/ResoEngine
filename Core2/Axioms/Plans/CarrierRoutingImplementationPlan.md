@@ -4,9 +4,9 @@ This is a rough migration plan for bringing explicit carrier continuity, branchi
 
 It assumes the direction proposed in:
 
-- [CarrierRoutingProposal.md](C:/Users/Robin/source/repos/ResoEngine/Core2/Axioms/CarrierRoutingProposal.md)
-- [RecursivePinningProposal.md](C:/Users/Robin/source/repos/ResoEngine/Core2/Axioms/RecursivePinningProposal.md)
-- [PositionedPinningProposal.md](C:/Users/Robin/source/repos/ResoEngine/Core2/Axioms/PositionedPinningProposal.md)
+- [CarrierRoutingProposal.md](../Proposals/CarrierRoutingProposal.md)
+- [RecursivePinningProposal.md](../Proposals/RecursivePinningProposal.md)
+- [PositionedPinningProposal.md](../Proposals/PositionedPinningProposal.md)
 
 ## Goal
 

@@ -1,9 +1,13 @@
 CORE 2 PROMPT AXIOMS
 ====================
 
-This file is a consolidated prompt-safe rewrite of the current Core 2 axioms and implementation-aligned appendices.
+This file is the living prompt-safe Core 2 specification.
 It is intended to replace the current pasted-together prompt fragments with one organized version.
-The original markdown files in Core2/Axioms remain useful and should not be deleted.
+Supporting material is organized beside it:
+- Appendices/ for narrower implementation-aligned rule sheets
+- Proposals/ for exploratory conceptual work not yet promoted into the main axioms
+- Plans/ for implementation planning
+- Legacy/ for historical source documents preserved for provenance
 
 Parts I through VIII are general Core 2 system axioms.
 Part IX is a directed-segment appendix aligned to the current geometry and boolean implementation.
