@@ -565,4 +565,49 @@ public class SymbolicGrammarTermTests
         Assert.Equal(ConstraintTruthKind.Satisfied, item.Truth);
         Assert.Equal("Selected branch satisfies the equality.", item.Note);
     }
+
+    [Fact]
+    public void ConstraintNegotiator_SelectsUniquePreferredCandidate()
+    {
+        var negotiation = SymbolicConstraintNegotiator.Negotiate(
+            SymbolicParser.Parse("constraints{prefer(glyph, branch{1 | i} == i, 2/1) | prefer(glyph, branch{1 | i} == 1, 1/1)}"));
+
+        Assert.Equal(ConstraintNegotiationStatus.Selected, negotiation.Status);
+        Assert.Equal(Axis.I, Assert.IsType<ElementLiteralTerm>(negotiation.SelectedCandidate).Value);
+        Assert.NotNull(negotiation.PreservedCandidateFamily);
+        Assert.Equal(BranchSelectionMode.Principal, negotiation.PreservedCandidateFamily!.Family.Selection.Mode);
+    }
+
+    [Fact]
+    public void ConstraintNegotiator_PreservesCandidatesWhenPreferenceWeightsTie()
+    {
+        var negotiation = SymbolicConstraintNegotiator.Negotiate(
+            SymbolicParser.Parse("constraints{prefer(glyph, branch{1 | i} == i, 1/1) | prefer(glyph, branch{1 | i} == 1, 1/1)}"));
+
+        Assert.Equal(ConstraintNegotiationStatus.PreservedCandidates, negotiation.Status);
+        Assert.Null(negotiation.SelectedCandidate);
+        Assert.NotNull(negotiation.PreservedCandidateFamily);
+        Assert.Equal(2, negotiation.Candidates.Count);
+    }
+
+    [Fact]
+    public void ConstraintNegotiator_BlocksWhenHardRequirementsNeedMissingContext()
+    {
+        var negotiation = SymbolicConstraintNegotiator.Negotiate(
+            SymbolicParser.Parse("constraints{require(glyph, share(P4.u, P3.u)) | prefer(glyph, branch{1 | i} == i, 2/1)}"));
+
+        Assert.Equal(ConstraintNegotiationStatus.Blocked, negotiation.Status);
+        Assert.Null(negotiation.SelectedCandidate);
+        Assert.Equal("Shared-carrier evaluation requires carrier graph context.", negotiation.Note);
+    }
+
+    [Fact]
+    public void ConstraintNegotiator_RespectsRequirementCandidateIntersection()
+    {
+        var negotiation = SymbolicConstraintNegotiator.Negotiate(
+            SymbolicParser.Parse("constraints{require(glyph, branch{1 | i} == i) | prefer(glyph, branch{1 | i} == 1, 2/1)}"));
+
+        Assert.Equal(ConstraintNegotiationStatus.Selected, negotiation.Status);
+        Assert.Equal(Axis.I, Assert.IsType<ElementLiteralTerm>(negotiation.SelectedCandidate).Value);
+    }
 }
