@@ -23,6 +23,7 @@ public sealed class SharedCarrierShapesPage : IVisualizerPage
     private readonly List<PreviewCarrierLayout> _previewCarriers = [];
     private readonly Dictionary<(PresetKind Preset, string SiteName), Axis> _siteAxisOverrides = [];
     private readonly Dictionary<PresetKind, List<CustomPreviewPin>> _customPins = [];
+    private readonly Dictionary<PresetKind, int> _nextCustomPinIndexByPreset = [];
     private readonly Dictionary<PresetKind, string> _selectedSiteByPreset = new()
     {
         [PresetKind.CapitalD] = "Top",
@@ -40,6 +41,7 @@ public sealed class SharedCarrierShapesPage : IVisualizerPage
     private (PresetKind Preset, string SiteName)? _inlineValueTarget;
     private bool _inlineValueSyncing;
     private HandleLayout? _activeHandleLayout;
+    private PendingLink? _pendingLink;
     private SKRect _letterboxToggleRect;
     private SKRect _rayViewToggleRect;
     private PresetKind _selectedPreset = PresetKind.CapitalD;
@@ -52,9 +54,9 @@ public sealed class SharedCarrierShapesPage : IVisualizerPage
     private float _dTopT;
     private float _dBottomT = 1f;
     private float _dTopRecessiveLength = 68f;
-    private float _dTopDominantLength = 52f;
+    private float _dTopDominantLength = 212f;
     private float _dBottomRecessiveLength = 68f;
-    private float _dBottomDominantLength = 52f;
+    private float _dBottomDominantLength = 212f;
     private SKPoint _hLeftStemStart = new(0.24f, 0.14f);
     private SKPoint _hLeftStemEnd = new(0.24f, 0.86f);
     private float _hLeftT = 0.5f;
@@ -380,6 +382,16 @@ public sealed class SharedCarrierShapesPage : IVisualizerPage
             return true;
         }
 
+        if (_pendingLink is not null)
+        {
+            HandleLayout? linkHandle = HitLinkTargetHandle(pixelPoint);
+            if (linkHandle is not null && TryCompletePendingLink(linkHandle))
+            {
+                _canvasHost?.InvalidateCanvas();
+                return true;
+            }
+        }
+
         var handle = HitHandle(pixelPoint);
         if (handle is null)
         {
@@ -431,6 +443,8 @@ public sealed class SharedCarrierShapesPage : IVisualizerPage
                 ? Cursors.Hand
             : _addPinArmed && TryFindNearestPreviewCarrier(pixelPoint, out _, out _, out _, out _, out float carrierDistance) && carrierDistance <= CarrierHitThreshold
                 ? Cursors.Cross
+            : _pendingLink is not null && HitLinkTargetHandle(pixelPoint) is not null
+                ? Cursors.Hand
             : HitHandle(pixelPoint) is not null
                 ? Cursors.SizeAll
                 : Cursors.Default;
@@ -571,6 +585,29 @@ public sealed class SharedCarrierShapesPage : IVisualizerPage
                 ref y,
                 rect.Width - 56f,
                 _captionPaint);
+
+            string linkSummary = DescribeCustomLinks(customPin);
+            if (!string.IsNullOrWhiteSpace(linkSummary))
+            {
+                PageChrome.DrawWrappedText(
+                    canvas,
+                    $"links: {linkSummary}",
+                    rect.Left + 28f,
+                    ref y,
+                    rect.Width - 56f,
+                    _captionPaint);
+            }
+
+            if (_pendingLink is { } pending && pending.SiteName == customPin.Name)
+            {
+                PageChrome.DrawWrappedText(
+                    canvas,
+                    $"linking {FormatSideRef(pending.SiteName, pending.Role)} -> click target side",
+                    rect.Left + 28f,
+                    ref y,
+                    rect.Width - 56f,
+                    _captionPaint);
+            }
         }
 
         string bindings = selectedSite.SideAttachments.Count == 0
@@ -741,6 +778,7 @@ public sealed class SharedCarrierShapesPage : IVisualizerPage
         }
 
         DrawCustomPins(canvas, preset);
+        DrawExplicitLinkedCarriers(canvas);
         DrawSceneActions(canvas, inner);
     }
 
@@ -2320,28 +2358,166 @@ public sealed class SharedCarrierShapesPage : IVisualizerPage
         CarrierPinSite.FromPointPinning(
             pin.HostCarrier,
             PreviewHostAxis.PinAt(pin.Axis, ToPreviewProportion(pin.T)),
-            ResolveCustomAttachment(pin, PinSideRole.Recessive),
-            ResolveCustomAttachment(pin, PinSideRole.Dominant),
+            ResolveCustomAttachment(pin, PinSideRole.Recessive, []),
+            ResolveCustomAttachment(pin, PinSideRole.Dominant, []),
             name: pin.Name);
 
-    private CarrierSideAttachment ResolveCustomAttachment(CustomPreviewPin pin, PinSideRole role)
+    private CarrierSideAttachment ResolveCustomAttachment(CustomPreviewPin pin, PinSideRole role, HashSet<string> resolving)
     {
         PreviewBindingMode mode = role == PinSideRole.Recessive ? pin.RecessiveBinding : pin.DominantBinding;
-        CarrierIdentity carrier = mode switch
+        CarrierIdentity carrier;
+        Proportion position;
+        switch (mode)
         {
-            PreviewBindingMode.Host => pin.HostCarrier,
-            PreviewBindingMode.New => role == PinSideRole.Recessive ? pin.RecessiveCarrier : pin.DominantCarrier,
-            PreviewBindingMode.Link => pin.LinkedCarrier,
-            _ => pin.HostCarrier,
-        };
+            case PreviewBindingMode.Host:
+                carrier = pin.HostCarrier;
+                position = ToPreviewProportion(pin.T);
+                break;
+            case PreviewBindingMode.New:
+                carrier = role == PinSideRole.Recessive ? pin.RecessiveCarrier : pin.DominantCarrier;
+                position = role == PinSideRole.Recessive ? Proportion.Zero : Proportion.One;
+                break;
+            case PreviewBindingMode.Link:
+                if (TryResolveMutualCustomLink(pin, role, out CarrierIdentity linkedCarrier, out Proportion linkedPosition))
+                {
+                    carrier = linkedCarrier;
+                    position = linkedPosition;
+                    break;
+                }
 
-        Proportion position = mode == PreviewBindingMode.Host
-            ? ToPreviewProportion(pin.T)
-            : role == PinSideRole.Recessive
-                ? Proportion.Zero
-                : Proportion.One;
+                if (TryResolveLinkedTargetAttachment(pin, role, resolving, out CarrierSideAttachment targetAttachment))
+                {
+                    carrier = targetAttachment.Carrier;
+                    position = targetAttachment.CarrierPosition;
+                }
+                else
+                {
+                    carrier = GetLinkedCarrier(pin, role);
+                    position = role == PinSideRole.Recessive ? Proportion.Zero : Proportion.One;
+                }
+
+                break;
+            default:
+                carrier = pin.HostCarrier;
+                position = ToPreviewProportion(pin.T);
+                break;
+        }
 
         return new CarrierSideAttachment(role, carrier, position, $"{pin.Name}.{ShortRole(role)}");
+    }
+
+    private bool TryResolveMutualCustomLink(CustomPreviewPin pin, PinSideRole role, out CarrierIdentity carrier, out Proportion position)
+    {
+        carrier = GetLinkedCarrier(pin, role);
+        position = role == PinSideRole.Recessive ? Proportion.Zero : Proportion.One;
+        SideLinkReference? target = GetLinkTarget(pin, role);
+        if (target is null ||
+            !TryGetCustomPin(_selectedPreset, target.SiteName, out var customTarget) ||
+            customTarget is null)
+        {
+            return false;
+        }
+
+        SideLinkReference? reverse = GetLinkTarget(customTarget, target.Role);
+        if (reverse is null || reverse.SiteName != pin.Name || reverse.Role != role)
+        {
+            return false;
+        }
+
+        carrier = GetLinkedCarrier(pin, role);
+        position = ResolveLinkPairOrder(pin.Name, role, target.SiteName, target.Role) <= 0
+            ? Proportion.Zero
+            : Proportion.One;
+        return true;
+    }
+
+    private bool TryResolveLinkedTargetAttachment(CustomPreviewPin pin, PinSideRole role, HashSet<string> resolving, out CarrierSideAttachment attachment)
+    {
+        attachment = default!;
+        SideLinkReference? target = GetLinkTarget(pin, role);
+        if (target is null)
+        {
+            return false;
+        }
+
+        string key = $"{pin.Name}.{ShortRole(role)}";
+        if (!resolving.Add(key))
+        {
+            return false;
+        }
+
+        try
+        {
+            if (TryGetCustomPin(_selectedPreset, target.SiteName, out var customTarget) && customTarget is not null)
+            {
+                attachment = ResolveCustomAttachment(customTarget, target.Role, resolving);
+                return true;
+            }
+
+            CarrierPinSite? presetSite = _presets[_selectedPreset].Graph.Sites.FirstOrDefault(candidate => candidate.Name == target.SiteName);
+            if (presetSite is null)
+            {
+                return false;
+            }
+
+            CarrierSideAttachment? resolved = ResolveSite(presetSite).SideAttachments.FirstOrDefault(candidate => candidate.Role == target.Role);
+            if (resolved is null)
+            {
+                return false;
+            }
+
+            attachment = resolved;
+            return true;
+        }
+        finally
+        {
+            resolving.Remove(key);
+        }
+    }
+
+    private static SideLinkReference? GetLinkTarget(CustomPreviewPin pin, PinSideRole role) =>
+        role == PinSideRole.Recessive ? pin.RecessiveLinkTarget : pin.DominantLinkTarget;
+
+    private static CarrierIdentity GetLinkedCarrier(CustomPreviewPin pin, PinSideRole role) =>
+        role == PinSideRole.Recessive ? pin.RecessiveLinkedCarrier : pin.DominantLinkedCarrier;
+
+    private static void SetLinkTarget(CustomPreviewPin pin, PinSideRole role, SideLinkReference? target)
+    {
+        if (role == PinSideRole.Recessive)
+        {
+            pin.RecessiveLinkTarget = target;
+        }
+        else
+        {
+            pin.DominantLinkTarget = target;
+        }
+    }
+
+    private static void SetLinkedCarrier(CustomPreviewPin pin, PinSideRole role, CarrierIdentity carrier)
+    {
+        if (role == PinSideRole.Recessive)
+        {
+            pin.RecessiveLinkedCarrier = carrier;
+        }
+        else
+        {
+            pin.DominantLinkedCarrier = carrier;
+        }
+    }
+
+    private static PreviewBindingMode GetBindingMode(CustomPreviewPin pin, PinSideRole role) =>
+        role == PinSideRole.Recessive ? pin.RecessiveBinding : pin.DominantBinding;
+
+    private static void SetBindingMode(CustomPreviewPin pin, PinSideRole role, PreviewBindingMode mode)
+    {
+        if (role == PinSideRole.Recessive)
+        {
+            pin.RecessiveBinding = mode;
+        }
+        else
+        {
+            pin.DominantBinding = mode;
+        }
     }
 
     private CarrierPinSite ResolveSite(CarrierPinSite site)
@@ -2412,13 +2588,28 @@ public sealed class SharedCarrierShapesPage : IVisualizerPage
             return;
         }
 
-        if (role == PinSideRole.Recessive)
+        SetBindingMode(customPin, role, mode);
+
+        if (mode == PreviewBindingMode.Link)
         {
-            customPin.RecessiveBinding = mode;
+            SetLinkTarget(customPin, role, null);
+            SetLinkedCarrier(customPin, role, customPin.LinkedCarrier);
+            _pendingLink = _pendingLink is { } pending &&
+                pending.SiteName == customPin.Name &&
+                pending.Role == role
+                ? null
+                : new PendingLink(customPin.Name, role);
         }
         else
         {
-            customPin.DominantBinding = mode;
+            SetLinkTarget(customPin, role, null);
+            SetLinkedCarrier(customPin, role, customPin.LinkedCarrier);
+            if (_pendingLink is { } pending &&
+                pending.SiteName == customPin.Name &&
+                pending.Role == role)
+            {
+                _pendingLink = null;
+            }
         }
     }
 
@@ -2440,7 +2631,13 @@ public sealed class SharedCarrierShapesPage : IVisualizerPage
             return false;
         }
 
+        ClearLinkCommitment(selectedName, PinSideRole.Recessive);
+        ClearLinkCommitment(selectedName, PinSideRole.Dominant);
         pins.RemoveAt(index);
+        if (_pendingLink is { } pending && pending.SiteName == selectedName)
+        {
+            _pendingLink = null;
+        }
         _selectedSiteByPreset[_selectedPreset] = _presets[_selectedPreset].Graph.Sites.First().Name ?? string.Empty;
         return true;
     }
@@ -2464,11 +2661,13 @@ public sealed class SharedCarrierShapesPage : IVisualizerPage
                 HostCarrier = carrier.Carrier,
                 T = t,
                 Axis = axis,
-                RecessiveBinding = PreviewBindingMode.Link,
-                DominantBinding = PreviewBindingMode.Link,
+                RecessiveBinding = PreviewBindingMode.New,
+                DominantBinding = PreviewBindingMode.New,
                 RecessiveCarrier = CarrierIdentity.Create($"{name} i"),
                 DominantCarrier = CarrierIdentity.Create($"{name} u"),
                 LinkedCarrier = CarrierIdentity.Create($"{name} link"),
+                RecessiveLinkedCarrier = CarrierIdentity.Create($"{name} link"),
+                DominantLinkedCarrier = CarrierIdentity.Create($"{name} link"),
             });
         _selectedSiteByPreset[_selectedPreset] = name;
         _addPinArmed = false;
@@ -2755,6 +2954,28 @@ public sealed class SharedCarrierShapesPage : IVisualizerPage
         _ => mode.ToString(),
     };
 
+    private string DescribeCustomLinks(CustomPreviewPin pin)
+    {
+        List<string> links = [];
+        foreach (PinSideRole role in new[] { PinSideRole.Recessive, PinSideRole.Dominant })
+        {
+            if ((role == PinSideRole.Recessive ? pin.RecessiveBinding : pin.DominantBinding) != PreviewBindingMode.Link)
+            {
+                continue;
+            }
+
+            SideLinkReference? target = GetLinkTarget(pin, role);
+            if (target is null)
+            {
+                continue;
+            }
+
+            links.Add($"{FormatSideName(role)} == {FormatSideRef(target.SiteName, target.Role)}");
+        }
+
+        return string.Join(", ", links);
+    }
+
     private static string GetSelectedSiteLabel(CarrierPinSite site) => site.Name switch
     {
         "Top" => "P1",
@@ -2846,16 +3067,18 @@ public sealed class SharedCarrierShapesPage : IVisualizerPage
 
     private string NextCustomPinName(PresetKind preset)
     {
-        int next = _presets[preset].Graph.Sites.Count + 1;
-        foreach (var customPin in GetCustomPins(preset))
+        int next = _nextCustomPinIndexByPreset.TryGetValue(preset, out int stored)
+            ? stored
+            : _presets[preset].Graph.Sites.Count + 1;
+        HashSet<string> usedNames = GetCustomPins(preset)
+            .Select(pin => pin.Name)
+            .ToHashSet(StringComparer.Ordinal);
+        while (usedNames.Contains($"P{next}"))
         {
-            if (customPin.Name.StartsWith("P", StringComparison.Ordinal) &&
-                int.TryParse(customPin.Name[1..], out int parsed))
-            {
-                next = Math.Max(next, parsed + 1);
-            }
+            next++;
         }
 
+        _nextCustomPinIndexByPreset[preset] = next + 1;
         return $"P{next}";
     }
 
@@ -2911,7 +3134,47 @@ public sealed class SharedCarrierShapesPage : IVisualizerPage
             builder.AppendLine($"    dominantBinding: {DescribeBindingMode(pin.DominantBinding)}");
         }
 
+        List<string> links = CollectLinkEquations();
+        if (links.Count > 0)
+        {
+            builder.AppendLine("links:");
+            foreach (string link in links)
+            {
+                builder.AppendLine($"  - {link}");
+            }
+        }
+
         return builder.ToString();
+    }
+
+    private List<string> CollectLinkEquations()
+    {
+        List<string> links = [];
+        HashSet<string> seen = new(StringComparer.Ordinal);
+        foreach (CustomPreviewPin pin in GetCustomPins(_selectedPreset))
+        {
+            foreach (PinSideRole role in new[] { PinSideRole.Recessive, PinSideRole.Dominant })
+            {
+                if (GetBindingMode(pin, role) != PreviewBindingMode.Link)
+                {
+                    continue;
+                }
+
+                SideLinkReference? target = GetLinkTarget(pin, role);
+                if (target is null)
+                {
+                    continue;
+                }
+
+                string key = GetCanonicalLinkKey(pin.Name, role, target.SiteName, target.Role);
+                if (seen.Add(key))
+                {
+                    links.Add($"{FormatSideRef(pin.Name, role)} == {FormatSideRef(target.SiteName, target.Role)}");
+                }
+            }
+        }
+
+        return links;
     }
 
     private IEnumerable<string> SerializePresetGeometry(PresetKind preset) => preset switch
@@ -3257,6 +3520,145 @@ public sealed class SharedCarrierShapesPage : IVisualizerPage
             .FirstOrDefault();
     }
 
+    private HandleLayout? HitLinkTargetHandle(SKPoint point)
+    {
+        const float threshold = 18f;
+        return _handleLayouts
+            .Where(layout =>
+                layout.Kind == HandleKind.Ray &&
+                layout.SiteName is not null &&
+                layout.SideRole is not null &&
+                Distance(point, layout.Center) <= threshold)
+            .OrderBy(layout => Distance(point, layout.Center))
+            .FirstOrDefault();
+    }
+
+    private bool TryCompletePendingLink(HandleLayout handle)
+    {
+        if (_pendingLink is not { } pending ||
+            handle.SiteName is null ||
+            handle.SideRole is not PinSideRole targetRole ||
+            !TryGetCustomPin(_selectedPreset, pending.SiteName, out var sourcePin) ||
+            sourcePin is null)
+        {
+            return false;
+        }
+
+        if (pending.SiteName == handle.SiteName && pending.Role == targetRole)
+        {
+            _pendingLink = null;
+            return true;
+        }
+
+        ClearLinkCommitment(pending.SiteName, pending.Role);
+        ClearLinkCommitment(handle.SiteName, targetRole);
+
+        SetLinkTarget(sourcePin, pending.Role, new SideLinkReference(handle.SiteName, targetRole));
+        SetBindingMode(sourcePin, pending.Role, PreviewBindingMode.Link);
+
+        if (TryGetCustomPin(_selectedPreset, handle.SiteName, out var targetPin) && targetPin is not null)
+        {
+            CarrierIdentity sharedCarrier = CarrierIdentity.Create(GetCanonicalLinkKey(pending.SiteName, pending.Role, handle.SiteName, targetRole));
+            SetLinkedCarrier(sourcePin, pending.Role, sharedCarrier);
+            SetLinkTarget(targetPin, targetRole, new SideLinkReference(pending.SiteName, pending.Role));
+            SetBindingMode(targetPin, targetRole, PreviewBindingMode.Link);
+            SetLinkedCarrier(targetPin, targetRole, sharedCarrier);
+        }
+        else
+        {
+            SetLinkedCarrier(sourcePin, pending.Role, sourcePin.LinkedCarrier);
+        }
+
+        _selectedSiteByPreset[_selectedPreset] = pending.SiteName;
+        _pendingLink = null;
+        return true;
+    }
+
+    private void ClearLinkCommitment(string siteName, PinSideRole role)
+    {
+        foreach (CustomPreviewPin pin in GetCustomPins(_selectedPreset))
+        {
+            foreach (PinSideRole candidateRole in new[] { PinSideRole.Recessive, PinSideRole.Dominant })
+            {
+                bool isSelf = pin.Name == siteName && candidateRole == role;
+                SideLinkReference? target = GetLinkTarget(pin, candidateRole);
+                bool pointsToSide = target is not null && target.SiteName == siteName && target.Role == role;
+                if (!isSelf && !pointsToSide)
+                {
+                    continue;
+                }
+
+                SetLinkTarget(pin, candidateRole, null);
+                SetLinkedCarrier(pin, candidateRole, pin.LinkedCarrier);
+                if (GetBindingMode(pin, candidateRole) == PreviewBindingMode.Link)
+                {
+                    SetBindingMode(pin, candidateRole, PreviewBindingMode.New);
+                }
+            }
+        }
+    }
+
+    private void DrawExplicitLinkedCarriers(SKCanvas canvas)
+    {
+        HashSet<string> seen = new(StringComparer.Ordinal);
+        foreach (CustomPreviewPin pin in GetCustomPins(_selectedPreset))
+        {
+            foreach (PinSideRole role in new[] { PinSideRole.Recessive, PinSideRole.Dominant })
+            {
+                if (GetBindingMode(pin, role) != PreviewBindingMode.Link)
+                {
+                    continue;
+                }
+
+                SideLinkReference? target = GetLinkTarget(pin, role);
+                if (target is null)
+                {
+                    continue;
+                }
+
+                string key = GetCanonicalLinkKey(pin.Name, role, target.SiteName, target.Role);
+                if (!seen.Add(key))
+                {
+                    continue;
+                }
+
+                HandleLayout? sourceHandle = FindRayHandle(pin.Name, role);
+                HandleLayout? targetHandle = FindRayHandle(target.SiteName, target.Role);
+                HandleLayout? sourceSite = FindSiteHandle(pin.Name);
+                HandleLayout? targetSite = FindSiteHandle(target.SiteName);
+                if (sourceHandle is null || targetHandle is null || sourceSite is null || targetSite is null)
+                {
+                    continue;
+                }
+
+                SKPoint startDirection = Normalize(new SKPoint(sourceHandle.Center.X - sourceSite.Center.X, sourceHandle.Center.Y - sourceSite.Center.Y));
+                SKPoint endDirection = Normalize(new SKPoint(targetHandle.Center.X - targetSite.Center.X, targetHandle.Center.Y - targetSite.Center.Y));
+                if (startDirection == SKPoint.Empty || endDirection == SKPoint.Empty)
+                {
+                    continue;
+                }
+
+                float startHandleLength = Math.Clamp(Distance(sourceSite.Center, sourceHandle.Center) * 0.9f, 14f, 96f);
+                float endHandleLength = Math.Clamp(Distance(targetSite.Center, targetHandle.Center) * 0.9f, 14f, 96f);
+                IReadOnlyList<SKPoint> samples = SampleCubic(
+                    sourceSite.Center,
+                    new SKPoint(sourceSite.Center.X + (startDirection.X * startHandleLength), sourceSite.Center.Y + (startDirection.Y * startHandleLength)),
+                    new SKPoint(targetSite.Center.X + (endDirection.X * endHandleLength), targetSite.Center.Y + (endDirection.Y * endHandleLength)),
+                    targetSite.Center,
+                    24);
+                SKColor color = ResolveLinkColor(role, target.Role);
+                DrawCarrierPath(canvas, samples, color, 4.4f);
+                RegisterPreviewCarrier(key, GetLinkedCarrier(pin, role), key, samples, samples);
+            }
+        }
+    }
+
+    private HandleLayout? FindRayHandle(string siteName, PinSideRole role) =>
+        _handleLayouts.FirstOrDefault(layout => layout.Kind == HandleKind.Ray && layout.SiteName == siteName && layout.SideRole == role);
+
+    private HandleLayout? FindSiteHandle(string siteName) =>
+        _handleLayouts.FirstOrDefault(layout => layout.Kind == HandleKind.Site && layout.SiteName == siteName);
+
     private void RegisterHandle(
         DragHandleKind target,
         SKPoint center,
@@ -3361,6 +3763,27 @@ public sealed class SharedCarrierShapesPage : IVisualizerPage
     }
 
     private static string ShortRole(PinSideRole role) => role == PinSideRole.Recessive ? "r" : "d";
+
+    private static string FormatSideName(PinSideRole role) => role == PinSideRole.Recessive ? "i" : "u";
+
+    private static string FormatSideRef(string siteName, PinSideRole role) => $"{siteName}.{FormatSideName(role)}";
+
+    private static int ResolveLinkPairOrder(string leftSite, PinSideRole leftRole, string rightSite, PinSideRole rightRole) =>
+        string.CompareOrdinal(FormatSideRef(leftSite, leftRole), FormatSideRef(rightSite, rightRole));
+
+    private static string GetCanonicalLinkKey(string leftSite, PinSideRole leftRole, string rightSite, PinSideRole rightRole)
+    {
+        string left = FormatSideRef(leftSite, leftRole);
+        string right = FormatSideRef(rightSite, rightRole);
+        return string.CompareOrdinal(left, right) <= 0
+            ? $"{left}=={right}"
+            : $"{right}=={left}";
+    }
+
+    private static SKColor ResolveLinkColor(PinSideRole sourceRole, PinSideRole targetRole) =>
+        sourceRole == targetRole
+            ? (sourceRole == PinSideRole.Recessive ? RecessiveRayColor : DominantRayColor)
+            : new SKColor(176, 118, 26);
 
     private static string FormatJunctionSummary(CarrierJunctionSummary summary) => summary switch
     {
@@ -3486,13 +3909,13 @@ public sealed class SharedCarrierShapesPage : IVisualizerPage
 
         CarrierPinSite top = CarrierPinSite.FromPointPinning(
             stem,
-            host.PinAt(new Axis(-3, 1, 2, -1), Proportion.Zero),
+            host.PinAt(new Axis(0, 1, 12, -1), Proportion.Zero),
             new CarrierSideAttachment(PinSideRole.Recessive, stem, Proportion.Zero),
             new CarrierSideAttachment(PinSideRole.Dominant, bowl, Proportion.Zero),
             name: "Top");
         CarrierPinSite bottom = CarrierPinSite.FromPointPinning(
             stem,
-            host.PinAt(new Axis(3, 1, 2, -1), new Proportion(10)),
+            host.PinAt(new Axis(0, 1, 12, -1), new Proportion(10)),
             new CarrierSideAttachment(PinSideRole.Recessive, stem, Proportion.One),
             new CarrierSideAttachment(PinSideRole.Dominant, bowl, Proportion.One),
             name: "Bottom");
@@ -3730,6 +4153,8 @@ public sealed class SharedCarrierShapesPage : IVisualizerPage
         string Label,
         IReadOnlyList<SKPoint> Samples,
         IReadOnlyList<SKPoint> HostSamples);
+    private sealed record PendingLink(string SiteName, PinSideRole Role);
+    private sealed record SideLinkReference(string SiteName, PinSideRole Role);
 
     private sealed class CustomPreviewPin
     {
@@ -3743,6 +4168,10 @@ public sealed class SharedCarrierShapesPage : IVisualizerPage
         public required CarrierIdentity RecessiveCarrier { get; init; }
         public required CarrierIdentity DominantCarrier { get; init; }
         public required CarrierIdentity LinkedCarrier { get; init; }
+        public required CarrierIdentity RecessiveLinkedCarrier { get; set; }
+        public required CarrierIdentity DominantLinkedCarrier { get; set; }
+        public SideLinkReference? RecessiveLinkTarget { get; set; }
+        public SideLinkReference? DominantLinkTarget { get; set; }
     }
 
     private enum PresetKind
