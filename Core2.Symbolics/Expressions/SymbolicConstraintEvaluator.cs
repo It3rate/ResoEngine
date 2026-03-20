@@ -1,3 +1,5 @@
+using Core2.Branching;
+
 namespace Core2.Symbolics.Expressions;
 
 public static class SymbolicConstraintEvaluator
@@ -61,44 +63,135 @@ public static class SymbolicConstraintEvaluator
                 source,
                 reduced,
                 set.Constraints.All(inner => EvaluateConstraint(inner, inner).Truth == ConstraintTruthKind.Satisfied)
-                    ? ConstraintTruthKind.Satisfied
+                    ? new ConstraintRelationAssessment(ConstraintTruthKind.Satisfied)
                     : set.Constraints.Any(inner => EvaluateConstraint(inner, inner).Truth == ConstraintTruthKind.Unsatisfied)
-                        ? ConstraintTruthKind.Unsatisfied
-                        : ConstraintTruthKind.Unresolved,
+                        ? new ConstraintRelationAssessment(ConstraintTruthKind.Unsatisfied)
+                        : new ConstraintRelationAssessment(ConstraintTruthKind.Unresolved, null, "Nested constraint family remains unresolved."),
                 null,
                 null),
-            _ => new ConstraintEvaluationItem(source, reduced, ConstraintTruthKind.Unresolved, null, null),
+            _ => new ConstraintEvaluationItem(
+                source,
+                reduced,
+                new ConstraintRelationAssessment(ConstraintTruthKind.Unresolved, null, "Constraint form is not yet directly evaluable."),
+                null,
+                null),
         };
 
-    private static ConstraintTruthKind EvaluateRelation(RelationTerm relation) =>
+    private static ConstraintRelationAssessment EvaluateRelation(RelationTerm relation) =>
         relation switch
         {
             EqualityTerm equality => EvaluateEquality(equality),
             SharedCarrierTerm shared => EvaluateSharedCarrier(shared),
-            RouteTerm => ConstraintTruthKind.Unresolved,
-            _ => ConstraintTruthKind.Unresolved,
+            RouteTerm => new ConstraintRelationAssessment(ConstraintTruthKind.Unresolved, null, "Route evaluation requires carrier routing context."),
+            _ => new ConstraintRelationAssessment(ConstraintTruthKind.Unresolved, null, "Relation form is not yet directly evaluable."),
         };
 
-    private static ConstraintTruthKind EvaluateEquality(EqualityTerm equality)
+    private static ConstraintRelationAssessment EvaluateEquality(EqualityTerm equality)
     {
+        if (TryEvaluateAlternativeEquality(equality.Left, equality.Right, out var branchAssessment))
+        {
+            return branchAssessment;
+        }
+
         if (!IsClosed(equality.Left) || !IsClosed(equality.Right))
         {
-            return ConstraintTruthKind.Unresolved;
+            return new ConstraintRelationAssessment(ConstraintTruthKind.Unresolved, null, "Equality requires closed terms or explicit branch selection.");
         }
 
         return Equals(equality.Left, equality.Right)
-            ? ConstraintTruthKind.Satisfied
-            : ConstraintTruthKind.Unsatisfied;
+            ? new ConstraintRelationAssessment(ConstraintTruthKind.Satisfied)
+            : new ConstraintRelationAssessment(ConstraintTruthKind.Unsatisfied);
     }
 
-    private static ConstraintTruthKind EvaluateSharedCarrier(SharedCarrierTerm shared)
+    private static ConstraintRelationAssessment EvaluateSharedCarrier(SharedCarrierTerm shared)
     {
         if (Equals(shared.Left, shared.Right))
         {
-            return ConstraintTruthKind.Satisfied;
+            return new ConstraintRelationAssessment(ConstraintTruthKind.Satisfied);
         }
 
-        return ConstraintTruthKind.Unresolved;
+        return new ConstraintRelationAssessment(ConstraintTruthKind.Unresolved, null, "Shared-carrier evaluation requires carrier graph context.");
+    }
+
+    private static bool TryEvaluateAlternativeEquality(
+        SymbolicTerm left,
+        SymbolicTerm right,
+        out ConstraintRelationAssessment assessment)
+    {
+        if (TryEvaluateAlternativeCandidateFamily(left, right, out assessment))
+        {
+            return true;
+        }
+
+        if (TryEvaluateAlternativeCandidateFamily(right, left, out assessment))
+        {
+            return true;
+        }
+
+        assessment = null!;
+        return false;
+    }
+
+    private static bool TryEvaluateAlternativeCandidateFamily(
+        SymbolicTerm branchCandidate,
+        SymbolicTerm other,
+        out ConstraintRelationAssessment assessment)
+    {
+        if (branchCandidate is not BranchFamilyTerm branch ||
+            branch.Family.Semantics != BranchSemantics.Alternative)
+        {
+            assessment = null!;
+            return false;
+        }
+
+        if (branch.Family.Selection.HasSelection &&
+            branch.Family.TryGetSelectedMember(out var selectedMember) &&
+            selectedMember is not null &&
+            IsClosed(selectedMember.Value) &&
+            IsClosed(other))
+        {
+            assessment = Equals(selectedMember.Value, other)
+                ? new ConstraintRelationAssessment(ConstraintTruthKind.Satisfied, null, "Selected branch satisfies the equality.")
+                : new ConstraintRelationAssessment(ConstraintTruthKind.Unsatisfied, null, "Selected branch does not satisfy the equality.");
+            return true;
+        }
+
+        var matchingMembers = branch.Family.Members
+            .Where(member => IsClosed(member.Value) && IsClosed(other) && Equals(member.Value, other))
+            .ToArray();
+
+        if (matchingMembers.Length > 0)
+        {
+            var candidateFamily = BranchFamily<ValueTerm>.FromMembers(
+                branch.Family.Origin,
+                branch.Family.Semantics,
+                branch.Family.Direction,
+                matchingMembers,
+                BranchSelection.None,
+                branch.Family.Tensions,
+                branch.Family.Annotations);
+
+            assessment = new ConstraintRelationAssessment(
+                ConstraintTruthKind.Unresolved,
+                candidateFamily,
+                "Alternative branch family contains satisfying candidates but no single candidate is committed.");
+            return true;
+        }
+
+        if (branch.Family.Values.All(IsClosed) && IsClosed(other))
+        {
+            assessment = new ConstraintRelationAssessment(
+                ConstraintTruthKind.Unsatisfied,
+                null,
+                "No branch candidate satisfies the equality.");
+            return true;
+        }
+
+        assessment = new ConstraintRelationAssessment(
+            ConstraintTruthKind.Unresolved,
+            null,
+            "Alternative branch family requires more reduction or selection before equality can be decided.");
+        return true;
     }
 
     private static bool IsClosed(SymbolicTerm term) =>

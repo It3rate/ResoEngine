@@ -512,6 +512,7 @@ public class SymbolicGrammarTermTests
         var glyph = Assert.Single(evaluation.ParticipantSummaries);
         Assert.Equal("glyph", glyph.ParticipantName);
         Assert.Equal(1, glyph.UnresolvedRequirements);
+        Assert.Equal("Shared-carrier evaluation requires carrier graph context.", evaluation.Items[0].Note);
     }
 
     [Fact]
@@ -526,5 +527,42 @@ public class SymbolicGrammarTermTests
         var glyph = Assert.Single(evaluation.ParticipantSummaries);
         Assert.Equal(new Proportion(1, 1), glyph.SatisfiedPreferenceWeight);
         Assert.Equal(new Proportion(2, 1), glyph.UnsatisfiedPreferenceWeight);
+    }
+
+    [Fact]
+    public void ConstraintEvaluator_PreservesAlternativeEqualityCandidates()
+    {
+        var evaluation = SymbolicConstraintEvaluator.Evaluate(
+            SymbolicParser.Parse("constraints{prefer(glyph, branch{1 | i} == i, 2/1)}"));
+
+        var item = Assert.Single(evaluation.Items);
+        Assert.Equal(ConstraintTruthKind.Unresolved, item.Truth);
+        Assert.NotNull(item.CandidateFamily);
+        var onlyCandidate = Assert.Single(item.CandidateFamily!.Values);
+        Assert.Equal(Axis.I, Assert.IsType<ElementLiteralTerm>(onlyCandidate).Value);
+    }
+
+    [Fact]
+    public void ConstraintEvaluator_UsesSelectedAlternativeBranchWhenPresent()
+    {
+        var family = BranchFamily<ValueTerm>.FromValues(
+            BranchOrigin.Continuation,
+            BranchSemantics.Alternative,
+            BranchDirection.Forward,
+            [new ElementLiteralTerm(Axis.One), new ElementLiteralTerm(Axis.I)],
+            selectedIndex: 1,
+            selectionMode: BranchSelectionMode.Principal);
+
+        var evaluation = SymbolicConstraintEvaluator.Evaluate(
+            new PreferenceTerm(
+                new EqualityTerm(
+                    new BranchFamilyTerm(family),
+                    new ElementLiteralTerm(Axis.I)),
+                new Proportion(2, 1),
+                "glyph"));
+
+        var item = Assert.Single(evaluation.Items);
+        Assert.Equal(ConstraintTruthKind.Satisfied, item.Truth);
+        Assert.Equal("Selected branch satisfies the equality.", item.Note);
     }
 }
