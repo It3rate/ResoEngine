@@ -46,17 +46,29 @@ public static class SymbolicParser
             }
 
             List<ProgramTerm> steps = [firstProgram];
-            do
+            while (true)
             {
                 var next = ParseStatementOrTerm();
-                if (next is not ProgramTerm program)
+                bool hasMore = Match(TokenKind.Semicolon);
+                if (next is ProgramTerm program)
                 {
-                    throw Error("Only program terms can participate in top-level ';' sequences.");
+                    steps.Add(program);
+                    if (!hasMore)
+                    {
+                        break;
+                    }
+
+                    continue;
                 }
 
-                steps.Add(program);
+                if (hasMore)
+                {
+                    throw Error("Only the final term in a top-level ';' sequence may be non-programmatic.");
+                }
+
+                steps.Add(new EmitTerm(next));
+                break;
             }
-            while (Match(TokenKind.Semicolon));
 
             return new SequenceTerm(steps);
         }

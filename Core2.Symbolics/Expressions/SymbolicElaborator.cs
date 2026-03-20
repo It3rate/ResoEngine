@@ -20,6 +20,7 @@ public static class SymbolicElaborator
         term switch
         {
             BindTerm bind => ElaborateBind(bind, environment),
+            EmitTerm emit => new SymbolicElaborationResult(environment, ElaborateTerm(emit.Value, environment)),
             SequenceTerm sequence => ElaborateSequence(sequence, environment),
             _ => new SymbolicElaborationResult(environment, term),
         };

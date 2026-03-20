@@ -121,6 +121,17 @@ public class SymbolicGrammarTermTests
     }
 
     [Fact]
+    public void Parser_AllowsTrailingExpressionAfterProgramSequence()
+    {
+        var parsed = SymbolicParser.Parse("let A = 1; let B = i; A == B");
+
+        var sequence = Assert.IsType<SequenceTerm>(parsed);
+        Assert.Equal(3, sequence.Steps.Count);
+        Assert.IsType<EmitTerm>(sequence.Steps[2]);
+        Assert.Equal("let A = 1; let B = i; A == B", SymbolicTermFormatter.Format(sequence));
+    }
+
+    [Fact]
     public void Elaborator_ResolvesBoundReferencesThroughSequence()
     {
         var sequence = new SequenceTerm(
@@ -469,5 +480,51 @@ public class SymbolicGrammarTermTests
         Assert.Equal(Axis.I, Assert.IsType<ElementLiteralTerm>(turn).Value);
         Assert.Equal(Axis.NegativeOne, Assert.IsType<ElementLiteralTerm>(next).Value);
         Assert.Equal(Axis.NegativeOne, Assert.IsType<ElementLiteralTerm>(reduced.Output).Value);
+    }
+
+    [Fact]
+    public void ConstraintEvaluator_AssessesParticipantRequirementsAndPreferences()
+    {
+        var evaluation = SymbolicConstraintEvaluator.Evaluate(
+            SymbolicParser.Parse("constraints{require(glyph, 1 == 1) | prefer(box, 1 == i, 2/1)}"));
+
+        Assert.Equal(2, evaluation.Items.Count);
+        Assert.False(evaluation.HasRequirementFailure);
+        Assert.True(evaluation.IsFullyResolved);
+        Assert.Equal(new Proportion(2, 1), evaluation.UnsatisfiedPreferenceWeight);
+
+        var glyph = Assert.Single(evaluation.ParticipantSummaries, summary => summary.ParticipantName == "glyph");
+        var box = Assert.Single(evaluation.ParticipantSummaries, summary => summary.ParticipantName == "box");
+
+        Assert.Equal(1, glyph.SatisfiedRequirements);
+        Assert.Equal(new Proportion(2, 1), box.UnsatisfiedPreferenceWeight);
+    }
+
+    [Fact]
+    public void ConstraintEvaluator_KeepsSharedCarrierClaimsUnresolvedWithoutCarrierContext()
+    {
+        var evaluation = SymbolicConstraintEvaluator.Evaluate(
+            SymbolicParser.Parse("constraints{require(glyph, share(P4.u, P3.u))}"));
+
+        Assert.False(evaluation.IsFullyResolved);
+        Assert.True(evaluation.HasUnresolvedRequirements);
+
+        var glyph = Assert.Single(evaluation.ParticipantSummaries);
+        Assert.Equal("glyph", glyph.ParticipantName);
+        Assert.Equal(1, glyph.UnresolvedRequirements);
+    }
+
+    [Fact]
+    public void ConstraintEvaluator_UsesReducedEnvironmentInsideSequences()
+    {
+        var evaluation = SymbolicConstraintEvaluator.Evaluate(
+            SymbolicParser.Parse("let A = 1; let B = i; constraints{prefer(glyph, A == 1, 1/1) | prefer(glyph, B == 1, 2/1)}"));
+
+        Assert.Equal(new Proportion(1, 1), evaluation.SatisfiedPreferenceWeight);
+        Assert.Equal(new Proportion(2, 1), evaluation.UnsatisfiedPreferenceWeight);
+
+        var glyph = Assert.Single(evaluation.ParticipantSummaries);
+        Assert.Equal(new Proportion(1, 1), glyph.SatisfiedPreferenceWeight);
+        Assert.Equal(new Proportion(2, 1), glyph.UnsatisfiedPreferenceWeight);
     }
 }

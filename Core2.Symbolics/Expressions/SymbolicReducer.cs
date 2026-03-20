@@ -22,6 +22,7 @@ public static class SymbolicReducer
         term switch
         {
             BindTerm bind => ReduceBind(bind, environment),
+            EmitTerm emit => new SymbolicReductionResult(environment, ElaborateAndReduce(emit.Value, environment)),
             SequenceTerm sequence => ReduceSequence(sequence, environment),
             _ => new SymbolicReductionResult(environment, ElaborateAndReduce(term, environment)),
         };

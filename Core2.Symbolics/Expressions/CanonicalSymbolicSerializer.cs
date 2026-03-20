@@ -34,6 +34,7 @@ public static class CanonicalSymbolicSerializer
             ConstraintSetTerm set => $"constraints([{string.Join(",", set.Constraints.Select(Serialize))}])",
             BranchFamilyTerm branchFamily => SerializeBranchFamily(branchFamily.Family),
             BindTerm bind => $"bind(name={Escape(bind.Name)},value={Serialize(bind.Value)})",
+            EmitTerm emit => $"emit(value={Serialize(emit.Value)})",
             SequenceTerm sequence => $"sequence([{string.Join(",", sequence.Steps.Select(Serialize))}])",
             _ => term.ToString() ?? term.GetType().Name,
         };
