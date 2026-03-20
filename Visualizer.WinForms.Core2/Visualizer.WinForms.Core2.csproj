@@ -19,6 +19,7 @@
   <ItemGroup>
     <ProjectReference Include="..\Applied\Applied.csproj" />
     <ProjectReference Include="..\Core2\Core2.csproj" />
+    <ProjectReference Include="..\Core2.Interpretation\Core2.Interpretation.csproj" />
   </ItemGroup>
 
 </Project>

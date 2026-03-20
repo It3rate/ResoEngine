@@ -119,35 +119,6 @@ public sealed class CarrierPinGraph
         return HasCycleBackToStart(carrierId, carrierId, includeSelf, isInitial: true, visited);
     }
 
-    public CarrierPinGraphAnalysis Analyze()
-    {
-        CarrierSiteStructuralProfile[] siteProfiles = Sites
-            .Select(site => new CarrierSiteStructuralProfile(site, site.ResolveRouting()))
-            .ToArray();
-
-        CarrierStructuralProfile[] profiles = Carriers
-            .Select(
-                carrier => new CarrierStructuralProfile(
-                    carrier,
-                    GetHostedSites(carrier.Id),
-                    GetAttachments(carrier.Id),
-                    GetReferencedCarriers(carrier.Id),
-                    GetReferencingSites(carrier.Id)
-                        .Select(site => site.HostCarrier)
-                        .DistinctBy(host => host.Id)
-                        .ToArray(),
-                    siteProfiles
-                        .Where(profile => profile.Participates(carrier.Id))
-                        .ToArray(),
-                    siteProfiles
-                        .Where(profile => profile.CarriesThrough(carrier.Id))
-                        .ToArray(),
-                    ParticipatesInRecursiveCycle(carrier.Id)))
-            .ToArray();
-
-        return new CarrierPinGraphAnalysis(profiles, siteProfiles);
-    }
-
     private bool HasCycleFrom(
         CarrierId current,
         bool includeSelf,
