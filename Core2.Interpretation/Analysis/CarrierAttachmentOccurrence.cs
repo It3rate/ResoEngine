@@ -1,4 +1,6 @@
-namespace Core2.Elements;
+using Core2.Elements;
+
+namespace Core2.Interpretation.Analysis;
 
 /// <summary>
 /// One occurrence of a carrier side attachment inside a carrier pin graph.

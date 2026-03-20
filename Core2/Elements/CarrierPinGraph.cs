@@ -10,7 +10,6 @@ public sealed class CarrierPinGraph
     private readonly IReadOnlyDictionary<CarrierPinSiteId, CarrierPinSite> _sitesById;
     private readonly IReadOnlyDictionary<CarrierId, IReadOnlyList<CarrierPinSite>> _hostedSitesByCarrier;
     private readonly IReadOnlyDictionary<CarrierId, IReadOnlyList<CarrierPinSite>> _referencingSitesByCarrier;
-    private readonly IReadOnlyDictionary<CarrierId, IReadOnlyList<CarrierAttachmentOccurrence>> _attachmentsByCarrier;
 
     public CarrierPinGraph(
         IReadOnlyList<CarrierIdentity> carriers,
@@ -41,20 +40,6 @@ public sealed class CarrierPinGraph
                 site => site.SideAttachments.Select(attachment => (attachment.Carrier.Id, Site: site)))
             .GroupBy(pair => pair.Id, pair => pair.Site)
             .ToDictionary(group => group.Key, group => (IReadOnlyList<CarrierPinSite>)group.Distinct().ToArray());
-        _attachmentsByCarrier = Sites
-            .SelectMany(
-                site => site.SideAttachments.Select(
-                    attachment => new CarrierAttachmentOccurrence(
-                        attachment.Carrier,
-                        site,
-                        attachment)))
-            .GroupBy(occurrence => occurrence.CarrierId)
-            .ToDictionary(
-                group => group.Key,
-                group => (IReadOnlyList<CarrierAttachmentOccurrence>)group
-                    .OrderBy(occurrence => occurrence.CarrierPosition)
-                    .ThenBy(occurrence => occurrence.SiteId.Value)
-                    .ToArray());
     }
 
     public IReadOnlyList<CarrierIdentity> Carriers { get; }
@@ -81,9 +66,6 @@ public sealed class CarrierPinGraph
 
     public IReadOnlyList<CarrierPinSite> GetReferencingSites(CarrierId carrierId) =>
         _referencingSitesByCarrier.TryGetValue(carrierId, out var sites) ? sites : [];
-
-    public IReadOnlyList<CarrierAttachmentOccurrence> GetAttachments(CarrierId carrierId) =>
-        _attachmentsByCarrier.TryGetValue(carrierId, out var attachments) ? attachments : [];
 
     public IReadOnlyList<CarrierIdentity> GetReferencedCarriers(CarrierId hostCarrierId, bool includeSelf = true)
     {
