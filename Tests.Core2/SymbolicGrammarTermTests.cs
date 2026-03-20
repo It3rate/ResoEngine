@@ -169,4 +169,67 @@ public class SymbolicGrammarTermTests
             "prefer(relation=share(left=ref(sort=Value,name=\"P4.u\"),right=ref(sort=Value,name=\"P3.u\")),weight=proportion(2/1))",
             serialized);
     }
+
+    [Fact]
+    public void Parser_ParsesTransformApplication()
+    {
+        var parsed = SymbolicParser.Parse("1 * i");
+
+        var applied = Assert.IsType<ApplyTransformTerm>(parsed);
+        Assert.Equal("1 * i", SymbolicTermFormatter.Format(applied));
+    }
+
+    [Fact]
+    public void Parser_ParsesPositionedPinning()
+    {
+        var parsed = SymbolicParser.Parse("A * B @ 1/2");
+
+        var pin = Assert.IsType<PinTerm>(parsed);
+        Assert.Equal("A", Assert.IsType<ValueReferenceTerm>(pin.Host).Name);
+        Assert.Equal("B", Assert.IsType<ValueReferenceTerm>(pin.Applied).Name);
+        Assert.Equal(new Proportion(1, 2), pin.Position);
+    }
+
+    [Fact]
+    public void Parser_ParsesPreferenceEquality()
+    {
+        var parsed = SymbolicParser.Parse("prefer(P4.u == P3.u, 2/1)");
+
+        var preference = Assert.IsType<PreferenceTerm>(parsed);
+        var equality = Assert.IsType<EqualityTerm>(preference.Relation);
+        Assert.Equal("P4.u", Assert.IsType<ReferenceTerm>(equality.Left).Name);
+        Assert.Equal("P3.u", Assert.IsType<ReferenceTerm>(equality.Right).Name);
+        Assert.Equal(new Proportion(2, 1), preference.Weight);
+    }
+
+    [Fact]
+    public void Parser_ParsesAxisLiteral()
+    {
+        var parsed = SymbolicParser.Parse("[3/1]i + [12/-1]");
+
+        var literal = Assert.IsType<ElementLiteralTerm>(parsed);
+        var axis = Assert.IsType<Axis>(literal.Value);
+        Assert.Equal(new Proportion(3, 1), axis.Recessive);
+        Assert.Equal(new Proportion(12, -1), axis.Dominant);
+    }
+
+    [Fact]
+    public void Parser_ParsesSequenceOfLets()
+    {
+        var parsed = SymbolicParser.Parse("let stem = 1; let turn = i");
+
+        var sequence = Assert.IsType<SequenceTerm>(parsed);
+        Assert.Equal(2, sequence.Steps.Count);
+        Assert.Equal("let stem = 1; let turn = i", SymbolicTermFormatter.Format(sequence));
+    }
+
+    [Fact]
+    public void Parser_ParsesBranchFamilyShorthand()
+    {
+        var parsed = SymbolicParser.Parse("branch{1 | i}");
+
+        var branch = Assert.IsType<BranchFamilyTerm>(parsed);
+        Assert.Equal(2, branch.Family.Values.Count);
+        Assert.Equal("branch{1 | i}", SymbolicTermFormatter.Format(branch));
+    }
 }
