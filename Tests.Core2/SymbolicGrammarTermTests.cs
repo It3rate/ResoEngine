@@ -702,4 +702,19 @@ public class SymbolicGrammarTermTests
         Assert.Empty(report.Steps);
         Assert.Null(report.Parsed);
     }
+
+    [Fact]
+    public void SymbolicInspectionExporter_IncludesExpressionAndEnvironment()
+    {
+        var report = SymbolicInspector.Inspect("let options = branch{1 | i}; commit choice = constraints{prefer(glyph, options == i, 2/1)}; choice");
+
+        var exported = SymbolicInspectionExporter.Export(report);
+
+        Assert.Contains("EXPRESSION", exported);
+        Assert.Contains("let options = branch{1 | i}; commit choice = constraints{prefer(glyph, options == i, 2/1)}; choice", exported);
+        Assert.Contains("CANONICAL", exported);
+        Assert.Contains("STEP 2: commit choice", exported);
+        Assert.Contains("ENVIRONMENT", exported);
+        Assert.Contains("choice = i", exported);
+    }
 }

@@ -4,6 +4,7 @@ using ResoEngine.Visualizer.Core;
 using ResoEngine.Visualizer.Input;
 using SkiaSharp;
 using System.Drawing;
+using System.Drawing.Drawing2D;
 using System.Windows.Forms;
 
 namespace ResoEngine.Visualizer.Pages;
@@ -29,6 +30,8 @@ public sealed class SymbolicWorkbenchPage : IVisualizerPage
     private Label? _inputLabel;
     private FlowLayoutPanel? _exampleButtonPanel;
     private TextBox? _inputEditor;
+    private Button? _inspectionCopyButton;
+    private Bitmap? _copyIcon;
     private SymbolicInspectionReport? _report;
     private string _activeExample = "Commit";
 
@@ -106,10 +109,11 @@ public sealed class SymbolicWorkbenchPage : IVisualizerPage
         }
 
         const float margin = 28f;
-        var inputRect = new SKRect(margin, 112f, 258f, 762f);
-        var outputRect = new SKRect(276f, 112f, _coords.Width - margin, 762f);
+        var inputRect = new SKRect(margin, 112f, _coords.Width - margin, 312f);
+        var outputRect = new SKRect(margin, 332f, _coords.Width - margin, 762f);
 
         LayoutInputPanel(inputRect);
+        LayoutInspectionCopyButton(outputRect);
 
         canvas.DrawText("Symbolic Workbench", margin, 42f, _headingPaint);
         float introY = 74f;
@@ -123,7 +127,6 @@ public sealed class SymbolicWorkbenchPage : IVisualizerPage
 
         DrawCard(canvas, inputRect);
         DrawCard(canvas, outputRect);
-        DrawInputCardText(canvas, inputRect);
         DrawOutputArea(canvas, outputRect);
     }
 
@@ -219,6 +222,25 @@ public sealed class SymbolicWorkbenchPage : IVisualizerPage
         _canvasHost.Controls.Add(_inputPanel);
         _inputPanel.BringToFront();
 
+        _copyIcon = CreateCopyIcon();
+        _inspectionCopyButton = new Button
+        {
+            Width = 24,
+            Height = 24,
+            FlatStyle = FlatStyle.Flat,
+            BackColor = Color.FromArgb(252, 252, 252),
+            Image = _copyIcon,
+            TabStop = false,
+            Cursor = Cursors.Hand,
+            Visible = true,
+        };
+        _inspectionCopyButton.FlatAppearance.BorderSize = 0;
+        _inspectionCopyButton.FlatAppearance.MouseDownBackColor = Color.FromArgb(232, 232, 232);
+        _inspectionCopyButton.FlatAppearance.MouseOverBackColor = Color.FromArgb(240, 240, 240);
+        _inspectionCopyButton.Click += OnInspectionCopyClicked;
+        _canvasHost.Controls.Add(_inspectionCopyButton);
+        _inspectionCopyButton.BringToFront();
+
         _inputEditor.Text = _examples[_activeExample];
         UpdateExampleButtonStyles();
         LayoutInputPanelContents();
@@ -273,6 +295,21 @@ public sealed class SymbolicWorkbenchPage : IVisualizerPage
             _inputPanel = null;
         }
 
+        if (_inspectionCopyButton is not null)
+        {
+            _inspectionCopyButton.Click -= OnInspectionCopyClicked;
+            if (_canvasHost is not null)
+            {
+                _canvasHost.Controls.Remove(_inspectionCopyButton);
+            }
+
+            _inspectionCopyButton.Dispose();
+            _inspectionCopyButton = null;
+        }
+
+        _copyIcon?.Dispose();
+        _copyIcon = null;
+
         _panelTitleLabel = null;
         _examplesLabel = null;
         _inputLabel = null;
@@ -293,6 +330,10 @@ public sealed class SymbolicWorkbenchPage : IVisualizerPage
         _report = string.IsNullOrWhiteSpace(text)
             ? null
             : SymbolicInspector.Inspect(text);
+        if (_inspectionCopyButton is not null)
+        {
+            _inspectionCopyButton.Enabled = _report is not null;
+        }
         _canvasHost?.InvalidateCanvas();
     }
 
@@ -375,29 +416,18 @@ public sealed class SymbolicWorkbenchPage : IVisualizerPage
             (int)MathF.Round(rect.Bottom * scaleY));
     }
 
-    private void DrawInputCardText(SKCanvas canvas, SKRect rect)
+    private void LayoutInspectionCopyButton(SKRect outputRect)
     {
-        float x = rect.Left + 18f;
-        float y = rect.Top + 28f;
-        canvas.DrawText("Live grammar input", x, y, _labelPaint);
-        y += 26f;
-        PageChrome.DrawWrappedText(
-            canvas,
-            "The editor on the left parses the current shorthand, then traces elaboration, reduction, constraint evaluation, and negotiation using the same symbolic layer the tests are exercising.",
-            x,
-            ref y,
-            rect.Width - 36f,
-            _bodyPaint);
-        y += 14f;
-        canvas.DrawText("Stages", x, y, _smallLabelPaint);
-        y += 20f;
-        PageChrome.DrawWrappedText(
-            canvas,
-            "Parse: build the native symbolic term. Elaborate: resolve names through the environment. Reduce: execute the currently lawful subset. Evaluate/Negotiate: assess distributed requirements and preferences without forcing false certainty.",
-            x,
-            ref y,
-            rect.Width - 36f,
-            _bodyPaint);
+        if (_inspectionCopyButton is null || _canvasHost is null || _coords is null)
+        {
+            return;
+        }
+
+        var pixelRect = ViewToPixelRect(outputRect);
+        _inspectionCopyButton.Location = new Point(
+            Math.Max(12, pixelRect.Right - _inspectionCopyButton.Width - 18),
+            pixelRect.Top + 12);
+        _inspectionCopyButton.BringToFront();
     }
 
     private void DrawOutputArea(SKCanvas canvas, SKRect rect)
@@ -463,7 +493,7 @@ public sealed class SymbolicWorkbenchPage : IVisualizerPage
         float bodyWidth = width - 26f;
         float height = 26f
             + MeasureFieldHeight("parsed", parsedFriendly, bodyWidth, 4)
-            + MeasureFieldHeight("canonical", canonical, bodyWidth, 4)
+            + MeasureSingleLineFieldHeight()
             + MeasureFieldHeight("final", finalOutput, bodyWidth, 3)
             + 10f;
 
@@ -472,7 +502,7 @@ public sealed class SymbolicWorkbenchPage : IVisualizerPage
 
         float contentY = y + 26f;
         contentY = DrawField(canvas, "parsed", parsedFriendly, x + 14f, contentY, bodyWidth, 4);
-        contentY = DrawField(canvas, "canonical", canonical, x + 14f, contentY, bodyWidth, 4);
+        contentY = DrawSingleLineField(canvas, "canonical", canonical, x + 14f, contentY, bodyWidth);
         DrawField(canvas, "final", finalOutput, x + 14f, contentY, bodyWidth, 3);
         return y + height;
     }
@@ -607,11 +637,27 @@ public sealed class SymbolicWorkbenchPage : IVisualizerPage
         return lineY + 8f;
     }
 
+    private float DrawSingleLineField(
+        SKCanvas canvas,
+        string label,
+        string value,
+        float x,
+        float y,
+        float width)
+    {
+        string line = $"{label}: {value}";
+        string fitted = FitSingleLineWithEllipsis(line, width, _monoPaint);
+        canvas.DrawText(fitted, x, y + _monoPaint.TextSize, _monoPaint);
+        return y + _monoPaint.TextSize + 12f;
+    }
+
     private float MeasureFieldHeight(string label, string value, float width, int maxLines)
     {
         int lineCount = WrapCodeText($"{label}: {value}", width, _monoPaint, maxLines).Count;
         return lineCount * (_monoPaint.TextSize + 4f) + 8f;
     }
+
+    private float MeasureSingleLineFieldHeight() => _monoPaint.TextSize + 12f;
 
     private static List<string> WrapCodeText(string text, float width, SKPaint paint, int maxLines)
     {
@@ -699,4 +745,54 @@ public sealed class SymbolicWorkbenchPage : IVisualizerPage
 
     private static string NormalizeLineEndings(string text) =>
         text.Replace("\r\n", "\n").Replace('\r', '\n');
+
+    private void OnInspectionCopyClicked(object? sender, EventArgs e)
+    {
+        string text = _report is not null
+            ? SymbolicInspectionExporter.Export(_report)
+            : _inputEditor?.Text ?? string.Empty;
+
+        if (!string.IsNullOrWhiteSpace(text))
+        {
+            Clipboard.SetText(text);
+        }
+    }
+
+    private static string FitSingleLineWithEllipsis(string text, float width, SKPaint paint)
+    {
+        if (paint.MeasureText(text) <= width)
+        {
+            return text;
+        }
+
+        const string ellipsis = "...";
+        float ellipsisWidth = paint.MeasureText(ellipsis);
+        if (ellipsisWidth >= width)
+        {
+            return ellipsis;
+        }
+
+        string current = text;
+        while (current.Length > 0 && paint.MeasureText(current) + ellipsisWidth > width)
+        {
+            current = current[..^1];
+        }
+
+        return string.Concat(current, ellipsis);
+    }
+
+    private static Bitmap CreateCopyIcon()
+    {
+        var bitmap = new Bitmap(16, 16);
+        using var graphics = Graphics.FromImage(bitmap);
+        graphics.SmoothingMode = SmoothingMode.AntiAlias;
+        graphics.Clear(Color.Transparent);
+
+        using var shadowPen = new Pen(Color.FromArgb(160, 160, 160), 1.3f);
+        using var frontPen = new Pen(Color.FromArgb(110, 110, 110), 1.3f);
+
+        graphics.DrawRectangle(shadowPen, 5, 2, 7, 9);
+        graphics.DrawRectangle(frontPen, 3, 5, 7, 9);
+        return bitmap;
+    }
 }
