@@ -25,11 +25,14 @@ public sealed class SymbolicWorkbenchPage : IVisualizerPage
     private CoordinateSystem? _coords;
     private SkiaCanvas? _canvasHost;
     private Panel? _inputPanel;
+    private Panel? _inspectionPanel;
     private Label? _panelTitleLabel;
     private Label? _examplesLabel;
     private Label? _inputLabel;
+    private Label? _inspectionTitleLabel;
     private FlowLayoutPanel? _exampleButtonPanel;
     private TextBox? _inputEditor;
+    private TextBox? _inspectionViewer;
     private Button? _inspectionCopyButton;
     private Bitmap? _copyIcon;
     private SymbolicInspectionReport? _report;
@@ -62,35 +65,6 @@ public sealed class SymbolicWorkbenchPage : IVisualizerPage
         Color = new SKColor(218, 218, 218),
         IsAntialias = true,
     };
-    private readonly SKPaint _labelPaint = new()
-    {
-        Color = new SKColor(58, 58, 58),
-        TextSize = 15f,
-        Typeface = SKTypeface.FromFamilyName(VisualStyle.FontFamily, SKFontStyle.Bold),
-        IsAntialias = true,
-    };
-    private readonly SKPaint _smallLabelPaint = new()
-    {
-        Color = new SKColor(94, 94, 94),
-        TextSize = 12f,
-        Typeface = SKTypeface.FromFamilyName(VisualStyle.FontFamily, SKFontStyle.Bold),
-        IsAntialias = true,
-    };
-    private readonly SKPaint _monoPaint = new()
-    {
-        Color = new SKColor(55, 55, 55),
-        TextSize = 13f,
-        Typeface = SKTypeface.FromFamilyName("Consolas", SKFontStyle.Normal),
-        IsAntialias = true,
-    };
-    private readonly SKPaint _errorPaint = new()
-    {
-        Color = new SKColor(184, 58, 58),
-        TextSize = 12f,
-        Typeface = SKTypeface.FromFamilyName(VisualStyle.FontFamily, SKFontStyle.Bold),
-        IsAntialias = true,
-    };
-
     public string Title => "Symbolic Workbench";
 
     public void Init(CoordinateSystem coords, HitTestEngine hitTest, SkiaCanvas canvas)
@@ -113,7 +87,7 @@ public sealed class SymbolicWorkbenchPage : IVisualizerPage
         var outputRect = new SKRect(margin, 332f, _coords.Width - margin, 762f);
 
         LayoutInputPanel(inputRect);
-        LayoutInspectionCopyButton(outputRect);
+        LayoutInspectionPanel(outputRect);
 
         canvas.DrawText("Symbolic Workbench", margin, 42f, _headingPaint);
         float introY = 74f;
@@ -127,7 +101,6 @@ public sealed class SymbolicWorkbenchPage : IVisualizerPage
 
         DrawCard(canvas, inputRect);
         DrawCard(canvas, outputRect);
-        DrawOutputArea(canvas, outputRect);
     }
 
     public void Destroy()
@@ -142,10 +115,6 @@ public sealed class SymbolicWorkbenchPage : IVisualizerPage
         _bodyPaint.Dispose();
         _cardFillPaint.Dispose();
         _cardStrokePaint.Dispose();
-        _labelPaint.Dispose();
-        _smallLabelPaint.Dispose();
-        _monoPaint.Dispose();
-        _errorPaint.Dispose();
     }
 
     private void EnsureControls()
@@ -160,6 +129,12 @@ public sealed class SymbolicWorkbenchPage : IVisualizerPage
             BackColor = Color.FromArgb(252, 252, 252),
         };
         _inputPanel.Resize += (_, _) => LayoutInputPanelContents();
+
+        _inspectionPanel = new Panel
+        {
+            BackColor = Color.FromArgb(252, 252, 252),
+        };
+        _inspectionPanel.Resize += (_, _) => LayoutInspectionPanelContents();
 
         _panelTitleLabel = new Label
         {
@@ -214,6 +189,27 @@ public sealed class SymbolicWorkbenchPage : IVisualizerPage
         };
         _inputEditor.TextChanged += OnInputChanged;
 
+        _inspectionTitleLabel = new Label
+        {
+            Text = "Inspection",
+            Font = new Font(VisualStyle.UiFontFamily, 10.5f, FontStyle.Bold),
+            ForeColor = Color.FromArgb(56, 56, 56),
+            AutoSize = false,
+        };
+
+        _inspectionViewer = new TextBox
+        {
+            Multiline = true,
+            ReadOnly = true,
+            WordWrap = false,
+            ScrollBars = ScrollBars.Both,
+            BorderStyle = BorderStyle.None,
+            Font = new Font("Consolas", 10.25f, FontStyle.Regular),
+            BackColor = Color.FromArgb(252, 252, 252),
+            ForeColor = Color.FromArgb(48, 48, 48),
+            ShortcutsEnabled = true,
+        };
+
         _inputPanel.Controls.Add(_panelTitleLabel);
         _inputPanel.Controls.Add(_examplesLabel);
         _inputPanel.Controls.Add(_exampleButtonPanel);
@@ -238,12 +234,17 @@ public sealed class SymbolicWorkbenchPage : IVisualizerPage
         _inspectionCopyButton.FlatAppearance.MouseDownBackColor = Color.FromArgb(232, 232, 232);
         _inspectionCopyButton.FlatAppearance.MouseOverBackColor = Color.FromArgb(240, 240, 240);
         _inspectionCopyButton.Click += OnInspectionCopyClicked;
-        _canvasHost.Controls.Add(_inspectionCopyButton);
-        _inspectionCopyButton.BringToFront();
+
+        _inspectionPanel.Controls.Add(_inspectionTitleLabel);
+        _inspectionPanel.Controls.Add(_inspectionCopyButton);
+        _inspectionPanel.Controls.Add(_inspectionViewer);
+        _canvasHost.Controls.Add(_inspectionPanel);
+        _inspectionPanel.BringToFront();
 
         _inputEditor.Text = _examples[_activeExample];
         UpdateExampleButtonStyles();
         LayoutInputPanelContents();
+        LayoutInspectionPanelContents();
     }
 
     private Button CreateExampleButton(string name, string source)
@@ -295,15 +296,20 @@ public sealed class SymbolicWorkbenchPage : IVisualizerPage
             _inputPanel = null;
         }
 
+        if (_inspectionPanel is not null)
+        {
+            if (_canvasHost is not null)
+            {
+                _canvasHost.Controls.Remove(_inspectionPanel);
+            }
+
+            _inspectionPanel.Dispose();
+            _inspectionPanel = null;
+        }
+
         if (_inspectionCopyButton is not null)
         {
             _inspectionCopyButton.Click -= OnInspectionCopyClicked;
-            if (_canvasHost is not null)
-            {
-                _canvasHost.Controls.Remove(_inspectionCopyButton);
-            }
-
-            _inspectionCopyButton.Dispose();
             _inspectionCopyButton = null;
         }
 
@@ -313,8 +319,10 @@ public sealed class SymbolicWorkbenchPage : IVisualizerPage
         _panelTitleLabel = null;
         _examplesLabel = null;
         _inputLabel = null;
+        _inspectionTitleLabel = null;
         _exampleButtonPanel = null;
         _inputEditor = null;
+        _inspectionViewer = null;
         _exampleButtons.Clear();
     }
 
@@ -334,6 +342,7 @@ public sealed class SymbolicWorkbenchPage : IVisualizerPage
         {
             _inspectionCopyButton.Enabled = _report is not null;
         }
+        RefreshInspectionViewer();
         _canvasHost?.InvalidateCanvas();
     }
 
@@ -372,6 +381,19 @@ public sealed class SymbolicWorkbenchPage : IVisualizerPage
         LayoutInputPanelContents();
     }
 
+    private void LayoutInspectionPanel(SKRect viewRect)
+    {
+        if (_canvasHost is null || _coords is null || _inspectionPanel is null)
+        {
+            return;
+        }
+
+        var pixelRect = ViewToPixelRect(viewRect);
+        _inspectionPanel.SetBounds(pixelRect.Left + 10, pixelRect.Top + 18, pixelRect.Width - 20, pixelRect.Height - 28);
+        _inspectionPanel.BringToFront();
+        LayoutInspectionPanelContents();
+    }
+
     private void LayoutInputPanelContents()
     {
         if (_inputPanel is null ||
@@ -399,6 +421,35 @@ public sealed class SymbolicWorkbenchPage : IVisualizerPage
         _inputEditor.SetBounds(padding, y, width, Math.Max(80, _inputPanel.ClientSize.Height - y - padding));
     }
 
+    private void LayoutInspectionPanelContents()
+    {
+        if (_inspectionPanel is null ||
+            _inspectionTitleLabel is null ||
+            _inspectionCopyButton is null ||
+            _inspectionViewer is null)
+        {
+            return;
+        }
+
+        int padding = 12;
+        int titleHeight = 22;
+        int copySize = 24;
+
+        _inspectionTitleLabel.SetBounds(padding, padding, Math.Max(100, _inspectionPanel.ClientSize.Width - padding * 3 - copySize), titleHeight);
+        _inspectionCopyButton.Location = new Point(
+            Math.Max(padding, _inspectionPanel.ClientSize.Width - padding - copySize),
+            padding - 1);
+
+        int editorTop = padding + titleHeight + 10;
+        _inspectionViewer.SetBounds(
+            padding,
+            editorTop,
+            Math.Max(100, _inspectionPanel.ClientSize.Width - padding * 2),
+            Math.Max(80, _inspectionPanel.ClientSize.Height - editorTop - padding));
+
+        RefreshInspectionViewer();
+    }
+
     private Rectangle ViewToPixelRect(SKRect rect)
     {
         if (_canvasHost is null || _coords is null)
@@ -416,331 +467,23 @@ public sealed class SymbolicWorkbenchPage : IVisualizerPage
             (int)MathF.Round(rect.Bottom * scaleY));
     }
 
-    private void LayoutInspectionCopyButton(SKRect outputRect)
+    private void RefreshInspectionViewer()
     {
-        if (_inspectionCopyButton is null || _canvasHost is null || _coords is null)
+        if (_inspectionViewer is null)
         {
             return;
         }
 
-        var pixelRect = ViewToPixelRect(outputRect);
-        _inspectionCopyButton.Location = new Point(
-            Math.Max(12, pixelRect.Right - _inspectionCopyButton.Width - 18),
-            pixelRect.Top + 12);
-        _inspectionCopyButton.BringToFront();
-    }
-
-    private void DrawOutputArea(SKCanvas canvas, SKRect rect)
-    {
-        float x = rect.Left + 18f;
-        float y = rect.Top + 28f;
-        float width = rect.Width - 36f;
-
-        canvas.DrawText("Inspection", x, y, _labelPaint);
-        y += 24f;
-
-        if (_report is null)
-        {
-            DrawMessageCard(canvas, x, y, width, "Enter a symbolic expression to inspect.", _bodyPaint);
-            return;
-        }
-
-        if (_report.HasError)
-        {
-            DrawErrorCard(canvas, x, y, width, _report.Error ?? "Unknown symbolic error.");
-            return;
-        }
-
-        if (_report.Parsed is null)
-        {
-            DrawErrorCard(canvas, x, y, width, "The symbolic input did not produce a parsed term.");
-            return;
-        }
-
-        y = DrawSummaryCard(canvas, x, y, width, _report);
-        y += 12f;
-
-        int maxSteps = Math.Min(3, _report.Steps.Count);
-        for (int i = 0; i < maxSteps; i++)
-        {
-            y = DrawStepCard(canvas, x, y, width, _report.Steps[i]);
-            y += 12f;
-        }
-
-        if (_report.Steps.Count > maxSteps)
-        {
-            y = DrawMessageCard(
-                canvas,
-                x,
-                y,
-                width,
-                $"+{_report.Steps.Count - maxSteps} additional step(s) hidden in this preview. The reduction and final environment below still reflect the full trace.",
-                _bodyPaint);
-            y += 12f;
-        }
-
-        DrawEnvironmentCard(canvas, x, y, width, _report.FinalEnvironment);
-    }
-
-    private float DrawSummaryCard(SKCanvas canvas, float x, float y, float width, SymbolicInspectionReport report)
-    {
-        string parsedFriendly = SymbolicTermFormatter.Format(report.Parsed!);
-        string canonical = CanonicalSymbolicSerializer.Serialize(report.Parsed!);
-        string finalOutput = report.FinalStep?.Reduction.Output is null
-            ? "(none)"
-            : SymbolicTermFormatter.Format(report.FinalStep.Reduction.Output);
-
-        float bodyWidth = width - 26f;
-        float height = 26f
-            + MeasureFieldHeight("parsed", parsedFriendly, bodyWidth, 4)
-            + MeasureSingleLineFieldHeight()
-            + MeasureFieldHeight("final", finalOutput, bodyWidth, 3)
-            + 10f;
-
-        DrawCard(canvas, new SKRect(x, y, x + width, y + height));
-        canvas.DrawText("Top-Level Term", x + 14f, y + 18f, _smallLabelPaint);
-
-        float contentY = y + 26f;
-        contentY = DrawField(canvas, "parsed", parsedFriendly, x + 14f, contentY, bodyWidth, 4);
-        contentY = DrawSingleLineField(canvas, "canonical", canonical, x + 14f, contentY, bodyWidth);
-        DrawField(canvas, "final", finalOutput, x + 14f, contentY, bodyWidth, 3);
-        return y + height;
-    }
-
-    private float DrawStepCard(SKCanvas canvas, float x, float y, float width, SymbolicInspectionStep step)
-    {
-        string source = SymbolicTermFormatter.Format(step.Source);
-        string elaborated = step.Elaboration.Output is null ? "(none)" : SymbolicTermFormatter.Format(step.Elaboration.Output);
-        string reduced = step.Reduction.Output is null ? "(none)" : SymbolicTermFormatter.Format(step.Reduction.Output);
-
-        var metaLines = new List<string>
-        {
-            $"label: {step.Label}",
-        };
-
-        if (step.Evaluation is not null)
-        {
-            metaLines.Add(
-                $"constraints: {step.Evaluation.Items.Count} item(s), unresolved req {step.Evaluation.HasUnresolvedRequirements.ToString().ToLowerInvariant()}, pref {step.Evaluation.SatisfiedPreferenceWeight}/{step.Evaluation.UnsatisfiedPreferenceWeight}/{step.Evaluation.UnresolvedPreferenceWeight}");
-
-            foreach (var participant in step.Evaluation.ParticipantSummaries.Take(3))
-            {
-                string name = participant.ParticipantName ?? "(unscoped)";
-                metaLines.Add(
-                    $"{name}: req +{participant.SatisfiedRequirements} -{participant.UnsatisfiedRequirements} ?{participant.UnresolvedRequirements}, pref +{participant.SatisfiedPreferenceWeight} -{participant.UnsatisfiedPreferenceWeight} ?{participant.UnresolvedPreferenceWeight}");
-            }
-        }
-
-        if (step.Negotiation is not null)
-        {
-            string negotiationText = step.Negotiation.Status switch
-            {
-                ConstraintNegotiationStatus.Selected when step.Negotiation.SelectedCandidate is not null
-                    => $"negotiation: Selected -> {SymbolicTermFormatter.Format(step.Negotiation.SelectedCandidate)}",
-                ConstraintNegotiationStatus.PreservedCandidates when step.Negotiation.PreservedCandidateFamily is not null
-                    => $"negotiation: Preserved -> {SymbolicTermFormatter.Format(step.Negotiation.PreservedCandidateFamily)}",
-                _ => $"negotiation: {step.Negotiation.Status}",
-            };
-            metaLines.Add(negotiationText);
-            if (!string.IsNullOrWhiteSpace(step.Negotiation.Note))
-            {
-                metaLines.Add(step.Negotiation.Note!);
-            }
-        }
-
-        string notes = string.Join(Environment.NewLine, metaLines);
-        float bodyWidth = width - 26f;
-        float height = 26f
-            + MeasureFieldHeight("source", source, bodyWidth, 3)
-            + MeasureFieldHeight("elaborated", elaborated, bodyWidth, 3)
-            + MeasureFieldHeight("reduced", reduced, bodyWidth, 3)
-            + MeasureFieldHeight("notes", notes, bodyWidth, 5)
-            + 10f;
-
-        DrawCard(canvas, new SKRect(x, y, x + width, y + height));
-        canvas.DrawText($"Step {step.Index}", x + 14f, y + 18f, _smallLabelPaint);
-
-        float contentY = y + 26f;
-        contentY = DrawField(canvas, "source", source, x + 14f, contentY, bodyWidth, 3);
-        contentY = DrawField(canvas, "elaborated", elaborated, x + 14f, contentY, bodyWidth, 3);
-        contentY = DrawField(canvas, "reduced", reduced, x + 14f, contentY, bodyWidth, 3);
-        DrawField(canvas, "notes", notes, x + 14f, contentY, bodyWidth, 5);
-        return y + height;
-    }
-
-    private void DrawEnvironmentCard(SKCanvas canvas, float x, float y, float width, SymbolicEnvironment environment)
-    {
-        string text = FormatEnvironmentBindings(environment);
-        float bodyWidth = width - 26f;
-        float height = 26f + MeasureFieldHeight("bindings", text, bodyWidth, 14) + 10f;
-
-        DrawCard(canvas, new SKRect(x, y, x + width, y + height));
-        canvas.DrawText("Final Environment", x + 14f, y + 18f, _smallLabelPaint);
-        DrawField(canvas, "bindings", text, x + 14f, y + 26f, bodyWidth, 14);
-    }
-
-    private float DrawMessageCard(SKCanvas canvas, float x, float y, float width, string text, SKPaint paint)
-    {
-        var lines = WrapCodeText(text, width - 28f, paint, 4);
-        float height = 28f + lines.Count * (paint.TextSize + 4f) + 12f;
-        DrawCard(canvas, new SKRect(x, y, x + width, y + height));
-
-        float lineY = y + 22f;
-        foreach (var line in lines)
-        {
-            canvas.DrawText(line, x + 14f, lineY, paint);
-            lineY += paint.TextSize + 4f;
-        }
-
-        return y + height;
-    }
-
-    private void DrawErrorCard(SKCanvas canvas, float x, float y, float width, string error)
-    {
-        var lines = WrapCodeText(error, width - 28f, _bodyPaint, 6);
-        float height = 34f + lines.Count * (_bodyPaint.TextSize + 4f) + 14f;
-        DrawCard(canvas, new SKRect(x, y, x + width, y + height));
-        canvas.DrawText("Parse / Inspection Error", x + 14f, y + 20f, _errorPaint);
-
-        float lineY = y + 42f;
-        foreach (var line in lines)
-        {
-            canvas.DrawText(line, x + 14f, lineY, _bodyPaint);
-            lineY += _bodyPaint.TextSize + 4f;
-        }
+        _inspectionViewer.Text = BuildInspectionDisplayText();
+        _inspectionViewer.SelectionStart = 0;
+        _inspectionViewer.SelectionLength = 0;
+        _inspectionViewer.ScrollToCaret();
     }
 
     private void DrawCard(SKCanvas canvas, SKRect rect)
     {
         canvas.DrawRoundRect(rect, 18f, 18f, _cardFillPaint);
         canvas.DrawRoundRect(rect, 18f, 18f, _cardStrokePaint);
-    }
-
-    private float DrawField(
-        SKCanvas canvas,
-        string label,
-        string value,
-        float x,
-        float y,
-        float width,
-        int maxLines)
-    {
-        var lines = WrapCodeText($"{label}: {value}", width, _monoPaint, maxLines);
-        float lineY = y;
-
-        foreach (var line in lines)
-        {
-            canvas.DrawText(line, x, lineY + _monoPaint.TextSize, _monoPaint);
-            lineY += _monoPaint.TextSize + 4f;
-        }
-
-        return lineY + 8f;
-    }
-
-    private float DrawSingleLineField(
-        SKCanvas canvas,
-        string label,
-        string value,
-        float x,
-        float y,
-        float width)
-    {
-        string line = $"{label}: {value}";
-        string fitted = FitSingleLineWithEllipsis(line, width, _monoPaint);
-        canvas.DrawText(fitted, x, y + _monoPaint.TextSize, _monoPaint);
-        return y + _monoPaint.TextSize + 12f;
-    }
-
-    private float MeasureFieldHeight(string label, string value, float width, int maxLines)
-    {
-        int lineCount = WrapCodeText($"{label}: {value}", width, _monoPaint, maxLines).Count;
-        return lineCount * (_monoPaint.TextSize + 4f) + 8f;
-    }
-
-    private float MeasureSingleLineFieldHeight() => _monoPaint.TextSize + 12f;
-
-    private static List<string> WrapCodeText(string text, float width, SKPaint paint, int maxLines)
-    {
-        if (string.IsNullOrEmpty(text))
-        {
-            return ["(empty)"];
-        }
-
-        var lines = new List<string>();
-        var paragraphs = NormalizeLineEndings(text).Split('\n');
-
-        foreach (var paragraph in paragraphs)
-        {
-            if (string.IsNullOrEmpty(paragraph))
-            {
-                lines.Add(string.Empty);
-                if (lines.Count >= maxLines)
-                {
-                    return ClampLines(lines, maxLines);
-                }
-
-                continue;
-            }
-
-            string current = string.Empty;
-            foreach (char ch in paragraph)
-            {
-                string candidate = string.Concat(current, ch);
-                if (string.IsNullOrEmpty(current) || paint.MeasureText(candidate) <= width)
-                {
-                    current = candidate;
-                    continue;
-                }
-
-                lines.Add(current);
-                if (lines.Count >= maxLines)
-                {
-                    return ClampLines(lines, maxLines);
-                }
-
-                current = ch.ToString();
-            }
-
-            if (!string.IsNullOrEmpty(current))
-            {
-                lines.Add(current);
-                if (lines.Count >= maxLines)
-                {
-                    return ClampLines(lines, maxLines);
-                }
-            }
-        }
-
-        return lines;
-    }
-
-    private static List<string> ClampLines(List<string> lines, int maxLines)
-    {
-        if (lines.Count <= maxLines)
-        {
-            return lines;
-        }
-
-        return
-        [
-            .. lines.Take(maxLines - 1),
-            $"{lines[maxLines - 1]}...",
-        ];
-    }
-
-    private static string FormatEnvironmentBindings(SymbolicEnvironment environment)
-    {
-        var bindings = environment.Bindings.ToArray();
-        if (bindings.Length == 0)
-        {
-            return "(no bindings)";
-        }
-
-        return string.Join(
-            Environment.NewLine,
-            bindings
-                .OrderBy(pair => pair.Key, StringComparer.Ordinal)
-                .Select(pair => $"{pair.Key} = {SymbolicTermFormatter.Format(pair.Value)}"));
     }
 
     private static string NormalizeLineEndings(string text) =>
@@ -759,27 +502,7 @@ public sealed class SymbolicWorkbenchPage : IVisualizerPage
     }
 
     private static string FitSingleLineWithEllipsis(string text, float width, SKPaint paint)
-    {
-        if (paint.MeasureText(text) <= width)
-        {
-            return text;
-        }
-
-        const string ellipsis = "...";
-        float ellipsisWidth = paint.MeasureText(ellipsis);
-        if (ellipsisWidth >= width)
-        {
-            return ellipsis;
-        }
-
-        string current = text;
-        while (current.Length > 0 && paint.MeasureText(current) + ellipsisWidth > width)
-        {
-            current = current[..^1];
-        }
-
-        return string.Concat(current, ellipsis);
-    }
+        => text;
 
     private static Bitmap CreateCopyIcon()
     {
@@ -794,5 +517,48 @@ public sealed class SymbolicWorkbenchPage : IVisualizerPage
         graphics.DrawRectangle(shadowPen, 5, 2, 7, 9);
         graphics.DrawRectangle(frontPen, 3, 5, 7, 9);
         return bitmap;
+    }
+
+    private string BuildInspectionDisplayText()
+    {
+        if (_report is null)
+        {
+            return "Enter a symbolic expression to inspect.";
+        }
+
+        string text = SymbolicInspectionDisplayFormatter.Format(_report);
+        if (_inspectionViewer is null)
+        {
+            return text;
+        }
+
+        var lines = NormalizeLineEndings(text).Split('\n');
+        for (int i = 0; i < lines.Length; i++)
+        {
+            if (lines[i].StartsWith("Canonical: ", StringComparison.Ordinal))
+            {
+                lines[i] = FitViewerLineWithEllipsis(lines[i], _inspectionViewer);
+                break;
+            }
+        }
+
+        return string.Join(Environment.NewLine, lines);
+    }
+
+    private static string FitViewerLineWithEllipsis(string text, TextBox viewer)
+    {
+        if (viewer.ClientSize.Width <= 8)
+        {
+            return text;
+        }
+
+        int charWidth = Math.Max(1, TextRenderer.MeasureText("M", viewer.Font).Width);
+        int maxChars = Math.Max(6, (viewer.ClientSize.Width - 8) / charWidth);
+        if (text.Length <= maxChars)
+        {
+            return text;
+        }
+
+        return string.Concat(text.AsSpan(0, Math.Max(3, maxChars - 3)), "...");
     }
 }

@@ -717,4 +717,19 @@ public class SymbolicGrammarTermTests
         Assert.Contains("ENVIRONMENT", exported);
         Assert.Contains("choice = i", exported);
     }
+
+    [Fact]
+    public void SymbolicInspectionDisplayFormatter_ProducesReadableWorkbenchText()
+    {
+        var report = SymbolicInspector.Inspect("let options = branch{1 | i}; commit choice = constraints{prefer(glyph, options == i, 2/1)}; choice");
+
+        var display = SymbolicInspectionDisplayFormatter.Format(report);
+
+        Assert.Contains("Expression: let options = branch{1 | i}; commit choice = constraints{prefer(glyph, options == i, 2/1)}; choice", display);
+        Assert.Contains("Parsed:", display);
+        Assert.Contains("Canonical:", display);
+        Assert.Contains("Steps:", display);
+        Assert.Contains("2. commit choice", display);
+        Assert.Contains("Environment:", display);
+    }
 }
