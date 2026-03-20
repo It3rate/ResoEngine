@@ -2,7 +2,7 @@ namespace Applied.Geometry.Frieze;
 
 public static class SquareWaveDynamics
 {
-    public static Core2.Dynamic.DynamicTrace<FriezePathState, FriezeEnvironment, Applied.Geometry.Utils.PlanarTraversalEmission> Run(int steps)
+    public static Core2.Symbolics.Dynamic.DynamicTrace<FriezePathState, FriezeEnvironment, Applied.Geometry.Utils.PlanarTraversalEmission> Run(int steps)
     {
         ArgumentOutOfRangeException.ThrowIfNegative(steps);
 

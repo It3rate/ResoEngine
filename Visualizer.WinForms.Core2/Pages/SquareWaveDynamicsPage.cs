@@ -1,6 +1,6 @@
 using Applied.Geometry.Frieze;
 using Applied.Geometry.Utils;
-using Core2.Dynamic;
+using Core2.Symbolics.Dynamic;
 using ResoEngine.Visualizer.Controls;
 using ResoEngine.Visualizer.Core;
 using ResoEngine.Visualizer.Input;

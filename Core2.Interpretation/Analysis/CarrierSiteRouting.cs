@@ -1,4 +1,7 @@
-namespace Core2.Elements;
+using Core2.Elements;
+using Core2.Interpretation.Placement;
+
+namespace Core2.Interpretation.Analysis;
 
 /// <summary>
 /// A derived structural reading of one carrier pin site.

@@ -45,10 +45,6 @@ public sealed class CarrierPinSite
     public CarrierSideAttachment? RecessiveAttachment => GetAttachment(PinSideRole.Recessive);
     public CarrierSideAttachment? DominantAttachment => GetAttachment(PinSideRole.Dominant);
 
-    public PositionedAxis PlaceApplied() => Applied.PlaceAt(HostPosition);
-
-    public CarrierSiteRouting ResolveRouting() => CarrierSiteRouting.FromSite(this);
-
     public CarrierSideAttachment? GetAttachment(PinSideRole role) =>
         _attachmentsByRole.TryGetValue(role, out var attachment) ? attachment : null;
 

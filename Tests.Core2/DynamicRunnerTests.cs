@@ -1,4 +1,4 @@
-using Core2.Dynamic;
+using Core2.Symbolics.Dynamic;
 
 namespace Tests.Core2;
 

@@ -1,4 +1,5 @@
 using Core2.Elements;
+using Core2.Interpretation.Placement;
 using ResoEngine.Visualizer.Adapt;
 using ResoEngine.Visualizer.Controls;
 using ResoEngine.Visualizer.Core;

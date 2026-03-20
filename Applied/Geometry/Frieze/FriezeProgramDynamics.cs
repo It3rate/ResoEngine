@@ -1,6 +1,6 @@
 using Applied.Geometry.Utils;
 using Core2.Branching;
-using Core2.Dynamic;
+using Core2.Symbolics.Dynamic;
 using Core2.Elements;
 using Core2.Repetition;
 

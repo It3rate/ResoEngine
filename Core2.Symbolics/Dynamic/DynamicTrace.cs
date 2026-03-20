@@ -1,6 +1,6 @@
 using Core2.Branching;
 
-namespace Core2.Dynamic;
+namespace Core2.Symbolics.Dynamic;
 
 public sealed record DynamicTrace<TState, TEnvironment, TEffect>(
     DynamicContext<TState, TEnvironment> Seed,

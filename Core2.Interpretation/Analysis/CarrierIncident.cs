@@ -1,4 +1,6 @@
-namespace Core2.Elements;
+using Core2.Elements;
+
+namespace Core2.Interpretation.Analysis;
 
 public sealed record CarrierIncident(
     CarrierIncidentKind Kind,

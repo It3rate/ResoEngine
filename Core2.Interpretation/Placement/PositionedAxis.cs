@@ -1,4 +1,6 @@
-namespace Core2.Elements;
+using Core2.Elements;
+
+namespace Core2.Interpretation.Placement;
 
 /// <summary>
 /// An Axis descriptor anchored on a line-like host carrier at a host-relative position.

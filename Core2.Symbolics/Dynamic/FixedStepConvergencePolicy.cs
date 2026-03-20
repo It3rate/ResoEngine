@@ -1,4 +1,4 @@
-namespace Core2.Dynamic;
+namespace Core2.Symbolics.Dynamic;
 
 public sealed class FixedStepConvergencePolicy<TState, TEnvironment, TEffect> : IConvergencePolicy<TState, TEnvironment, TEffect>
 {

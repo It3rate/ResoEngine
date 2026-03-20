@@ -1,4 +1,4 @@
-namespace Core2.Dynamic;
+namespace Core2.Symbolics.Dynamic;
 
 public readonly record struct DynamicTension(
     string Kind,

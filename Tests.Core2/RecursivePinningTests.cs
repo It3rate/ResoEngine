@@ -1,5 +1,6 @@
 using Core2.Elements;
 using Core2.Interpretation.Analysis;
+using Core2.Interpretation.Placement;
 
 namespace Tests.Core2;
 

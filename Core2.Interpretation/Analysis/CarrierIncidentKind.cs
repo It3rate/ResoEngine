@@ -1,4 +1,4 @@
-namespace Core2.Elements;
+namespace Core2.Interpretation.Analysis;
 
 public enum CarrierIncidentKind
 {

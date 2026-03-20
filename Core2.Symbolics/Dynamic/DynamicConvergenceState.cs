@@ -1,4 +1,4 @@
-namespace Core2.Dynamic;
+namespace Core2.Symbolics.Dynamic;
 
 public sealed record DynamicConvergenceState<TState, TEnvironment, TEffect>(
     DynamicContext<TState, TEnvironment> Seed,
