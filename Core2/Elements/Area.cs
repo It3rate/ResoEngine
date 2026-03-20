@@ -1,6 +1,5 @@
+using Core2.Algebra;
 using Core2.Repetition;
-using Core2.Support;
-using ResoEngine.Core2.Support;
 
 namespace Core2.Elements;
 

@@ -1,7 +1,6 @@
 using Core2.Elements;
-using ResoEngine.Core2.Support;
 
-namespace Core2.Support;
+namespace Core2.Algebra;
 
 internal static class ElementArithmeticResolver
 {

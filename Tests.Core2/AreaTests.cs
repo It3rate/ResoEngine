@@ -1,6 +1,5 @@
 using Core2.Elements;
-using Core2.Support;
-using ResoEngine.Core2;
+using Core2.Algebra;
 
 namespace Tests.Core2;
 

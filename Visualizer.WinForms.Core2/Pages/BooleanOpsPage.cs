@@ -1,5 +1,5 @@
+using Core2.Boolean;
 using Core2.Elements;
-using Core2.Support;
 using ResoEngine.Visualizer.Adapt;
 using ResoEngine.Visualizer.Controls;
 using ResoEngine.Visualizer.Core;

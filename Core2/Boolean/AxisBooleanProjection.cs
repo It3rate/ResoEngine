@@ -1,7 +1,7 @@
 using Core2.Branching;
 using Core2.Elements;
 
-namespace Core2.Support;
+namespace Core2.Boolean;
 
 public enum AxisBooleanOperation
 {

@@ -1,5 +1,5 @@
+using Core2.Algebra;
 using Core2.Repetition;
-using ResoEngine.Core2.Support;
 using System.Numerics;
 
 namespace Core2.Elements;

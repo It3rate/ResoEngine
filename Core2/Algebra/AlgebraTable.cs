@@ -1,4 +1,4 @@
-namespace ResoEngine.Core2.Support;
+namespace Core2.Algebra;
 
 /// <summary>
 /// Generic 2-slot algebra table used by Proportion, Axis, and Area.

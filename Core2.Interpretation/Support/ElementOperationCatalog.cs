@@ -1,6 +1,6 @@
 using Core2.Elements;
 
-namespace Core2.Support;
+namespace Core2.Interpretation.Support;
 
 public enum ElementOperation
 {

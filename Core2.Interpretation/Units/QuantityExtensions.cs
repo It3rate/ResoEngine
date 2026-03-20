@@ -1,6 +1,7 @@
 using Core2.Elements;
+using Core2.Units;
 
-namespace Core2.Units;
+namespace Core2.Interpretation.Units;
 
 public static class QuantityExtensions
 {

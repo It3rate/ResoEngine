@@ -1,4 +1,4 @@
-using Core2.Support;
+using Core2.Algebra;
 
 namespace Core2.Elements;
 

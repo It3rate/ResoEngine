@@ -1,4 +1,4 @@
-namespace ResoEngine.Core2.Support;
+namespace Core2.Algebra;
 
 public interface IArithmetic<T>
 {

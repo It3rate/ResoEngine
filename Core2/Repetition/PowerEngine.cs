@@ -1,6 +1,6 @@
+using Core2.Algebra;
 using Core2.Branching;
 using Core2.Elements;
-using Core2.Support;
 using System.Numerics;
 
 namespace Core2.Repetition;

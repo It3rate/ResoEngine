@@ -1,7 +1,8 @@
 using Core2.Branching;
+using Core2.Boolean;
 using Core2.Elements;
 using Core2.Repetition;
-using Core2.Support;
+using Core2.Algebra;
 
 namespace Core2.Symbolics.Branching;
 

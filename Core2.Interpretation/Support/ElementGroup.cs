@@ -1,6 +1,7 @@
 using System.Collections;
+using Core2.Elements;
 
-namespace Core2.Elements;
+namespace Core2.Interpretation.Support;
 
 public sealed record ElementGroup<TElement> : IReadOnlyList<TElement> where TElement : IElement
 {

@@ -1,4 +1,4 @@
-namespace Core2.Support;
+namespace Core2.Algebra;
 
 public enum AxisBasis
 {
