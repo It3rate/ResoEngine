@@ -2,12 +2,6 @@ CORE 2 PROMPT AXIOMS
 ====================
 
 This file is the living prompt-safe Core 2 specification.
-It is intended to replace the current pasted-together prompt fragments with one organized version.
-Supporting material is organized beside it:
-- Appendices/ for narrower implementation-aligned rule sheets
-- Proposals/ for curated exploratory conceptual work not yet promoted into the main axioms
-- Plans/ for implementation planning
-- Legacy/ for historical source documents preserved for provenance
 
 Parts I through VIII are general Core 2 system axioms.
 Part IX is a directed-segment appendix aligned to the current geometry and boolean implementation.
