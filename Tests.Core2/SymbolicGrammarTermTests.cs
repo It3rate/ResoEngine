@@ -117,4 +117,56 @@ public class SymbolicGrammarTermTests
         Assert.Equal(2, sequence.Steps.Count);
         Assert.Equal("let stem = 1; let turn = i", SymbolicTermFormatter.Format(sequence));
     }
+
+    [Fact]
+    public void Elaborator_ResolvesBoundReferencesThroughSequence()
+    {
+        var sequence = new SequenceTerm(
+        [
+            new BindTerm("stem", new ElementLiteralTerm(Axis.One)),
+            new BindTerm("turn", new TransformLiteralTerm(Axis.I)),
+        ]);
+
+        var programResult = SymbolicElaborator.Elaborate(sequence);
+        var resolved = SymbolicElaborator.Elaborate(
+            new ApplyTransformTerm(
+                new ValueReferenceTerm("stem"),
+                new TransformReferenceTerm("turn")),
+            programResult.Environment);
+
+        var applied = Assert.IsType<ApplyTransformTerm>(resolved.Output);
+        Assert.Equal(Axis.One, Assert.IsType<ElementLiteralTerm>(applied.State).Value);
+        Assert.Equal(Axis.I, Assert.IsType<TransformLiteralTerm>(applied.Transform).Code);
+    }
+
+    [Fact]
+    public void SharedCarrierAndRouteTerms_FormatAsCarrierNativeRelations()
+    {
+        var shared = new SharedCarrierTerm(
+            new ReferenceTerm("P4.u", SymbolicTermSort.Value),
+            new ReferenceTerm("P3.u", SymbolicTermSort.Value));
+        var route = new RouteTerm(
+            new ReferenceTerm("P4", SymbolicTermSort.Value),
+            new ReferenceTerm("host-", SymbolicTermSort.Relation),
+            new ReferenceTerm("u+", SymbolicTermSort.Relation));
+
+        Assert.Equal("share(P4.u, P3.u)", SymbolicTermFormatter.Format(shared));
+        Assert.Equal("route(P4, host-, u+)", SymbolicTermFormatter.Format(route));
+    }
+
+    [Fact]
+    public void CanonicalSerializer_UsesStableStructuredOutput()
+    {
+        var preference = new PreferenceTerm(
+            new SharedCarrierTerm(
+                new ReferenceTerm("P4.u", SymbolicTermSort.Value),
+                new ReferenceTerm("P3.u", SymbolicTermSort.Value)),
+            new Proportion(2, 1));
+
+        var serialized = CanonicalSymbolicSerializer.Serialize(preference);
+
+        Assert.Equal(
+            "prefer(relation=share(left=ref(sort=Value,name=\"P4.u\"),right=ref(sort=Value,name=\"P3.u\")),weight=proportion(2/1))",
+            serialized);
+    }
 }
