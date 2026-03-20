@@ -53,24 +53,35 @@ public static class SymbolicElaborator
             ValueReferenceTerm reference when environment.TryResolve(reference.Name, out var resolved) && resolved is ValueTerm value => value,
             TransformReferenceTerm reference when environment.TryResolve(reference.Name, out var resolved) && resolved is TransformTerm transform => transform,
             RelationReferenceTerm reference when environment.TryResolve(reference.Name, out var resolved) && resolved is RelationTerm relation => relation,
+            SiteReferenceTerm reference when environment.TryResolve(reference.SiteName, out var resolved) && resolved is ValueTerm value => value,
+            AnchorReferenceTerm reference when environment.TryResolve(reference.QualifiedName, out var resolved) && resolved is ValueTerm value => value,
             ApplyTransformTerm apply => new ApplyTransformTerm(
                 (ValueTerm)ElaborateTerm(apply.State, environment),
                 (TransformTerm)ElaborateTerm(apply.Transform, environment)),
             PinTerm pin => new PinTerm(
                 (ValueTerm)ElaborateTerm(pin.Host, environment),
                 (ValueTerm)ElaborateTerm(pin.Applied, environment),
-                pin.Position),
+                pin.Position,
+                pin.AppliedAnchor is null ? null : (AnchorReferenceTerm)ElaborateTerm(pin.AppliedAnchor, environment)),
+            PinToPinTerm pinToPin => new PinToPinTerm(
+                (AnchorReferenceTerm)ElaborateTerm(pinToPin.HostAnchor, environment),
+                (AnchorReferenceTerm)ElaborateTerm(pinToPin.AppliedAnchor, environment)),
+            AxisBooleanTerm boolean => new AxisBooleanTerm(
+                (ValueTerm)ElaborateTerm(boolean.Primary, environment),
+                (ValueTerm)ElaborateTerm(boolean.Secondary, environment),
+                boolean.Operation,
+                boolean.Frame is null ? null : (ValueTerm)ElaborateTerm(boolean.Frame, environment)),
             FoldTerm fold => new FoldTerm((ValueTerm)ElaborateTerm(fold.Source, environment), fold.Kind),
             EqualityTerm equality => new EqualityTerm(
                 ElaborateTerm(equality.Left, environment),
                 ElaborateTerm(equality.Right, environment)),
             SharedCarrierTerm shared => new SharedCarrierTerm(
-                (ReferenceTerm)ElaborateTerm(shared.Left, environment),
-                (ReferenceTerm)ElaborateTerm(shared.Right, environment)),
+                (ValueTerm)ElaborateTerm(shared.Left, environment),
+                (ValueTerm)ElaborateTerm(shared.Right, environment)),
             RouteTerm route => new RouteTerm(
-                (ReferenceTerm)ElaborateTerm(route.Site, environment),
-                (ReferenceTerm)ElaborateTerm(route.From, environment),
-                (ReferenceTerm)ElaborateTerm(route.To, environment)),
+                (SiteReferenceTerm)ElaborateTerm(route.Site, environment),
+                route.From,
+                route.To),
             RequirementTerm requirement => new RequirementTerm((RelationTerm)ElaborateTerm(requirement.Relation, environment)),
             PreferenceTerm preference => new PreferenceTerm((RelationTerm)ElaborateTerm(preference.Relation, environment), preference.Weight),
             BranchFamilyTerm branchFamily => new BranchFamilyTerm(ElaborateBranchFamily(branchFamily.Family, environment)),

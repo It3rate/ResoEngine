@@ -1,3 +1,4 @@
+using Core2.Boolean;
 using Core2.Branching;
 using Core2.Elements;
 using System.Globalization;
@@ -67,6 +68,11 @@ public static class SymbolicParser
                 return ParseBind();
             }
 
+            if (PeekIdentifier("pin"))
+            {
+                return ParsePinToPin();
+            }
+
             return ParseConstraintOrRelationOrValue();
         }
 
@@ -77,6 +83,17 @@ public static class SymbolicParser
             Expect(TokenKind.Assign);
             var value = ParseConstraintOrRelationOrValue();
             return new BindTerm(name, value);
+        }
+
+        private PinToPinTerm ParsePinToPin()
+        {
+            ConsumeIdentifier("pin");
+            Expect(TokenKind.LeftParen);
+            var hostAnchor = ParseAnchorReference();
+            Expect(TokenKind.Comma);
+            var appliedAnchor = ParseAnchorReference();
+            Expect(TokenKind.RightParen);
+            return new PinToPinTerm(hostAnchor, appliedAnchor);
         }
 
         private SymbolicTerm ParseConstraintOrRelationOrValue()
@@ -99,6 +116,11 @@ public static class SymbolicParser
             if (PeekIdentifier("route"))
             {
                 return ParseRoute();
+            }
+
+            if (TryPeekBooleanOperation(out _))
+            {
+                return ParseBoolean();
             }
 
             var left = ParseValueLike();
@@ -135,9 +157,9 @@ public static class SymbolicParser
         {
             ConsumeIdentifier("share");
             Expect(TokenKind.LeftParen);
-            var left = ParseGenericReference();
+            var left = ParseValueReferenceLike();
             Expect(TokenKind.Comma);
-            var right = ParseGenericReference();
+            var right = ParseValueReferenceLike();
             Expect(TokenKind.RightParen);
             return new SharedCarrierTerm(left, right);
         }
@@ -146,13 +168,31 @@ public static class SymbolicParser
         {
             ConsumeIdentifier("route");
             Expect(TokenKind.LeftParen);
-            var site = ParseGenericReference();
+            var site = ParseSiteReference();
             Expect(TokenKind.Comma);
-            var from = ParseGenericReference();
+            var from = ParseIncidentReference();
             Expect(TokenKind.Comma);
-            var to = ParseGenericReference();
+            var to = ParseIncidentReference();
             Expect(TokenKind.RightParen);
             return new RouteTerm(site, from, to);
+        }
+
+        private AxisBooleanTerm ParseBoolean()
+        {
+            var operation = ParseBooleanOperationIdentifier();
+            Expect(TokenKind.LeftParen);
+            var primary = ToValueTerm(ParseValueLike());
+            Expect(TokenKind.Comma);
+            var secondary = ToValueTerm(ParseValueLike());
+
+            ValueTerm? frame = null;
+            if (Match(TokenKind.Comma))
+            {
+                frame = ToValueTerm(ParseValueLike());
+            }
+
+            Expect(TokenKind.RightParen);
+            return new AxisBooleanTerm(primary, secondary, operation, frame);
         }
 
         private RelationTerm ParseRelationInsideFunction()
@@ -189,6 +229,15 @@ public static class SymbolicParser
             if (Match(TokenKind.At))
             {
                 var position = ParseProportionLiteral();
+                if (right is AnchorReferenceTerm anchor)
+                {
+                    return new PinTerm(
+                        ToValueTerm(left),
+                        new ValueReferenceTerm(anchor.OwnerName),
+                        position,
+                        anchor);
+                }
+
                 return new PinTerm(ToValueTerm(left), ToValueTerm(right), position);
             }
 
@@ -236,8 +285,7 @@ public static class SymbolicParser
 
             if (Current.Kind == TokenKind.Identifier)
             {
-                string name = Advance().Text;
-                return new ReferenceTerm(name, SymbolicTermSort.Value);
+                return ParseValueReferenceLike();
             }
 
             throw Error($"Unexpected token '{Current.Text}'.");
@@ -385,10 +433,58 @@ public static class SymbolicParser
             return true;
         }
 
-        private ReferenceTerm ParseGenericReference()
+        private ValueTerm ParseValueReferenceLike()
         {
             string name = ExpectIdentifier();
-            return new ReferenceTerm(name, SymbolicTermSort.Value);
+            if (TryParseAnchorName(name, out var ownerName, out var anchorName))
+            {
+                return new AnchorReferenceTerm(ownerName, anchorName);
+            }
+
+            if (IsSiteName(name))
+            {
+                return new SiteReferenceTerm(name);
+            }
+
+            return new ValueReferenceTerm(name);
+        }
+
+        private SiteReferenceTerm ParseSiteReference()
+        {
+            string name = ExpectIdentifier();
+            return new SiteReferenceTerm(name);
+        }
+
+        private AnchorReferenceTerm ParseAnchorReference()
+        {
+            string name = ExpectIdentifier();
+            if (!TryParseAnchorName(name, out var ownerName, out var anchorName))
+            {
+                throw Error($"Expected anchor reference like A.P1, but found '{name}'.");
+            }
+
+            return new AnchorReferenceTerm(ownerName, anchorName);
+        }
+
+        private IncidentReferenceTerm ParseIncidentReference()
+        {
+            string name = ExpectIdentifier();
+            return name switch
+            {
+                "host-" => new IncidentReferenceTerm(RouteIncidentKind.HostNegative),
+                "host+" => new IncidentReferenceTerm(RouteIncidentKind.HostPositive),
+                "i" => new IncidentReferenceTerm(RouteIncidentKind.RecessiveSide),
+                "u" => new IncidentReferenceTerm(RouteIncidentKind.DominantSide),
+                _ => throw Error($"Unknown route incident '{name}'."),
+            };
+        }
+
+        private AxisBooleanOperation ParseBooleanOperationIdentifier()
+        {
+            string name = ExpectIdentifier();
+            return TryGetBooleanOperation(name, out var operation)
+                ? operation
+                : throw Error($"Unknown boolean operation '{name}'.");
         }
 
         private ValueTerm ToValueTerm(SymbolicTerm term) => term switch
@@ -455,6 +551,80 @@ public static class SymbolicParser
 
         private InvalidOperationException Error(string message) =>
             new($"{message} At token index {_index}.");
+
+        private static bool IsSiteName(string name) =>
+            name.Length >= 2 &&
+            name[0] == 'P' &&
+            name[1..].All(char.IsDigit);
+
+        private static bool TryParseAnchorName(string name, out string ownerName, out string anchorName)
+        {
+            int separator = name.IndexOf('.');
+            if (separator <= 0 || separator >= name.Length - 1)
+            {
+                ownerName = string.Empty;
+                anchorName = string.Empty;
+                return false;
+            }
+
+            ownerName = name[..separator];
+            anchorName = name[(separator + 1)..];
+            return true;
+        }
+
+        private bool TryPeekBooleanOperation(out AxisBooleanOperation operation)
+        {
+            if (Current.Kind == TokenKind.Identifier &&
+                TryGetBooleanOperation(Current.Text, out operation))
+            {
+                return true;
+            }
+
+            operation = default;
+            return false;
+        }
+
+        private static bool TryGetBooleanOperation(string name, out AxisBooleanOperation operation)
+        {
+            operation = name switch
+            {
+                "false-op" => AxisBooleanOperation.False,
+                "true-op" => AxisBooleanOperation.True,
+                "transfer-a" => AxisBooleanOperation.TransferA,
+                "transfer-b" => AxisBooleanOperation.TransferB,
+                "and" => AxisBooleanOperation.And,
+                "or" => AxisBooleanOperation.Or,
+                "nand" => AxisBooleanOperation.Nand,
+                "nor" => AxisBooleanOperation.Nor,
+                "not-a" => AxisBooleanOperation.NotA,
+                "not-b" => AxisBooleanOperation.NotB,
+                "implication" => AxisBooleanOperation.Implication,
+                "reverse-implication" => AxisBooleanOperation.ReverseImplication,
+                "inhibition" => AxisBooleanOperation.Inhibition,
+                "reverse-inhibition" => AxisBooleanOperation.ReverseInhibition,
+                "xor" => AxisBooleanOperation.Xor,
+                "xnor" => AxisBooleanOperation.Xnor,
+                _ => default,
+            };
+
+            return name is
+                "false-op" or
+                "true-op" or
+                "transfer-a" or
+                "transfer-b" or
+                "and" or
+                "or" or
+                "nand" or
+                "nor" or
+                "not-a" or
+                "not-b" or
+                "implication" or
+                "reverse-implication" or
+                "inhibition" or
+                "reverse-inhibition" or
+                "xor" or
+                "xnor";
+        }
 
         private static List<Token> Tokenize(string text)
         {

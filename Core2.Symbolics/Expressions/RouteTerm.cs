@@ -2,7 +2,7 @@ namespace Core2.Symbolics.Expressions;
 
 public sealed record RouteTerm : RelationTerm
 {
-    public RouteTerm(ReferenceTerm site, ReferenceTerm from, ReferenceTerm to)
+    public RouteTerm(SiteReferenceTerm site, IncidentReferenceTerm from, IncidentReferenceTerm to)
     {
         ArgumentNullException.ThrowIfNull(site);
         ArgumentNullException.ThrowIfNull(from);
@@ -13,7 +13,7 @@ public sealed record RouteTerm : RelationTerm
         To = to;
     }
 
-    public ReferenceTerm Site { get; }
-    public ReferenceTerm From { get; }
-    public ReferenceTerm To { get; }
+    public SiteReferenceTerm Site { get; }
+    public IncidentReferenceTerm From { get; }
+    public IncidentReferenceTerm To { get; }
 }

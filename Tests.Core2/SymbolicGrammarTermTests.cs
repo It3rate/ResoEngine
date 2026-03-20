@@ -1,3 +1,4 @@
+using Core2.Boolean;
 using Core2.Elements;
 using Core2.Branching;
 using Core2.Symbolics.Expressions;
@@ -143,15 +144,15 @@ public class SymbolicGrammarTermTests
     public void SharedCarrierAndRouteTerms_FormatAsCarrierNativeRelations()
     {
         var shared = new SharedCarrierTerm(
-            new ReferenceTerm("P4.u", SymbolicTermSort.Value),
-            new ReferenceTerm("P3.u", SymbolicTermSort.Value));
+            new AnchorReferenceTerm("P4", "u"),
+            new AnchorReferenceTerm("P3", "u"));
         var route = new RouteTerm(
-            new ReferenceTerm("P4", SymbolicTermSort.Value),
-            new ReferenceTerm("host-", SymbolicTermSort.Relation),
-            new ReferenceTerm("u+", SymbolicTermSort.Relation));
+            new SiteReferenceTerm("P4"),
+            new IncidentReferenceTerm(RouteIncidentKind.HostNegative),
+            new IncidentReferenceTerm(RouteIncidentKind.DominantSide));
 
         Assert.Equal("share(P4.u, P3.u)", SymbolicTermFormatter.Format(shared));
-        Assert.Equal("route(P4, host-, u+)", SymbolicTermFormatter.Format(route));
+        Assert.Equal("route(P4, host-, u)", SymbolicTermFormatter.Format(route));
     }
 
     [Fact]
@@ -159,14 +160,14 @@ public class SymbolicGrammarTermTests
     {
         var preference = new PreferenceTerm(
             new SharedCarrierTerm(
-                new ReferenceTerm("P4.u", SymbolicTermSort.Value),
-                new ReferenceTerm("P3.u", SymbolicTermSort.Value)),
+                new AnchorReferenceTerm("P4", "u"),
+                new AnchorReferenceTerm("P3", "u")),
             new Proportion(2, 1));
 
         var serialized = CanonicalSymbolicSerializer.Serialize(preference);
 
         Assert.Equal(
-            "prefer(relation=share(left=ref(sort=Value,name=\"P4.u\"),right=ref(sort=Value,name=\"P3.u\")),weight=proportion(2/1))",
+            "prefer(relation=share(left=anchor(owner=\"P4\",name=\"u\"),right=anchor(owner=\"P3\",name=\"u\")),weight=proportion(2/1))",
             serialized);
     }
 
@@ -197,8 +198,8 @@ public class SymbolicGrammarTermTests
 
         var preference = Assert.IsType<PreferenceTerm>(parsed);
         var equality = Assert.IsType<EqualityTerm>(preference.Relation);
-        Assert.Equal("P4.u", Assert.IsType<ReferenceTerm>(equality.Left).Name);
-        Assert.Equal("P3.u", Assert.IsType<ReferenceTerm>(equality.Right).Name);
+        Assert.Equal("P4.u", Assert.IsType<AnchorReferenceTerm>(equality.Left).QualifiedName);
+        Assert.Equal("P3.u", Assert.IsType<AnchorReferenceTerm>(equality.Right).QualifiedName);
         Assert.Equal(new Proportion(2, 1), preference.Weight);
     }
 
@@ -231,5 +232,129 @@ public class SymbolicGrammarTermTests
         var branch = Assert.IsType<BranchFamilyTerm>(parsed);
         Assert.Equal(2, branch.Family.Values.Count);
         Assert.Equal("branch{1 | i}", SymbolicTermFormatter.Format(branch));
+    }
+
+    [Fact]
+    public void Parser_ParsesAddressedAnchorReference()
+    {
+        var parsed = SymbolicParser.Parse("P4.u");
+
+        var anchor = Assert.IsType<AnchorReferenceTerm>(parsed);
+        Assert.Equal("P4", anchor.OwnerName);
+        Assert.Equal("u", anchor.AnchorName);
+        Assert.Equal(PinSideRole.Dominant, anchor.SideRole);
+    }
+
+    [Fact]
+    public void Parser_ParsesRouteWithExplicitIncidents()
+    {
+        var parsed = SymbolicParser.Parse("route(P4, host-, u)");
+
+        var route = Assert.IsType<RouteTerm>(parsed);
+        Assert.Equal("P4", route.Site.SiteName);
+        Assert.Equal(RouteIncidentKind.HostNegative, route.From.Kind);
+        Assert.Equal(RouteIncidentKind.DominantSide, route.To.Kind);
+    }
+
+    [Fact]
+    public void PinTerm_CanPreserveExplicitAppliedAnchor()
+    {
+        var pin = new PinTerm(
+            new ValueReferenceTerm("A"),
+            new ValueReferenceTerm("B"),
+            new Proportion(1, 2),
+            new AnchorReferenceTerm("B", "P2"));
+
+        Assert.Equal("A * B.P2 @ 1/2", SymbolicTermFormatter.Format(pin));
+        Assert.Equal("B.P2", pin.AppliedAnchor?.QualifiedName);
+    }
+
+    [Fact]
+    public void Parser_ParsesAnchoredAppliedPinning()
+    {
+        var parsed = SymbolicParser.Parse("A * B.P2 @ 1/2");
+
+        var pin = Assert.IsType<PinTerm>(parsed);
+        Assert.Equal("A", Assert.IsType<ValueReferenceTerm>(pin.Host).Name);
+        Assert.Equal("B", Assert.IsType<ValueReferenceTerm>(pin.Applied).Name);
+        Assert.Equal("B.P2", Assert.IsType<AnchorReferenceTerm>(pin.AppliedAnchor).QualifiedName);
+        Assert.Equal(new Proportion(1, 2), pin.Position);
+    }
+
+    [Fact]
+    public void AxisBooleanTerm_FormatsAsNativeOperationShorthand()
+    {
+        var term = new AxisBooleanTerm(
+            new ValueReferenceTerm("A"),
+            new ValueReferenceTerm("B"),
+            AxisBooleanOperation.Xor);
+
+        Assert.Equal("xor(A, B)", SymbolicTermFormatter.Format(term));
+    }
+
+    [Fact]
+    public void Parser_ParsesBooleanOperationWithOptionalFrame()
+    {
+        var parsed = SymbolicParser.Parse("xor(A, B, F)");
+
+        var boolean = Assert.IsType<AxisBooleanTerm>(parsed);
+        Assert.Equal(AxisBooleanOperation.Xor, boolean.Operation);
+        Assert.Equal("A", Assert.IsType<ValueReferenceTerm>(boolean.Primary).Name);
+        Assert.Equal("B", Assert.IsType<ValueReferenceTerm>(boolean.Secondary).Name);
+        Assert.Equal("F", Assert.IsType<ValueReferenceTerm>(boolean.Frame).Name);
+    }
+
+    [Fact]
+    public void CanonicalSerializer_EncodesAnchoredPinAndBooleanTerms()
+    {
+        var pin = new PinTerm(
+            new ValueReferenceTerm("A"),
+            new ValueReferenceTerm("B"),
+            new Proportion(1, 2),
+            new AnchorReferenceTerm("B", "P2"));
+        var boolean = new AxisBooleanTerm(
+            new ValueReferenceTerm("A"),
+            new ValueReferenceTerm("B"),
+            AxisBooleanOperation.Xor,
+            new ValueReferenceTerm("F"));
+
+        Assert.Equal(
+            "pin(host=ref(sort=Value,name=\"A\"),applied=ref(sort=Value,name=\"B\"),at=proportion(1/2),appliedAnchor=anchor(owner=\"B\",name=\"P2\"))",
+            CanonicalSymbolicSerializer.Serialize(pin));
+        Assert.Equal(
+            "bool(op=xor,primary=ref(sort=Value,name=\"A\"),secondary=ref(sort=Value,name=\"B\"),frame=ref(sort=Value,name=\"F\"))",
+            CanonicalSymbolicSerializer.Serialize(boolean));
+    }
+
+    [Fact]
+    public void PinToPinTerm_FormatsAsExplicitAnchorAttachment()
+    {
+        var term = new PinToPinTerm(
+            new AnchorReferenceTerm("A", "P1"),
+            new AnchorReferenceTerm("B", "P2"));
+
+        Assert.Equal("pin(A.P1, B.P2)", SymbolicTermFormatter.Format(term));
+    }
+
+    [Fact]
+    public void Parser_ParsesExplicitPinToPinAttachment()
+    {
+        var parsed = SymbolicParser.Parse("pin(A.P1, B.P2)");
+
+        var pin = Assert.IsType<PinToPinTerm>(parsed);
+        Assert.Equal("A.P1", pin.HostAnchor.QualifiedName);
+        Assert.Equal("B.P2", pin.AppliedAnchor.QualifiedName);
+    }
+
+    [Fact]
+    public void CanonicalSerializer_EncodesPinToPinAttachment()
+    {
+        var term = new PinToPinTerm(
+            new AnchorReferenceTerm("A", "P1"),
+            new AnchorReferenceTerm("B", "P2"));
+
+        Assert.Equal(
+            "pin-to-pin(host=anchor(owner=\"A\",name=\"P1\"),applied=anchor(owner=\"B\",name=\"P2\"))",
+            CanonicalSymbolicSerializer.Serialize(term));
     }
 }

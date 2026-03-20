@@ -1,3 +1,4 @@
+using Core2.Boolean;
 using Core2.Branching;
 using Core2.Elements;
 
@@ -17,8 +18,13 @@ public static class CanonicalSymbolicSerializer
             ValueReferenceTerm reference => $"ref(sort=Value,name={Escape(reference.Name)})",
             TransformReferenceTerm reference => $"ref(sort=Transform,name={Escape(reference.Name)})",
             RelationReferenceTerm reference => $"ref(sort=Relation,name={Escape(reference.Name)})",
+            SiteReferenceTerm site => $"site({Escape(site.SiteName)})",
+            AnchorReferenceTerm anchor => $"anchor(owner={Escape(anchor.OwnerName)},name={Escape(anchor.AnchorName)})",
+            IncidentReferenceTerm incident => $"incident({incident.Kind})",
             ApplyTransformTerm apply => $"apply(state={Serialize(apply.State)},transform={Serialize(apply.Transform)})",
-            PinTerm pin => $"pin(host={Serialize(pin.Host)},applied={Serialize(pin.Applied)},at={SerializeElement(pin.Position)})",
+            PinTerm pin => SerializePin(pin),
+            PinToPinTerm pinToPin => $"pin-to-pin(host={Serialize(pinToPin.HostAnchor)},applied={Serialize(pinToPin.AppliedAnchor)})",
+            AxisBooleanTerm boolean => SerializeBoolean(boolean),
             FoldTerm fold => $"fold(kind={fold.Kind},source={Serialize(fold.Source)})",
             EqualityTerm equality => $"equal(left={Serialize(equality.Left)},right={Serialize(equality.Right)})",
             SharedCarrierTerm shared => $"share(left={Serialize(shared.Left)},right={Serialize(shared.Right)})",
@@ -30,6 +36,24 @@ public static class CanonicalSymbolicSerializer
             SequenceTerm sequence => $"sequence([{string.Join(",", sequence.Steps.Select(Serialize))}])",
             _ => term.ToString() ?? term.GetType().Name,
         };
+    }
+
+    private static string SerializePin(PinTerm pin)
+    {
+        string anchorPart = pin.AppliedAnchor is null
+            ? string.Empty
+            : $",appliedAnchor={Serialize(pin.AppliedAnchor)}";
+
+        return $"pin(host={Serialize(pin.Host)},applied={Serialize(pin.Applied)},at={SerializeElement(pin.Position)}{anchorPart})";
+    }
+
+    private static string SerializeBoolean(AxisBooleanTerm boolean)
+    {
+        string framePart = boolean.Frame is null
+            ? string.Empty
+            : $",frame={Serialize(boolean.Frame)}";
+
+        return $"bool(op={SerializeBooleanOperation(boolean.Operation)},primary={Serialize(boolean.Primary)},secondary={Serialize(boolean.Secondary)}{framePart})";
     }
 
     private static string SerializeBranchFamily(BranchFamily<ValueTerm> family)
@@ -54,6 +78,27 @@ public static class CanonicalSymbolicSerializer
         Axis axis => $"axis(recessive={SerializeElement(axis.Recessive)},dominant={SerializeElement(axis.Dominant)},basis={axis.Basis})",
         Area area => $"area(recessive={SerializeElement(area.Recessive)},dominant={SerializeElement(area.Dominant)})",
         _ => $"{element.GetType().Name}({Escape(element.ToString() ?? string.Empty)})",
+    };
+
+    private static string SerializeBooleanOperation(AxisBooleanOperation operation) => operation switch
+    {
+        AxisBooleanOperation.False => "false-op",
+        AxisBooleanOperation.True => "true-op",
+        AxisBooleanOperation.TransferA => "transfer-a",
+        AxisBooleanOperation.TransferB => "transfer-b",
+        AxisBooleanOperation.And => "and",
+        AxisBooleanOperation.Or => "or",
+        AxisBooleanOperation.Nand => "nand",
+        AxisBooleanOperation.Nor => "nor",
+        AxisBooleanOperation.NotA => "not-a",
+        AxisBooleanOperation.NotB => "not-b",
+        AxisBooleanOperation.Implication => "implication",
+        AxisBooleanOperation.ReverseImplication => "reverse-implication",
+        AxisBooleanOperation.Inhibition => "inhibition",
+        AxisBooleanOperation.ReverseInhibition => "reverse-inhibition",
+        AxisBooleanOperation.Xor => "xor",
+        AxisBooleanOperation.Xnor => "xnor",
+        _ => operation.ToString(),
     };
 
     private static string Escape(string value) =>

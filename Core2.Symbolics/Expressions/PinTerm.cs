@@ -4,7 +4,11 @@ namespace Core2.Symbolics.Expressions;
 
 public sealed record PinTerm : ValueTerm
 {
-    public PinTerm(ValueTerm host, ValueTerm applied, Proportion position)
+    public PinTerm(
+        ValueTerm host,
+        ValueTerm applied,
+        Proportion position,
+        AnchorReferenceTerm? appliedAnchor = null)
     {
         ArgumentNullException.ThrowIfNull(host);
         ArgumentNullException.ThrowIfNull(applied);
@@ -13,9 +17,11 @@ public sealed record PinTerm : ValueTerm
         Host = host;
         Applied = applied;
         Position = position;
+        AppliedAnchor = appliedAnchor;
     }
 
     public ValueTerm Host { get; }
     public ValueTerm Applied { get; }
     public Proportion Position { get; }
+    public AnchorReferenceTerm? AppliedAnchor { get; }
 }
