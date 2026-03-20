@@ -79,10 +79,14 @@ public static class SymbolicReducer
                 route.From,
                 route.To),
             RequirementTerm requirement => new RequirementTerm(
-                (RelationTerm)ElaborateAndReduce(requirement.Relation, environment)),
+                (RelationTerm)ElaborateAndReduce(requirement.Relation, environment),
+                requirement.ParticipantName),
             PreferenceTerm preference => new PreferenceTerm(
                 (RelationTerm)ElaborateAndReduce(preference.Relation, environment),
-                preference.Weight),
+                preference.Weight,
+                preference.ParticipantName),
+            ConstraintSetTerm set => new ConstraintSetTerm(
+                set.Constraints.Select(constraint => (ConstraintTerm)ElaborateAndReduce(constraint, environment)).ToArray()),
             BranchFamilyTerm branchFamily => new BranchFamilyTerm(
                 branchFamily.Family.Map(value => (ValueTerm)ElaborateAndReduce(value, environment))),
             _ => term,

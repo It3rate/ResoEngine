@@ -108,6 +108,11 @@ public static class SymbolicParser
                 return ParsePrefer();
             }
 
+            if (PeekIdentifier("constraints"))
+            {
+                return ParseConstraintSet();
+            }
+
             if (PeekIdentifier("share"))
             {
                 return ParseShare();
@@ -137,20 +142,37 @@ public static class SymbolicParser
         {
             ConsumeIdentifier("require");
             Expect(TokenKind.LeftParen);
+            string? participantName = TryParseLeadingParticipantName();
             var relation = ParseRelationInsideFunction();
             Expect(TokenKind.RightParen);
-            return new RequirementTerm(relation);
+            return new RequirementTerm(relation, participantName);
         }
 
         private PreferenceTerm ParsePrefer()
         {
             ConsumeIdentifier("prefer");
             Expect(TokenKind.LeftParen);
+            string? participantName = TryParseLeadingParticipantName();
             var relation = ParseRelationInsideFunction();
             Expect(TokenKind.Comma);
             var weight = ParseProportionLiteral();
             Expect(TokenKind.RightParen);
-            return new PreferenceTerm(relation, weight);
+            return new PreferenceTerm(relation, weight, participantName);
+        }
+
+        private ConstraintSetTerm ParseConstraintSet()
+        {
+            ConsumeIdentifier("constraints");
+            Expect(TokenKind.LeftBrace);
+
+            List<ConstraintTerm> constraints = [ParseConstraintTerm()];
+            while (Match(TokenKind.Pipe))
+            {
+                constraints.Add(ParseConstraintTerm());
+            }
+
+            Expect(TokenKind.RightBrace);
+            return new ConstraintSetTerm(constraints);
         }
 
         private SharedCarrierTerm ParseShare()
@@ -215,6 +237,26 @@ public static class SymbolicParser
 
             var right = ParseValueLike();
             return new EqualityTerm(left, right);
+        }
+
+        private ConstraintTerm ParseConstraintTerm()
+        {
+            if (PeekIdentifier("require"))
+            {
+                return ParseRequire();
+            }
+
+            if (PeekIdentifier("prefer"))
+            {
+                return ParsePrefer();
+            }
+
+            if (PeekIdentifier("constraints"))
+            {
+                return ParseConstraintSet();
+            }
+
+            throw Error("Expected a constraint term.");
         }
 
         private SymbolicTerm ParseValueLike()
@@ -479,6 +521,20 @@ public static class SymbolicParser
             };
         }
 
+        private string? TryParseLeadingParticipantName()
+        {
+            if (Current.Kind == TokenKind.Identifier &&
+                Peek(1).Kind == TokenKind.Comma &&
+                !IsReservedRelationHead(Current.Text))
+            {
+                string participant = Advance().Text;
+                Expect(TokenKind.Comma);
+                return participant;
+            }
+
+            return null;
+        }
+
         private AxisBooleanOperation ParseBooleanOperationIdentifier()
         {
             string name = ExpectIdentifier();
@@ -548,6 +604,7 @@ public static class SymbolicParser
         private Token Advance() => _tokens[_index++];
 
         private Token Current => _tokens[_index];
+        private Token Peek(int offset) => _tokens[Math.Min(_index + offset, _tokens.Count - 1)];
 
         private InvalidOperationException Error(string message) =>
             new($"{message} At token index {_index}.");
@@ -571,6 +628,9 @@ public static class SymbolicParser
             anchorName = name[(separator + 1)..];
             return true;
         }
+
+        private static bool IsReservedRelationHead(string name) =>
+            name is "share" or "route" or "require" or "prefer" or "constraints";
 
         private bool TryPeekBooleanOperation(out AxisBooleanOperation operation)
         {

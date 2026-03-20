@@ -82,8 +82,15 @@ public static class SymbolicElaborator
                 (SiteReferenceTerm)ElaborateTerm(route.Site, environment),
                 route.From,
                 route.To),
-            RequirementTerm requirement => new RequirementTerm((RelationTerm)ElaborateTerm(requirement.Relation, environment)),
-            PreferenceTerm preference => new PreferenceTerm((RelationTerm)ElaborateTerm(preference.Relation, environment), preference.Weight),
+            RequirementTerm requirement => new RequirementTerm(
+                (RelationTerm)ElaborateTerm(requirement.Relation, environment),
+                requirement.ParticipantName),
+            PreferenceTerm preference => new PreferenceTerm(
+                (RelationTerm)ElaborateTerm(preference.Relation, environment),
+                preference.Weight,
+                preference.ParticipantName),
+            ConstraintSetTerm set => new ConstraintSetTerm(
+                set.Constraints.Select(constraint => (ConstraintTerm)ElaborateTerm(constraint, environment)).ToArray()),
             BranchFamilyTerm branchFamily => new BranchFamilyTerm(ElaborateBranchFamily(branchFamily.Family, environment)),
             _ => term,
         };

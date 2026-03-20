@@ -29,8 +29,9 @@ public static class CanonicalSymbolicSerializer
             EqualityTerm equality => $"equal(left={Serialize(equality.Left)},right={Serialize(equality.Right)})",
             SharedCarrierTerm shared => $"share(left={Serialize(shared.Left)},right={Serialize(shared.Right)})",
             RouteTerm route => $"route(site={Serialize(route.Site)},from={Serialize(route.From)},to={Serialize(route.To)})",
-            RequirementTerm requirement => $"require(relation={Serialize(requirement.Relation)})",
-            PreferenceTerm preference => $"prefer(relation={Serialize(preference.Relation)},weight={SerializeElement(preference.Weight)})",
+            RequirementTerm requirement => SerializeRequirement(requirement),
+            PreferenceTerm preference => SerializePreference(preference),
+            ConstraintSetTerm set => $"constraints([{string.Join(",", set.Constraints.Select(Serialize))}])",
             BranchFamilyTerm branchFamily => SerializeBranchFamily(branchFamily.Family),
             BindTerm bind => $"bind(name={Escape(bind.Name)},value={Serialize(bind.Value)})",
             SequenceTerm sequence => $"sequence([{string.Join(",", sequence.Steps.Select(Serialize))}])",
@@ -54,6 +55,22 @@ public static class CanonicalSymbolicSerializer
             : $",frame={Serialize(boolean.Frame)}";
 
         return $"bool(op={SerializeBooleanOperation(boolean.Operation)},primary={Serialize(boolean.Primary)},secondary={Serialize(boolean.Secondary)}{framePart})";
+    }
+
+    private static string SerializeRequirement(RequirementTerm requirement)
+    {
+        string participantPart = requirement.ParticipantName is null
+            ? string.Empty
+            : $"participant={Escape(requirement.ParticipantName)},";
+        return $"require({participantPart}relation={Serialize(requirement.Relation)})";
+    }
+
+    private static string SerializePreference(PreferenceTerm preference)
+    {
+        string participantPart = preference.ParticipantName is null
+            ? string.Empty
+            : $"participant={Escape(preference.ParticipantName)},";
+        return $"prefer({participantPart}relation={Serialize(preference.Relation)},weight={SerializeElement(preference.Weight)})";
     }
 
     private static string SerializeBranchFamily(BranchFamily<ValueTerm> family)

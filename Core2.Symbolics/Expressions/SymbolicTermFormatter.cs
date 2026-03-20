@@ -28,8 +28,9 @@ public static class SymbolicTermFormatter
             EqualityTerm equality => $"{Format(equality.Left)} == {Format(equality.Right)}",
             SharedCarrierTerm shared => $"share({Format(shared.Left)}, {Format(shared.Right)})",
             RouteTerm route => $"route({Format(route.Site)}, {Format(route.From)}, {Format(route.To)})",
-            RequirementTerm requirement => $"require({Format(requirement.Relation)})",
-            PreferenceTerm preference => $"prefer({Format(preference.Relation)}, {preference.Weight})",
+            RequirementTerm requirement => FormatRequirement(requirement),
+            PreferenceTerm preference => FormatPreference(preference),
+            ConstraintSetTerm set => $"constraints{{{string.Join(" | ", set.Constraints.Select(Format))}}}",
             BranchFamilyTerm branchFamily => $"branch{{{string.Join(" | ", branchFamily.Family.Values.Select(Format))}}}",
             BindTerm bind => $"let {bind.Name} = {Format(bind.Value)}",
             SequenceTerm sequence => string.Join("; ", sequence.Steps.Select(Format)),
@@ -84,6 +85,16 @@ public static class SymbolicTermFormatter
         AxisBooleanOperation.Xnor => "xnor",
         _ => operation.ToString(),
     };
+
+    private static string FormatRequirement(RequirementTerm requirement) =>
+        requirement.ParticipantName is null
+            ? $"require({Format(requirement.Relation)})"
+            : $"require({requirement.ParticipantName}, {Format(requirement.Relation)})";
+
+    private static string FormatPreference(PreferenceTerm preference) =>
+        preference.ParticipantName is null
+            ? $"prefer({Format(preference.Relation)}, {preference.Weight})"
+            : $"prefer({preference.ParticipantName}, {Format(preference.Relation)}, {preference.Weight})";
 
     private static string FormatElement(IElement element) => element switch
     {

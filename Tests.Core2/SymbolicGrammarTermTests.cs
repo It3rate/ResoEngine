@@ -48,11 +48,12 @@ public class SymbolicGrammarTermTests
     public void PreferenceTerm_UsesNativeProportionWeight()
     {
         var relation = new EqualityTerm(new ReferenceTerm("crossbar", SymbolicTermSort.Value), new ReferenceTerm("midline", SymbolicTermSort.Value));
-        var preference = new PreferenceTerm(relation, new Proportion(2, 1));
+        var preference = new PreferenceTerm(relation, new Proportion(2, 1), "glyph");
 
         Assert.Equal(SymbolicTermSort.Constraint, preference.Sort);
         Assert.Equal(new Proportion(2, 1), preference.Weight);
         Assert.Equal(relation, preference.Relation);
+        Assert.Equal("glyph", preference.ParticipantName);
     }
 
     [Fact]
@@ -162,12 +163,13 @@ public class SymbolicGrammarTermTests
             new SharedCarrierTerm(
                 new AnchorReferenceTerm("P4", "u"),
                 new AnchorReferenceTerm("P3", "u")),
-            new Proportion(2, 1));
+            new Proportion(2, 1),
+            "glyph");
 
         var serialized = CanonicalSymbolicSerializer.Serialize(preference);
 
         Assert.Equal(
-            "prefer(relation=share(left=anchor(owner=\"P4\",name=\"u\"),right=anchor(owner=\"P3\",name=\"u\")),weight=proportion(2/1))",
+            "prefer(participant=\"glyph\",relation=share(left=anchor(owner=\"P4\",name=\"u\"),right=anchor(owner=\"P3\",name=\"u\")),weight=proportion(2/1))",
             serialized);
     }
 
@@ -194,13 +196,14 @@ public class SymbolicGrammarTermTests
     [Fact]
     public void Parser_ParsesPreferenceEquality()
     {
-        var parsed = SymbolicParser.Parse("prefer(P4.u == P3.u, 2/1)");
+        var parsed = SymbolicParser.Parse("prefer(glyph, P4.u == P3.u, 2/1)");
 
         var preference = Assert.IsType<PreferenceTerm>(parsed);
         var equality = Assert.IsType<EqualityTerm>(preference.Relation);
         Assert.Equal("P4.u", Assert.IsType<AnchorReferenceTerm>(equality.Left).QualifiedName);
         Assert.Equal("P3.u", Assert.IsType<AnchorReferenceTerm>(equality.Right).QualifiedName);
         Assert.Equal(new Proportion(2, 1), preference.Weight);
+        Assert.Equal("glyph", preference.ParticipantName);
     }
 
     [Fact]
@@ -356,6 +359,66 @@ public class SymbolicGrammarTermTests
         Assert.Equal(
             "pin-to-pin(host=anchor(owner=\"A\",name=\"P1\"),applied=anchor(owner=\"B\",name=\"P2\"))",
             CanonicalSymbolicSerializer.Serialize(term));
+    }
+
+    [Fact]
+    public void ConstraintSetTerm_FormatsAsCoPresentConstraintFamily()
+    {
+        var term = new ConstraintSetTerm(
+        [
+            new RequirementTerm(
+                new SharedCarrierTerm(
+                    new AnchorReferenceTerm("P4", "u"),
+                    new AnchorReferenceTerm("P3", "u")),
+                "glyph"),
+            new PreferenceTerm(
+                new EqualityTerm(
+                    new ValueReferenceTerm("width"),
+                    new ValueReferenceTerm("full")),
+                new Proportion(2, 1),
+                "box"),
+        ]);
+
+        Assert.Equal(
+            "constraints{require(glyph, share(P4.u, P3.u)) | prefer(box, width == full, 2/1)}",
+            SymbolicTermFormatter.Format(term));
+    }
+
+    [Fact]
+    public void Parser_ParsesConstraintSetWithParticipants()
+    {
+        var parsed = SymbolicParser.Parse(
+            "constraints{require(glyph, share(P4.u, P3.u)) | prefer(box, width == full, 2/1)}");
+
+        var set = Assert.IsType<ConstraintSetTerm>(parsed);
+        Assert.Equal(2, set.Constraints.Count);
+
+        var requirement = Assert.IsType<RequirementTerm>(set.Constraints[0]);
+        var preference = Assert.IsType<PreferenceTerm>(set.Constraints[1]);
+
+        Assert.Equal("glyph", requirement.ParticipantName);
+        Assert.Equal("box", preference.ParticipantName);
+        Assert.Equal(
+            "constraints{require(glyph, share(P4.u, P3.u)) | prefer(box, width == full, 2/1)}",
+            SymbolicTermFormatter.Format(set));
+    }
+
+    [Fact]
+    public void Reducer_PreservesConstraintSetWhileReducingInnerReferences()
+    {
+        var environment = SymbolicEnvironment.Empty
+            .Bind("A", new ElementLiteralTerm(Axis.One))
+            .Bind("B", new ElementLiteralTerm(Axis.I));
+
+        var reduced = SymbolicReducer.Reduce(
+            SymbolicParser.Parse("constraints{prefer(glyph, A == B, 2/1)}"),
+            environment);
+
+        var set = Assert.IsType<ConstraintSetTerm>(reduced.Output);
+        var preference = Assert.IsType<PreferenceTerm>(set.Constraints[0]);
+        var equality = Assert.IsType<EqualityTerm>(preference.Relation);
+        Assert.Equal(Axis.One, Assert.IsType<ElementLiteralTerm>(equality.Left).Value);
+        Assert.Equal(Axis.I, Assert.IsType<ElementLiteralTerm>(equality.Right).Value);
     }
 
     [Fact]
