@@ -22,6 +22,7 @@ public static class SymbolicReducer
         term switch
         {
             BindTerm bind => ReduceBind(bind, environment),
+            CommitTerm commit => ReduceCommit(commit, environment),
             EmitTerm emit => new SymbolicReductionResult(environment, ElaborateAndReduce(emit.Value, environment)),
             SequenceTerm sequence => ReduceSequence(sequence, environment),
             _ => new SymbolicReductionResult(environment, ElaborateAndReduce(term, environment)),
@@ -32,6 +33,48 @@ public static class SymbolicReducer
         var reduced = ElaborateAndReduce(bind.Value, environment);
         var next = environment.Bind(bind.Name, reduced);
         return new SymbolicReductionResult(next, reduced);
+    }
+
+    private static SymbolicReductionResult ReduceCommit(CommitTerm commit, SymbolicEnvironment environment)
+    {
+        var reduced = ElaborateAndReduce(commit.Value, environment);
+        var current = environment;
+        SymbolicTerm output = reduced;
+
+        if (reduced is ConstraintTerm constraint)
+        {
+            var negotiation = SymbolicConstraintNegotiator.Negotiate(constraint, environment);
+            if (negotiation.SelectedCandidate is not null)
+            {
+                output = negotiation.SelectedCandidate;
+                current = negotiation.Evaluation.Environment.Bind(commit.Name, output);
+            }
+            else if (negotiation.PreservedCandidateFamily is not null)
+            {
+                output = negotiation.PreservedCandidateFamily;
+                current = negotiation.Evaluation.Environment.Bind(commit.Name, output);
+            }
+            else
+            {
+                output = negotiation.Evaluation.Reduced;
+            }
+
+            return new SymbolicReductionResult(current, output);
+        }
+
+        if (reduced is BranchFamilyTerm branchFamily)
+        {
+            if (branchFamily.Family.SelectedValue is not null)
+            {
+                output = branchFamily.Family.SelectedValue;
+            }
+
+            current = environment.Bind(commit.Name, output);
+            return new SymbolicReductionResult(current, output);
+        }
+
+        current = environment.Bind(commit.Name, output);
+        return new SymbolicReductionResult(current, output);
     }
 
     private static SymbolicReductionResult ReduceSequence(SequenceTerm sequence, SymbolicEnvironment environment)

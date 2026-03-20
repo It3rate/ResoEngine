@@ -20,6 +20,7 @@ public static class SymbolicElaborator
         term switch
         {
             BindTerm bind => ElaborateBind(bind, environment),
+            CommitTerm commit => ElaborateCommit(commit, environment),
             EmitTerm emit => new SymbolicElaborationResult(environment, ElaborateTerm(emit.Value, environment)),
             SequenceTerm sequence => ElaborateSequence(sequence, environment),
             _ => new SymbolicElaborationResult(environment, term),
@@ -29,6 +30,13 @@ public static class SymbolicElaborator
     {
         var value = ElaborateTerm(bind.Value, environment);
         var next = environment.Bind(bind.Name, value);
+        return new SymbolicElaborationResult(next, value);
+    }
+
+    private static SymbolicElaborationResult ElaborateCommit(CommitTerm commit, SymbolicEnvironment environment)
+    {
+        var value = ElaborateTerm(commit.Value, environment);
+        var next = environment.Bind(commit.Name, value);
         return new SymbolicElaborationResult(next, value);
     }
 

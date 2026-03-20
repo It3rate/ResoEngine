@@ -132,6 +132,18 @@ public class SymbolicGrammarTermTests
     }
 
     [Fact]
+    public void Parser_ParsesCommitProgramForm()
+    {
+        var parsed = SymbolicParser.Parse("commit choice = constraints{prefer(glyph, branch{1 | i} == i, 2/1)}");
+
+        var commit = Assert.IsType<CommitTerm>(parsed);
+        Assert.Equal("choice", commit.Name);
+        Assert.Equal(
+            "commit choice = constraints{prefer(glyph, branch{1 | i} == i, 2/1)}",
+            SymbolicTermFormatter.Format(commit));
+    }
+
+    [Fact]
     public void Elaborator_ResolvesBoundReferencesThroughSequence()
     {
         var sequence = new SequenceTerm(
@@ -609,5 +621,41 @@ public class SymbolicGrammarTermTests
 
         Assert.Equal(ConstraintNegotiationStatus.Selected, negotiation.Status);
         Assert.Equal(Axis.I, Assert.IsType<ElementLiteralTerm>(negotiation.SelectedCandidate).Value);
+    }
+
+    [Fact]
+    public void Commit_BindsNegotiatedRepresentativeIntoEnvironment()
+    {
+        var reduced = SymbolicReducer.Reduce(
+            SymbolicParser.Parse("commit choice = constraints{prefer(glyph, branch{1 | i} == i, 2/1) | prefer(glyph, branch{1 | i} == 1, 1/1)}"));
+
+        var output = Assert.IsType<ElementLiteralTerm>(reduced.Output);
+        Assert.Equal(Axis.I, output.Value);
+        Assert.True(reduced.Environment.TryResolve("choice", out var choice));
+        Assert.Equal(Axis.I, Assert.IsType<ElementLiteralTerm>(choice).Value);
+    }
+
+    [Fact]
+    public void Commit_PreservesCandidateFamilyWhenNoUniqueRepresentativeExists()
+    {
+        var reduced = SymbolicReducer.Reduce(
+            SymbolicParser.Parse("commit choice = constraints{prefer(glyph, branch{1 | i} == i, 1/1) | prefer(glyph, branch{1 | i} == 1, 1/1)}"));
+
+        var family = Assert.IsType<BranchFamilyTerm>(reduced.Output);
+        Assert.Equal(2, family.Family.Values.Count);
+        Assert.True(reduced.Environment.TryResolve("choice", out var choice));
+        Assert.Same(family, choice);
+    }
+
+    [Fact]
+    public void Commit_BindsReducedNonConstraintValuesDirectly()
+    {
+        var reduced = SymbolicReducer.Reduce(
+            SymbolicParser.Parse("commit turn = 1 * i; turn"));
+
+        var output = Assert.IsType<ElementLiteralTerm>(reduced.Output);
+        Assert.Equal(Axis.I, output.Value);
+        Assert.True(reduced.Environment.TryResolve("turn", out var turn));
+        Assert.Equal(Axis.I, Assert.IsType<ElementLiteralTerm>(turn).Value);
     }
 }

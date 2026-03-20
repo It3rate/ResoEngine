@@ -33,6 +33,7 @@ public static class SymbolicTermFormatter
             ConstraintSetTerm set => $"constraints{{{string.Join(" | ", set.Constraints.Select(Format))}}}",
             BranchFamilyTerm branchFamily => $"branch{{{string.Join(" | ", branchFamily.Family.Values.Select(Format))}}}",
             BindTerm bind => $"let {bind.Name} = {Format(bind.Value)}",
+            CommitTerm commit => $"commit {commit.Name} = {Format(commit.Value)}",
             EmitTerm emit => Format(emit.Value),
             SequenceTerm sequence => string.Join("; ", sequence.Steps.Select(Format)),
             _ => term.ToString() ?? term.GetType().Name,

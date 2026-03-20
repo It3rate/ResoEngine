@@ -80,6 +80,11 @@ public static class SymbolicParser
                 return ParseBind();
             }
 
+            if (PeekIdentifier("commit"))
+            {
+                return ParseCommit();
+            }
+
             if (PeekIdentifier("pin"))
             {
                 return ParsePinToPin();
@@ -95,6 +100,15 @@ public static class SymbolicParser
             Expect(TokenKind.Assign);
             var value = ParseConstraintOrRelationOrValue();
             return new BindTerm(name, value);
+        }
+
+        private ProgramTerm ParseCommit()
+        {
+            ConsumeIdentifier("commit");
+            string name = ExpectIdentifier();
+            Expect(TokenKind.Assign);
+            var value = ParseConstraintOrRelationOrValue();
+            return new CommitTerm(name, value);
         }
 
         private PinToPinTerm ParsePinToPin()
