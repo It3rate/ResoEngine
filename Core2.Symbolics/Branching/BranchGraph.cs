@@ -1,4 +1,6 @@
-namespace Core2.Branching;
+using Core2.Branching;
+
+namespace Core2.Symbolics.Branching;
 
 public sealed class BranchGraph<T>
 {

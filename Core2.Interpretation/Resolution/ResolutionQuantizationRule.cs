@@ -1,4 +1,4 @@
-namespace Core2.Resolution;
+namespace Core2.Interpretation.Resolution;
 
 public enum ResolutionQuantizationRule
 {

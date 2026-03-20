@@ -1,5 +1,5 @@
 using Core2.Elements;
-using Core2.Resolution;
+using Core2.Interpretation.Resolution;
 using Core2.Units;
 
 namespace Tests.Core2;

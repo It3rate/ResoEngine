@@ -1,4 +1,4 @@
-namespace Core2.Branching;
+namespace Core2.Symbolics.Branching;
 
 public enum BranchEventKind
 {

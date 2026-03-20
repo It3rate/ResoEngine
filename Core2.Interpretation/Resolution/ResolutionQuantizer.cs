@@ -1,6 +1,6 @@
 using Core2.Elements;
 
-namespace Core2.Resolution;
+namespace Core2.Interpretation.Resolution;
 
 internal static class ResolutionQuantizer
 {

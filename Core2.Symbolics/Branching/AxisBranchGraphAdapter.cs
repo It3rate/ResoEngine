@@ -1,6 +1,7 @@
+using Core2.Branching;
 using Core2.Elements;
 
-namespace Core2.Branching;
+namespace Core2.Symbolics.Branching;
 
 public sealed record AxisBranchFrontierState(
     IReadOnlyList<Axis> Segments,

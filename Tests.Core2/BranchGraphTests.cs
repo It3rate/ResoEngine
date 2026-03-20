@@ -1,4 +1,5 @@
 using Core2.Branching;
+using Core2.Symbolics.Branching;
 
 namespace Tests.Core2;
 

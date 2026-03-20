@@ -1,8 +1,9 @@
+using Core2.Branching;
 using Core2.Elements;
 using Core2.Repetition;
 using Core2.Support;
 
-namespace Core2.Branching;
+namespace Core2.Symbolics.Branching;
 
 public static class BranchGraphResultExtensions
 {
