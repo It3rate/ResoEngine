@@ -357,4 +357,54 @@ public class SymbolicGrammarTermTests
             "pin-to-pin(host=anchor(owner=\"A\",name=\"P1\"),applied=anchor(owner=\"B\",name=\"P2\"))",
             CanonicalSymbolicSerializer.Serialize(term));
     }
+
+    [Fact]
+    public void Reducer_ReducesLiteralTransformApplication()
+    {
+        var reduced = SymbolicReducer.Reduce(SymbolicParser.Parse("1 * i"));
+
+        var literal = Assert.IsType<ElementLiteralTerm>(reduced.Output);
+        Assert.Equal(Axis.I, literal.Value);
+    }
+
+    [Fact]
+    public void Reducer_ReducesFoldAcrossExistingDegrees()
+    {
+        var reduced = SymbolicReducer.Reduce(SymbolicParser.Parse("fold([1/1]i + [2/1])"));
+
+        var literal = Assert.IsType<ElementLiteralTerm>(reduced.Output);
+        Assert.Equal(new Proportion(2, 1), Assert.IsType<Proportion>(literal.Value));
+    }
+
+    [Fact]
+    public void Reducer_ReducesLiteralBooleanProjectionToBranchFamily()
+    {
+        var reduced = SymbolicReducer.Reduce(
+            SymbolicParser.Parse("xor([0/1]i + [10/1], [-3/1]i + [5/1])"));
+
+        var branch = Assert.IsType<BranchFamilyTerm>(reduced.Output);
+        Assert.Equal(2, branch.Family.Values.Count);
+
+        var first = Assert.IsType<Axis>(Assert.IsType<ElementLiteralTerm>(branch.Family.Values[0]).Value);
+        var second = Assert.IsType<Axis>(Assert.IsType<ElementLiteralTerm>(branch.Family.Values[1]).Value);
+
+        Assert.Equal(0m, first.Left.Value);
+        Assert.Equal(3m, first.Right.Value);
+        Assert.Equal(5m, second.Left.Value);
+        Assert.Equal(10m, second.Right.Value);
+    }
+
+    [Fact]
+    public void Reducer_BindsReducedValuesIntoEnvironment()
+    {
+        var reduced = SymbolicReducer.Reduce(
+            SymbolicParser.Parse("let turn = 1 * i; let next = turn * i"));
+
+        Assert.True(reduced.Environment.TryResolve("turn", out var turn));
+        Assert.True(reduced.Environment.TryResolve("next", out var next));
+
+        Assert.Equal(Axis.I, Assert.IsType<ElementLiteralTerm>(turn).Value);
+        Assert.Equal(Axis.NegativeOne, Assert.IsType<ElementLiteralTerm>(next).Value);
+        Assert.Equal(Axis.NegativeOne, Assert.IsType<ElementLiteralTerm>(reduced.Output).Value);
+    }
 }
