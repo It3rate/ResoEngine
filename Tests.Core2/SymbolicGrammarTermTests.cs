@@ -1,4 +1,5 @@
 using Core2.Elements;
+using Core2.Branching;
 using Core2.Symbolics.Expressions;
 
 namespace Tests.Core2;
@@ -61,5 +62,59 @@ public class SymbolicGrammarTermTests
         Assert.Equal("P4.u", reference.Name);
         Assert.Equal(SymbolicTermSort.Value, reference.Sort);
         Assert.Equal(SymbolicTermSort.Value, reference.ReferencedSort);
+    }
+
+    [Fact]
+    public void FoldTerm_PreservesRequestedFoldKind()
+    {
+        var source = new ElementLiteralTerm(new Area(Axis.One, Axis.I));
+        var fold = new FoldTerm(source, SymbolicFoldKind.StructurePreserving);
+
+        Assert.Equal(source, fold.Source);
+        Assert.Equal(SymbolicFoldKind.StructurePreserving, fold.Kind);
+        Assert.Equal(SymbolicTermSort.Value, fold.Sort);
+    }
+
+    [Fact]
+    public void BranchFamilyTerm_WrapsNativeBranchFamilyOfValueTerms()
+    {
+        var first = new ElementLiteralTerm(Axis.One);
+        var second = new ElementLiteralTerm(Axis.I);
+        var family = BranchFamily<ValueTerm>.FromValues(
+            BranchOrigin.Continuation,
+            BranchSemantics.Alternative,
+            BranchDirection.Forward,
+            [first, second],
+            selectedIndex: 1,
+            selectionMode: BranchSelectionMode.Principal);
+        var term = new BranchFamilyTerm(family);
+
+        Assert.Equal(family, term.Family);
+        Assert.Equal(second, term.Family.SelectedValue);
+        Assert.Equal(SymbolicTermSort.Value, term.Sort);
+    }
+
+    [Fact]
+    public void Formatter_UsesCompactCore2NativeShorthand()
+    {
+        var formatted = SymbolicTermFormatter.Format(
+            new ApplyTransformTerm(
+                new ElementLiteralTerm(Axis.One),
+                new TransformLiteralTerm(Axis.I)));
+
+        Assert.Equal("1 * i", formatted);
+    }
+
+    [Fact]
+    public void SequenceTerm_PreservesProgramOrderAndFormatsCompactly()
+    {
+        var sequence = new SequenceTerm(
+        [
+            new BindTerm("stem", new ElementLiteralTerm(Axis.One)),
+            new BindTerm("turn", new TransformLiteralTerm(Axis.I)),
+        ]);
+
+        Assert.Equal(2, sequence.Steps.Count);
+        Assert.Equal("let stem = 1; let turn = i", SymbolicTermFormatter.Format(sequence));
     }
 }
