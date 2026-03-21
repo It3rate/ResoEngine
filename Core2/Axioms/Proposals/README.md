@@ -6,6 +6,8 @@ These are the active conceptual proposals that still read as live design work ra
 
 - [SymbolicGrammarProposal.md](./SymbolicGrammarProposal.md)
   Core 2 native symbolic terms, equations, constraints, and shorthand direction.
+- [ResolutionFocusProposal.md](./ResolutionFocusProposal.md)
+  Support-as-resolution, host/focus inheritance, and language-guided resolution laws.
 - [PinningProposal.md](./PinningProposal.md)
   Broad umbrella proposal for pinning as a foundational mechanism.
 - [PositionedPinningProposal.md](./PositionedPinningProposal.md)
