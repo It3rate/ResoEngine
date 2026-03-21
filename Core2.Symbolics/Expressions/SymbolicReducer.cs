@@ -2,6 +2,7 @@ using Core2.Boolean;
 using Core2.Algebra;
 using Core2.Branching;
 using Core2.Elements;
+using Core2.Resolution;
 using Core2.Symbolics.Repetition;
 
 namespace Core2.Symbolics.Expressions;
@@ -376,6 +377,12 @@ public static class SymbolicReducer
 
     private static bool TryApplyTransform(IElement state, IElement transform, out IElement result)
     {
+        if (PrimitiveResolutionDefaults.ClassifyTransformApplication(state, transform) == PrimitiveSupportLaw.Inherit &&
+            PrimitiveTransformRuntime.TryApplyPreservingSupport(state, transform, out result))
+        {
+            return true;
+        }
+
         switch (state)
         {
             case Scalar scalarState when transform is Scalar scalarTransform:
@@ -428,6 +435,12 @@ public static class SymbolicReducer
 
     private static bool TryDivideValues(IElement left, IElement right, out IElement result)
     {
+        if (PrimitiveResolutionDefaults.ClassifyTransformApplication(left, right) == PrimitiveSupportLaw.Inherit &&
+            PrimitiveTransformRuntime.TryDividePreservingSupport(left, right, out result))
+        {
+            return true;
+        }
+
         switch (left)
         {
             case Scalar leftScalar when right is Scalar rightScalar:

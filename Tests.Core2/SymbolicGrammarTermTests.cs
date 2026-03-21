@@ -360,6 +360,51 @@ public class SymbolicGrammarTermTests
     }
 
     [Fact]
+    public void Reducer_ApplyTransformPreservesAxisSupportForOpposition()
+    {
+        var axis = new Axis(new Proportion(15, 5), new Proportion(10, 5));
+        var reduced = SymbolicReducer.Reduce(
+            new ApplyTransformTerm(
+                new ElementLiteralTerm(axis),
+                new TransformLiteralTerm(Axis.I)));
+
+        var output = Assert.IsType<ElementLiteralTerm>(reduced.Output);
+        var transformed = Assert.IsType<Axis>(output.Value);
+        Assert.Equal(new Proportion(10, 5), transformed.Recessive);
+        Assert.Equal(new Proportion(-15, 5), transformed.Dominant);
+    }
+
+    [Fact]
+    public void Reducer_ApplyTransformPreservesAxisSupportForNegativeOpposition()
+    {
+        var axis = new Axis(new Proportion(15, 5), new Proportion(10, 5));
+        var reduced = SymbolicReducer.Reduce(
+            new ApplyTransformTerm(
+                new ElementLiteralTerm(axis),
+                new TransformLiteralTerm(Axis.NegativeI)));
+
+        var output = Assert.IsType<ElementLiteralTerm>(reduced.Output);
+        var transformed = Assert.IsType<Axis>(output.Value);
+        Assert.Equal(new Proportion(-10, 5), transformed.Recessive);
+        Assert.Equal(new Proportion(15, 5), transformed.Dominant);
+    }
+
+    [Fact]
+    public void Reducer_DivideByOppositionPreservesAxisSupport()
+    {
+        var axis = new Axis(new Proportion(15, 5), new Proportion(10, 5));
+        var reduced = SymbolicReducer.Reduce(
+            new DivideValuesTerm(
+                new ElementLiteralTerm(axis),
+                new ElementLiteralTerm(Axis.I)));
+
+        var output = Assert.IsType<ElementLiteralTerm>(reduced.Output);
+        var transformed = Assert.IsType<Axis>(output.Value);
+        Assert.Equal(new Proportion(-10, 5), transformed.Recessive);
+        Assert.Equal(new Proportion(15, 5), transformed.Dominant);
+    }
+
+    [Fact]
     public void ContinueEvaluator_PreservesTensionMetadata()
     {
         var evaluation = SymbolicContinueEvaluator.Evaluate(
