@@ -5,6 +5,12 @@ namespace Core2.Symbolics.Expressions;
 public static class SymbolicConstraintEvaluator
 {
     public static ConstraintSetEvaluation Evaluate(SymbolicTerm term, SymbolicEnvironment? environment = null)
+        => Evaluate(term, environment, null);
+
+    public static ConstraintSetEvaluation Evaluate(
+        SymbolicTerm term,
+        SymbolicEnvironment? environment,
+        ISymbolicStructuralContext? structuralContext)
     {
         ArgumentNullException.ThrowIfNull(term);
 
@@ -26,7 +32,8 @@ public static class SymbolicConstraintEvaluator
         var items = reducedConstraint.Constraints
             .Select((constraint, index) => EvaluateConstraint(
                 sourceConstraint.Constraints.ElementAtOrDefault(index) ?? constraint,
-                constraint))
+                constraint,
+                structuralContext))
             .ToArray();
 
         var summaries = items
@@ -44,27 +51,30 @@ public static class SymbolicConstraintEvaluator
             summaries);
     }
 
-    private static ConstraintEvaluationItem EvaluateConstraint(ConstraintTerm source, ConstraintTerm reduced) =>
+    private static ConstraintEvaluationItem EvaluateConstraint(
+        ConstraintTerm source,
+        ConstraintTerm reduced,
+        ISymbolicStructuralContext? structuralContext) =>
         reduced switch
         {
             RequirementTerm requirement => new ConstraintEvaluationItem(
                 source,
                 reduced,
-                EvaluateRelation(requirement.Relation),
+                EvaluateRelation(requirement.Relation, structuralContext),
                 requirement.ParticipantName,
                 null),
             PreferenceTerm preference => new ConstraintEvaluationItem(
                 source,
                 reduced,
-                EvaluateRelation(preference.Relation),
+                EvaluateRelation(preference.Relation, structuralContext),
                 preference.ParticipantName,
                 preference.Weight),
             ConstraintSetTerm set => new ConstraintEvaluationItem(
                 source,
                 reduced,
-                set.Constraints.All(inner => EvaluateConstraint(inner, inner).Truth == ConstraintTruthKind.Satisfied)
+                set.Constraints.All(inner => EvaluateConstraint(inner, inner, structuralContext).Truth == ConstraintTruthKind.Satisfied)
                     ? new ConstraintRelationAssessment(ConstraintTruthKind.Satisfied)
-                    : set.Constraints.Any(inner => EvaluateConstraint(inner, inner).Truth == ConstraintTruthKind.Unsatisfied)
+                    : set.Constraints.Any(inner => EvaluateConstraint(inner, inner, structuralContext).Truth == ConstraintTruthKind.Unsatisfied)
                         ? new ConstraintRelationAssessment(ConstraintTruthKind.Unsatisfied)
                         : new ConstraintRelationAssessment(ConstraintTruthKind.Unresolved, null, "Nested constraint family remains unresolved."),
                 null,
@@ -77,12 +87,14 @@ public static class SymbolicConstraintEvaluator
                 null),
         };
 
-    private static ConstraintRelationAssessment EvaluateRelation(RelationTerm relation) =>
+    private static ConstraintRelationAssessment EvaluateRelation(
+        RelationTerm relation,
+        ISymbolicStructuralContext? structuralContext) =>
         relation switch
         {
             EqualityTerm equality => EvaluateEquality(equality),
-            SharedCarrierTerm shared => EvaluateSharedCarrier(shared),
-            RouteTerm => new ConstraintRelationAssessment(ConstraintTruthKind.Unresolved, null, "Route evaluation requires carrier routing context."),
+            SharedCarrierTerm shared => EvaluateSharedCarrier(shared, structuralContext),
+            RouteTerm route => EvaluateRoute(route, structuralContext),
             _ => new ConstraintRelationAssessment(ConstraintTruthKind.Unresolved, null, "Relation form is not yet directly evaluable."),
         };
 
@@ -103,14 +115,53 @@ public static class SymbolicConstraintEvaluator
             : new ConstraintRelationAssessment(ConstraintTruthKind.Unsatisfied);
     }
 
-    private static ConstraintRelationAssessment EvaluateSharedCarrier(SharedCarrierTerm shared)
+    private static ConstraintRelationAssessment EvaluateSharedCarrier(
+        SharedCarrierTerm shared,
+        ISymbolicStructuralContext? structuralContext)
     {
         if (Equals(shared.Left, shared.Right))
         {
             return new ConstraintRelationAssessment(ConstraintTruthKind.Satisfied);
         }
 
+        if (structuralContext is not null &&
+            shared.Left is AnchorReferenceTerm leftAnchor &&
+            shared.Right is AnchorReferenceTerm rightAnchor)
+        {
+            bool hasLeft = structuralContext.TryResolveAnchorCarrier(leftAnchor, out var leftCarrier, out var leftNote);
+            bool hasRight = structuralContext.TryResolveAnchorCarrier(rightAnchor, out var rightCarrier, out var rightNote);
+
+            if (hasLeft && hasRight)
+            {
+                return leftCarrier == rightCarrier
+                    ? new ConstraintRelationAssessment(ConstraintTruthKind.Satisfied)
+                    : new ConstraintRelationAssessment(ConstraintTruthKind.Unsatisfied, null, "Anchors resolve to different structural carriers.");
+            }
+
+            string note = leftNote ?? rightNote ?? "Shared-carrier evaluation requires carrier graph context.";
+            return new ConstraintRelationAssessment(ConstraintTruthKind.Unresolved, null, note);
+        }
+
         return new ConstraintRelationAssessment(ConstraintTruthKind.Unresolved, null, "Shared-carrier evaluation requires carrier graph context.");
+    }
+
+    private static ConstraintRelationAssessment EvaluateRoute(
+        RouteTerm route,
+        ISymbolicStructuralContext? structuralContext)
+    {
+        if (structuralContext is null)
+        {
+            return new ConstraintRelationAssessment(ConstraintTruthKind.Unresolved, null, "Route evaluation requires carrier routing context.");
+        }
+
+        if (!structuralContext.TryResolveRoute(route.Site, route.From.Kind, route.To.Kind, out bool exists, out var note))
+        {
+            return new ConstraintRelationAssessment(ConstraintTruthKind.Unresolved, null, note ?? "Route evaluation requires carrier routing context.");
+        }
+
+        return exists
+            ? new ConstraintRelationAssessment(ConstraintTruthKind.Satisfied)
+            : new ConstraintRelationAssessment(ConstraintTruthKind.Unsatisfied, null, "No such structural route exists at the named site.");
     }
 
     private static bool TryEvaluateAlternativeEquality(

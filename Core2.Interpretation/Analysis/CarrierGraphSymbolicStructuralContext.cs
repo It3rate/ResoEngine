@@ -1,0 +1,85 @@
+using Core2.Elements;
+using Core2.Symbolics.Expressions;
+
+namespace Core2.Interpretation.Analysis;
+
+public sealed class CarrierGraphSymbolicStructuralContext : ISymbolicStructuralContext
+{
+    private readonly IReadOnlyDictionary<string, CarrierSiteStructuralProfile> _sitesByName;
+
+    public CarrierGraphSymbolicStructuralContext(CarrierPinGraphAnalysis analysis)
+    {
+        ArgumentNullException.ThrowIfNull(analysis);
+
+        Analysis = analysis;
+        _sitesByName = analysis.SiteProfiles
+            .Where(profile => !string.IsNullOrWhiteSpace(profile.Name))
+            .ToDictionary(profile => profile.Name!, StringComparer.Ordinal);
+    }
+
+    public CarrierPinGraphAnalysis Analysis { get; }
+
+    public bool TryResolveAnchorCarrier(
+        AnchorReferenceTerm anchor,
+        out CarrierId carrierId,
+        out string? note)
+    {
+        ArgumentNullException.ThrowIfNull(anchor);
+
+        carrierId = default;
+        note = null;
+
+        if (!_sitesByName.TryGetValue(anchor.OwnerName, out var siteProfile))
+        {
+            note = $"No named site '{anchor.OwnerName}' exists in the structural context.";
+            return false;
+        }
+
+        if (anchor.SideRole is null)
+        {
+            note = $"Anchor '{anchor.QualifiedName}' does not identify a carrier side.";
+            return false;
+        }
+
+        var attachment = siteProfile.Site.GetAttachment(anchor.SideRole.Value);
+        if (attachment is null)
+        {
+            note = $"Anchor '{anchor.QualifiedName}' is not structurally bound to a carrier.";
+            return false;
+        }
+
+        carrierId = attachment.CarrierId;
+        return true;
+    }
+
+    public bool TryResolveRoute(
+        SiteReferenceTerm site,
+        RouteIncidentKind from,
+        RouteIncidentKind to,
+        out bool exists,
+        out string? note)
+    {
+        ArgumentNullException.ThrowIfNull(site);
+
+        exists = false;
+        note = null;
+
+        if (!_sitesByName.TryGetValue(site.SiteName, out var siteProfile))
+        {
+            note = $"No named site '{site.SiteName}' exists in the structural context.";
+            return false;
+        }
+
+        exists = siteProfile.Routing.HasThroughRoute(MapIncident(from), MapIncident(to));
+        return true;
+    }
+
+    private static CarrierIncidentKind MapIncident(RouteIncidentKind kind) => kind switch
+    {
+        RouteIncidentKind.HostNegative => CarrierIncidentKind.HostNegative,
+        RouteIncidentKind.HostPositive => CarrierIncidentKind.HostPositive,
+        RouteIncidentKind.RecessiveSide => CarrierIncidentKind.RecessiveSide,
+        RouteIncidentKind.DominantSide => CarrierIncidentKind.DominantSide,
+        _ => throw new ArgumentOutOfRangeException(nameof(kind), kind, null),
+    };
+}

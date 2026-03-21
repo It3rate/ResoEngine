@@ -1,6 +1,7 @@
 using Core2.Boolean;
 using Core2.Elements;
 using Core2.Branching;
+using Core2.Interpretation.Analysis;
 using Core2.Symbolics.Expressions;
 using Core2.Symbolics.Repetition;
 
@@ -687,6 +688,66 @@ public class SymbolicGrammarTermTests
         Assert.Equal("glyph", glyph.ParticipantName);
         Assert.Equal(1, glyph.UnresolvedRequirements);
         Assert.Equal("Shared-carrier evaluation requires carrier graph context.", evaluation.Items[0].Note);
+    }
+
+    [Fact]
+    public void ConstraintEvaluator_UsesStructuralContextForSharedCarrierClaims()
+    {
+        var stem = CarrierIdentity.Create("Stem");
+        var bowl = CarrierIdentity.Create("Bowl");
+        var host = Axis.FromCoordinates(Proportion.Zero, new Proportion(10));
+
+        var top = CarrierPinSite.FromPointPinning(
+            stem,
+            host.PinAt(new Axis(new Proportion(3, -1), new Proportion(2, 1)), Proportion.Zero),
+            new CarrierSideAttachment(PinSideRole.Recessive, stem, Proportion.Zero),
+            new CarrierSideAttachment(PinSideRole.Dominant, bowl, Proportion.Zero),
+            name: "P4");
+        var bottom = CarrierPinSite.FromPointPinning(
+            stem,
+            host.PinAt(new Axis(new Proportion(-3, -1), new Proportion(2, 1)), Proportion.One),
+            new CarrierSideAttachment(PinSideRole.Recessive, stem, Proportion.One),
+            new CarrierSideAttachment(PinSideRole.Dominant, bowl, Proportion.One),
+            name: "P3");
+
+        var context = new CarrierGraphSymbolicStructuralContext(new CarrierPinGraph([stem, bowl], [top, bottom]).Analyze());
+
+        var evaluation = SymbolicConstraintEvaluator.Evaluate(
+            SymbolicParser.Parse("constraints{require(glyph, share(P4.u, P3.u))}"),
+            environment: null,
+            structuralContext: context);
+
+        Assert.True(evaluation.IsFullyResolved);
+        Assert.Equal(ConstraintTruthKind.Satisfied, Assert.Single(evaluation.Items).Truth);
+    }
+
+    [Fact]
+    public void ConstraintEvaluator_UsesStructuralContextForRouteClaims()
+    {
+        var stem = CarrierIdentity.Create("Stem");
+        var bar = CarrierIdentity.Create("Bar");
+        var host = Axis.FromCoordinates(Proportion.Zero, new Proportion(10));
+
+        var site = CarrierPinSite.FromPointPinning(
+            stem,
+            host.PinAt(new Axis(3, -1, 3, -1), new Proportion(5)),
+            new CarrierSideAttachment(PinSideRole.Recessive, bar, Proportion.Zero),
+            new CarrierSideAttachment(PinSideRole.Dominant, bar, Proportion.One),
+            name: "P4");
+
+        var context = new CarrierGraphSymbolicStructuralContext(new CarrierPinGraph([stem, bar], [site]).Analyze());
+
+        var satisfied = SymbolicConstraintEvaluator.Evaluate(
+            SymbolicParser.Parse("constraints{require(glyph, route(P4, host-, host+))}"),
+            environment: null,
+            structuralContext: context);
+        var unsatisfied = SymbolicConstraintEvaluator.Evaluate(
+            SymbolicParser.Parse("constraints{require(glyph, route(P4, host-, u))}"),
+            environment: null,
+            structuralContext: context);
+
+        Assert.Equal(ConstraintTruthKind.Satisfied, Assert.Single(satisfied.Items).Truth);
+        Assert.Equal(ConstraintTruthKind.Unsatisfied, Assert.Single(unsatisfied.Items).Truth);
     }
 
     [Fact]
