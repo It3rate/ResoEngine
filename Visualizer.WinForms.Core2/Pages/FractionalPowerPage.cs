@@ -212,14 +212,16 @@ public class FractionalPowerPage : IVisualizerPage
 
         var exponent = SelectedExponent;
         var branchRule = SelectedBranchRule;
+        var expression = BuildPowerExpression(exponent, branchRule);
+        var evaluation = SymbolicPowerEvaluator.EvaluateAxis(expression);
         Axis? reference = branchRule == InverseContinuationRule.NearestToReference ? _branchReference : null;
-        var result = _input.Axis.TryPow(exponent, branchRule, reference);
-        UpdateCandidateDisplays(result);
+        var result = evaluation.Result ?? _input.Axis.TryPow(exponent, branchRule, reference);
+        UpdateCandidateDisplays(evaluation, result);
         GetGraphBounds(result, out var minValue, out var maxValue, out var outerRect, out _, out _);
         _graphOuterRect = outerRect;
 
         DrawGraphFrame(canvas, minValue, maxValue, outerRect);
-        DrawSymbolicSummary(outerRect, exponent, branchRule, result);
+        DrawSymbolicSummary(outerRect, expression, evaluation, result);
         _inputRenderer?.Render(canvas, _input);
         DrawRowBadge(canvas, "Input z", InputY, SegmentColors.Red);
 
@@ -253,14 +255,17 @@ public class FractionalPowerPage : IVisualizerPage
         canvas.DrawCircle(originPx, 3f, _originDotPaint);
     }
 
-    private void UpdateCandidateDisplays(PowerResult<Axis> result)
+    private void UpdateCandidateDisplays(SymbolicAxisPowerEvaluation evaluation, PowerResult<Axis> fallback)
     {
         List<Axis> ordered = [];
-        if (result.Succeeded && result.PrincipalCandidate is not null)
+        IReadOnlyList<Axis> candidates = evaluation.Result?.Candidates ?? fallback.Candidates;
+        Axis? principal = evaluation.Result?.PrincipalCandidate ?? fallback.PrincipalCandidate;
+
+        if (principal is not null)
         {
-            ordered.Add(result.PrincipalCandidate);
-            ordered.AddRange(result.Candidates.Where(candidate => candidate != result.PrincipalCandidate));
-            _branchReference = result.PrincipalCandidate;
+            ordered.Add(principal);
+            ordered.AddRange(candidates.Where(candidate => candidate != principal));
+            _branchReference = principal;
         }
 
         for (int i = 0; i < _candidateDisplays.Length; i++)
@@ -354,13 +359,13 @@ public class FractionalPowerPage : IVisualizerPage
 
     private void DrawSymbolicSummary(
         SKRect outerRect,
-        Proportion exponent,
-        InverseContinuationRule branchRule,
-        PowerResult<Axis> result)
+        PowerTerm expression,
+        SymbolicAxisPowerEvaluation evaluation,
+        PowerResult<Axis> fallback)
     {
         LayoutSymbolicViewer(
             new SKRect(34f, 166f, 640f, 352f),
-            BuildSymbolicTrace(exponent, branchRule, result));
+            BuildSymbolicTrace(expression, evaluation, fallback));
     }
 
     private void GetGraphBounds(
@@ -582,16 +587,16 @@ public class FractionalPowerPage : IVisualizerPage
     }
 
     private string BuildSymbolicTrace(
-        Proportion exponent,
-        InverseContinuationRule branchRule,
-        PowerResult<Axis> result)
+        PowerTerm expression,
+        SymbolicAxisPowerEvaluation evaluation,
+        PowerResult<Axis> fallback)
     {
-        var expression = BuildPowerExpression(exponent, branchRule);
-        var reduced = SymbolicReducer.Reduce(expression);
+        var result = evaluation.Result ?? fallback;
+        var reduced = evaluation.Reduced ?? SymbolicReducer.Reduce(expression).Output;
         List<string> lines =
         [
             $"expression => {SymbolicTermFormatter.Format(expression)}",
-            $"reduced => {FormatReducedOutput(reduced.Output)}",
+            $"reduced => {FormatReducedOutput(reduced)}",
             $"principal => {FormatPrincipalCandidate(result)}",
             $"candidates => {result.Candidates.Count}",
         ];

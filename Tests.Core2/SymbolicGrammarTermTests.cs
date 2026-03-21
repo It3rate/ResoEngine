@@ -335,6 +335,22 @@ public class SymbolicGrammarTermTests
     }
 
     [Fact]
+    public void PowerEvaluator_ResolvesAxisCandidates()
+    {
+        var evaluation = SymbolicPowerEvaluator.EvaluateAxis(
+            new PowerTerm(
+                new ElementLiteralTerm(Axis.NegativeOne),
+                new Proportion(1, 2),
+                InverseContinuationRule.Principal,
+                null));
+
+        Assert.True(evaluation.Succeeded);
+        Assert.Equal(2, evaluation.Candidates.Count);
+        Assert.Equal(Axis.I, evaluation.PrincipalCandidate);
+        Assert.IsType<BranchFamilyTerm>(evaluation.Reduced);
+    }
+
+    [Fact]
     public void Reducer_ReducesBoundaryContinuationTerm()
     {
         var reduced = SymbolicReducer.Reduce(
