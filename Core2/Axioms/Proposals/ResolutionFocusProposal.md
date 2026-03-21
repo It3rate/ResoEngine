@@ -3,7 +3,7 @@
 This document is a rough proposal for how resolution should behave in Core 2, especially when the system is steered toward language rather than toward ordinary folded arithmetic alone.
 
 It is intentionally compact and principle-first.
-The goal is to give broad coverage without exploding into many verb-specific or operator-specific special cases.
+The goal is to get the widest coverage from the fewest laws, then let richer mathematical and linguistic structures be constructed from those laws rather than introduced as many special cases.
 
 It should be read beside:
 
@@ -23,7 +23,9 @@ So a value such as `4/5` carries at least two distinct facts:
 
 Those facts should not be collapsed too early.
 
-## Part I. Primitive Distinctions
+## Part I. Primitive Commitments
+
+This section states the minimum primitives that seem necessary to handle resolution well while staying compatible with language.
 
 ### RF1. Folded value and support differ
 
@@ -45,53 +47,79 @@ Examples:
 - a value may be carried on fine support and still be wrong because of bias
 - a value may be carried on coarse support and still be exact relative to that support
 
-### RF4. Focus and support differ but interact
+### RF4. Host or focus is primitive
 
-Focus is not the same thing as resolution.
-But focus often determines whose support law should dominate when several structures interact.
+When structures interact, one structure is often treated as primary or persistent.
+This role should be primitive because it strongly predicts:
 
-### RF5. Perspective and focus differ
+- whose support is inherited
+- whose continuity matters
+- whose change is foregrounded
+- what the result is "about"
+
+### RF5. Applied or modifying role is primitive
+
+The acting or modifying structure is also primitive.
+It need not contribute new support.
+Sometimes it only changes orientation, sign, basis, emphasis, or selection.
+
+### RF6. Perspective differs from focus
 
 Perspective changes how a structure is read.
-Focus changes which structure is treated as primary or persistent.
+Focus changes which structure is treated as primary.
 
-### RF6. Ambiguity is not failure
+This matters because a perspective flip may transform the measuring system or reading convention without transforming the measured object itself.
 
-When several support interpretations or role assignments remain lawful, they should persist as a branch family until selection is justified.
+### RF7. Branch family is primitive
 
-## Part II. Proposed Resolution Laws
+When several support interpretations, role assignments, or readings remain lawful, they should persist as a branch family until selection is justified.
 
-### RF7. Support inheritance should be the default
+This is essential both for inverse continuation and for language ambiguity.
 
-When one operand is host or persistent and another acts upon it, the default law should be:
+## Part II. Primitive Resolution Laws
+
+This section proposes the minimum law set needed to explain most observed resolution behavior.
+
+### RF8. Support inheritance is the default law
+
+When one operand is host or persistent and another acts upon it, the default should be:
 
 - preserve the host's support
-- let the applied term modify realized value, direction, or orientation
+- let the applied term modify realized value, direction, orientation, or emphasis
 
 This is the likely default for:
 
 - scalar scaling on a fixed frame
 - sign flip
 - opposition
+- mirror
 - basis change
-- many language-like modifier relations
+- many modifier-like language relations
 
-### RF8. Support aggregation should be explicit
+Example:
 
-When separate supports are pooled or concatenated, support should add.
+- `2 * 5/10 -> 10/10`
+
+The host support survives.
+The value changes.
+
+### RF9. Support aggregation is explicit
+
+When separate supports are pooled or concatenated, support adds.
 
 Examples:
 
 - repeated reviews
+- repeated measurements
+- accumulated evidence
 - repeated observations
-- evidence accumulation
 - concatenated spans
 
 So one hundred `4/5` reviews may aggregate to `400/500`.
 
-### RF9. Support composition should be explicit
+### RF10. Support composition is explicit
 
-When two supports form an independent product space, support should compose, often multiplicatively.
+When two supports form an independent product space, support composes, often multiplicatively.
 
 Examples:
 
@@ -101,7 +129,7 @@ Examples:
 
 This is the main reason denominator growth under multiplication and powers is often natural.
 
-### RF10. Support refinement should preserve folded value
+### RF11. Support refinement preserves folded value
 
 A value may be re-expressed on finer support while preserving folded value.
 
@@ -111,7 +139,7 @@ Example:
 
 This is refinement, not a new folded value.
 
-### RF11. Common-frame re-expression should be distinguished from aggregation
+### RF12. Common-frame re-expression differs from aggregation
 
 `5/10 + 1/2` may mean different things:
 
@@ -121,13 +149,13 @@ This is refinement, not a new folded value.
 
 These should not be forced into one law.
 
-### RF12. Pure transforms should usually preserve support
+### RF13. Pure transforms usually preserve support
 
-Transforms such as opposition, negation, mirror, and similar role-swaps should generally preserve support unless the transform explicitly introduces new support.
+Transforms such as opposition, negation, mirror, and perspective or basis change should usually preserve support unless the transform explicitly introduces new support.
 
 This is why expressions such as `axis * i` may deserve a more support-preserving law than generic support-composing multiplication.
 
-### RF13. Uncertainty should propagate separately from support
+### RF14. Uncertainty propagates separately from support
 
 Support may influence uncertainty, but uncertainty should not be identified with support.
 
@@ -140,7 +168,7 @@ The system should eventually allow:
 
 as distinct layers.
 
-### RF14. Fold and unfold should use support policies
+### RF15. Fold and unfold require support policies
 
 Folding erases support distinctions.
 Unfolding should therefore return candidate families unless a support policy is supplied.
@@ -153,14 +181,37 @@ Useful policies include:
 - preserve aggregated sample count
 - preserve instrument grain
 
-## Part III. Language Guidance
+## Part III. Constructible From Primitives
 
-### RF15. Core 2 should prefer a small participant schema
+This section lists richer structures that seem important but do not yet need to be treated as separate primitives.
 
-Language should not force many primitive special cases.
-Instead, a small recurring participant schema should be preferred.
+### RF16. Carrier or medium is constructible
 
-The likely recurring roles are:
+`Carrier` appears to be a very important recurring structure, but it may be constructible from:
+
+- a persistent host
+- a payload or theme
+- a continuation law
+- source and goal structure
+- routing or placement
+- selective shielding of what inherits change
+
+In this reading, the carrier is not invariant in every respect.
+Its position, route, and continuation state may change constantly.
+What matters is that the carried thing may remain comparatively protected and be released later without being the primary transformed structure.
+
+### RF17. Transfer and delivery are constructible
+
+Structures such as:
+
+- move
+- send
+- carry
+- deliver
+
+should probably elaborate a small schema rather than each becoming its own primitive law.
+
+Likely recurring roles include:
 
 - host or focused persistent structure
 - applied or modifying structure
@@ -171,22 +222,60 @@ The likely recurring roles are:
 - controller or initiator
 - observer or perspective holder
 
-Not every sentence needs every role.
-Different verb classes foreground different subsets.
-
-### RF16. Verb alternations should usually be elaborations, not primitives
-
-Many Levin-style and FrameNet-style alternations look like re-weightings or re-foregroundings of a smaller underlying structure.
+### RF18. Voice and focus shift are constructible
 
 Examples:
 
-- `move` foregrounds theme plus path or goal
-- `send` foregrounds source, goal, and transfer of a theme
-- `deliver` often adds or foregrounds a carrier or successful-arrival bias
+- `I took the bus to work`
+- `the bus took me to work`
 
-These should preferably elaborate a smaller common schema rather than each becoming a separate primitive law.
+The event family may be similar, but the focused or host structure differs.
+That difference can often be constructed by changing focus and support inheritance rather than by inventing a separate primitive event type.
 
-### RF17. Focus often selects the host
+### RF19. Structural ambiguity in language is constructible from branch plus focus
+
+Examples:
+
+- `the chicken is ready to eat`
+- `I never said she stole my money`
+
+These are candidate families with different role assignments, focus placements, or attachment structures.
+They do not require a special ambiguity primitive if branch family plus focus/perspective already exist.
+
+### RF20. Measurement alignment is constructible from perspective plus re-expression
+
+If one person measures in centimeters and another in inches, the board does not change.
+The reading systems differ.
+
+So many "conversion" situations can be understood as:
+
+- perspective or frame difference
+- common-frame re-expression
+- support-preserving comparison
+
+rather than as object transformation.
+
+### RF21. Protected transport is constructible
+
+Examples:
+
+- envelope carrying a letter
+- bus carrying a passenger
+- packet carrying a message
+- recursive state carrying a payload through continuation
+
+This can often be built from carrier plus payload plus route plus release, without adding a new primitive kind.
+
+## Part IV. Language Guidance
+
+### RF22. Language should bias law choice
+
+When several mathematically possible support laws exist, Core 2 should strongly prefer the law that gives better linguistic coverage with fewer primitives.
+
+This does not override correctness.
+It chooses among several lawful system designs.
+
+### RF23. Focus often selects whose support persists
 
 When several participants are present, focus often answers:
 
@@ -197,32 +286,18 @@ When several participants are present, focus often answers:
 
 This is why similar events can feel structurally different in language.
 
-### RF18. Voice and emphasis can preserve event identity while changing structure
+### RF24. Carrier-like readings are often second-level, not first-level
 
-Examples:
+Carrier is very common and very important, but it may often be a second-level reading built from:
 
-- `I took the bus to work`
-- `the bus took me to work`
+- host persistence
+- payload isolation
+- route continuation
+- later release
 
-The event family may be similar, but the host or focused participant differs.
-Core 2 should allow a preserved underlying event with different foregrounded carriers and support inheritance.
+That is a good example of something that deserves strong coverage without automatically becoming primitive.
 
-### RF19. Structural ambiguity in language is like support or role ambiguity in math
-
-Examples:
-
-- `the chicken is ready to eat`
-- `I never said she stole my money`
-
-These are not merely fuzzy readings.
-They are candidate families with different role assignments, focus placements, or attachment structures.
-
-Core 2 should therefore prefer:
-
-- preserve candidate family first
-- select by context, focus, perspective, or certainty only later
-
-## Part IV. Short Parallel Examples
+## Part V. Short Parallel Examples
 
 ### Math examples
 
@@ -237,6 +312,9 @@ Core 2 should therefore prefer:
 
 - `4/5 -> 8/10`
   Metadata: support law=`refine`, folded value unchanged
+
+- `axis * i`
+  Metadata: host=`axis`, applied=`i`, likely support law=`pure transform / preserve support`
 
 ### Language examples
 
@@ -255,7 +333,7 @@ Core 2 should therefore prefer:
 - `deliver the package to Robin`
   Metadata: theme=`package`, goal=`Robin`, carrier or transfer-medium foregrounded more strongly than in a simpler `move` event
 
-## Part V. Immediate Design Consequence
+## Part VI. Immediate Design Consequence
 
 The system should probably stop asking one global question such as:
 
