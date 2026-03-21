@@ -233,6 +233,14 @@ public class SymbolicGrammarTermTests
     }
 
     [Fact]
+    public void AnchorPositionTerm_FormatsAsStructuralValueQuery()
+    {
+        var position = new AnchorPositionTerm(new AnchorReferenceTerm("P4", "u"));
+
+        Assert.Equal("position(P4.u)", SymbolicTermFormatter.Format(position));
+    }
+
+    [Fact]
     public void CanonicalSerializer_UsesStableStructuredOutput()
     {
         var preference = new PreferenceTerm(
@@ -438,6 +446,15 @@ public class SymbolicGrammarTermTests
         Assert.False(localCount.IsGlobal);
         Assert.Equal("P4", localCount.Site!.SiteName);
         Assert.Equal(SymbolicCountKind.ThroughCarriers, localCount.Kind);
+    }
+
+    [Fact]
+    public void Parser_ParsesAnchorPositionQuery()
+    {
+        var parsed = SymbolicParser.Parse("position(P4.u)");
+
+        var position = Assert.IsType<AnchorPositionTerm>(parsed);
+        Assert.Equal("P4.u", position.Anchor.QualifiedName);
     }
 
     [Fact]
@@ -946,6 +963,57 @@ public class SymbolicGrammarTermTests
 
         Assert.Equal(new Proportion(2), Assert.IsType<ElementLiteralTerm>(global.Output).Value);
         Assert.Equal(new Proportion(2), Assert.IsType<ElementLiteralTerm>(local.Output).Value);
+    }
+
+    [Fact]
+    public void Reducer_UsesStructuralContextForAnchorPositionQueries()
+    {
+        var stem = CarrierIdentity.Create("Stem");
+        var bowl = CarrierIdentity.Create("Bowl");
+        var host = Axis.FromCoordinates(Proportion.Zero, new Proportion(10));
+
+        var top = CarrierPinSite.FromPointPinning(
+            stem,
+            host.PinAt(new Axis(new Proportion(3, -1), new Proportion(2, 1)), Proportion.Zero),
+            new CarrierSideAttachment(PinSideRole.Recessive, stem, Proportion.Zero),
+            new CarrierSideAttachment(PinSideRole.Dominant, bowl, Proportion.Zero),
+            name: "P4");
+        var bottom = CarrierPinSite.FromPointPinning(
+            stem,
+            host.PinAt(new Axis(new Proportion(-3, -1), new Proportion(2, 1)), Proportion.One),
+            new CarrierSideAttachment(PinSideRole.Recessive, stem, Proportion.One),
+            new CarrierSideAttachment(PinSideRole.Dominant, bowl, Proportion.One),
+            name: "P3");
+
+        var context = new CarrierGraphSymbolicStructuralContext(new CarrierPinGraph([stem, bowl], [top, bottom]).Analyze());
+
+        var topPosition = SymbolicReducer.Reduce(SymbolicParser.Parse("position(P4.u)"), structuralContext: context);
+        var bottomPosition = SymbolicReducer.Reduce(SymbolicParser.Parse("position(P3.u)"), structuralContext: context);
+
+        Assert.Equal(Proportion.Zero, Assert.IsType<ElementLiteralTerm>(topPosition.Output).Value);
+        Assert.Equal(Proportion.One, Assert.IsType<ElementLiteralTerm>(bottomPosition.Output).Value);
+    }
+
+    [Fact]
+    public void Reducer_AllowsMultiplicationOfBoundStructuralCountValues()
+    {
+        var stem = CarrierIdentity.Create("Stem");
+        var bar = CarrierIdentity.Create("Bar");
+        var host = Axis.FromCoordinates(Proportion.Zero, new Proportion(10));
+
+        var site = CarrierPinSite.FromPointPinning(
+            stem,
+            host.PinAt(new Axis(3, -1, 3, -1), new Proportion(5)),
+            new CarrierSideAttachment(PinSideRole.Recessive, bar, Proportion.Zero),
+            new CarrierSideAttachment(PinSideRole.Dominant, bar, Proportion.One),
+            name: "P4");
+
+        var context = new CarrierGraphSymbolicStructuralContext(new CarrierPinGraph([stem, bar], [site]).Analyze());
+        var reduced = SymbolicReducer.Reduce(
+            SymbolicParser.Parse("let carriers = count(carriers); let through = count(P4, through-carriers); carriers * through"),
+            structuralContext: context);
+
+        Assert.Equal(new Proportion(4), Assert.IsType<ElementLiteralTerm>(reduced.Output).Value);
     }
 
     [Fact]

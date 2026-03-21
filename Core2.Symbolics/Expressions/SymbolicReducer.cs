@@ -127,6 +127,7 @@ public static class SymbolicReducer
             ApplyTransformTerm apply => ReduceApplyTransform(apply, environment, structuralContext),
             MultiplyValuesTerm multiply => ReduceMultiply(multiply, environment, structuralContext),
             DivideValuesTerm divide => ReduceDivide(divide, environment, structuralContext),
+            AnchorPositionTerm position => ReduceAnchorPosition(position, structuralContext),
             CountTerm count => ReduceCount(count, structuralContext),
             PowerTerm power => ReducePower(power, environment, structuralContext),
             InverseContinueTerm inverse => ReduceInverseContinuation(inverse, environment, structuralContext),
@@ -233,6 +234,19 @@ public static class SymbolicReducer
         }
 
         return count;
+    }
+
+    private static SymbolicTerm ReduceAnchorPosition(
+        AnchorPositionTerm position,
+        ISymbolicStructuralContext? structuralContext)
+    {
+        if (structuralContext is not null &&
+            structuralContext.TryResolveAnchorPosition(position.Anchor, out var value, out _))
+        {
+            return new ElementLiteralTerm(value);
+        }
+
+        return position;
     }
 
     private static SymbolicTerm ReducePower(

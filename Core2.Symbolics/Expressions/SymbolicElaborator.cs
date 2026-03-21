@@ -73,6 +73,8 @@ public static class SymbolicElaborator
             DivideValuesTerm divide => new DivideValuesTerm(
                 (ValueTerm)ElaborateTerm(divide.Left, environment),
                 (ValueTerm)ElaborateTerm(divide.Right, environment)),
+            AnchorPositionTerm position => new AnchorPositionTerm(
+                (AnchorReferenceTerm)ElaborateTerm(position.Anchor, environment)),
             CountTerm count => new CountTerm(
                 count.Site is null ? null : (SiteReferenceTerm)ElaborateTerm(count.Site, environment),
                 count.Kind),

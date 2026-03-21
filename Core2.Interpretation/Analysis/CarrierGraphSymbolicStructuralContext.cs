@@ -52,6 +52,39 @@ public sealed class CarrierGraphSymbolicStructuralContext : ISymbolicStructuralC
         return true;
     }
 
+    public bool TryResolveAnchorPosition(
+        AnchorReferenceTerm anchor,
+        out Proportion position,
+        out string? note)
+    {
+        ArgumentNullException.ThrowIfNull(anchor);
+
+        position = Proportion.Zero;
+        note = null;
+
+        if (!_sitesByName.TryGetValue(anchor.OwnerName, out var siteProfile))
+        {
+            note = $"No named site '{anchor.OwnerName}' exists in the structural context.";
+            return false;
+        }
+
+        if (anchor.SideRole is null)
+        {
+            note = $"Anchor '{anchor.QualifiedName}' does not identify a carrier side.";
+            return false;
+        }
+
+        var attachment = siteProfile.Site.GetAttachment(anchor.SideRole.Value);
+        if (attachment is null)
+        {
+            note = $"Anchor '{anchor.QualifiedName}' has no structural attachment position.";
+            return false;
+        }
+
+        position = attachment.CarrierPosition;
+        return true;
+    }
+
     public bool TryResolveRoute(
         SiteReferenceTerm site,
         RouteIncidentKind from,

@@ -24,6 +24,7 @@ public static class CanonicalSymbolicSerializer
             ApplyTransformTerm apply => $"apply(state={Serialize(apply.State)},transform={Serialize(apply.Transform)})",
             MultiplyValuesTerm multiply => $"multiply(left={Serialize(multiply.Left)},right={Serialize(multiply.Right)})",
             DivideValuesTerm divide => $"divide(left={Serialize(divide.Left)},right={Serialize(divide.Right)})",
+            AnchorPositionTerm position => $"position(anchor={Serialize(position.Anchor)})",
             CountTerm count => SerializeCount(count),
             PowerTerm power => SerializePower(power),
             InverseContinueTerm inverse => SerializeInverse(inverse),

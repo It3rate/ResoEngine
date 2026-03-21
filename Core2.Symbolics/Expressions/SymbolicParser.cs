@@ -396,6 +396,11 @@ public static class SymbolicParser
                 return ParseCount();
             }
 
+            if (PeekIdentifier("position"))
+            {
+                return ParsePosition();
+            }
+
             if (PeekIdentifier("pow"))
             {
                 return ParsePower();
@@ -497,6 +502,15 @@ public static class SymbolicParser
             var siteKind = ParseSiteCountKind();
             Expect(TokenKind.RightParen);
             return new CountTerm(site, siteKind);
+        }
+
+        private AnchorPositionTerm ParsePosition()
+        {
+            ConsumeIdentifier("position");
+            Expect(TokenKind.LeftParen);
+            var anchor = ParseAnchorReference();
+            Expect(TokenKind.RightParen);
+            return new AnchorPositionTerm(anchor);
         }
 
         private PowerTerm ParsePower()
@@ -858,7 +872,6 @@ public static class SymbolicParser
         private static bool ShouldTreatAsTransformApplication(SymbolicTerm term) => term switch
         {
             TransformTerm => true,
-            ValueReferenceTerm => true,
             ElementLiteralTerm literal => IsTransformShorthandLiteral(literal.Value),
             _ => false,
         };

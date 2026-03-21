@@ -24,6 +24,7 @@ public static class SymbolicTermFormatter
             ApplyTransformTerm apply => $"{Format(apply.State)} * {Format(apply.Transform)}",
             MultiplyValuesTerm multiply => $"{Format(multiply.Left)} * {Format(multiply.Right)}",
             DivideValuesTerm divide => $"{Format(divide.Left)} / {Format(divide.Right)}",
+            AnchorPositionTerm position => $"position({Format(position.Anchor)})",
             CountTerm count => FormatCount(count),
             PowerTerm power => FormatPower(power),
             InverseContinueTerm inverse => FormatInverse(inverse),

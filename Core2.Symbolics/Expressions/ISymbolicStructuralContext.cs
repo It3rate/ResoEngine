@@ -9,6 +9,11 @@ public interface ISymbolicStructuralContext
         out CarrierId carrierId,
         out string? note);
 
+    bool TryResolveAnchorPosition(
+        AnchorReferenceTerm anchor,
+        out Core2.Elements.Proportion position,
+        out string? note);
+
     bool TryResolveRoute(
         SiteReferenceTerm site,
         RouteIncidentKind from,
