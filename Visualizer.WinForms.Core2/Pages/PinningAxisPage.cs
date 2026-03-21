@@ -1,4 +1,5 @@
 using Core2.Elements;
+using Core2.Symbolics.Expressions;
 using ResoEngine.Visualizer.Adapt;
 using ResoEngine.Visualizer.Controls;
 using ResoEngine.Visualizer.Core;
@@ -206,6 +207,13 @@ public sealed partial class PinningAxisPage : IVisualizerPage
         Color = new SKColor(214, 214, 214),
         IsAntialias = true,
     };
+    private readonly SKPaint _symbolicTextPaint = new()
+    {
+        Color = new SKColor(64, 64, 64),
+        TextSize = 11f,
+        Typeface = SKTypeface.FromFamilyName("Consolas", SKFontStyle.Normal),
+        IsAntialias = true,
+    };
 
     public string Title => "Pinning Axis Explorer";
 
@@ -340,6 +348,7 @@ public sealed partial class PinningAxisPage : IVisualizerPage
         _buttonTextPaint.Dispose();
         _buttonFillPaint.Dispose();
         _buttonStrokePaint.Dispose();
+        _symbolicTextPaint.Dispose();
     }
 
     private void DrawInputCards(SKCanvas canvas, SKRect inputRect)
@@ -543,6 +552,24 @@ public sealed partial class PinningAxisPage : IVisualizerPage
         DrawViewport(canvas, viewport, geometry);
     }
 
+    private void DrawSymbolicSummary(SKCanvas canvas, SKRect rect, PinAxisDisplayGeometry geometry)
+    {
+        float left = rect.Left + 16f;
+        float width = Math.Min(320f, rect.Width - 32f);
+        float y = rect.Top + 18f;
+
+        foreach (var line in BuildSymbolicLines(geometry.Descriptor, geometry))
+        {
+            PageChrome.DrawWrappedText(
+                canvas,
+                line,
+                left,
+                ref y,
+                width,
+                _symbolicTextPaint);
+        }
+    }
+
     private void DrawViewport(SKCanvas canvas, SKRect rect, PinAxisDisplayGeometry geometry)
     {
         float padding = 34f;
@@ -570,6 +597,8 @@ public sealed partial class PinningAxisPage : IVisualizerPage
         var titleBounds = new SKRect();
         _labelPaint.MeasureText(sceneTitle, ref titleBounds);
         canvas.DrawText(sceneTitle, rect.MidX - titleBounds.Width * 0.5f, rect.Top + 26f, _labelPaint);
+
+        DrawSymbolicSummary(canvas, rect, geometry);
 
         if (ShowGuides)
         {
@@ -939,6 +968,24 @@ public sealed partial class PinningAxisPage : IVisualizerPage
     private Axis BuildDescriptor() =>
         new(_recessiveValue, _recessiveUnit, _dominantValue, _dominantUnit);
 
+    private IReadOnlyList<string> BuildSymbolicLines(Axis descriptor, PinAxisDisplayGeometry geometry)
+    {
+        var descriptorTerm = new ElementLiteralTerm(descriptor);
+        var hostTerm = new ElementLiteralTerm(Axis.PinUnit);
+        var pinTerm = new PinTerm(hostTerm, descriptorTerm, new Proportion(1, 2));
+        var folded = SymbolicReducer.Reduce(new FoldTerm(descriptorTerm, SymbolicFoldKind.Canonical)).Output;
+
+        return
+        [
+            $"host => {SymbolicTermFormatter.Format(hostTerm)}",
+            $"applied => {SymbolicTermFormatter.Format(descriptorTerm)}",
+            $"pin => {SymbolicTermFormatter.Format(pinTerm)}",
+            $"fold(applied) => {FormatSymbolicOutput(folded)}",
+            $"behavior => {geometry.Resolution.Behavior}",
+            $"relation => {geometry.Relation}",
+        ];
+    }
+
     private void ApplyPreset(long recessiveUnit, long recessiveValue, long dominantUnit, long dominantValue)
     {
         _recessiveUnit = recessiveUnit;
@@ -1047,6 +1094,9 @@ public sealed partial class PinningAxisPage : IVisualizerPage
 
     private static string FormatDescriptor(Axis axis) =>
         $"[{axis.Recessive.Dominant}/{axis.Recessive.Recessive}]i + [{axis.Dominant.Dominant}/{axis.Dominant.Recessive}]";
+
+    private static string FormatSymbolicOutput(SymbolicTerm? term) =>
+        term is null ? "(none)" : SymbolicTermFormatter.Format(term);
 
     private void DrawNoiseIndicators(SKCanvas canvas, SKPoint origin)
     {

@@ -344,6 +344,20 @@ public class SymbolicGrammarTermTests
     }
 
     [Fact]
+    public void ContinueEvaluator_PreservesTensionMetadata()
+    {
+        var evaluation = SymbolicContinueEvaluator.Evaluate(
+            new ContinueTerm(
+                new ElementLiteralTerm(new Axis(new Proportion(4, 1), new Proportion(8, 1))),
+                new ElementLiteralTerm(new Proportion(9, 1)),
+                BoundaryContinuationLaw.TensionPreserving));
+
+        Assert.True(evaluation.HasTension);
+        Assert.Equal(new Proportion(9, 1), evaluation.Value);
+        Assert.Equal(new Proportion(9, 1), Assert.IsType<ElementLiteralTerm>(evaluation.Reduced).Value);
+    }
+
+    [Fact]
     public void Parser_ParsesPowerTermWithRuleAndReference()
     {
         var parsed = SymbolicParser.Parse("pow(1, 1/2, nearest, -1)");

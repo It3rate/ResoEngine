@@ -1,5 +1,6 @@
 using Core2.Elements;
 using Core2.Interpretation.Units;
+using Core2.Symbolics.Expressions;
 using Core2.Units;
 using ResoEngine.Visualizer.Adapt;
 using ResoEngine.Visualizer.Controls;
@@ -156,6 +157,13 @@ public class UnitsQuantityPage : IVisualizerPage
         Color = new SKColor(80, 80, 80),
         IsAntialias = true,
     };
+    private readonly SKPaint _symbolicTextPaint = new()
+    {
+        Color = new SKColor(64, 64, 64),
+        TextSize = 11f,
+        Typeface = SKTypeface.FromFamilyName("Consolas", SKFontStyle.Normal),
+        IsAntialias = true,
+    };
 
     private CoordinateSystem? _coords;
     private SkiaCanvas? _canvasHost;
@@ -202,6 +210,7 @@ public class UnitsQuantityPage : IVisualizerPage
             _bodyPaint);
 
         DrawGraphFrame(canvas);
+        DrawSymbolicSummary(canvas);
         _rendererA?.Render(canvas, _axisA);
         _rendererB?.Render(canvas, _axisB);
         DrawInputBadges(canvas);
@@ -395,6 +404,30 @@ public class UnitsQuantityPage : IVisualizerPage
         canvas.DrawRoundRect(rect, 12f, 12f, fill);
         canvas.DrawRoundRect(rect, 12f, 12f, border);
         canvas.DrawText(text, rect.MidX, rect.MidY + 5f, textPaint);
+    }
+
+    private void DrawSymbolicSummary(SKCanvas canvas)
+    {
+        if (_coords == null)
+        {
+            return;
+        }
+
+        GetGraphBounds(out _, out _, out var outerRect);
+        float left = outerRect.Right - 348f;
+        float y = outerRect.Top + 18f;
+        float width = 330f;
+
+        foreach (var line in BuildSymbolicLines())
+        {
+            PageChrome.DrawWrappedText(
+                canvas,
+                line,
+                left,
+                ref y,
+                width,
+                _symbolicTextPaint);
+        }
     }
 
     private void GetGraphBounds(out decimal minValue, out decimal maxValue, out SKRect outerRect)
@@ -642,6 +675,44 @@ public class UnitsQuantityPage : IVisualizerPage
 
     private static string FormatAxis(Axis axis) => $"{axis.Start:0.#}i + {axis.End:0.#}";
 
+    private IReadOnlyList<string> BuildSymbolicLines()
+    {
+        var aAxis = _axisA.Axis;
+        var bAxis = _axisB.Axis;
+        var aUnit = SelectedUnitA.Choice;
+        var bUnit = SelectedUnitB.Choice;
+        var qa = aAxis.AsQuantity(aUnit.Signature, aUnit);
+        var qb = bAxis.AsQuantity(bUnit.Signature, bUnit);
+        var product = qa.Multiply(qb);
+        var sum = qa.TryAdd(qb);
+        var aTerm = new ElementLiteralTerm(aAxis);
+        var bTerm = new ElementLiteralTerm(bAxis);
+        var productTerm = SymbolicReducer.Reduce(new MultiplyValuesTerm(aTerm, bTerm)).Output;
+        var squareTerm = SymbolicReducer.Reduce(new PowerTerm(aTerm, new Proportion(2, 1))).Output;
+
+        return
+        [
+            $"A => {SymbolicTermFormatter.Format(aTerm)} [{aUnit.Symbol}]",
+            $"B => {SymbolicTermFormatter.Format(bTerm)} [{bUnit.Symbol}]",
+            $"A * B => {FormatSymbolicOutput(productTerm)} [{product.Signature}]",
+            $"pow(A, 2/1) => {FormatSymbolicOutput(squareTerm)} [{aUnit.Signature.Pow(2)}]",
+            sum.Succeeded
+                ? $"A + B => {FormatAxis(sum.Quantity!.Value.Value)} [{sum.Quantity.Value.Signature}]"
+                : $"A + B => tension ({DescribeTension(sum)})",
+        ];
+    }
+
+    private static string DescribeTension(QuantityOperationResult<Axis> result)
+    {
+        var tension = result.Tensions.FirstOrDefault();
+        return tension is null || string.IsNullOrWhiteSpace(tension.Message)
+            ? "signature mismatch"
+            : tension.Message;
+    }
+
+    private static string FormatSymbolicOutput(SymbolicTerm? term) =>
+        term is null ? "(none)" : SymbolicTermFormatter.Format(term);
+
     public bool IsOriginHit(SKPoint pixelPoint)
     {
         if (_coords == null)
@@ -694,6 +765,7 @@ public class UnitsQuantityPage : IVisualizerPage
         _originFillPaint.Dispose();
         _originStrokePaint.Dispose();
         _originDotPaint.Dispose();
+        _symbolicTextPaint.Dispose();
     }
 
     private sealed record UnitOption(string Name, UnitChoice Choice);

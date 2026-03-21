@@ -415,24 +415,19 @@ public class BoundaryRepetitionPage : IVisualizerPage
         ElementLiteralTerm endValue,
         BoundaryContinuationLaw law)
     {
-        string start = EvaluateContinuation(frame, startValue, law, out bool startTension);
-        string end = EvaluateContinuation(frame, endValue, law, out bool endTension);
-        return $"{name} => start {start}{(startTension ? " [t]" : string.Empty)}, end {end}{(endTension ? " [t]" : string.Empty)}";
+        var start = EvaluateContinuation(frame, startValue, law);
+        var end = EvaluateContinuation(frame, endValue, law);
+        return $"{name} => start {FormatContinuation(start)}{(start.HasTension ? " [t]" : string.Empty)}, end {FormatContinuation(end)}{(end.HasTension ? " [t]" : string.Empty)}";
     }
 
-    private string EvaluateContinuation(
+    private SymbolicContinueEvaluation EvaluateContinuation(
         ElementLiteralTerm frame,
         ElementLiteralTerm value,
-        BoundaryContinuationLaw law,
-        out bool hasTension)
-    {
-        var proportion = (Proportion)value.Value;
-        var result = _frame.Axis.Continue(proportion, law);
-        hasTension = result.HasTension;
+        BoundaryContinuationLaw law) =>
+        SymbolicContinueEvaluator.Evaluate(new ContinueTerm(frame, value, law));
 
-        var reduced = SymbolicReducer.Reduce(new ContinueTerm(frame, value, law));
-        return reduced.Output is null ? "(none)" : SymbolicTermFormatter.Format(reduced.Output);
-    }
+    private static string FormatContinuation(SymbolicContinueEvaluation evaluation) =>
+        evaluation.Reduced is null ? "(none)" : SymbolicTermFormatter.Format(evaluation.Reduced);
 
     private static ElementLiteralTerm CreateProbeValue(float value)
     {
@@ -448,8 +443,9 @@ public class BoundaryRepetitionPage : IVisualizerPage
         decimal probeEnd = (decimal)_probeRange.Real;
         decimal minFrame = Math.Min(frameStart, frameEnd);
         decimal maxFrame = Math.Max(frameStart, frameEnd);
-        var startResult = _frame.Axis.Continue((Scalar)probeStart, law);
-        var endResult = _frame.Axis.Continue((Scalar)probeEnd, law);
+        var frameTerm = new ElementLiteralTerm(_frame.Axis);
+        var startResult = EvaluateContinuation(frameTerm, CreateProbeValue((float)probeStart), law);
+        var endResult = EvaluateContinuation(frameTerm, CreateProbeValue((float)probeEnd), law);
 
         canvas.DrawRoundRect(rect, 14f, 14f, _cardFillPaint);
         canvas.DrawRoundRect(rect, 14f, 14f, _cardBorderPaint);
@@ -483,8 +479,8 @@ public class BoundaryRepetitionPage : IVisualizerPage
             canvas.DrawLine(zeroX, midY - 18f, zeroX, midY + 18f, _baselinePaint);
         }
 
-        decimal displayedStart = startResult.HasTension ? decimal.Clamp(probeStart, minFrame, maxFrame) : startResult.Value.Fold().Value;
-        decimal displayedEnd = endResult.HasTension ? decimal.Clamp(probeEnd, minFrame, maxFrame) : endResult.Value.Fold().Value;
+        decimal displayedStart = ResolveDisplayedValue(startResult, probeStart, minFrame, maxFrame);
+        decimal displayedEnd = ResolveDisplayedValue(endResult, probeEnd, minFrame, maxFrame);
 
         float startX = Map(displayedStart, minFrame, maxFrame, frameLeft, frameRight);
         float endX = Map(displayedEnd, minFrame, maxFrame, frameLeft, frameRight);
@@ -524,7 +520,7 @@ public class BoundaryRepetitionPage : IVisualizerPage
         }
 
         canvas.DrawText(
-            $"start -> {startResult.Value.Fold().Value:0.0}    end -> {endResult.Value.Fold().Value:0.0}",
+            $"start -> {displayedStart:0.0}    end -> {displayedEnd:0.0}",
             rect.MidX,
             rect.Top + 98f,
             _cardTextPaint);
@@ -745,6 +741,23 @@ public class BoundaryRepetitionPage : IVisualizerPage
         {
             _syncingControls = false;
         }
+    }
+
+    private static decimal ResolveDisplayedValue(
+        SymbolicContinueEvaluation evaluation,
+        decimal fallback,
+        decimal minFrame,
+        decimal maxFrame)
+    {
+        if (!evaluation.HasValue)
+        {
+            return fallback;
+        }
+
+        decimal reduced = evaluation.Value.Fold().Value;
+        return evaluation.HasTension
+            ? decimal.Clamp(fallback, minFrame, maxFrame)
+            : reduced;
     }
 
     private void ClampProbeValueToRange()
