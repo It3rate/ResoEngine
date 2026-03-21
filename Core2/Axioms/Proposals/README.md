@@ -24,6 +24,8 @@ These are the active conceptual proposals that still read as live design work ra
 
 ## Related planning notes
 
+- [../Plans/ResolutionPrimitiveImplementationChecklist.md](../Plans/ResolutionPrimitiveImplementationChecklist.md)
+  Primitive-only implementation checklist for support/resolution laws and language-leaning defaults.
 - [../Plans/SymbolicGrammarFollowups.md](../Plans/SymbolicGrammarFollowups.md)
   Deferred questions and non-blocking design follow-ups for the first symbolic grammar pass.
 
