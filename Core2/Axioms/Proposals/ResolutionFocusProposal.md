@@ -234,6 +234,31 @@ These should not be forced into one law.
 
 This distinction matters because language often leaves it implicit whether speakers mean "combine in one frame" or "pool separate evidence."
 
+### RF12a. Exact alignment support and committed result support differ
+
+The support used to align values exactly for one operation is not automatically the support that should be committed as the result's lasting reading.
+
+So there are three distinct layers:
+
+- re-expression support
+  A finer exact restatement of one value, such as `4/5 -> 8/10`
+
+- exact alignment support
+  A temporary exact frame used to combine values without loss
+
+- committed result support
+  The support later chosen for display, continuation, or interpretation
+
+Committed result support should be chosen by policy rather than silently inherited from exact alignment.
+Useful policies include:
+
+- preserve coarser support
+- preserve finer support
+- preserve host support
+- preserve exact alignment support
+- negotiate support from uncertainty or confidence
+- defer one committed support and preserve the exact structure instead
+
 ### RF13. Pure transforms usually preserve support
 
 Transforms such as opposition, negation, mirror, and perspective or basis change should usually preserve support unless the transform explicitly introduces new support.

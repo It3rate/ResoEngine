@@ -60,6 +60,7 @@ In scope:
 - primitive operation defaults
 - explicit separation of support from uncertainty
 - explicit separation of common-frame addition from pooled aggregation
+- explicit separation of exact alignment support from committed result support
 - support-aware fold and unfold defaults
 - symbolic adoption of the primitive laws
 
@@ -81,6 +82,7 @@ Out of scope:
 - do not normalize support away just to imitate folded scalar arithmetic
 - do not add operation-specific exceptions when a primitive support law will do
 - bias ties toward the interpretation that seems more reusable for later language encoding
+- do not silently treat temporary exact alignment support as the final committed support
 
 ## Minimal Passes
 
@@ -135,6 +137,10 @@ Checklist:
   - `5/10 * 1/2 -> 5/20`
   - `axis * i` preserving semantic support instead of going through generic support composition
 
+- record that exact alignment support is a temporary scaffold, not automatically the final support
+  Example:
+  - `2/4 + 50/100` may align exactly on support `100`, but a later committed result support may be chosen by a different policy
+
 - explicitly mark unresolved questions instead of smearing them into the first implementation
   Keep open, but named:
   - fold-first versus structure-preserving multiplication
@@ -176,6 +182,10 @@ Checklist:
   - compose support
   - refine support
   - common-frame re-expression
+
+- formalize committed result support as a later policy choice, not as part of exact alignment itself
+  Minimum expectation:
+  - the code should be able to distinguish "temporary exact support used to combine values" from "support later chosen for display or continuation"
 
 - keep unfold branchful unless a support policy is supplied
   Do not force one canonical denominator too early.

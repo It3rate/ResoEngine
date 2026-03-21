@@ -14,6 +14,21 @@ public class ResolutionPrimitiveLawTests
     }
 
     [Fact]
+    public void ResultSupportPolicy_VocabularyRemainsExplicitAndSeparate()
+    {
+        Assert.Equal(
+            [
+                "PreserveCoarser",
+                "PreserveFiner",
+                "PreserveHost",
+                "PreserveExactAlignment",
+                "NegotiateFromUncertainty",
+                "PreserveExactStructure",
+            ],
+            Enum.GetNames<ResultSupportPolicy>());
+    }
+
+    [Fact]
     public void HostedScale_DefaultsToInherit()
     {
         var law = PrimitiveResolutionDefaults.ClassifyHostedScale(
