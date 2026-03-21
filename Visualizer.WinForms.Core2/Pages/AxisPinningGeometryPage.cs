@@ -1,4 +1,5 @@
 using Core2.Elements;
+using Core2.Symbolics.Expressions;
 using ResoEngine.Visualizer.Controls;
 using ResoEngine.Visualizer.Core;
 using ResoEngine.Visualizer.Input;
@@ -25,6 +26,7 @@ public sealed class AxisPinningGeometryPage : IVisualizerPage
     private SceneLayout? _sceneLayout;
     private DragTargetKind _dragTarget;
     private SKRect _resetButtonRect;
+    private TextBox? _symbolicViewer;
 
     private int _recessiveUnitTicks = 5;
     private int _recessiveCoefficient = 3;
@@ -173,7 +175,6 @@ public sealed class AxisPinningGeometryPage : IVisualizerPage
         TextAlign = SKTextAlign.Center,
         IsAntialias = true,
     };
-
     private static readonly SKColor RecessiveUnitStroke = new(176, 176, 176);
     private static readonly SKColor RecessiveUnitFill = new(173, 233, 255, 84);
     private static readonly SKColor RecessiveUnitSegmentColor = SKColor.Parse("#3797DC");
@@ -189,6 +190,7 @@ public sealed class AxisPinningGeometryPage : IVisualizerPage
     {
         _coords = coords;
         _canvasHost = canvas;
+        EnsureSymbolicViewer();
     }
 
     public void Render(SKCanvas canvas)
@@ -210,18 +212,17 @@ public sealed class AxisPinningGeometryPage : IVisualizerPage
             _bodyPaint);
 
         var cardRect = new SKRect(24f, 104f, width - 18f, height - 24f);
-        var infoRect = new SKRect(cardRect.Left + 20f, cardRect.Top + 18f, cardRect.Left + 720f, cardRect.Top + 66f);
         _resetButtonRect = new SKRect(cardRect.Right - 128f, cardRect.Top + 16f, cardRect.Right - 22f, cardRect.Top + 52f);
-        var plotRect = new SKRect(cardRect.Left + 22f, infoRect.Bottom + 12f, cardRect.Right - 22f, cardRect.Bottom - 24f);
+        var plotRect = new SKRect(cardRect.Left + 22f, cardRect.Top + 18f, cardRect.Right - 22f, cardRect.Bottom - 24f);
 
         canvas.DrawRoundRect(cardRect, 22f, 22f, _cardFillPaint);
         canvas.DrawRoundRect(cardRect, 22f, 22f, _cardStrokePaint);
 
         _sceneLayout = BuildSceneLayout(plotRect);
 
-        DrawConversionBox(canvas, infoRect);
         DrawResetButton(canvas, _resetButtonRect);
         DrawPlot(canvas, _sceneLayout);
+        DrawSymbolicSummary(canvas, plotRect);
     }
 
     public bool OnPointerDown(SKPoint pixelPoint)
@@ -279,6 +280,13 @@ public sealed class AxisPinningGeometryPage : IVisualizerPage
         _handles.Clear();
         _sceneLayout = null;
         _dragTarget = DragTargetKind.None;
+        if (_symbolicViewer is not null && _canvasHost is not null)
+        {
+            _canvasHost.Controls.Remove(_symbolicViewer);
+            _symbolicViewer.Dispose();
+            _symbolicViewer = null;
+        }
+
         _coords = null;
         _canvasHost = null;
     }
@@ -309,16 +317,6 @@ public sealed class AxisPinningGeometryPage : IVisualizerPage
         _buttonTextPaint.Dispose();
     }
 
-    private void DrawConversionBox(SKCanvas canvas, SKRect rect)
-    {
-        canvas.DrawRoundRect(rect, 18f, 18f, _infoFillPaint);
-        canvas.DrawRoundRect(rect, 18f, 18f, _infoStrokePaint);
-
-        string formula = $"({ValueNumerator(_recessiveUnitTicks, _recessiveCoefficient)}/{_recessiveUnitTicks}i)+({ValueNumerator(_dominantUnitTicks, _dominantCoefficient)}/{_dominantUnitTicks}u):({FormatImaginaryTerm(_recessiveCoefficient)}{FormatRealTerm(_dominantCoefficient)})";
-
-        canvas.DrawText(formula, rect.Left + 18f, rect.Top + 33f, _infoTextPaint);
-    }
-
     private void DrawPlot(SKCanvas canvas, SceneLayout scene)
     {
         DrawRuler(canvas, scene);
@@ -329,6 +327,11 @@ public sealed class AxisPinningGeometryPage : IVisualizerPage
         DrawUnitSegment(canvas, scene, PinSideRole.Dominant, _dominantUnitTicks);
         DrawValueSegment(canvas, scene, PinSideRole.Recessive, _recessiveUnitTicks, _recessiveCoefficient);
         DrawValueSegment(canvas, scene, PinSideRole.Dominant, _dominantUnitTicks, _dominantCoefficient);
+    }
+
+    private void DrawSymbolicSummary(SKCanvas canvas, SKRect rect)
+    {
+        LayoutSymbolicViewer(new SKRect(rect.Left + 14f, rect.Top + 28f, rect.Left + 660f, rect.Top + 250f));
     }
 
     private void DrawRuler(SKCanvas canvas, SceneLayout scene)
@@ -685,6 +688,102 @@ public sealed class AxisPinningGeometryPage : IVisualizerPage
         canvas.DrawText("Reset", rect.MidX, rect.MidY + 4f, _buttonTextPaint);
     }
 
+    private IReadOnlyList<SymbolicProbe> BuildSymbolicProbes()
+    {
+        var axis = CurrentAxis();
+        var literal = new ElementLiteralTerm(axis);
+
+        return
+        [
+            new("axis", literal),
+            new("fold(axis)", new FoldTerm(literal)),
+            new("axis * i", new ApplyTransformTerm(literal, new TransformLiteralTerm(Axis.I))),
+            new("axis * axis", new MultiplyValuesTerm(literal, literal)),
+            new("pow(axis, 2/1)", new PowerTerm(literal, new Proportion(2, 1))),
+        ];
+    }
+
+    private string BuildSymbolicTrace() =>
+        string.Join(
+            Environment.NewLine,
+            BuildSymbolicLines());
+
+    private IReadOnlyList<string> BuildSymbolicLines()
+    {
+        List<string> lines =
+        [
+            $"expression => {BuildAxisFormula()}",
+        ];
+
+        lines.AddRange(BuildSymbolicProbes().Select(probe => $"{probe.Label} => {EvaluateSymbolicProbe(probe.Term)}"));
+        return lines;
+    }
+
+    private string BuildAxisFormula() =>
+        $"({ValueNumerator(_recessiveUnitTicks, _recessiveCoefficient)}/{_recessiveUnitTicks}i)+({ValueNumerator(_dominantUnitTicks, _dominantCoefficient)}/{_dominantUnitTicks}u):({FormatImaginaryTerm(_recessiveCoefficient)}{FormatRealTerm(_dominantCoefficient)})";
+
+    private Axis CurrentAxis() =>
+        new(
+            ValueNumerator(_recessiveUnitTicks, _recessiveCoefficient),
+            _recessiveUnitTicks,
+            ValueNumerator(_dominantUnitTicks, _dominantCoefficient),
+            _dominantUnitTicks);
+
+    private static string EvaluateSymbolicProbe(SymbolicTerm term)
+    {
+        try
+        {
+            var reduced = SymbolicReducer.Reduce(term);
+            return reduced.Output is null ? "(none)" : SymbolicTermFormatter.Format(reduced.Output);
+        }
+        catch (Exception ex)
+        {
+            return $"error ({ex.Message})";
+        }
+    }
+
+    private void EnsureSymbolicViewer()
+    {
+        if (_canvasHost is null || _symbolicViewer is not null)
+        {
+            return;
+        }
+
+        _symbolicViewer = new TextBox
+        {
+            Multiline = true,
+            ReadOnly = true,
+            BorderStyle = BorderStyle.None,
+            BackColor = Color.FromArgb(252, 252, 252),
+            ForeColor = Color.FromArgb(64, 64, 64),
+            Font = new Font("Consolas", 11f, FontStyle.Regular),
+            ScrollBars = ScrollBars.None,
+            WordWrap = true,
+            ShortcutsEnabled = true,
+            TabStop = true,
+        };
+
+        _canvasHost.Controls.Add(_symbolicViewer);
+        _symbolicViewer.BringToFront();
+    }
+
+    private void LayoutSymbolicViewer(SKRect rect)
+    {
+        EnsureSymbolicViewer();
+        if (_symbolicViewer is null)
+        {
+            return;
+        }
+
+        _symbolicViewer.SetBounds(
+            (int)MathF.Round(rect.Left),
+            (int)MathF.Round(rect.Top),
+            Math.Max(80, (int)MathF.Round(rect.Width)),
+            Math.Max(48, (int)MathF.Round(rect.Height)));
+        _symbolicViewer.Text = BuildSymbolicTrace();
+        _symbolicViewer.BringToFront();
+    }
+
     private void UpdateDrag(SKPoint pixelPoint)
     {
         if (_sceneLayout is null)
@@ -808,6 +907,8 @@ public sealed class AxisPinningGeometryPage : IVisualizerPage
     private sealed record HandleLayout(DragTargetKind Target, SKPoint Center);
 
     private readonly record struct ValueSegment(SKPoint PrimaryTip, IReadOnlyList<SKPoint> UnresolvedTips, bool IsUnresolved);
+
+    private sealed record SymbolicProbe(string Label, SymbolicTerm Term);
 
     private enum DragTargetKind
     {

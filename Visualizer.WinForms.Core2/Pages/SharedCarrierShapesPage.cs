@@ -1,6 +1,7 @@
 using Core2.Elements;
 using Core2.Interpretation.Analysis;
 using Core2.Interpretation.Placement;
+using Core2.Symbolics.Expressions;
 using ResoEngine.Visualizer.Controls;
 using ResoEngine.Visualizer.Core;
 using ResoEngine.Visualizer.Input;
@@ -649,6 +650,7 @@ public sealed class SharedCarrierShapesPage : IVisualizerPage
         _copyLayouts.Add(new CopyLayout(copyRect, axisText));
         y = valueY + 26f;
 
+        y = DrawSymbolicSummary(canvas, rect, preset, selectedSite, selectedProfile, y);
         y += 8f;
         canvas.DrawText("Carriers", rect.Left + 20f, y + 12f, _labelPaint);
         y += 38f;
@@ -704,6 +706,111 @@ public sealed class SharedCarrierShapesPage : IVisualizerPage
             y += 14f;
         }
     }
+
+    private float DrawSymbolicSummary(
+        SKCanvas canvas,
+        SKRect rect,
+        ShapePreset preset,
+        CarrierPinSite selectedSite,
+        CarrierSiteStructuralProfile selectedProfile,
+        float y)
+    {
+        var probes = BuildSymbolicProbes(selectedSite, selectedProfile);
+        if (probes.Count == 0)
+        {
+            return y;
+        }
+
+        var context = new CarrierGraphSymbolicStructuralContext(preset.Analysis);
+        y += 8f;
+        canvas.DrawText("Symbolic", rect.Left + 20f, y + 12f, _labelPaint);
+        y += 36f;
+
+        foreach (var probe in probes)
+        {
+            string result = EvaluateSymbolicProbe(probe.Term, context);
+            PageChrome.DrawWrappedText(
+                canvas,
+                $"{SymbolicTermFormatter.Format(probe.Term)} => {result}",
+                rect.Left + 28f,
+                ref y,
+                rect.Width - 56f,
+                _captionPaint);
+        }
+
+        return y + 4f;
+    }
+
+    private IReadOnlyList<SymbolicProbe> BuildSymbolicProbes(
+        CarrierPinSite selectedSite,
+        CarrierSiteStructuralProfile selectedProfile)
+    {
+        List<SymbolicProbe> probes =
+        [
+            new("carrier-count", new CountTerm(SymbolicCountKind.Carriers)),
+            new("site-count", new CountTerm(SymbolicCountKind.Sites)),
+        ];
+
+        if (!string.IsNullOrWhiteSpace(selectedSite.Name))
+        {
+            var site = new SiteReferenceTerm(selectedSite.Name!);
+            probes.Add(new SymbolicProbe("junction", new JunctionTerm(site, MapJunctionKind(selectedProfile.Summary))));
+            probes.Add(new SymbolicProbe("through-count", new CountTerm(site, SymbolicCountKind.ThroughCarriers)));
+            probes.Add(new SymbolicProbe("dominant-position", new AnchorPositionTerm(new AnchorReferenceTerm(selectedSite.Name!, "u"))));
+        }
+
+        string hostName = selectedSite.HostCarrier.Name ?? selectedSite.HostCarrier.Id.ToString();
+        probes.Add(new SymbolicProbe("hosted-sites", new CarrierCountTerm(new CarrierReferenceTerm(hostName), SymbolicCarrierCountKind.HostedSites)));
+
+        var dominantAttachment = selectedSite.GetAttachment(PinSideRole.Dominant);
+        if (dominantAttachment is not null)
+        {
+            string carrierName = dominantAttachment.Carrier.Name ?? dominantAttachment.Carrier.Id.ToString();
+            var carrier = new CarrierReferenceTerm(carrierName);
+            probes.Add(new SymbolicProbe("shared-carrier", new CarrierFlagTerm(carrier, SymbolicCarrierFlagKind.Shared)));
+            probes.Add(new SymbolicProbe("span", new CarrierSpanTerm(carrier)));
+        }
+
+        return probes;
+    }
+
+    private static string EvaluateSymbolicProbe(
+        SymbolicTerm term,
+        CarrierGraphSymbolicStructuralContext context)
+    {
+        if (term is RelationTerm relation)
+        {
+            var evaluation = SymbolicConstraintEvaluator.Evaluate(
+                new RequirementTerm(relation, "probe"),
+                environment: null,
+                structuralContext: context);
+            var item = evaluation.Items[0];
+            return item.Truth switch
+            {
+                ConstraintTruthKind.Satisfied => "satisfied",
+                ConstraintTruthKind.Unsatisfied => string.IsNullOrWhiteSpace(item.Note)
+                    ? "unsatisfied"
+                    : $"unsatisfied ({item.Note})",
+                ConstraintTruthKind.Unresolved => string.IsNullOrWhiteSpace(item.Note)
+                    ? "unresolved"
+                    : $"unresolved ({item.Note})",
+                _ => item.Truth.ToString(),
+            };
+        }
+
+        var reduced = SymbolicReducer.Reduce(term, structuralContext: context);
+        return reduced.Output is null ? "(none)" : SymbolicTermFormatter.Format(reduced.Output);
+    }
+
+    private static SymbolicJunctionKind MapJunctionKind(CarrierJunctionSummary summary) => summary switch
+    {
+        CarrierJunctionSummary.Open => SymbolicJunctionKind.Open,
+        CarrierJunctionSummary.Cusp => SymbolicJunctionKind.Cusp,
+        CarrierJunctionSummary.Branch => SymbolicJunctionKind.Branch,
+        CarrierJunctionSummary.Tee => SymbolicJunctionKind.Tee,
+        CarrierJunctionSummary.Cross => SymbolicJunctionKind.Cross,
+        _ => SymbolicJunctionKind.Open,
+    };
 
     private void DrawPresetButtons(SKCanvas canvas, float left, ref float y)
     {
@@ -4155,6 +4262,7 @@ public sealed class SharedCarrierShapesPage : IVisualizerPage
         string Label,
         IReadOnlyList<SKPoint> Samples,
         IReadOnlyList<SKPoint> HostSamples);
+    private sealed record SymbolicProbe(string Key, SymbolicTerm Term);
     private sealed record PendingLink(string SiteName, PinSideRole Role);
     private sealed record SideLinkReference(string SiteName, PinSideRole Role);
 
