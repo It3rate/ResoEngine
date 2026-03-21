@@ -133,6 +133,25 @@ Example:
 - `sqrt(4)` yields at least `{2, -2}`
 - `the chicken is ready to eat` yields at least `{chicken eats, chicken is eaten}`
 
+### RF7a. Units and referents should bias defaults, not replace the primitive laws
+
+Units and referents should contribute small default hints rather than a second law system.
+The most useful hints appear to be:
+
+- count vs mass
+- discrete vs continuous
+- extensive vs intensive
+- intrinsic vs frame-relative
+- bounded vs open scale
+
+Default choice should still happen in this order:
+
+1. operation
+2. host or focus
+3. unit or referent hint
+
+So units help break ties, reject bad defaults, and preserve language-friendly readings without taking over from the primitive support laws themselves.
+
 ## Part II. Primitive Resolution Laws
 
 This section proposes the minimum law set needed to explain most observed resolution behavior.
