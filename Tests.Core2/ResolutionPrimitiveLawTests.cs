@@ -103,4 +103,16 @@ public class ResolutionPrimitiveLawTests
 
         Assert.Equal(PrimitiveSupportLaw.Compose, law);
     }
+
+    [Fact]
+    public void HostedScaleCommitment_DistinguishesRequestedAndActualSupport()
+    {
+        var commitment = PrimitiveResultSupportRuntime.ScaleHostedValue(
+            new Proportion(5, 10),
+            new Proportion(3, 4));
+
+        Assert.Equal(10, commitment.RequestedSupport);
+        Assert.Equal(40, commitment.ActualSupport);
+        Assert.False(commitment.UsesRequestedSupportExactly);
+    }
 }

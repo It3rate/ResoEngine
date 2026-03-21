@@ -390,6 +390,30 @@ public class SymbolicGrammarTermTests
     }
 
     [Fact]
+    public void Reducer_ApplyTransformUsesHostedScaleCommitmentForProportions()
+    {
+        var reduced = SymbolicReducer.Reduce(
+            new ApplyTransformTerm(
+                new ElementLiteralTerm(new Proportion(5, 10)),
+                new TransformLiteralTerm(new Proportion(2, 1))));
+
+        var output = Assert.IsType<ElementLiteralTerm>(reduced.Output);
+        Assert.Equal(new Proportion(10, 10), Assert.IsType<Proportion>(output.Value));
+    }
+
+    [Fact]
+    public void Reducer_ApplyTransformCanRaiseSupportToPreserveExactHostedScale()
+    {
+        var reduced = SymbolicReducer.Reduce(
+            new ApplyTransformTerm(
+                new ElementLiteralTerm(new Proportion(5, 10)),
+                new TransformLiteralTerm(new Proportion(3, 4))));
+
+        var output = Assert.IsType<ElementLiteralTerm>(reduced.Output);
+        Assert.Equal(new Proportion(15, 40), Assert.IsType<Proportion>(output.Value));
+    }
+
+    [Fact]
     public void Reducer_DivideByOppositionPreservesAxisSupport()
     {
         var axis = new Axis(new Proportion(15, 5), new Proportion(10, 5));

@@ -383,6 +383,14 @@ public static class SymbolicReducer
             return true;
         }
 
+        if (state is Proportion hostedValue &&
+            transform is Proportion hostedScale &&
+            PrimitiveResolutionDefaults.ClassifyHostedScale(hostedValue, hostedScale) == PrimitiveSupportLaw.Inherit)
+        {
+            result = PrimitiveResultSupportRuntime.ScaleHostedValue(hostedValue, hostedScale).CommittedValue;
+            return true;
+        }
+
         switch (state)
         {
             case Scalar scalarState when transform is Scalar scalarTransform:
