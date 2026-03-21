@@ -1,4 +1,5 @@
 using Core2.Boolean;
+using Core2.Algebra;
 using Core2.Branching;
 using Core2.Elements;
 
@@ -102,6 +103,8 @@ public static class SymbolicReducer
         term switch
         {
             ApplyTransformTerm apply => ReduceApplyTransform(apply, environment),
+            MultiplyValuesTerm multiply => ReduceMultiply(multiply, environment),
+            DivideValuesTerm divide => ReduceDivide(divide, environment),
             PinTerm pin => new PinTerm(
                 (ValueTerm)ElaborateAndReduce(pin.Host, environment),
                 (ValueTerm)ElaborateAndReduce(pin.Applied, environment),
@@ -149,6 +152,36 @@ public static class SymbolicReducer
         }
 
         return new ApplyTransformTerm(state, transform);
+    }
+
+    private static SymbolicTerm ReduceMultiply(MultiplyValuesTerm multiply, SymbolicEnvironment environment)
+    {
+        var left = (ValueTerm)ElaborateAndReduce(multiply.Left, environment);
+        var right = (ValueTerm)ElaborateAndReduce(multiply.Right, environment);
+
+        if (left is ElementLiteralTerm leftLiteral &&
+            right is ElementLiteralTerm rightLiteral &&
+            TryMultiplyValues(leftLiteral.Value, rightLiteral.Value, out var product))
+        {
+            return new ElementLiteralTerm(product);
+        }
+
+        return new MultiplyValuesTerm(left, right);
+    }
+
+    private static SymbolicTerm ReduceDivide(DivideValuesTerm divide, SymbolicEnvironment environment)
+    {
+        var left = (ValueTerm)ElaborateAndReduce(divide.Left, environment);
+        var right = (ValueTerm)ElaborateAndReduce(divide.Right, environment);
+
+        if (left is ElementLiteralTerm leftLiteral &&
+            right is ElementLiteralTerm rightLiteral &&
+            TryDivideValues(leftLiteral.Value, rightLiteral.Value, out var quotient))
+        {
+            return new ElementLiteralTerm(quotient);
+        }
+
+        return new DivideValuesTerm(left, right);
     }
 
     private static SymbolicTerm ReduceBoolean(AxisBooleanTerm boolean, SymbolicEnvironment environment)
@@ -204,6 +237,53 @@ public static class SymbolicReducer
             case Area areaState when transform is Area areaTransform:
                 result = areaState * areaTransform;
                 return true;
+
+            default:
+                result = null!;
+                return false;
+        }
+    }
+
+    private static bool TryMultiplyValues(IElement left, IElement right, out IElement result)
+    {
+        switch (left)
+        {
+            case Scalar leftScalar when right is Scalar rightScalar:
+                result = leftScalar * rightScalar;
+                return true;
+
+            case Proportion leftProportion when right is Proportion rightProportion:
+                result = leftProportion * rightProportion;
+                return true;
+
+            case Axis leftAxis when right is Axis rightAxis:
+                result = leftAxis * rightAxis;
+                return true;
+
+            case Area leftArea when right is Area rightArea:
+                result = leftArea * rightArea;
+                return true;
+
+            default:
+                result = null!;
+                return false;
+        }
+    }
+
+    private static bool TryDivideValues(IElement left, IElement right, out IElement result)
+    {
+        switch (left)
+        {
+            case Scalar leftScalar when right is Scalar rightScalar:
+                result = leftScalar / rightScalar;
+                return true;
+
+            case Proportion leftProportion when right is Proportion rightProportion:
+                result = leftProportion / rightProportion;
+                return true;
+
+            case Axis leftAxis when right is Axis rightAxis:
+                return TryDivideAxis(leftAxis, rightAxis, out result);
 
             default:
                 result = null!;
@@ -293,5 +373,51 @@ public static class SymbolicReducer
 
         axis = null;
         return false;
+    }
+
+    private static bool TryDivideAxis(Axis dividend, Axis divisor, out IElement result)
+    {
+        if (dividend.Basis != divisor.Basis)
+        {
+            result = null!;
+            return false;
+        }
+
+        switch (dividend.Basis)
+        {
+            case AxisBasis.Complex:
+            {
+                Proportion determinant = (divisor.Dominant * divisor.Dominant) + (divisor.Recessive * divisor.Recessive);
+                if (determinant.IsZero)
+                {
+                    result = null!;
+                    return false;
+                }
+
+                Proportion recessive = ((divisor.Dominant * dividend.Recessive) - (divisor.Recessive * dividend.Dominant)) / determinant;
+                Proportion dominant = ((divisor.Recessive * dividend.Recessive) + (divisor.Dominant * dividend.Dominant)) / determinant;
+                result = new Axis(recessive, dominant, dividend.Basis);
+                return true;
+            }
+
+            case AxisBasis.SplitComplex:
+            {
+                Proportion determinant = (divisor.Dominant * divisor.Dominant) - (divisor.Recessive * divisor.Recessive);
+                if (determinant.IsZero)
+                {
+                    result = null!;
+                    return false;
+                }
+
+                Proportion recessive = ((divisor.Dominant * dividend.Recessive) - (divisor.Recessive * dividend.Dominant)) / determinant;
+                Proportion dominant = ((-divisor.Recessive * dividend.Recessive) + (divisor.Dominant * dividend.Dominant)) / determinant;
+                result = new Axis(recessive, dominant, dividend.Basis);
+                return true;
+            }
+
+            default:
+                result = null!;
+                return false;
+        }
     }
 }

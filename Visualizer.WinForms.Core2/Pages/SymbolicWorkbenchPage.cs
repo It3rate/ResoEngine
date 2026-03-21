@@ -16,6 +16,8 @@ public sealed class SymbolicWorkbenchPage : IVisualizerPage
         ["Transform"] = "1 * i",
         ["Fold"] = "fold([3/1]i + [12/-1])",
         ["Boolean"] = "xor([0/1]i + [10/1], [-3/1]i + [5/1])",
+        ["Multiply"] = "(3i+2) * (4i+5)",
+        ["Divide"] = "(3i+2) / (4i+5)",
         ["Constraint"] = "constraints{require(glyph, share(P4.u, P3.u)) | prefer(box, branch{1 | i} == i, 2/1)}",
         ["Commit"] = "let options = branch{1 | i}; commit choice = constraints{prefer(glyph, options == i, 2/1)}; choice",
     };
@@ -253,7 +255,7 @@ public sealed class SymbolicWorkbenchPage : IVisualizerPage
         {
             Text = name,
             AutoSize = false,
-            Width = 78,
+            Width = 90,
             Height = 28,
             Margin = new Padding(0, 0, 8, 8),
             FlatStyle = FlatStyle.Flat,

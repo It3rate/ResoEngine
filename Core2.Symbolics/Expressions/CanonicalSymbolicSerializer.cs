@@ -22,6 +22,8 @@ public static class CanonicalSymbolicSerializer
             AnchorReferenceTerm anchor => $"anchor(owner={Escape(anchor.OwnerName)},name={Escape(anchor.AnchorName)})",
             IncidentReferenceTerm incident => $"incident({incident.Kind})",
             ApplyTransformTerm apply => $"apply(state={Serialize(apply.State)},transform={Serialize(apply.Transform)})",
+            MultiplyValuesTerm multiply => $"multiply(left={Serialize(multiply.Left)},right={Serialize(multiply.Right)})",
+            DivideValuesTerm divide => $"divide(left={Serialize(divide.Left)},right={Serialize(divide.Right)})",
             PinTerm pin => SerializePin(pin),
             PinToPinTerm pinToPin => $"pin-to-pin(host={Serialize(pinToPin.HostAnchor)},applied={Serialize(pinToPin.AppliedAnchor)})",
             AxisBooleanTerm boolean => SerializeBoolean(boolean),

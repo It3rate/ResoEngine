@@ -288,28 +288,45 @@ public static class SymbolicParser
         private SymbolicTerm ParseValueLike()
         {
             var left = ParseAtomicValueLike();
-            if (!Match(TokenKind.Asterisk))
+            while (true)
             {
-                return left;
-            }
-
-            var right = ParseAtomicValueLike();
-            if (Match(TokenKind.At))
-            {
-                var position = ParseProportionLiteral();
-                if (right is AnchorReferenceTerm anchor)
+                if (Match(TokenKind.Asterisk))
                 {
-                    return new PinTerm(
-                        ToValueTerm(left),
-                        new ValueReferenceTerm(anchor.OwnerName),
-                        position,
-                        anchor);
+                    var right = ParseAtomicValueLike();
+                    if (Match(TokenKind.At))
+                    {
+                        var position = ParseProportionLiteral();
+                        if (right is AnchorReferenceTerm anchor)
+                        {
+                            left = new PinTerm(
+                                ToValueTerm(left),
+                                new ValueReferenceTerm(anchor.OwnerName),
+                                position,
+                                anchor);
+                        }
+                        else
+                        {
+                            left = new PinTerm(ToValueTerm(left), ToValueTerm(right), position);
+                        }
+
+                        continue;
+                    }
+
+                    left = ShouldTreatAsTransformApplication(right)
+                        ? new ApplyTransformTerm(ToValueTerm(left), ToTransformTerm(right))
+                        : new MultiplyValuesTerm(ToValueTerm(left), ToValueTerm(right));
+                    continue;
                 }
 
-                return new PinTerm(ToValueTerm(left), ToValueTerm(right), position);
-            }
+                if (Match(TokenKind.Slash))
+                {
+                    var right = ParseAtomicValueLike();
+                    left = new DivideValuesTerm(ToValueTerm(left), ToValueTerm(right));
+                    continue;
+                }
 
-            return new ApplyTransformTerm(ToValueTerm(left), ToTransformTerm(right));
+                return left;
+            }
         }
 
         private SymbolicTerm ParseAtomicValueLike()
@@ -334,6 +351,11 @@ public static class SymbolicParser
             if (Current.Kind == TokenKind.LeftBracket)
             {
                 return new ElementLiteralTerm(ParseAxisLiteral());
+            }
+
+            if (TryParseAxisShorthandLiteral(out var shorthandAxis))
+            {
+                return new ElementLiteralTerm(shorthandAxis);
             }
 
             if (TryParseSpecialAxisConstant(out var special))
@@ -517,6 +539,63 @@ public static class SymbolicParser
             return new ValueReferenceTerm(name);
         }
 
+        private bool TryParseAxisShorthandLiteral(out Axis axis)
+        {
+            int start = _index;
+            axis = Axis.Zero;
+
+            if (!TryParseCoordinateProportion(out var recessive))
+            {
+                return false;
+            }
+
+            if (!PeekIdentifier("i"))
+            {
+                _index = start;
+                return false;
+            }
+
+            Advance();
+            Match(TokenKind.Plus);
+
+            if (!TryParseCoordinateProportion(out var dominant))
+            {
+                _index = start;
+                return false;
+            }
+
+            axis = new Axis(recessive, dominant);
+            return true;
+        }
+
+        private bool TryParseCoordinateProportion(out Proportion proportion)
+        {
+            int start = _index;
+            if (TryParseProportionLiteral(out proportion))
+            {
+                return true;
+            }
+
+            if (TryParseScalarLiteral(out var scalar))
+            {
+                try
+                {
+                    proportion = scalar.AsProportion();
+                    return true;
+                }
+                catch (InvalidOperationException)
+                {
+                }
+                catch (OverflowException)
+                {
+                }
+            }
+
+            _index = start;
+            proportion = null!;
+            return false;
+        }
+
         private SiteReferenceTerm ParseSiteReference()
         {
             string name = ExpectIdentifier();
@@ -588,6 +667,22 @@ public static class SymbolicParser
             ElementLiteralTerm literal => new TransformLiteralTerm(literal.Value),
             ReferenceTerm reference => new TransformReferenceTerm(reference.Name),
             _ => throw Error($"Expected a transform term, but found {term.GetType().Name}."),
+        };
+
+        private static bool ShouldTreatAsTransformApplication(SymbolicTerm term) => term switch
+        {
+            TransformTerm => true,
+            ValueReferenceTerm => true,
+            ElementLiteralTerm literal => IsTransformShorthandLiteral(literal.Value),
+            _ => false,
+        };
+
+        private static bool IsTransformShorthandLiteral(IElement element) => element switch
+        {
+            Scalar => true,
+            Proportion => true,
+            Axis axis when axis == Axis.One || axis == Axis.I || axis == Axis.NegativeOne || axis == Axis.NegativeI => true,
+            _ => false,
         };
 
         private bool PeekIdentifier(string text) =>
@@ -742,9 +837,28 @@ public static class SymbolicParser
                 if (ch == '-' && index + 1 < text.Length && char.IsLetter(text[index + 1]))
                 {
                     int start = index++;
-                    while (index < text.Length && IsIdentifierChar(text[index]))
+                    while (index < text.Length)
                     {
-                        index++;
+                        char current = text[index];
+                        if (char.IsLetterOrDigit(current) || current is '_' or '.')
+                        {
+                            index++;
+                            continue;
+                        }
+
+                        if (current == '-' &&
+                            ((index + 1 == text.Length &&
+                              string.Equals(text[start..index], "host", StringComparison.Ordinal)) ||
+                             char.IsLetter(text[index + 1]) ||
+                             text[index + 1] == '_' ||
+                             (string.Equals(text[start..index], "host", StringComparison.Ordinal) &&
+                              !char.IsLetterOrDigit(text[index + 1]))))
+                        {
+                            index++;
+                            continue;
+                        }
+
+                        break;
                     }
 
                     tokens.Add(new Token(TokenKind.Identifier, text[start..index]));
@@ -778,9 +892,36 @@ public static class SymbolicParser
                 if (char.IsLetter(ch) || ch == '_')
                 {
                     int start = index++;
-                    while (index < text.Length && IsIdentifierChar(text[index]))
+                    while (index < text.Length)
                     {
-                        index++;
+                        char current = text[index];
+                        if (char.IsLetterOrDigit(current) || current is '_' or '.')
+                        {
+                            index++;
+                            continue;
+                        }
+
+                        if (current == '-' &&
+                            ((index + 1 == text.Length &&
+                              string.Equals(text[start..index], "host", StringComparison.Ordinal)) ||
+                             char.IsLetter(text[index + 1]) ||
+                             text[index + 1] == '_' ||
+                             (string.Equals(text[start..index], "host", StringComparison.Ordinal) &&
+                              !char.IsLetterOrDigit(text[index + 1]))))
+                        {
+                            index++;
+                            continue;
+                        }
+
+                        if (current == '+' &&
+                            string.Equals(text[start..index], "host", StringComparison.Ordinal) &&
+                            (index + 1 == text.Length || !char.IsLetterOrDigit(text[index + 1])))
+                        {
+                            index++;
+                            continue;
+                        }
+
+                        break;
                     }
 
                     tokens.Add(new Token(TokenKind.Identifier, text[start..index]));
@@ -814,8 +955,6 @@ public static class SymbolicParser
             return tokens;
         }
 
-        private static bool IsIdentifierChar(char ch) =>
-            char.IsLetterOrDigit(ch) || ch is '_' or '.' or '+' or '-';
     }
 
     private readonly record struct Token(TokenKind Kind, string Text);

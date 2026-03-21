@@ -67,6 +67,12 @@ public static class SymbolicElaborator
             ApplyTransformTerm apply => new ApplyTransformTerm(
                 (ValueTerm)ElaborateTerm(apply.State, environment),
                 (TransformTerm)ElaborateTerm(apply.Transform, environment)),
+            MultiplyValuesTerm multiply => new MultiplyValuesTerm(
+                (ValueTerm)ElaborateTerm(multiply.Left, environment),
+                (ValueTerm)ElaborateTerm(multiply.Right, environment)),
+            DivideValuesTerm divide => new DivideValuesTerm(
+                (ValueTerm)ElaborateTerm(divide.Left, environment),
+                (ValueTerm)ElaborateTerm(divide.Right, environment)),
             PinTerm pin => new PinTerm(
                 (ValueTerm)ElaborateTerm(pin.Host, environment),
                 (ValueTerm)ElaborateTerm(pin.Applied, environment),

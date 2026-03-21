@@ -108,6 +108,16 @@ public class SymbolicGrammarTermTests
     }
 
     [Fact]
+    public void MultiplyValuesTerm_FormatsAsNativeInfixProduct()
+    {
+        var term = new MultiplyValuesTerm(
+            new ElementLiteralTerm(new Axis(new Proportion(3, 1), new Proportion(2, 1))),
+            new ElementLiteralTerm(new Axis(new Proportion(4, 1), new Proportion(5, 1))));
+
+        Assert.Equal("[3/1]i + [2/1] * [4/1]i + [5/1]", SymbolicTermFormatter.Format(term));
+    }
+
+    [Fact]
     public void SequenceTerm_PreservesProgramOrderAndFormatsCompactly()
     {
         var sequence = new SequenceTerm(
@@ -214,6 +224,35 @@ public class SymbolicGrammarTermTests
 
         var applied = Assert.IsType<ApplyTransformTerm>(parsed);
         Assert.Equal("1 * i", SymbolicTermFormatter.Format(applied));
+    }
+
+    [Fact]
+    public void Parser_ParsesAxisShorthandLiteral()
+    {
+        var parsed = SymbolicParser.Parse("3i+2");
+
+        var literal = Assert.IsType<ElementLiteralTerm>(parsed);
+        var axis = Assert.IsType<Axis>(literal.Value);
+        Assert.Equal(new Proportion(3, 1), axis.Recessive);
+        Assert.Equal(new Proportion(2, 1), axis.Dominant);
+    }
+
+    [Fact]
+    public void Parser_ParsesAxisMultiplyWithParameters()
+    {
+        var parsed = SymbolicParser.Parse("(3i+2) * (4i+5)");
+
+        var multiply = Assert.IsType<MultiplyValuesTerm>(parsed);
+        Assert.Equal("[3/1]i + [2/1] * [4/1]i + [5/1]", SymbolicTermFormatter.Format(multiply));
+    }
+
+    [Fact]
+    public void Parser_ParsesAxisDivisionWithParameters()
+    {
+        var parsed = SymbolicParser.Parse("(3i+2) / (4i+5)");
+
+        var divide = Assert.IsType<DivideValuesTerm>(parsed);
+        Assert.Equal("[3/1]i + [2/1] / [4/1]i + [5/1]", SymbolicTermFormatter.Format(divide));
     }
 
     [Fact]
@@ -462,6 +501,28 @@ public class SymbolicGrammarTermTests
 
         var literal = Assert.IsType<ElementLiteralTerm>(reduced.Output);
         Assert.Equal(Axis.I, literal.Value);
+    }
+
+    [Fact]
+    public void Reducer_ReducesLiteralAxisMultiplication()
+    {
+        var reduced = SymbolicReducer.Reduce(SymbolicParser.Parse("(3i+2) * (4i+5)"));
+
+        var literal = Assert.IsType<ElementLiteralTerm>(reduced.Output);
+        var axis = Assert.IsType<Axis>(literal.Value);
+        Assert.Equal(new Proportion(23, 1), axis.Recessive);
+        Assert.Equal(new Proportion(-2, 1), axis.Dominant);
+    }
+
+    [Fact]
+    public void Reducer_ReducesLiteralAxisDivision()
+    {
+        var reduced = SymbolicReducer.Reduce(SymbolicParser.Parse("(3i+2) / (4i+5)"));
+
+        var literal = Assert.IsType<ElementLiteralTerm>(reduced.Output);
+        var axis = Assert.IsType<Axis>(literal.Value);
+        Assert.Equal(new Proportion(7, 41), axis.Recessive);
+        Assert.Equal(new Proportion(22, 41), axis.Dominant);
     }
 
     [Fact]
