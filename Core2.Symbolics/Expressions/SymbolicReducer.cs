@@ -107,6 +107,7 @@ public static class SymbolicReducer
             MultiplyValuesTerm multiply => ReduceMultiply(multiply, environment),
             DivideValuesTerm divide => ReduceDivide(divide, environment),
             PowerTerm power => ReducePower(power, environment),
+            InverseContinueTerm inverse => ReduceInverseContinuation(inverse, environment),
             PinTerm pin => new PinTerm(
                 (ValueTerm)ElaborateAndReduce(pin.Host, environment),
                 (ValueTerm)ElaborateAndReduce(pin.Applied, environment),
@@ -196,6 +197,18 @@ public static class SymbolicReducer
         }
 
         return new PowerTerm(@base, power.Exponent);
+    }
+
+    private static SymbolicTerm ReduceInverseContinuation(InverseContinueTerm inverse, SymbolicEnvironment environment)
+    {
+        var source = (ValueTerm)ElaborateAndReduce(inverse.Source, environment);
+        if (source is ElementLiteralTerm literal &&
+            TryReduceInverseContinuation(literal.Value, inverse.Degree, out var reduced))
+        {
+            return reduced;
+        }
+
+        return new InverseContinueTerm(source, inverse.Degree);
     }
 
     private static SymbolicTerm ReduceBoolean(AxisBooleanTerm boolean, SymbolicEnvironment environment)
@@ -349,7 +362,65 @@ public static class SymbolicReducer
         }
     }
 
+    private static bool TryReduceInverseContinuation(IElement value, Proportion degree, out SymbolicTerm reduced)
+    {
+        if (!TryGetIntegerDegree(degree, out int normalizedDegree))
+        {
+            reduced = null!;
+            return false;
+        }
+
+        switch (value)
+        {
+            case Scalar scalar:
+                return TryProjectInverseContinuationResult(
+                    InverseContinuationEngine.InverseContinue(scalar, normalizedDegree),
+                    out reduced);
+
+            case Proportion proportion:
+                return TryProjectInverseContinuationResult(
+                    InverseContinuationEngine.InverseContinue(proportion, normalizedDegree),
+                    out reduced);
+
+            case Axis axis:
+                return TryProjectInverseContinuationResult(
+                    InverseContinuationEngine.InverseContinue(axis, normalizedDegree),
+                    out reduced);
+
+            case Area area:
+                return TryProjectInverseContinuationResult(
+                    InverseContinuationEngine.InverseContinue(area, normalizedDegree),
+                    out reduced);
+
+            default:
+                reduced = null!;
+                return false;
+        }
+    }
+
     private static bool TryProjectPowerResult<T>(PowerResult<T> result, out SymbolicTerm reduced)
+        where T : IElement
+    {
+        if (!result.Succeeded)
+        {
+            reduced = null!;
+            return false;
+        }
+
+        if (result.PrincipalCandidate is not null && result.Candidates.Count == 1)
+        {
+            reduced = new ElementLiteralTerm(result.PrincipalCandidate);
+            return true;
+        }
+
+        reduced = new BranchFamilyTerm(
+            result.Branches.Map<ValueTerm>(candidate => new ElementLiteralTerm(candidate)));
+        return true;
+    }
+
+    private static bool TryProjectInverseContinuationResult<T>(
+        InverseContinuationResult<T> result,
+        out SymbolicTerm reduced)
         where T : IElement
     {
         if (!result.Succeeded)
@@ -475,5 +546,17 @@ public static class SymbolicReducer
                 result = null!;
                 return false;
         }
+    }
+
+    private static bool TryGetIntegerDegree(Proportion degree, out int normalizedDegree)
+    {
+        if (degree.Denominator != 1 || degree.Numerator <= 0 || degree.Numerator > int.MaxValue)
+        {
+            normalizedDegree = 0;
+            return false;
+        }
+
+        normalizedDegree = (int)degree.Numerator;
+        return true;
     }
 }

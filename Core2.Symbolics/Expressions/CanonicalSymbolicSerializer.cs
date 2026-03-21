@@ -25,6 +25,7 @@ public static class CanonicalSymbolicSerializer
             MultiplyValuesTerm multiply => $"multiply(left={Serialize(multiply.Left)},right={Serialize(multiply.Right)})",
             DivideValuesTerm divide => $"divide(left={Serialize(divide.Left)},right={Serialize(divide.Right)})",
             PowerTerm power => $"power(base={Serialize(power.Base)},exponent={SerializeElement(power.Exponent)})",
+            InverseContinueTerm inverse => $"inverse(source={Serialize(inverse.Source)},degree={SerializeElement(inverse.Degree)})",
             PinTerm pin => SerializePin(pin),
             PinToPinTerm pinToPin => $"pin-to-pin(host={Serialize(pinToPin.HostAnchor)},applied={Serialize(pinToPin.AppliedAnchor)})",
             AxisBooleanTerm boolean => SerializeBoolean(boolean),

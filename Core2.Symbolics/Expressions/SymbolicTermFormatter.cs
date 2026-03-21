@@ -24,6 +24,7 @@ public static class SymbolicTermFormatter
             MultiplyValuesTerm multiply => $"{Format(multiply.Left)} * {Format(multiply.Right)}",
             DivideValuesTerm divide => $"{Format(divide.Left)} / {Format(divide.Right)}",
             PowerTerm power => $"pow({Format(power.Base)}, {power.Exponent})",
+            InverseContinueTerm inverse => $"inverse({Format(inverse.Source)}, {inverse.Degree})",
             PinTerm pin => $"{Format(pin.Host)} * {Format(pin.AppliedAnchor ?? pin.Applied)} @ {pin.Position}",
             PinToPinTerm pinToPin => $"pin({Format(pinToPin.HostAnchor)}, {Format(pinToPin.AppliedAnchor)})",
             AxisBooleanTerm boolean => FormatBoolean(boolean),

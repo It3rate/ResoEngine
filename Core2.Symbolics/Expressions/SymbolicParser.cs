@@ -353,6 +353,11 @@ public static class SymbolicParser
                 return ParsePower();
             }
 
+            if (PeekIdentifier("inverse") || PeekIdentifier("unfold"))
+            {
+                return ParseInverseContinuation();
+            }
+
             if (Current.Kind == TokenKind.LeftBracket)
             {
                 return new ElementLiteralTerm(ParseAxisLiteral());
@@ -434,6 +439,17 @@ public static class SymbolicParser
             var exponent = ParseProportionLiteral();
             Expect(TokenKind.RightParen);
             return new PowerTerm(@base, exponent);
+        }
+
+        private InverseContinueTerm ParseInverseContinuation()
+        {
+            Advance();
+            Expect(TokenKind.LeftParen);
+            var source = ToValueTerm(ParseValueLike());
+            Expect(TokenKind.Comma);
+            var degree = ParseProportionLiteral();
+            Expect(TokenKind.RightParen);
+            return new InverseContinueTerm(source, degree);
         }
 
         private Axis ParseAxisLiteral()

@@ -266,6 +266,16 @@ public class SymbolicGrammarTermTests
     }
 
     [Fact]
+    public void Parser_ParsesInverseContinuationTerm()
+    {
+        var parsed = SymbolicParser.Parse("inverse(4, 2/1)");
+
+        var inverse = Assert.IsType<InverseContinueTerm>(parsed);
+        Assert.Equal(new Proportion(2, 1), inverse.Degree);
+        Assert.Equal("inverse(4, 2/1)", SymbolicTermFormatter.Format(inverse));
+    }
+
+    [Fact]
     public void Parser_ParsesPositionedPinning()
     {
         var parsed = SymbolicParser.Parse("A * B @ 1/2");
@@ -553,6 +563,17 @@ public class SymbolicGrammarTermTests
         Assert.Equal(2, family.Family.Values.Count);
         Assert.Contains(family.Family.Values, value => Assert.IsType<ElementLiteralTerm>(value).Value.Equals(Axis.One));
         Assert.Contains(family.Family.Values, value => Assert.IsType<ElementLiteralTerm>(value).Value.Equals(Axis.NegativeOne));
+    }
+
+    [Fact]
+    public void Reducer_PreservesAlternativeCandidatesForInverseContinuation()
+    {
+        var reduced = SymbolicReducer.Reduce(SymbolicParser.Parse("inverse(4, 2/1)"));
+
+        var family = Assert.IsType<BranchFamilyTerm>(reduced.Output);
+        Assert.Equal(2, family.Family.Values.Count);
+        Assert.Contains(family.Family.Values, value => Assert.IsType<ElementLiteralTerm>(value).Value.Equals(new Scalar(2m)));
+        Assert.Contains(family.Family.Values, value => Assert.IsType<ElementLiteralTerm>(value).Value.Equals(new Scalar(-2m)));
     }
 
     [Fact]
@@ -857,5 +878,24 @@ public class SymbolicGrammarTermTests
         Assert.Contains("Steps:", display);
         Assert.Contains("2. commit choice", display);
         Assert.Contains("Environment:", display);
+    }
+
+    [Fact]
+    public void SymbolicInspectionFormatters_GroupScopedEnvironmentBindings()
+    {
+        var report = SymbolicInspector.Inspect("commit glyph.choice = 1 * i; commit P4.u = 1; glyph.choice");
+
+        var display = SymbolicInspectionDisplayFormatter.Format(report);
+        var export = SymbolicInspectionExporter.Export(report);
+
+        Assert.Contains("  glyph:", display);
+        Assert.Contains("    choice = i", display);
+        Assert.Contains("  P4:", display);
+        Assert.Contains("    u = 1", display);
+
+        Assert.Contains("glyph:", export);
+        Assert.Contains("  choice = i", export);
+        Assert.Contains("P4:", export);
+        Assert.Contains("  u = 1", export);
     }
 }

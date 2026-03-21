@@ -53,4 +53,77 @@ public sealed class SymbolicEnvironment
         ArgumentNullException.ThrowIfNull(target);
         return Bind(target.QualifiedName, value);
     }
+
+    public SymbolicEnvironmentScope GetScopeTree()
+    {
+        var root = new MutableScope(string.Empty, string.Empty);
+        foreach (var binding in _bindings.OrderBy(pair => pair.Key, StringComparer.Ordinal))
+        {
+            string[] segments = binding.Key.Split('.', StringSplitOptions.RemoveEmptyEntries);
+            if (segments.Length == 0)
+            {
+                continue;
+            }
+
+            if (segments.Length == 1)
+            {
+                root.DirectBindings.Add(new KeyValuePair<string, SymbolicTerm>(segments[0], binding.Value));
+                continue;
+            }
+
+            var current = root;
+            string qualifiedName = string.Empty;
+            for (int i = 0; i < segments.Length - 1; i++)
+            {
+                qualifiedName = string.IsNullOrEmpty(qualifiedName)
+                    ? segments[i]
+                    : $"{qualifiedName}.{segments[i]}";
+                current = current.GetOrAddChild(segments[i], qualifiedName);
+            }
+
+            current.DirectBindings.Add(new KeyValuePair<string, SymbolicTerm>(segments[^1], binding.Value));
+        }
+
+        return root.Freeze();
+    }
+
+    private sealed class MutableScope
+    {
+        private readonly Dictionary<string, MutableScope> _children = new(StringComparer.Ordinal);
+
+        public MutableScope(string name, string qualifiedName)
+        {
+            Name = name;
+            QualifiedName = qualifiedName;
+        }
+
+        public string Name { get; }
+        public string QualifiedName { get; }
+        public List<KeyValuePair<string, SymbolicTerm>> DirectBindings { get; } = [];
+
+        public MutableScope GetOrAddChild(string name, string qualifiedName)
+        {
+            if (_children.TryGetValue(name, out var existing))
+            {
+                return existing;
+            }
+
+            var created = new MutableScope(name, qualifiedName);
+            _children[name] = created;
+            return created;
+        }
+
+        public SymbolicEnvironmentScope Freeze()
+        {
+            var bindings = DirectBindings
+                .OrderBy(pair => pair.Key, StringComparer.Ordinal)
+                .ToArray();
+            var children = _children.Values
+                .OrderBy(child => child.Name, StringComparer.Ordinal)
+                .Select(child => child.Freeze())
+                .ToArray();
+
+            return new SymbolicEnvironmentScope(Name, QualifiedName, bindings, children);
+        }
+    }
 }

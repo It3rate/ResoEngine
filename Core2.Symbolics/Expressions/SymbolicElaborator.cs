@@ -76,6 +76,9 @@ public static class SymbolicElaborator
             PowerTerm power => new PowerTerm(
                 (ValueTerm)ElaborateTerm(power.Base, environment),
                 power.Exponent),
+            InverseContinueTerm inverse => new InverseContinueTerm(
+                (ValueTerm)ElaborateTerm(inverse.Source, environment),
+                inverse.Degree),
             PinTerm pin => new PinTerm(
                 (ValueTerm)ElaborateTerm(pin.Host, environment),
                 (ValueTerm)ElaborateTerm(pin.Applied, environment),

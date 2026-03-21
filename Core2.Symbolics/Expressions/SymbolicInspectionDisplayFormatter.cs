@@ -75,17 +75,14 @@ public static class SymbolicInspectionDisplayFormatter
 
         builder.AppendLine();
         builder.AppendLine("Environment:");
-        var bindings = report.FinalEnvironment.Bindings.OrderBy(pair => pair.Key, StringComparer.Ordinal).ToArray();
-        if (bindings.Length == 0)
+        var scopeTree = report.FinalEnvironment.GetScopeTree();
+        if (scopeTree.DirectBindings.Count == 0 && scopeTree.Children.Count == 0)
         {
             builder.AppendLine("  (no bindings)");
         }
         else
         {
-            foreach (var binding in bindings)
-            {
-                builder.AppendLine($"  {binding.Key} = {SymbolicTermFormatter.Format(binding.Value)}");
-            }
+            AppendScope(builder, scopeTree, "  ");
         }
 
         return builder.ToString().TrimEnd();
@@ -96,4 +93,18 @@ public static class SymbolicInspectionDisplayFormatter
 
     private static string FormatNote(string? note) =>
         string.IsNullOrWhiteSpace(note) ? string.Empty : $" ({note})";
+
+    private static void AppendScope(StringBuilder builder, SymbolicEnvironmentScope scope, string indent)
+    {
+        foreach (var binding in scope.DirectBindings)
+        {
+            builder.AppendLine($"{indent}{binding.Key} = {SymbolicTermFormatter.Format(binding.Value)}");
+        }
+
+        foreach (var child in scope.Children)
+        {
+            builder.AppendLine($"{indent}{child.Name}:");
+            AppendScope(builder, child, indent + "  ");
+        }
+    }
 }
