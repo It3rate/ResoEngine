@@ -190,25 +190,27 @@ public static class SymbolicReducer
     private static SymbolicTerm ReducePower(PowerTerm power, SymbolicEnvironment environment)
     {
         var @base = (ValueTerm)ElaborateAndReduce(power.Base, environment);
+        var reference = power.Reference is null ? null : (ValueTerm)ElaborateAndReduce(power.Reference, environment);
         if (@base is ElementLiteralTerm literal &&
-            TryReducePower(literal.Value, power.Exponent, out var reduced))
+            TryReducePower(literal.Value, power.Exponent, power.Rule, reference, out var reduced))
         {
             return reduced;
         }
 
-        return new PowerTerm(@base, power.Exponent);
+        return new PowerTerm(@base, power.Exponent, power.Rule, reference);
     }
 
     private static SymbolicTerm ReduceInverseContinuation(InverseContinueTerm inverse, SymbolicEnvironment environment)
     {
         var source = (ValueTerm)ElaborateAndReduce(inverse.Source, environment);
+        var reference = inverse.Reference is null ? null : (ValueTerm)ElaborateAndReduce(inverse.Reference, environment);
         if (source is ElementLiteralTerm literal &&
-            TryReduceInverseContinuation(literal.Value, inverse.Degree, out var reduced))
+            TryReduceInverseContinuation(literal.Value, inverse.Degree, inverse.Rule, reference, out var reduced))
         {
             return reduced;
         }
 
-        return new InverseContinueTerm(source, inverse.Degree);
+        return new InverseContinueTerm(source, inverse.Degree, inverse.Rule, reference);
     }
 
     private static SymbolicTerm ReduceBoolean(AxisBooleanTerm boolean, SymbolicEnvironment environment)
@@ -340,21 +342,26 @@ public static class SymbolicReducer
         }
     }
 
-    private static bool TryReducePower(IElement value, Proportion exponent, out SymbolicTerm reduced)
+    private static bool TryReducePower(
+        IElement value,
+        Proportion exponent,
+        InverseContinuationRule rule,
+        ValueTerm? reference,
+        out SymbolicTerm reduced)
     {
         switch (value)
         {
             case Scalar scalar:
-                return TryProjectPowerResult(PowerEngine.Pow(scalar, exponent), out reduced);
+                return TryReducePowerScalar(scalar, exponent, rule, reference, out reduced);
 
             case Proportion proportion:
-                return TryProjectPowerResult(PowerEngine.Pow(proportion, exponent), out reduced);
+                return TryReducePowerProportion(proportion, exponent, rule, reference, out reduced);
 
             case Axis axis:
-                return TryProjectPowerResult(PowerEngine.Pow(axis, exponent), out reduced);
+                return TryReducePowerAxis(axis, exponent, rule, reference, out reduced);
 
             case Area area:
-                return TryProjectPowerResult(PowerEngine.Pow(area, exponent), out reduced);
+                return TryReducePowerArea(area, exponent, rule, reference, out reduced);
 
             default:
                 reduced = null!;
@@ -362,7 +369,12 @@ public static class SymbolicReducer
         }
     }
 
-    private static bool TryReduceInverseContinuation(IElement value, Proportion degree, out SymbolicTerm reduced)
+    private static bool TryReduceInverseContinuation(
+        IElement value,
+        Proportion degree,
+        InverseContinuationRule rule,
+        ValueTerm? reference,
+        out SymbolicTerm reduced)
     {
         if (!TryGetIntegerDegree(degree, out int normalizedDegree))
         {
@@ -373,24 +385,16 @@ public static class SymbolicReducer
         switch (value)
         {
             case Scalar scalar:
-                return TryProjectInverseContinuationResult(
-                    InverseContinuationEngine.InverseContinue(scalar, normalizedDegree),
-                    out reduced);
+                return TryReduceInverseScalar(scalar, normalizedDegree, rule, reference, out reduced);
 
             case Proportion proportion:
-                return TryProjectInverseContinuationResult(
-                    InverseContinuationEngine.InverseContinue(proportion, normalizedDegree),
-                    out reduced);
+                return TryReduceInverseProportion(proportion, normalizedDegree, rule, reference, out reduced);
 
             case Axis axis:
-                return TryProjectInverseContinuationResult(
-                    InverseContinuationEngine.InverseContinue(axis, normalizedDegree),
-                    out reduced);
+                return TryReduceInverseAxis(axis, normalizedDegree, rule, reference, out reduced);
 
             case Area area:
-                return TryProjectInverseContinuationResult(
-                    InverseContinuationEngine.InverseContinue(area, normalizedDegree),
-                    out reduced);
+                return TryReduceInverseArea(area, normalizedDegree, rule, reference, out reduced);
 
             default:
                 reduced = null!;
@@ -558,5 +562,221 @@ public static class SymbolicReducer
 
         normalizedDegree = (int)degree.Numerator;
         return true;
+    }
+
+    private static bool TryReducePowerScalar(
+        Scalar value,
+        Proportion exponent,
+        InverseContinuationRule rule,
+        ValueTerm? reference,
+        out SymbolicTerm reduced)
+    {
+        Scalar? typedReference = null;
+        Scalar scalarReference = default;
+        if (reference is not null && !TryGetScalarLiteral(reference, out scalarReference))
+        {
+            reduced = null!;
+            return false;
+        }
+
+        if (reference is not null)
+        {
+            typedReference = scalarReference;
+        }
+
+        return TryProjectPowerResult(PowerEngine.Pow(value, exponent, rule, typedReference), out reduced);
+    }
+
+    private static bool TryReducePowerProportion(
+        Proportion value,
+        Proportion exponent,
+        InverseContinuationRule rule,
+        ValueTerm? reference,
+        out SymbolicTerm reduced)
+    {
+        Proportion? typedReference = null;
+        Proportion proportionReference = null!;
+        if (reference is not null && !TryGetProportionLiteral(reference, out proportionReference))
+        {
+            reduced = null!;
+            return false;
+        }
+
+        if (reference is not null)
+        {
+            typedReference = proportionReference;
+        }
+
+        return TryProjectPowerResult(PowerEngine.Pow(value, exponent, rule, typedReference), out reduced);
+    }
+
+    private static bool TryReducePowerAxis(
+        Axis value,
+        Proportion exponent,
+        InverseContinuationRule rule,
+        ValueTerm? reference,
+        out SymbolicTerm reduced)
+    {
+        Axis? typedReference = null;
+        Axis axisReference = Axis.Zero;
+        if (reference is not null && !TryGetAxisLiteral(reference, out axisReference))
+        {
+            reduced = null!;
+            return false;
+        }
+
+        if (reference is not null)
+        {
+            typedReference = axisReference;
+        }
+
+        return TryProjectPowerResult(PowerEngine.Pow(value, exponent, rule, typedReference), out reduced);
+    }
+
+    private static bool TryReducePowerArea(
+        Area value,
+        Proportion exponent,
+        InverseContinuationRule rule,
+        ValueTerm? reference,
+        out SymbolicTerm reduced)
+    {
+        Axis? typedReference = null;
+        Axis axisReference = Axis.Zero;
+        if (reference is not null && !TryGetAxisLiteral(reference, out axisReference))
+        {
+            reduced = null!;
+            return false;
+        }
+
+        if (reference is not null)
+        {
+            typedReference = axisReference;
+        }
+
+        return TryProjectPowerResult(PowerEngine.Pow(value, exponent, AreaInverseContinuationMode.FoldFirst, rule, typedReference), out reduced);
+    }
+
+    private static bool TryReduceInverseScalar(
+        Scalar value,
+        int degree,
+        InverseContinuationRule rule,
+        ValueTerm? reference,
+        out SymbolicTerm reduced)
+    {
+        Scalar? typedReference = null;
+        Scalar scalarReference = default;
+        if (reference is not null && !TryGetScalarLiteral(reference, out scalarReference))
+        {
+            reduced = null!;
+            return false;
+        }
+
+        if (reference is not null)
+        {
+            typedReference = scalarReference;
+        }
+
+        return TryProjectInverseContinuationResult(
+            InverseContinuationEngine.InverseContinue(value, degree, rule, typedReference),
+            out reduced);
+    }
+
+    private static bool TryReduceInverseProportion(
+        Proportion value,
+        int degree,
+        InverseContinuationRule rule,
+        ValueTerm? reference,
+        out SymbolicTerm reduced)
+    {
+        Proportion? typedReference = null;
+        Proportion proportionReference = null!;
+        if (reference is not null && !TryGetProportionLiteral(reference, out proportionReference))
+        {
+            reduced = null!;
+            return false;
+        }
+
+        if (reference is not null)
+        {
+            typedReference = proportionReference;
+        }
+
+        return TryProjectInverseContinuationResult(
+            InverseContinuationEngine.InverseContinue(value, degree, rule, typedReference),
+            out reduced);
+    }
+
+    private static bool TryReduceInverseAxis(
+        Axis value,
+        int degree,
+        InverseContinuationRule rule,
+        ValueTerm? reference,
+        out SymbolicTerm reduced)
+    {
+        Axis? typedReference = null;
+        Axis axisReference = Axis.Zero;
+        if (reference is not null && !TryGetAxisLiteral(reference, out axisReference))
+        {
+            reduced = null!;
+            return false;
+        }
+
+        if (reference is not null)
+        {
+            typedReference = axisReference;
+        }
+
+        return TryProjectInverseContinuationResult(
+            InverseContinuationEngine.InverseContinue(value, degree, rule, typedReference),
+            out reduced);
+    }
+
+    private static bool TryReduceInverseArea(
+        Area value,
+        int degree,
+        InverseContinuationRule rule,
+        ValueTerm? reference,
+        out SymbolicTerm reduced)
+    {
+        Axis? typedReference = null;
+        Axis axisReference = Axis.Zero;
+        if (reference is not null && !TryGetAxisLiteral(reference, out axisReference))
+        {
+            reduced = null!;
+            return false;
+        }
+
+        if (reference is not null)
+        {
+            typedReference = axisReference;
+        }
+
+        return TryProjectInverseContinuationResult(
+            InverseContinuationEngine.InverseContinue(value, degree, AreaInverseContinuationMode.FoldFirst, rule, typedReference),
+            out reduced);
+    }
+
+    private static bool TryGetScalarLiteral(ValueTerm term, out Scalar scalar)
+    {
+        if (term is ElementLiteralTerm literal && literal.Value is Scalar typed)
+        {
+            scalar = typed;
+            return true;
+        }
+
+        scalar = Scalar.Zero;
+        return false;
+    }
+
+    private static bool TryGetProportionLiteral(ValueTerm term, out Proportion proportion)
+    {
+        if (term is ElementLiteralTerm literal && literal.Value is Proportion typed)
+        {
+            proportion = typed;
+            return true;
+        }
+
+        proportion = null!;
+        return false;
     }
 }

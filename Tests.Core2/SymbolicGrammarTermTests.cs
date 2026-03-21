@@ -2,6 +2,7 @@ using Core2.Boolean;
 using Core2.Elements;
 using Core2.Branching;
 using Core2.Symbolics.Expressions;
+using Core2.Symbolics.Repetition;
 
 namespace Tests.Core2;
 
@@ -266,6 +267,16 @@ public class SymbolicGrammarTermTests
     }
 
     [Fact]
+    public void Parser_ParsesPowerTermWithRuleAndReference()
+    {
+        var parsed = SymbolicParser.Parse("pow(1, 1/2, nearest, -1)");
+
+        var power = Assert.IsType<PowerTerm>(parsed);
+        Assert.Equal(InverseContinuationRule.NearestToReference, power.Rule);
+        Assert.Equal("pow(1, 1/2, nearest, -1)", SymbolicTermFormatter.Format(power));
+    }
+
+    [Fact]
     public void Parser_ParsesInverseContinuationTerm()
     {
         var parsed = SymbolicParser.Parse("inverse(4, 2/1)");
@@ -273,6 +284,16 @@ public class SymbolicGrammarTermTests
         var inverse = Assert.IsType<InverseContinueTerm>(parsed);
         Assert.Equal(new Proportion(2, 1), inverse.Degree);
         Assert.Equal("inverse(4, 2/1)", SymbolicTermFormatter.Format(inverse));
+    }
+
+    [Fact]
+    public void Parser_ParsesInverseContinuationTermWithRuleAndReference()
+    {
+        var parsed = SymbolicParser.Parse("inverse(4, 2/1, nearest, -2)");
+
+        var inverse = Assert.IsType<InverseContinueTerm>(parsed);
+        Assert.Equal(InverseContinuationRule.NearestToReference, inverse.Rule);
+        Assert.Equal("inverse(4, 2/1, nearest, -2)", SymbolicTermFormatter.Format(inverse));
     }
 
     [Fact]
@@ -555,6 +576,15 @@ public class SymbolicGrammarTermTests
     }
 
     [Fact]
+    public void Reducer_UsesReferenceGuidedPowerSelection()
+    {
+        var reduced = SymbolicReducer.Reduce(SymbolicParser.Parse("pow(1, 1/2, nearest, -1)"));
+
+        var family = Assert.IsType<BranchFamilyTerm>(reduced.Output);
+        Assert.Equal(Axis.NegativeOne, Assert.IsType<ElementLiteralTerm>(family.Family.SelectedValue!).Value);
+    }
+
+    [Fact]
     public void Reducer_PreservesAlternativeCandidatesForFractionalPower()
     {
         var reduced = SymbolicReducer.Reduce(SymbolicParser.Parse("pow(1, 1/2)"));
@@ -574,6 +604,15 @@ public class SymbolicGrammarTermTests
         Assert.Equal(2, family.Family.Values.Count);
         Assert.Contains(family.Family.Values, value => Assert.IsType<ElementLiteralTerm>(value).Value.Equals(new Scalar(2m)));
         Assert.Contains(family.Family.Values, value => Assert.IsType<ElementLiteralTerm>(value).Value.Equals(new Scalar(-2m)));
+    }
+
+    [Fact]
+    public void Reducer_UsesReferenceGuidedInverseSelection()
+    {
+        var reduced = SymbolicReducer.Reduce(SymbolicParser.Parse("inverse(4, 2/1, nearest, -2)"));
+
+        var family = Assert.IsType<BranchFamilyTerm>(reduced.Output);
+        Assert.Equal(new Scalar(-2m), Assert.IsType<ElementLiteralTerm>(family.Family.SelectedValue!).Value);
     }
 
     [Fact]

@@ -75,10 +75,14 @@ public static class SymbolicElaborator
                 (ValueTerm)ElaborateTerm(divide.Right, environment)),
             PowerTerm power => new PowerTerm(
                 (ValueTerm)ElaborateTerm(power.Base, environment),
-                power.Exponent),
+                power.Exponent,
+                power.Rule,
+                power.Reference is null ? null : (ValueTerm)ElaborateTerm(power.Reference, environment)),
             InverseContinueTerm inverse => new InverseContinueTerm(
                 (ValueTerm)ElaborateTerm(inverse.Source, environment),
-                inverse.Degree),
+                inverse.Degree,
+                inverse.Rule,
+                inverse.Reference is null ? null : (ValueTerm)ElaborateTerm(inverse.Reference, environment)),
             PinTerm pin => new PinTerm(
                 (ValueTerm)ElaborateTerm(pin.Host, environment),
                 (ValueTerm)ElaborateTerm(pin.Applied, environment),

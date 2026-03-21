@@ -1,5 +1,6 @@
 using Core2.Boolean;
 using Core2.Elements;
+using Core2.Symbolics.Repetition;
 
 namespace Core2.Symbolics.Expressions;
 
@@ -23,8 +24,8 @@ public static class SymbolicTermFormatter
             ApplyTransformTerm apply => $"{Format(apply.State)} * {Format(apply.Transform)}",
             MultiplyValuesTerm multiply => $"{Format(multiply.Left)} * {Format(multiply.Right)}",
             DivideValuesTerm divide => $"{Format(divide.Left)} / {Format(divide.Right)}",
-            PowerTerm power => $"pow({Format(power.Base)}, {power.Exponent})",
-            InverseContinueTerm inverse => $"inverse({Format(inverse.Source)}, {inverse.Degree})",
+            PowerTerm power => FormatPower(power),
+            InverseContinueTerm inverse => FormatInverse(inverse),
             PinTerm pin => $"{Format(pin.Host)} * {Format(pin.AppliedAnchor ?? pin.Applied)} @ {pin.Position}",
             PinToPinTerm pinToPin => $"pin({Format(pinToPin.HostAnchor)}, {Format(pinToPin.AppliedAnchor)})",
             AxisBooleanTerm boolean => FormatBoolean(boolean),
@@ -101,6 +102,28 @@ public static class SymbolicTermFormatter
         preference.ParticipantName is null
             ? $"prefer({Format(preference.Relation)}, {preference.Weight})"
             : $"prefer({preference.ParticipantName}, {Format(preference.Relation)}, {preference.Weight})";
+
+    private static string FormatPower(PowerTerm power) =>
+        power.Reference is null && power.Rule == InverseContinuationRule.Principal
+            ? $"pow({Format(power.Base)}, {power.Exponent})"
+            : power.Reference is null
+                ? $"pow({Format(power.Base)}, {power.Exponent}, {FormatRule(power.Rule)})"
+                : $"pow({Format(power.Base)}, {power.Exponent}, {FormatRule(power.Rule)}, {Format(power.Reference)})";
+
+    private static string FormatInverse(InverseContinueTerm inverse) =>
+        inverse.Reference is null && inverse.Rule == InverseContinuationRule.Principal
+            ? $"inverse({Format(inverse.Source)}, {inverse.Degree})"
+            : inverse.Reference is null
+                ? $"inverse({Format(inverse.Source)}, {inverse.Degree}, {FormatRule(inverse.Rule)})"
+                : $"inverse({Format(inverse.Source)}, {inverse.Degree}, {FormatRule(inverse.Rule)}, {Format(inverse.Reference)})";
+
+    private static string FormatRule(InverseContinuationRule rule) => rule switch
+    {
+        InverseContinuationRule.Principal => "principal",
+        InverseContinuationRule.PreferPositiveDominant => "prefer-positive",
+        InverseContinuationRule.NearestToReference => "nearest",
+        _ => rule.ToString(),
+    };
 
     private static string FormatElement(IElement element) => element switch
     {

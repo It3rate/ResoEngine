@@ -24,8 +24,8 @@ public static class CanonicalSymbolicSerializer
             ApplyTransformTerm apply => $"apply(state={Serialize(apply.State)},transform={Serialize(apply.Transform)})",
             MultiplyValuesTerm multiply => $"multiply(left={Serialize(multiply.Left)},right={Serialize(multiply.Right)})",
             DivideValuesTerm divide => $"divide(left={Serialize(divide.Left)},right={Serialize(divide.Right)})",
-            PowerTerm power => $"power(base={Serialize(power.Base)},exponent={SerializeElement(power.Exponent)})",
-            InverseContinueTerm inverse => $"inverse(source={Serialize(inverse.Source)},degree={SerializeElement(inverse.Degree)})",
+            PowerTerm power => SerializePower(power),
+            InverseContinueTerm inverse => SerializeInverse(inverse),
             PinTerm pin => SerializePin(pin),
             PinToPinTerm pinToPin => $"pin-to-pin(host={Serialize(pinToPin.HostAnchor)},applied={Serialize(pinToPin.AppliedAnchor)})",
             AxisBooleanTerm boolean => SerializeBoolean(boolean),
@@ -61,6 +61,22 @@ public static class CanonicalSymbolicSerializer
             : $",frame={Serialize(boolean.Frame)}";
 
         return $"bool(op={SerializeBooleanOperation(boolean.Operation)},primary={Serialize(boolean.Primary)},secondary={Serialize(boolean.Secondary)}{framePart})";
+    }
+
+    private static string SerializePower(PowerTerm power)
+    {
+        string referencePart = power.Reference is null
+            ? string.Empty
+            : $",reference={Serialize(power.Reference)}";
+        return $"power(base={Serialize(power.Base)},exponent={SerializeElement(power.Exponent)},rule={SerializeRule(power.Rule)}{referencePart})";
+    }
+
+    private static string SerializeInverse(InverseContinueTerm inverse)
+    {
+        string referencePart = inverse.Reference is null
+            ? string.Empty
+            : $",reference={Serialize(inverse.Reference)}";
+        return $"inverse(source={Serialize(inverse.Source)},degree={SerializeElement(inverse.Degree)},rule={SerializeRule(inverse.Rule)}{referencePart})";
     }
 
     private static string SerializeRequirement(RequirementTerm requirement)
@@ -122,6 +138,14 @@ public static class CanonicalSymbolicSerializer
         AxisBooleanOperation.Xor => "xor",
         AxisBooleanOperation.Xnor => "xnor",
         _ => operation.ToString(),
+    };
+
+    private static string SerializeRule(Core2.Symbolics.Repetition.InverseContinuationRule rule) => rule switch
+    {
+        Core2.Symbolics.Repetition.InverseContinuationRule.Principal => "principal",
+        Core2.Symbolics.Repetition.InverseContinuationRule.PreferPositiveDominant => "prefer-positive",
+        Core2.Symbolics.Repetition.InverseContinuationRule.NearestToReference => "nearest",
+        _ => rule.ToString(),
     };
 
     private static string Escape(string value) =>

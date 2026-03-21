@@ -1,6 +1,7 @@
 using Core2.Boolean;
 using Core2.Branching;
 using Core2.Elements;
+using Core2.Symbolics.Repetition;
 using System.Globalization;
 
 namespace Core2.Symbolics.Expressions;
@@ -437,8 +438,20 @@ public static class SymbolicParser
             var @base = ToValueTerm(ParseValueLike());
             Expect(TokenKind.Comma);
             var exponent = ParseProportionLiteral();
+            var rule = InverseContinuationRule.Principal;
+            ValueTerm? reference = null;
+
+            if (Match(TokenKind.Comma))
+            {
+                rule = ParseInverseContinuationRule();
+                if (Match(TokenKind.Comma))
+                {
+                    reference = ToValueTerm(ParseValueLike());
+                }
+            }
+
             Expect(TokenKind.RightParen);
-            return new PowerTerm(@base, exponent);
+            return new PowerTerm(@base, exponent, rule, reference);
         }
 
         private InverseContinueTerm ParseInverseContinuation()
@@ -448,8 +461,20 @@ public static class SymbolicParser
             var source = ToValueTerm(ParseValueLike());
             Expect(TokenKind.Comma);
             var degree = ParseProportionLiteral();
+            var rule = InverseContinuationRule.Principal;
+            ValueTerm? reference = null;
+
+            if (Match(TokenKind.Comma))
+            {
+                rule = ParseInverseContinuationRule();
+                if (Match(TokenKind.Comma))
+                {
+                    reference = ToValueTerm(ParseValueLike());
+                }
+            }
+
             Expect(TokenKind.RightParen);
-            return new InverseContinueTerm(source, degree);
+            return new InverseContinueTerm(source, degree, rule, reference);
         }
 
         private Axis ParseAxisLiteral()
@@ -684,6 +709,18 @@ public static class SymbolicParser
             return TryGetBooleanOperation(name, out var operation)
                 ? operation
                 : throw Error($"Unknown boolean operation '{name}'.");
+        }
+
+        private InverseContinuationRule ParseInverseContinuationRule()
+        {
+            string name = ExpectIdentifier();
+            return name switch
+            {
+                "principal" => InverseContinuationRule.Principal,
+                "prefer-positive" => InverseContinuationRule.PreferPositiveDominant,
+                "nearest" => InverseContinuationRule.NearestToReference,
+                _ => throw Error($"Unknown inverse-continuation rule '{name}'."),
+            };
         }
 
         private ValueTerm ToValueTerm(SymbolicTerm term) => term switch

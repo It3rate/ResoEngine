@@ -18,6 +18,8 @@ public sealed class SymbolicWorkbenchPage : IVisualizerPage
         ["Boolean"] = "xor([0/1]i + [10/1], [-3/1]i + [5/1])",
         ["Multiply"] = "(3i+2) * (4i+5)",
         ["Divide"] = "(3i+2) / (4i+5)",
+        ["Power"] = "pow(i, 2/1)",
+        ["Inverse"] = "inverse(4, 2/1)",
         ["Constraint"] = "constraints{require(glyph, share(P4.u, P3.u)) | prefer(box, branch{1 | i} == i, 2/1)}",
         ["Commit"] = "let options = branch{1 | i}; commit choice = constraints{prefer(glyph, options == i, 2/1)}; choice",
     };
