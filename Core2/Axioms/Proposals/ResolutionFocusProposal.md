@@ -23,6 +23,37 @@ So a value such as `4/5` carries at least two distinct facts:
 
 Those facts should not be collapsed too early.
 
+## Quick Orientation
+
+The proposal is built around a small set of primitives.
+Before the detailed sections, this is the intended short reading of each one.
+
+- folded value
+  What the expression collapses to when support is ignored.
+  Example: `4/5`, `8/10`, and `400/500` all fold to `0.8`.
+
+- support or resolution
+  What substrate of distinctions is being preserved.
+  Example: `4/5` preserves `5` ticks of support, while `400/500` preserves `500`.
+
+- uncertainty
+  How confidently the reading is known.
+  Example: `about half a mile + exactly half a mile` is near `1 mile`, but the rougher reading still dominates confidence.
+
+- focus or host
+  Whose structure persists into the result.
+  Example: in `2 * 5/10`, the working assumption is that `5/10` is the host.
+
+- transform or applied role
+  What acts on that host.
+  Example: in `axis * i`, `i` acts as opposition or basis change rather than as a second independent measured object.
+
+- ambiguity or branch family
+  The candidate set before context selects.
+  Example: `the chicken is ready to eat` preserves at least two lawful role assignments before context settles it.
+
+The rest of the proposal tries to keep these primitives minimal, precise, and reusable across both mathematics and language.
+
 ## Part I. Primitive Commitments
 
 This section states the minimum primitives that seem necessary to handle resolution well while staying compatible with language.
@@ -57,11 +88,24 @@ This role should be primitive because it strongly predicts:
 - whose change is foregrounded
 - what the result is "about"
 
+Example:
+
+- `2 * 5/10 -> 10/10`
+
+The result is still most naturally "about" the original `5/10`, now acted on by `2`.
+
 ### RF5. Applied or modifying role is primitive
 
 The acting or modifying structure is also primitive.
 It need not contribute new support.
 Sometimes it only changes orientation, sign, basis, emphasis, or selection.
+
+Example:
+
+- `axis * i`
+
+Here `i` is acting on the axis.
+It need not be introducing a second support substrate.
 
 ### RF6. Perspective differs from focus
 
@@ -70,11 +114,24 @@ Focus changes which structure is treated as primary.
 
 This matters because a perspective flip may transform the measuring system or reading convention without transforming the measured object itself.
 
+Example:
+
+- one observer reads a board in centimeters
+- another reads it in inches
+
+The board has not changed.
+The reading frame has.
+
 ### RF7. Branch family is primitive
 
 When several support interpretations, role assignments, or readings remain lawful, they should persist as a branch family until selection is justified.
 
 This is essential both for inverse continuation and for language ambiguity.
+
+Example:
+
+- `sqrt(4)` yields at least `{2, -2}`
+- `the chicken is ready to eat` yields at least `{chicken eats, chicken is eaten}`
 
 ## Part II. Primitive Resolution Laws
 
@@ -102,6 +159,7 @@ Example:
 
 The host support survives.
 The value changes.
+This should be the default law unless another law is clearly required.
 
 ### RF9. Support aggregation is explicit
 
@@ -117,6 +175,8 @@ Examples:
 
 So one hundred `4/5` reviews may aggregate to `400/500`.
 
+This law should be used only when supports are actually being pooled, not just compared or transformed.
+
 ### RF10. Support composition is explicit
 
 When two supports form an independent product space, support composes, often multiplicatively.
@@ -129,6 +189,8 @@ Examples:
 
 This is the main reason denominator growth under multiplication and powers is often natural.
 
+But it should be applied only when the operation genuinely creates a product space, not whenever a `*` symbol happens to appear.
+
 ### RF11. Support refinement preserves folded value
 
 A value may be re-expressed on finer support while preserving folded value.
@@ -138,6 +200,8 @@ Example:
 - `4/5 -> 8/10`
 
 This is refinement, not a new folded value.
+
+It is useful when the same object is being described more finely, not when several objects are being pooled.
 
 ### RF12. Common-frame re-expression differs from aggregation
 
@@ -149,11 +213,15 @@ This is refinement, not a new folded value.
 
 These should not be forced into one law.
 
+This distinction matters because language often leaves it implicit whether speakers mean "combine in one frame" or "pool separate evidence."
+
 ### RF13. Pure transforms usually preserve support
 
 Transforms such as opposition, negation, mirror, and perspective or basis change should usually preserve support unless the transform explicitly introduces new support.
 
 This is why expressions such as `axis * i` may deserve a more support-preserving law than generic support-composing multiplication.
+
+This law is especially important for language-like reframing, emphasis change, voice change, and perspective shifts.
 
 ### RF14. Uncertainty propagates separately from support
 
@@ -180,6 +248,8 @@ Useful policies include:
 - fit a target frame support
 - preserve aggregated sample count
 - preserve instrument grain
+
+Without such policies, the same folded value can unfold into many equally lawful supports and the system becomes underspecified.
 
 ## Part III. Constructible From Primitives
 
