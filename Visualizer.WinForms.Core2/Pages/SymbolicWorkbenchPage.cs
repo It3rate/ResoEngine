@@ -537,7 +537,7 @@ public sealed class SymbolicWorkbenchPage : IVisualizerPage
         {
             if (lines[i].StartsWith("Canonical: ", StringComparison.Ordinal))
             {
-                lines[i] = FitViewerLineWithEllipsis(lines[i], _inspectionViewer);
+                lines[i] = FitViewerLineWithEllipsis(lines[i]);
                 break;
             }
         }
@@ -545,20 +545,14 @@ public sealed class SymbolicWorkbenchPage : IVisualizerPage
         return string.Join(Environment.NewLine, lines);
     }
 
-    private static string FitViewerLineWithEllipsis(string text, TextBox viewer)
+    private static string FitViewerLineWithEllipsis(string text)
     {
-        if (viewer.ClientSize.Width <= 8)
+        const int maxVisibleCharacters = 200;
+        if (text.Length <= maxVisibleCharacters)
         {
             return text;
         }
 
-        int charWidth = Math.Max(1, TextRenderer.MeasureText("M", viewer.Font).Width);
-        int maxChars = Math.Max(6, (viewer.ClientSize.Width - 8) / charWidth);
-        if (text.Length <= maxChars)
-        {
-            return text;
-        }
-
-        return string.Concat(text.AsSpan(0, Math.Max(3, maxChars - 3)), "...");
+        return string.Concat(text.AsSpan(0, maxVisibleCharacters - 3), "...");
     }
 }

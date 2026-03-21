@@ -29,14 +29,14 @@ public static class SymbolicElaborator
     private static SymbolicElaborationResult ElaborateBind(BindTerm bind, SymbolicEnvironment environment)
     {
         var value = ElaborateTerm(bind.Value, environment);
-        var next = environment.Bind(bind.Name, value);
+        var next = environment.Bind(bind.Target, value);
         return new SymbolicElaborationResult(next, value);
     }
 
     private static SymbolicElaborationResult ElaborateCommit(CommitTerm commit, SymbolicEnvironment environment)
     {
         var value = ElaborateTerm(commit.Value, environment);
-        var next = environment.Bind(commit.Name, value);
+        var next = environment.Bind(commit.Target, value);
         return new SymbolicElaborationResult(next, value);
     }
 

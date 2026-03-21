@@ -31,7 +31,7 @@ public static class SymbolicReducer
     private static SymbolicReductionResult ReduceBind(BindTerm bind, SymbolicEnvironment environment)
     {
         var reduced = ElaborateAndReduce(bind.Value, environment);
-        var next = environment.Bind(bind.Name, reduced);
+        var next = environment.Bind(bind.Target, reduced);
         return new SymbolicReductionResult(next, reduced);
     }
 
@@ -47,12 +47,12 @@ public static class SymbolicReducer
             if (negotiation.SelectedCandidate is not null)
             {
                 output = negotiation.SelectedCandidate;
-                current = negotiation.Evaluation.Environment.Bind(commit.Name, output);
+                current = negotiation.Evaluation.Environment.Bind(commit.Target, output);
             }
             else if (negotiation.PreservedCandidateFamily is not null)
             {
                 output = negotiation.PreservedCandidateFamily;
-                current = negotiation.Evaluation.Environment.Bind(commit.Name, output);
+                current = negotiation.Evaluation.Environment.Bind(commit.Target, output);
             }
             else
             {
@@ -69,11 +69,11 @@ public static class SymbolicReducer
                 output = branchFamily.Family.SelectedValue;
             }
 
-            current = environment.Bind(commit.Name, output);
+            current = environment.Bind(commit.Target, output);
             return new SymbolicReductionResult(current, output);
         }
 
-        current = environment.Bind(commit.Name, output);
+        current = environment.Bind(commit.Target, output);
         return new SymbolicReductionResult(current, output);
     }
 

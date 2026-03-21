@@ -144,6 +144,17 @@ public class SymbolicGrammarTermTests
     }
 
     [Fact]
+    public void Parser_ParsesScopedCommitTarget()
+    {
+        var parsed = SymbolicParser.Parse("commit glyph.choice = 1 * i");
+
+        var commit = Assert.IsType<CommitTerm>(parsed);
+        Assert.Equal("glyph.choice", commit.Target.QualifiedName);
+        Assert.True(commit.Target.IsScoped);
+        Assert.Equal("commit glyph.choice = 1 * i", SymbolicTermFormatter.Format(commit));
+    }
+
+    [Fact]
     public void Elaborator_ResolvesBoundReferencesThroughSequence()
     {
         var sequence = new SequenceTerm(
@@ -657,6 +668,30 @@ public class SymbolicGrammarTermTests
         Assert.Equal(Axis.I, output.Value);
         Assert.True(reduced.Environment.TryResolve("turn", out var turn));
         Assert.Equal(Axis.I, Assert.IsType<ElementLiteralTerm>(turn).Value);
+    }
+
+    [Fact]
+    public void Commit_BindsScopedTargetsThatCanBeReferencedLater()
+    {
+        var reduced = SymbolicReducer.Reduce(
+            SymbolicParser.Parse("commit glyph.choice = 1 * i; glyph.choice"));
+
+        var output = Assert.IsType<ElementLiteralTerm>(reduced.Output);
+        Assert.Equal(Axis.I, output.Value);
+        Assert.True(reduced.Environment.TryResolve("glyph.choice", out var choice));
+        Assert.Equal(Axis.I, Assert.IsType<ElementLiteralTerm>(choice).Value);
+    }
+
+    [Fact]
+    public void Commit_BindsAnchorStyleTargetsThatResolveThroughAnchorReferences()
+    {
+        var reduced = SymbolicReducer.Reduce(
+            SymbolicParser.Parse("commit P4.u = 1 * i; P4.u"));
+
+        var output = Assert.IsType<ElementLiteralTerm>(reduced.Output);
+        Assert.Equal(Axis.I, output.Value);
+        Assert.True(reduced.Environment.TryResolve("P4.u", out var anchorValue));
+        Assert.Equal(Axis.I, Assert.IsType<ElementLiteralTerm>(anchorValue).Value);
     }
 
     [Fact]

@@ -3,14 +3,20 @@ namespace Core2.Symbolics.Expressions;
 public sealed record CommitTerm : ProgramTerm
 {
     public CommitTerm(string name, SymbolicTerm value)
+        : this(new SymbolicBindingTarget(name), value)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(name);
+    }
+
+    public CommitTerm(SymbolicBindingTarget target, SymbolicTerm value)
+    {
+        ArgumentNullException.ThrowIfNull(target);
         ArgumentNullException.ThrowIfNull(value);
 
-        Name = name;
+        Target = target;
         Value = value;
     }
 
-    public string Name { get; }
+    public SymbolicBindingTarget Target { get; }
+    public string Name => Target.QualifiedName;
     public SymbolicTerm Value { get; }
 }

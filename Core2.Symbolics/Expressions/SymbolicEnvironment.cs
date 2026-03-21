@@ -32,6 +32,12 @@ public sealed class SymbolicEnvironment
         return false;
     }
 
+    public bool TryResolve(SymbolicBindingTarget target, out SymbolicTerm? value)
+    {
+        ArgumentNullException.ThrowIfNull(target);
+        return TryResolve(target.QualifiedName, out value);
+    }
+
     public SymbolicEnvironment Bind(string name, SymbolicTerm value)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(name);
@@ -40,5 +46,11 @@ public sealed class SymbolicEnvironment
         var next = _bindings.ToDictionary(pair => pair.Key, pair => pair.Value, StringComparer.Ordinal);
         next[name] = value;
         return new SymbolicEnvironment(next);
+    }
+
+    public SymbolicEnvironment Bind(SymbolicBindingTarget target, SymbolicTerm value)
+    {
+        ArgumentNullException.ThrowIfNull(target);
+        return Bind(target.QualifiedName, value);
     }
 }

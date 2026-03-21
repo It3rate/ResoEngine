@@ -96,19 +96,19 @@ public static class SymbolicParser
         private ProgramTerm ParseBind()
         {
             ConsumeIdentifier("let");
-            string name = ExpectIdentifier();
+            var target = ParseBindingTarget();
             Expect(TokenKind.Assign);
             var value = ParseConstraintOrRelationOrValue();
-            return new BindTerm(name, value);
+            return new BindTerm(target, value);
         }
 
         private ProgramTerm ParseCommit()
         {
             ConsumeIdentifier("commit");
-            string name = ExpectIdentifier();
+            var target = ParseBindingTarget();
             Expect(TokenKind.Assign);
             var value = ParseConstraintOrRelationOrValue();
-            return new CommitTerm(name, value);
+            return new CommitTerm(target, value);
         }
 
         private PinToPinTerm ParsePinToPin()
@@ -521,6 +521,12 @@ public static class SymbolicParser
         {
             string name = ExpectIdentifier();
             return new SiteReferenceTerm(name);
+        }
+
+        private SymbolicBindingTarget ParseBindingTarget()
+        {
+            string name = ExpectIdentifier();
+            return new SymbolicBindingTarget(name);
         }
 
         private AnchorReferenceTerm ParseAnchorReference()
