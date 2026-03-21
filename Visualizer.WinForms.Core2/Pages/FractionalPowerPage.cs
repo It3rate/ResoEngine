@@ -1,5 +1,6 @@
 using Core2.Elements;
 using Core2.Repetition;
+using Core2.Symbolics.Expressions;
 using ResoEngine.Visualizer.Adapt;
 using ResoEngine.Visualizer.Controls;
 using ResoEngine.Visualizer.Core;
@@ -156,6 +157,7 @@ public class FractionalPowerPage : IVisualizerPage
     private SegmentRenderer? _inputRenderer;
     private SegmentRenderer[]? _candidateRenderers;
     private SKRect _graphOuterRect;
+    private TextBox? _symbolicViewer;
 
     private Panel? _controlsPanel;
     private ComboBox? _exponentCombo;
@@ -185,6 +187,7 @@ public class FractionalPowerPage : IVisualizerPage
         ];
 
         hitTest.Register(_inputRenderer, _input);
+        EnsureSymbolicViewer();
         EnsureControls();
         EnsureTimer();
         _canvasHost.InvalidateCanvas();
@@ -201,9 +204,7 @@ public class FractionalPowerPage : IVisualizerPage
         float subtitleY = 68f;
         PageChrome.DrawWrappedText(
             canvas,
-            "The candidates below come from inverse continuation (eg square root), with one selected as the principal branch.\n" +
-            "This displays the effect of raising a directed segment to a fractional power.\n" +
-            "There can be multiple possible solutions, like how sqrt(4) can be 2 or -2.",
+            "The candidates below come from inverse continuation (eg square root), with one selected as the principal branch.",
             34f,
             ref subtitleY,
             500f,
@@ -217,8 +218,8 @@ public class FractionalPowerPage : IVisualizerPage
         GetGraphBounds(result, out var minValue, out var maxValue, out var outerRect, out _, out _);
         _graphOuterRect = outerRect;
 
-        DrawResultBadge(canvas, exponent, branchRule, result);
         DrawGraphFrame(canvas, minValue, maxValue, outerRect);
+        DrawSymbolicSummary(outerRect, exponent, branchRule, result);
         _inputRenderer?.Render(canvas, _input);
         DrawRowBadge(canvas, "Input z", InputY, SegmentColors.Red);
 
@@ -275,34 +276,6 @@ public class FractionalPowerPage : IVisualizerPage
                 _candidateDisplays[i].Label = string.Empty;
             }
         }
-    }
-
-    private void DrawResultBadge(SKCanvas canvas, Proportion exponent, InverseContinuationRule branchRule, PowerResult<Axis> result)
-    {
-        if (_coords == null)
-        {
-            return;
-        }
-
-        string branchText = branchRule switch
-        {
-            InverseContinuationRule.Principal => "principal",
-            InverseContinuationRule.PreferPositiveDominant => "prefer +dominant",
-            InverseContinuationRule.NearestToReference => "nearest to previous",
-            _ => branchRule.ToString(),
-        };
-
-        string summary = result.Succeeded && result.PrincipalCandidate is not null
-            ? $"z^{exponent}  ->  {FormatAxis(result.PrincipalCandidate)}   ({result.Candidates.Count} candidate{(result.Candidates.Count == 1 ? string.Empty : "s")}, {branchText})"
-            : $"z^{exponent}  ->  no candidate ({branchText})";
-
-        var bounds = new SKRect();
-        _sectionPaint.MeasureText(summary, ref bounds);
-        float badgeWidth = Math.Max(500f, bounds.Width + 28f);
-        var rect = new SKRect(36f, 200f, 36f + badgeWidth, 250f);
-        canvas.DrawRoundRect(rect, 12f, 12f, _resultBadgePaint);
-        canvas.DrawRoundRect(rect, 12f, 12f, _resultBorderPaint);
-        canvas.DrawText(summary, rect.Left + 14f, rect.MidY + 5f, _sectionPaint);
     }
 
     private void DrawGraphFrame(SKCanvas canvas, decimal minValue, decimal maxValue, SKRect outerRect)
@@ -377,6 +350,17 @@ public class FractionalPowerPage : IVisualizerPage
         canvas.DrawRoundRect(rect, 12f, 12f, fill);
         canvas.DrawRoundRect(rect, 12f, 12f, border);
         canvas.DrawText(text, rect.MidX, rect.MidY + 5f, textPaint);
+    }
+
+    private void DrawSymbolicSummary(
+        SKRect outerRect,
+        Proportion exponent,
+        InverseContinuationRule branchRule,
+        PowerResult<Axis> result)
+    {
+        LayoutSymbolicViewer(
+            new SKRect(34f, 166f, 640f, 352f),
+            BuildSymbolicTrace(exponent, branchRule, result));
     }
 
     private void GetGraphBounds(
@@ -555,6 +539,79 @@ public class FractionalPowerPage : IVisualizerPage
         };
     }
 
+    private void EnsureSymbolicViewer()
+    {
+        if (_canvasHost == null || _symbolicViewer != null)
+        {
+            return;
+        }
+
+        _symbolicViewer = new TextBox
+        {
+            Multiline = true,
+            ReadOnly = true,
+            BorderStyle = BorderStyle.None,
+            BackColor = Color.FromArgb(249, 249, 250),
+            ForeColor = Color.FromArgb(64, 64, 64),
+            Font = new Font("Consolas", 10.5f, FontStyle.Regular),
+            ScrollBars = ScrollBars.None,
+            WordWrap = true,
+            ShortcutsEnabled = true,
+            TabStop = true,
+        };
+
+        _canvasHost.Controls.Add(_symbolicViewer);
+        _symbolicViewer.BringToFront();
+    }
+
+    private void LayoutSymbolicViewer(SKRect rect, string text)
+    {
+        EnsureSymbolicViewer();
+        if (_symbolicViewer == null)
+        {
+            return;
+        }
+
+        _symbolicViewer.SetBounds(
+            (int)MathF.Round(rect.Left),
+            (int)MathF.Round(rect.Top),
+            Math.Max(120, (int)MathF.Round(rect.Width)),
+            Math.Max(80, (int)MathF.Round(rect.Height)));
+        _symbolicViewer.Text = text;
+        _symbolicViewer.BringToFront();
+    }
+
+    private string BuildSymbolicTrace(
+        Proportion exponent,
+        InverseContinuationRule branchRule,
+        PowerResult<Axis> result)
+    {
+        var expression = BuildPowerExpression(exponent, branchRule);
+        var reduced = SymbolicReducer.Reduce(expression);
+        List<string> lines =
+        [
+            $"expression => {SymbolicTermFormatter.Format(expression)}",
+            $"reduced => {FormatReducedOutput(reduced.Output)}",
+            $"principal => {FormatPrincipalCandidate(result)}",
+            $"candidates => {result.Candidates.Count}",
+        ];
+
+        return string.Join(Environment.NewLine, lines);
+    }
+
+    private PowerTerm BuildPowerExpression(Proportion exponent, InverseContinuationRule branchRule)
+    {
+        var input = new ElementLiteralTerm(_input.Axis);
+        ValueTerm? reference = _branchReference is null ? null : new ElementLiteralTerm(_branchReference);
+        return new PowerTerm(input, exponent, branchRule, reference);
+    }
+
+    private static string FormatReducedOutput(SymbolicTerm? output) =>
+        output is null ? "(none)" : SymbolicTermFormatter.Format(output);
+
+    private static string FormatPrincipalCandidate(PowerResult<Axis> result) =>
+        result.PrincipalCandidate is null ? "(none)" : SymbolicTermFormatter.Format(new ElementLiteralTerm(result.PrincipalCandidate));
+
     private Proportion SelectedExponent =>
         _exponentCombo?.SelectedItem?.ToString() switch
         {
@@ -615,6 +672,13 @@ public class FractionalPowerPage : IVisualizerPage
             _canvasHost.Controls.Remove(_controlsPanel);
             _controlsPanel.Dispose();
             _controlsPanel = null;
+        }
+
+        if (_symbolicViewer != null && _canvasHost != null)
+        {
+            _canvasHost.Controls.Remove(_symbolicViewer);
+            _symbolicViewer.Dispose();
+            _symbolicViewer = null;
         }
 
         _coords = null;

@@ -81,3 +81,16 @@ Current guidance:
 
 - keep the first pass simple
 - preserve room for explicit pin-to-pin syntax later
+
+## 8. Support growth, resolution, and canonical simplification
+
+Open question:
+
+- when symbolic multiplication, opposition, or powers compose `Proportion` supports, when should the system preserve raw denominator growth, and when should it display or adopt a more canonical resolution?
+
+Current guidance:
+
+- do not silently discard support information just to imitate ordinary scalar arithmetic
+- treat denominator growth as a real structural/resolution question, closer to error-bound or precision composition than to ordinary integer multiplication
+- revisit whether special canonical transforms such as opposition should preserve semantic simplicity more directly than generic algebra-table multiplication
+- defer a full policy decision until the symbolic page conversions have exposed a few more concrete cases
