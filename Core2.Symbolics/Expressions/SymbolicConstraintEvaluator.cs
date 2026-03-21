@@ -14,7 +14,7 @@ public static class SymbolicConstraintEvaluator
     {
         ArgumentNullException.ThrowIfNull(term);
 
-        var reduced = SymbolicReducer.Reduce(term, environment);
+        var reduced = SymbolicReducer.Reduce(term, environment, structuralContext);
         var reducedConstraint = reduced.Output switch
         {
             ConstraintSetTerm set => set,
@@ -92,14 +92,26 @@ public static class SymbolicConstraintEvaluator
         ISymbolicStructuralContext? structuralContext) =>
         relation switch
         {
-            EqualityTerm equality => EvaluateEquality(equality),
+            EqualityTerm equality => EvaluateEquality(equality, structuralContext),
             SharedCarrierTerm shared => EvaluateSharedCarrier(shared, structuralContext),
             RouteTerm route => EvaluateRoute(route, structuralContext),
             _ => new ConstraintRelationAssessment(ConstraintTruthKind.Unresolved, null, "Relation form is not yet directly evaluable."),
         };
 
-    private static ConstraintRelationAssessment EvaluateEquality(EqualityTerm equality)
+    private static ConstraintRelationAssessment EvaluateEquality(
+        EqualityTerm equality,
+        ISymbolicStructuralContext? structuralContext)
     {
+        if (Equals(equality.Left, equality.Right))
+        {
+            return new ConstraintRelationAssessment(ConstraintTruthKind.Satisfied);
+        }
+
+        if (TryEvaluateStructuralAnchorEquality(equality.Left, equality.Right, structuralContext, out var structuralAssessment))
+        {
+            return structuralAssessment;
+        }
+
         if (TryEvaluateAlternativeEquality(equality.Left, equality.Right, out var branchAssessment))
         {
             return branchAssessment;
@@ -113,6 +125,45 @@ public static class SymbolicConstraintEvaluator
         return Equals(equality.Left, equality.Right)
             ? new ConstraintRelationAssessment(ConstraintTruthKind.Satisfied)
             : new ConstraintRelationAssessment(ConstraintTruthKind.Unsatisfied);
+    }
+
+    private static bool TryEvaluateStructuralAnchorEquality(
+        SymbolicTerm left,
+        SymbolicTerm right,
+        ISymbolicStructuralContext? structuralContext,
+        out ConstraintRelationAssessment assessment)
+    {
+        if (left is not AnchorReferenceTerm leftAnchor || right is not AnchorReferenceTerm rightAnchor)
+        {
+            assessment = null!;
+            return false;
+        }
+
+        if (structuralContext is null)
+        {
+            assessment = new ConstraintRelationAssessment(
+                ConstraintTruthKind.Unresolved,
+                null,
+                "Anchor equality requires structural carrier context or explicit binding.");
+            return true;
+        }
+
+        bool hasLeft = structuralContext.TryResolveAnchorCarrier(leftAnchor, out var leftCarrier, out var leftNote);
+        bool hasRight = structuralContext.TryResolveAnchorCarrier(rightAnchor, out var rightCarrier, out var rightNote);
+
+        if (hasLeft && hasRight)
+        {
+            assessment = leftCarrier == rightCarrier
+                ? new ConstraintRelationAssessment(ConstraintTruthKind.Satisfied, null, "Anchors resolve to the same structural carrier.")
+                : new ConstraintRelationAssessment(ConstraintTruthKind.Unsatisfied, null, "Anchors resolve to different structural carriers.");
+            return true;
+        }
+
+        assessment = new ConstraintRelationAssessment(
+            ConstraintTruthKind.Unresolved,
+            null,
+            leftNote ?? rightNote ?? "Anchor equality requires structural carrier context or explicit binding.");
+        return true;
     }
 
     private static ConstraintRelationAssessment EvaluateSharedCarrier(

@@ -722,6 +722,43 @@ public class SymbolicGrammarTermTests
     }
 
     [Fact]
+    public void ConstraintEvaluator_UsesStructuralContextForAnchorEqualityClaims()
+    {
+        var stem = CarrierIdentity.Create("Stem");
+        var bowl = CarrierIdentity.Create("Bowl");
+        var host = Axis.FromCoordinates(Proportion.Zero, new Proportion(10));
+
+        var top = CarrierPinSite.FromPointPinning(
+            stem,
+            host.PinAt(new Axis(new Proportion(3, -1), new Proportion(2, 1)), Proportion.Zero),
+            new CarrierSideAttachment(PinSideRole.Recessive, stem, Proportion.Zero),
+            new CarrierSideAttachment(PinSideRole.Dominant, bowl, Proportion.Zero),
+            name: "P4");
+        var bottom = CarrierPinSite.FromPointPinning(
+            stem,
+            host.PinAt(new Axis(new Proportion(-3, -1), new Proportion(2, 1)), Proportion.One),
+            new CarrierSideAttachment(PinSideRole.Recessive, stem, Proportion.One),
+            new CarrierSideAttachment(PinSideRole.Dominant, bowl, Proportion.One),
+            name: "P3");
+
+        var context = new CarrierGraphSymbolicStructuralContext(new CarrierPinGraph([stem, bowl], [top, bottom]).Analyze());
+
+        var satisfied = SymbolicConstraintEvaluator.Evaluate(
+            SymbolicParser.Parse("constraints{require(glyph, P4.u == P3.u)}"),
+            environment: null,
+            structuralContext: context);
+        var unsatisfied = SymbolicConstraintEvaluator.Evaluate(
+            SymbolicParser.Parse("constraints{require(glyph, P4.i == P3.u)}"),
+            environment: null,
+            structuralContext: context);
+
+        Assert.Equal(ConstraintTruthKind.Satisfied, Assert.Single(satisfied.Items).Truth);
+        Assert.Equal("Anchors resolve to the same structural carrier.", Assert.Single(satisfied.Items).Note);
+        Assert.Equal(ConstraintTruthKind.Unsatisfied, Assert.Single(unsatisfied.Items).Truth);
+        Assert.Equal("Anchors resolve to different structural carriers.", Assert.Single(unsatisfied.Items).Note);
+    }
+
+    [Fact]
     public void ConstraintEvaluator_UsesStructuralContextForRouteClaims()
     {
         var stem = CarrierIdentity.Create("Stem");
@@ -859,6 +896,38 @@ public class SymbolicGrammarTermTests
     }
 
     [Fact]
+    public void Commit_UsesStructuralContextToUnblockNegotiation()
+    {
+        var stem = CarrierIdentity.Create("Stem");
+        var bowl = CarrierIdentity.Create("Bowl");
+        var host = Axis.FromCoordinates(Proportion.Zero, new Proportion(10));
+
+        var top = CarrierPinSite.FromPointPinning(
+            stem,
+            host.PinAt(new Axis(new Proportion(3, -1), new Proportion(2, 1)), Proportion.Zero),
+            new CarrierSideAttachment(PinSideRole.Recessive, stem, Proportion.Zero),
+            new CarrierSideAttachment(PinSideRole.Dominant, bowl, Proportion.Zero),
+            name: "P4");
+        var bottom = CarrierPinSite.FromPointPinning(
+            stem,
+            host.PinAt(new Axis(new Proportion(-3, -1), new Proportion(2, 1)), Proportion.One),
+            new CarrierSideAttachment(PinSideRole.Recessive, stem, Proportion.One),
+            new CarrierSideAttachment(PinSideRole.Dominant, bowl, Proportion.One),
+            name: "P3");
+
+        var context = new CarrierGraphSymbolicStructuralContext(new CarrierPinGraph([stem, bowl], [top, bottom]).Analyze());
+
+        var reduced = SymbolicReducer.Reduce(
+            SymbolicParser.Parse("commit choice = constraints{require(glyph, P4.u == P3.u) | prefer(glyph, branch{1 | i} == i, 2/1)}; choice"),
+            structuralContext: context);
+
+        var output = Assert.IsType<ElementLiteralTerm>(reduced.Output);
+        Assert.Equal(Axis.I, output.Value);
+        Assert.True(reduced.Environment.TryResolve("choice", out var choice));
+        Assert.Equal(Axis.I, Assert.IsType<ElementLiteralTerm>(choice).Value);
+    }
+
+    [Fact]
     public void Commit_PreservesCandidateFamilyWhenNoUniqueRepresentativeExists()
     {
         var reduced = SymbolicReducer.Reduce(
@@ -940,6 +1009,39 @@ public class SymbolicGrammarTermTests
     }
 
     [Fact]
+    public void SymbolicInspector_UsesStructuralContextDuringCommitReduction()
+    {
+        var stem = CarrierIdentity.Create("Stem");
+        var bowl = CarrierIdentity.Create("Bowl");
+        var host = Axis.FromCoordinates(Proportion.Zero, new Proportion(10));
+
+        var top = CarrierPinSite.FromPointPinning(
+            stem,
+            host.PinAt(new Axis(new Proportion(3, -1), new Proportion(2, 1)), Proportion.Zero),
+            new CarrierSideAttachment(PinSideRole.Recessive, stem, Proportion.Zero),
+            new CarrierSideAttachment(PinSideRole.Dominant, bowl, Proportion.Zero),
+            name: "P4");
+        var bottom = CarrierPinSite.FromPointPinning(
+            stem,
+            host.PinAt(new Axis(new Proportion(-3, -1), new Proportion(2, 1)), Proportion.One),
+            new CarrierSideAttachment(PinSideRole.Recessive, stem, Proportion.One),
+            new CarrierSideAttachment(PinSideRole.Dominant, bowl, Proportion.One),
+            name: "P3");
+
+        var context = new CarrierGraphSymbolicStructuralContext(new CarrierPinGraph([stem, bowl], [top, bottom]).Analyze());
+        var report = SymbolicInspector.Inspect(
+            "commit choice = constraints{require(glyph, P4.u == P3.u) | prefer(glyph, branch{1 | i} == i, 2/1)}; choice",
+            structuralContext: context,
+            structuralContextName: "Shared",
+            structuralContextSummary: "Shared Bowl");
+
+        Assert.False(report.HasError);
+        Assert.True(report.FinalEnvironment.TryResolve("choice", out var choice));
+        Assert.Equal(Axis.I, Assert.IsType<ElementLiteralTerm>(choice).Value);
+        Assert.Equal("i", SymbolicTermFormatter.Format(report.FinalStep!.Reduction.Output!));
+    }
+
+    [Fact]
     public void SymbolicInspector_ReturnsParseErrorsAsReportState()
     {
         var report = SymbolicInspector.Inspect("let stem = ");
@@ -963,6 +1065,43 @@ public class SymbolicGrammarTermTests
         Assert.Contains("STEP 2: commit choice", exported);
         Assert.Contains("ENVIRONMENT", exported);
         Assert.Contains("choice = i", exported);
+    }
+
+    [Fact]
+    public void SymbolicInspectionFormatters_IncludeStructuralContextMetadata()
+    {
+        var stem = CarrierIdentity.Create("Stem");
+        var bowl = CarrierIdentity.Create("Bowl");
+        var host = Axis.FromCoordinates(Proportion.Zero, new Proportion(10));
+
+        var top = CarrierPinSite.FromPointPinning(
+            stem,
+            host.PinAt(new Axis(new Proportion(3, -1), new Proportion(2, 1)), Proportion.Zero),
+            new CarrierSideAttachment(PinSideRole.Recessive, stem, Proportion.Zero),
+            new CarrierSideAttachment(PinSideRole.Dominant, bowl, Proportion.Zero),
+            name: "P4");
+        var bottom = CarrierPinSite.FromPointPinning(
+            stem,
+            host.PinAt(new Axis(new Proportion(-3, -1), new Proportion(2, 1)), Proportion.One),
+            new CarrierSideAttachment(PinSideRole.Recessive, stem, Proportion.One),
+            new CarrierSideAttachment(PinSideRole.Dominant, bowl, Proportion.One),
+            name: "P3");
+
+        var context = new CarrierGraphSymbolicStructuralContext(new CarrierPinGraph([stem, bowl], [top, bottom]).Analyze());
+        var report = SymbolicInspector.Inspect(
+            "constraints{require(glyph, P4.u == P3.u)}",
+            structuralContext: context,
+            structuralContextName: "Shared",
+            structuralContextSummary: "Shared Bowl");
+
+        var display = SymbolicInspectionDisplayFormatter.Format(report);
+        var export = SymbolicInspectionExporter.Export(report);
+
+        Assert.Contains("Context: Shared", display);
+        Assert.Contains("Shared Bowl", display);
+        Assert.Contains("STRUCTURAL CONTEXT", export);
+        Assert.Contains("Shared", export);
+        Assert.Contains("Shared Bowl", export);
     }
 
     [Fact]

@@ -13,6 +13,18 @@ public static class SymbolicInspectionExporter
         builder.AppendLine(report.SourceText);
         builder.AppendLine();
 
+        if (!string.IsNullOrWhiteSpace(report.StructuralContextName))
+        {
+            builder.AppendLine("STRUCTURAL CONTEXT");
+            builder.AppendLine(report.StructuralContextName);
+            if (!string.IsNullOrWhiteSpace(report.StructuralContextSummary))
+            {
+                builder.AppendLine(report.StructuralContextSummary);
+            }
+
+            builder.AppendLine();
+        }
+
         if (report.HasError)
         {
             builder.AppendLine("ERROR");

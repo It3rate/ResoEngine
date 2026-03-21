@@ -11,20 +11,23 @@ namespace ResoEngine.Visualizer.Pages;
 
 public sealed class SymbolicWorkbenchPage : IVisualizerPage
 {
-    private readonly Dictionary<string, string> _examples = new(StringComparer.Ordinal)
+    private readonly Dictionary<string, ExampleSpec> _examples = new(StringComparer.Ordinal)
     {
-        ["Transform"] = "1 * i",
-        ["Fold"] = "fold([3/1]i + [12/-1])",
-        ["Boolean"] = "xor([0/1]i + [10/1], [-3/1]i + [5/1])",
-        ["Multiply"] = "(3i+2) * (4i+5)",
-        ["Divide"] = "(3i+2) / (4i+5)",
-        ["Power"] = "pow(i, 2/1)",
-        ["Inverse"] = "inverse(4, 2/1)",
-        ["Constraint"] = "constraints{require(glyph, share(P4.u, P3.u)) | prefer(box, branch{1 | i} == i, 2/1)}",
-        ["Commit"] = "let options = branch{1 | i}; commit choice = constraints{prefer(glyph, options == i, 2/1)}; choice",
+        ["Transform"] = new("1 * i"),
+        ["Fold"] = new("fold([3/1]i + [12/-1])"),
+        ["Boolean"] = new("xor([0/1]i + [10/1], [-3/1]i + [5/1])"),
+        ["Multiply"] = new("(3i+2) * (4i+5)"),
+        ["Divide"] = new("(3i+2) / (4i+5)"),
+        ["Power"] = new("pow(i, 2/1)"),
+        ["Inverse"] = new("inverse(4, 2/1)"),
+        ["Shared"] = new("commit choice = constraints{require(glyph, P4.u == P3.u) | prefer(glyph, branch{1 | i} == i, 2/1)}; choice", "Shared"),
+        ["Route"] = new("constraints{require(glyph, route(P4, host-, host+)) | require(glyph, route(P4, i, u))}", "Cross"),
+        ["Commit"] = new("let options = branch{1 | i}; commit choice = constraints{prefer(glyph, options == i, 2/1)}; choice"),
     };
+    private readonly IReadOnlyDictionary<string, SymbolicStructuralContextPreset> _contexts = SymbolicStructuralContextPresets.Build();
 
     private readonly Dictionary<string, Button> _exampleButtons = new(StringComparer.Ordinal);
+    private readonly Dictionary<string, Button> _contextButtons = new(StringComparer.Ordinal);
 
     private CoordinateSystem? _coords;
     private SkiaCanvas? _canvasHost;
@@ -32,15 +35,18 @@ public sealed class SymbolicWorkbenchPage : IVisualizerPage
     private Panel? _inspectionPanel;
     private Label? _panelTitleLabel;
     private Label? _examplesLabel;
+    private Label? _contextLabel;
     private Label? _inputLabel;
     private Label? _inspectionTitleLabel;
     private FlowLayoutPanel? _exampleButtonPanel;
+    private FlowLayoutPanel? _contextButtonPanel;
     private TextBox? _inputEditor;
     private TextBox? _inspectionViewer;
     private Button? _inspectionCopyButton;
     private Bitmap? _copyIcon;
     private SymbolicInspectionReport? _report;
     private string _activeExample = "Commit";
+    private string _activeContextKey = "None";
 
     private readonly SKPaint _headingPaint = new()
     {
@@ -156,7 +162,23 @@ public sealed class SymbolicWorkbenchPage : IVisualizerPage
             AutoSize = false,
         };
 
+        _contextLabel = new Label
+        {
+            Text = "Context",
+            Font = new Font(VisualStyle.UiFontFamily, 8.8f, FontStyle.Bold),
+            ForeColor = Color.FromArgb(108, 108, 108),
+            AutoSize = false,
+        };
+
         _exampleButtonPanel = new FlowLayoutPanel
+        {
+            WrapContents = true,
+            AutoScroll = false,
+            Margin = Padding.Empty,
+            Padding = Padding.Empty,
+        };
+
+        _contextButtonPanel = new FlowLayoutPanel
         {
             WrapContents = true,
             AutoScroll = false,
@@ -169,6 +191,13 @@ public sealed class SymbolicWorkbenchPage : IVisualizerPage
             var button = CreateExampleButton(example.Key, example.Value);
             _exampleButtons[example.Key] = button;
             _exampleButtonPanel.Controls.Add(button);
+        }
+
+        foreach (var context in _contexts)
+        {
+            var button = CreateContextButton(context.Key, context.Value);
+            _contextButtons[context.Key] = button;
+            _contextButtonPanel.Controls.Add(button);
         }
 
         _inputLabel = new Label
@@ -217,6 +246,8 @@ public sealed class SymbolicWorkbenchPage : IVisualizerPage
         _inputPanel.Controls.Add(_panelTitleLabel);
         _inputPanel.Controls.Add(_examplesLabel);
         _inputPanel.Controls.Add(_exampleButtonPanel);
+        _inputPanel.Controls.Add(_contextLabel);
+        _inputPanel.Controls.Add(_contextButtonPanel);
         _inputPanel.Controls.Add(_inputLabel);
         _inputPanel.Controls.Add(_inputEditor);
         _canvasHost.Controls.Add(_inputPanel);
@@ -245,13 +276,14 @@ public sealed class SymbolicWorkbenchPage : IVisualizerPage
         _canvasHost.Controls.Add(_inspectionPanel);
         _inspectionPanel.BringToFront();
 
-        _inputEditor.Text = _examples[_activeExample];
+        _inputEditor.Text = _examples[_activeExample].Source;
         UpdateExampleButtonStyles();
+        UpdateContextButtonStyles();
         LayoutInputPanelContents();
         LayoutInspectionPanelContents();
     }
 
-    private Button CreateExampleButton(string name, string source)
+    private Button CreateExampleButton(string name, ExampleSpec example)
     {
         var button = new Button
         {
@@ -271,12 +303,43 @@ public sealed class SymbolicWorkbenchPage : IVisualizerPage
             _activeExample = name;
             if (_inputEditor is not null)
             {
-                _inputEditor.Text = source;
+                _inputEditor.Text = example.Source;
                 _inputEditor.Focus();
                 _inputEditor.SelectionStart = _inputEditor.TextLength;
             }
 
+            if (!string.IsNullOrWhiteSpace(example.ContextKey) && _contexts.ContainsKey(example.ContextKey))
+            {
+                _activeContextKey = example.ContextKey;
+                UpdateContextButtonStyles();
+            }
+
             UpdateExampleButtonStyles();
+        };
+
+        return button;
+    }
+
+    private Button CreateContextButton(string key, SymbolicStructuralContextPreset context)
+    {
+        var button = new Button
+        {
+            Text = context.DisplayName,
+            AutoSize = false,
+            Width = 96,
+            Height = 30,
+            Margin = new Padding(0, 0, 8, 8),
+            FlatStyle = FlatStyle.Flat,
+            Font = new Font(VisualStyle.UiFontFamily, 8.4f, FontStyle.Bold),
+            Cursor = Cursors.Hand,
+            TabStop = false,
+        };
+        button.FlatAppearance.BorderSize = 1;
+        button.Click += (_, _) =>
+        {
+            _activeContextKey = key;
+            UpdateContextButtonStyles();
+            RefreshReport();
         };
 
         return button;
@@ -322,12 +385,15 @@ public sealed class SymbolicWorkbenchPage : IVisualizerPage
 
         _panelTitleLabel = null;
         _examplesLabel = null;
+        _contextLabel = null;
         _inputLabel = null;
         _inspectionTitleLabel = null;
         _exampleButtonPanel = null;
+        _contextButtonPanel = null;
         _inputEditor = null;
         _inspectionViewer = null;
         _exampleButtons.Clear();
+        _contextButtons.Clear();
     }
 
     private void OnInputChanged(object? sender, EventArgs e)
@@ -339,9 +405,14 @@ public sealed class SymbolicWorkbenchPage : IVisualizerPage
     private void RefreshReport()
     {
         string text = _inputEditor?.Text ?? string.Empty;
+        var context = ResolveActiveContext();
         _report = string.IsNullOrWhiteSpace(text)
             ? null
-            : SymbolicInspector.Inspect(text);
+            : SymbolicInspector.Inspect(
+                text,
+                structuralContext: context.Context,
+                structuralContextName: context.Context is null ? null : context.DisplayName,
+                structuralContextSummary: context.Context is null ? null : context.Summary);
         if (_inspectionCopyButton is not null)
         {
             _inspectionCopyButton.Enabled = _report is not null;
@@ -360,8 +431,24 @@ public sealed class SymbolicWorkbenchPage : IVisualizerPage
         string current = NormalizeLineEndings(_inputEditor.Text).Trim();
         foreach (var entry in _examples)
         {
-            bool isActive = string.Equals(current, NormalizeLineEndings(entry.Value).Trim(), StringComparison.Ordinal);
+            bool isActive = string.Equals(current, NormalizeLineEndings(entry.Value.Source).Trim(), StringComparison.Ordinal);
             if (_exampleButtons.TryGetValue(entry.Key, out var button))
+            {
+                button.BackColor = isActive ? Color.FromArgb(239, 246, 255) : Color.FromArgb(255, 255, 255);
+                button.ForeColor = isActive ? Color.FromArgb(42, 94, 165) : Color.FromArgb(74, 74, 74);
+                button.FlatAppearance.BorderColor = isActive
+                    ? Color.FromArgb(110, 158, 220)
+                    : Color.FromArgb(214, 214, 214);
+            }
+        }
+    }
+
+    private void UpdateContextButtonStyles()
+    {
+        foreach (var entry in _contexts)
+        {
+            bool isActive = string.Equals(_activeContextKey, entry.Key, StringComparison.Ordinal);
+            if (_contextButtons.TryGetValue(entry.Key, out var button))
             {
                 button.BackColor = isActive ? Color.FromArgb(239, 246, 255) : Color.FromArgb(255, 255, 255);
                 button.ForeColor = isActive ? Color.FromArgb(42, 94, 165) : Color.FromArgb(74, 74, 74);
@@ -404,6 +491,8 @@ public sealed class SymbolicWorkbenchPage : IVisualizerPage
             _panelTitleLabel is null ||
             _examplesLabel is null ||
             _exampleButtonPanel is null ||
+            _contextLabel is null ||
+            _contextButtonPanel is null ||
             _inputLabel is null ||
             _inputEditor is null)
         {
@@ -420,6 +509,10 @@ public sealed class SymbolicWorkbenchPage : IVisualizerPage
         y += 22;
         _exampleButtonPanel.SetBounds(padding, y, width, 80);
         y += 86;
+        _contextLabel.SetBounds(padding, y, width, 18);
+        y += 22;
+        _contextButtonPanel.SetBounds(padding, y, width, 40);
+        y += 46;
         _inputLabel.SetBounds(padding, y, width, 18);
         y += 22;
         _inputEditor.SetBounds(padding, y, width, Math.Max(80, _inputPanel.ClientSize.Height - y - padding));
@@ -559,4 +652,11 @@ public sealed class SymbolicWorkbenchPage : IVisualizerPage
 
         return string.Concat(text.AsSpan(0, maxVisibleCharacters - 3), "...");
     }
+
+    private SymbolicStructuralContextPreset ResolveActiveContext() =>
+        _contexts.TryGetValue(_activeContextKey, out var context)
+            ? context
+            : _contexts["None"];
+
+    private sealed record ExampleSpec(string Source, string? ContextKey = null);
 }

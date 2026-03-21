@@ -5,8 +5,11 @@ namespace Core2.Symbolics.Expressions;
 
 public static class SymbolicConstraintNegotiator
 {
-    public static ConstraintNegotiationResult Negotiate(SymbolicTerm term, SymbolicEnvironment? environment = null) =>
-        Negotiate(SymbolicConstraintEvaluator.Evaluate(term, environment));
+    public static ConstraintNegotiationResult Negotiate(
+        SymbolicTerm term,
+        SymbolicEnvironment? environment = null,
+        ISymbolicStructuralContext? structuralContext = null) =>
+        Negotiate(SymbolicConstraintEvaluator.Evaluate(term, environment, structuralContext));
 
     public static ConstraintNegotiationResult Negotiate(ConstraintSetEvaluation evaluation)
     {

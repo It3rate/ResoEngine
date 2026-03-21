@@ -2,25 +2,47 @@ namespace Core2.Symbolics.Expressions;
 
 public static class SymbolicInspector
 {
-    public static SymbolicInspectionReport Inspect(string text, SymbolicEnvironment? environment = null)
+    public static SymbolicInspectionReport Inspect(
+        string text,
+        SymbolicEnvironment? environment = null,
+        ISymbolicStructuralContext? structuralContext = null,
+        string? structuralContextName = null,
+        string? structuralContextSummary = null)
     {
         var current = environment ?? SymbolicEnvironment.Empty;
 
         try
         {
             var parsed = SymbolicParser.Parse(text);
-            var steps = BuildSteps(parsed, current, out var finalEnvironment);
-            return new SymbolicInspectionReport(text, current, parsed, steps, finalEnvironment, null);
+            var steps = BuildSteps(parsed, current, structuralContext, out var finalEnvironment);
+            return new SymbolicInspectionReport(
+                text,
+                current,
+                parsed,
+                steps,
+                finalEnvironment,
+                null,
+                structuralContextName,
+                structuralContextSummary);
         }
         catch (Exception ex) when (ex is ArgumentException or InvalidOperationException or FormatException)
         {
-            return new SymbolicInspectionReport(text, current, null, [], current, ex.Message);
+            return new SymbolicInspectionReport(
+                text,
+                current,
+                null,
+                [],
+                current,
+                ex.Message,
+                structuralContextName,
+                structuralContextSummary);
         }
     }
 
     private static IReadOnlyList<SymbolicInspectionStep> BuildSteps(
         SymbolicTerm parsed,
         SymbolicEnvironment environment,
+        ISymbolicStructuralContext? structuralContext,
         out SymbolicEnvironment finalEnvironment)
     {
         var steps = parsed is SequenceTerm sequence
@@ -34,14 +56,14 @@ public static class SymbolicInspector
         {
             var step = steps[index];
             var elaboration = SymbolicElaborator.Elaborate(step, current);
-            var reduction = SymbolicReducer.Reduce(step, current);
+            var reduction = SymbolicReducer.Reduce(step, current, structuralContext);
 
             ConstraintSetEvaluation? evaluation = null;
             ConstraintNegotiationResult? negotiation = null;
 
             if (TryGetConstraintSubject(step, out var constraintSubject))
             {
-                evaluation = SymbolicConstraintEvaluator.Evaluate(constraintSubject, current);
+                evaluation = SymbolicConstraintEvaluator.Evaluate(constraintSubject, current, structuralContext);
                 negotiation = SymbolicConstraintNegotiator.Negotiate(evaluation);
             }
 

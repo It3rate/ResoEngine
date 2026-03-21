@@ -8,25 +8,31 @@ namespace Core2.Symbolics.Expressions;
 
 public static class SymbolicReducer
 {
-    public static SymbolicReductionResult Reduce(SymbolicTerm term, SymbolicEnvironment? environment = null)
+    public static SymbolicReductionResult Reduce(
+        SymbolicTerm term,
+        SymbolicEnvironment? environment = null,
+        ISymbolicStructuralContext? structuralContext = null)
     {
         ArgumentNullException.ThrowIfNull(term);
 
         var current = environment ?? SymbolicEnvironment.Empty;
         return term switch
         {
-            ProgramTerm program => ReduceProgram(program, current),
+            ProgramTerm program => ReduceProgram(program, current, structuralContext),
             _ => new SymbolicReductionResult(current, ElaborateAndReduce(term, current)),
         };
     }
 
-    private static SymbolicReductionResult ReduceProgram(ProgramTerm term, SymbolicEnvironment environment) =>
+    private static SymbolicReductionResult ReduceProgram(
+        ProgramTerm term,
+        SymbolicEnvironment environment,
+        ISymbolicStructuralContext? structuralContext) =>
         term switch
         {
             BindTerm bind => ReduceBind(bind, environment),
-            CommitTerm commit => ReduceCommit(commit, environment),
+            CommitTerm commit => ReduceCommit(commit, environment, structuralContext),
             EmitTerm emit => new SymbolicReductionResult(environment, ElaborateAndReduce(emit.Value, environment)),
-            SequenceTerm sequence => ReduceSequence(sequence, environment),
+            SequenceTerm sequence => ReduceSequence(sequence, environment, structuralContext),
             _ => new SymbolicReductionResult(environment, ElaborateAndReduce(term, environment)),
         };
 
@@ -37,7 +43,10 @@ public static class SymbolicReducer
         return new SymbolicReductionResult(next, reduced);
     }
 
-    private static SymbolicReductionResult ReduceCommit(CommitTerm commit, SymbolicEnvironment environment)
+    private static SymbolicReductionResult ReduceCommit(
+        CommitTerm commit,
+        SymbolicEnvironment environment,
+        ISymbolicStructuralContext? structuralContext)
     {
         var reduced = ElaborateAndReduce(commit.Value, environment);
         var current = environment;
@@ -45,7 +54,7 @@ public static class SymbolicReducer
 
         if (reduced is ConstraintTerm constraint)
         {
-            var negotiation = SymbolicConstraintNegotiator.Negotiate(constraint, environment);
+            var negotiation = SymbolicConstraintNegotiator.Negotiate(constraint, environment, structuralContext);
             if (negotiation.SelectedCandidate is not null)
             {
                 output = negotiation.SelectedCandidate;
@@ -79,14 +88,17 @@ public static class SymbolicReducer
         return new SymbolicReductionResult(current, output);
     }
 
-    private static SymbolicReductionResult ReduceSequence(SequenceTerm sequence, SymbolicEnvironment environment)
+    private static SymbolicReductionResult ReduceSequence(
+        SequenceTerm sequence,
+        SymbolicEnvironment environment,
+        ISymbolicStructuralContext? structuralContext)
     {
         var current = environment;
         SymbolicTerm? output = null;
 
         foreach (var step in sequence.Steps)
         {
-            var result = ReduceProgram(step, current);
+            var result = ReduceProgram(step, current, structuralContext);
             current = result.Environment;
             output = result.Output;
         }

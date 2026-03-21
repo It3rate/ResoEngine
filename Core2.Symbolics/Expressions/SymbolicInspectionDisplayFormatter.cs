@@ -11,6 +11,18 @@ public static class SymbolicInspectionDisplayFormatter
         var builder = new StringBuilder();
         builder.AppendLine($"Expression: {report.SourceText}");
 
+        if (!string.IsNullOrWhiteSpace(report.StructuralContextName))
+        {
+            builder.AppendLine($"Context: {report.StructuralContextName}");
+            if (!string.IsNullOrWhiteSpace(report.StructuralContextSummary))
+            {
+                foreach (var line in report.StructuralContextSummary.Split(["\r\n", "\n"], StringSplitOptions.None))
+                {
+                    builder.AppendLine($"  {line}");
+                }
+            }
+        }
+
         if (report.HasError)
         {
             builder.AppendLine();
