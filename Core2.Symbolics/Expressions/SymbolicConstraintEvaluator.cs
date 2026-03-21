@@ -95,6 +95,7 @@ public static class SymbolicConstraintEvaluator
             EqualityTerm equality => EvaluateEquality(equality, structuralContext),
             SharedCarrierTerm shared => EvaluateSharedCarrier(shared, structuralContext),
             RouteTerm route => EvaluateRoute(route, structuralContext),
+            JunctionTerm junction => EvaluateJunction(junction, structuralContext),
             _ => new ConstraintRelationAssessment(ConstraintTruthKind.Unresolved, null, "Relation form is not yet directly evaluable."),
         };
 
@@ -215,6 +216,28 @@ public static class SymbolicConstraintEvaluator
             : new ConstraintRelationAssessment(ConstraintTruthKind.Unsatisfied, null, "No such structural route exists at the named site.");
     }
 
+    private static ConstraintRelationAssessment EvaluateJunction(
+        JunctionTerm junction,
+        ISymbolicStructuralContext? structuralContext)
+    {
+        if (structuralContext is null)
+        {
+            return new ConstraintRelationAssessment(ConstraintTruthKind.Unresolved, null, "Junction evaluation requires carrier graph context.");
+        }
+
+        if (!structuralContext.TryResolveJunctionSummary(junction.Site, out var kind, out var note))
+        {
+            return new ConstraintRelationAssessment(ConstraintTruthKind.Unresolved, null, note ?? "Junction evaluation requires carrier graph context.");
+        }
+
+        return kind == junction.Kind
+            ? new ConstraintRelationAssessment(ConstraintTruthKind.Satisfied)
+            : new ConstraintRelationAssessment(
+                ConstraintTruthKind.Unsatisfied,
+                null,
+                $"Site resolves to junction '{kind.ToString().ToLowerInvariant()}', not '{junction.Kind.ToString().ToLowerInvariant()}'.");
+    }
+
     private static bool TryEvaluateAlternativeEquality(
         SymbolicTerm left,
         SymbolicTerm right,
@@ -313,6 +336,7 @@ public static class SymbolicConstraintEvaluator
             EqualityTerm equality => IsClosed(equality.Left) && IsClosed(equality.Right),
             SharedCarrierTerm shared => IsClosed(shared.Left) && IsClosed(shared.Right),
             RouteTerm route => IsClosed(route.Site) && IsClosed(route.From) && IsClosed(route.To),
+            JunctionTerm junction => IsClosed(junction.Site),
             RequirementTerm requirement => IsClosed(requirement.Relation),
             PreferenceTerm preference => IsClosed(preference.Relation),
             ConstraintSetTerm set => set.Constraints.All(IsClosed),

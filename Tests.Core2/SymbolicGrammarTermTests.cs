@@ -203,6 +203,16 @@ public class SymbolicGrammarTermTests
     }
 
     [Fact]
+    public void JunctionTerm_FormatsAsStructuralSummaryQuery()
+    {
+        var junction = new JunctionTerm(
+            new SiteReferenceTerm("P4"),
+            SymbolicJunctionKind.Cross);
+
+        Assert.Equal("junction(P4, cross)", SymbolicTermFormatter.Format(junction));
+    }
+
+    [Fact]
     public void CanonicalSerializer_UsesStableStructuredOutput()
     {
         var preference = new PreferenceTerm(
@@ -372,6 +382,16 @@ public class SymbolicGrammarTermTests
         Assert.Equal("P4", route.Site.SiteName);
         Assert.Equal(RouteIncidentKind.HostNegative, route.From.Kind);
         Assert.Equal(RouteIncidentKind.DominantSide, route.To.Kind);
+    }
+
+    [Fact]
+    public void Parser_ParsesJunctionSummaryRelation()
+    {
+        var parsed = SymbolicParser.Parse("junction(P4, cross)");
+
+        var junction = Assert.IsType<JunctionTerm>(parsed);
+        Assert.Equal("P4", junction.Site.SiteName);
+        Assert.Equal(SymbolicJunctionKind.Cross, junction.Kind);
     }
 
     [Fact]
@@ -785,6 +805,36 @@ public class SymbolicGrammarTermTests
 
         Assert.Equal(ConstraintTruthKind.Satisfied, Assert.Single(satisfied.Items).Truth);
         Assert.Equal(ConstraintTruthKind.Unsatisfied, Assert.Single(unsatisfied.Items).Truth);
+    }
+
+    [Fact]
+    public void ConstraintEvaluator_UsesStructuralContextForJunctionClaims()
+    {
+        var stem = CarrierIdentity.Create("Stem");
+        var bar = CarrierIdentity.Create("Bar");
+        var host = Axis.FromCoordinates(Proportion.Zero, new Proportion(10));
+
+        var site = CarrierPinSite.FromPointPinning(
+            stem,
+            host.PinAt(new Axis(3, -1, 3, -1), new Proportion(5)),
+            new CarrierSideAttachment(PinSideRole.Recessive, bar, Proportion.Zero),
+            new CarrierSideAttachment(PinSideRole.Dominant, bar, Proportion.One),
+            name: "P4");
+
+        var context = new CarrierGraphSymbolicStructuralContext(new CarrierPinGraph([stem, bar], [site]).Analyze());
+
+        var satisfied = SymbolicConstraintEvaluator.Evaluate(
+            SymbolicParser.Parse("constraints{require(glyph, junction(P4, cross))}"),
+            environment: null,
+            structuralContext: context);
+        var unsatisfied = SymbolicConstraintEvaluator.Evaluate(
+            SymbolicParser.Parse("constraints{require(glyph, junction(P4, tee))}"),
+            environment: null,
+            structuralContext: context);
+
+        Assert.Equal(ConstraintTruthKind.Satisfied, Assert.Single(satisfied.Items).Truth);
+        Assert.Equal(ConstraintTruthKind.Unsatisfied, Assert.Single(unsatisfied.Items).Truth);
+        Assert.Equal("Site resolves to junction 'cross', not 'tee'.", Assert.Single(unsatisfied.Items).Note);
     }
 
     [Fact]

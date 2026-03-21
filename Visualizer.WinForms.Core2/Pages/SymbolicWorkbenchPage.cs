@@ -55,13 +55,6 @@ public sealed class SymbolicWorkbenchPage : IVisualizerPage
         Typeface = SKTypeface.FromFamilyName(VisualStyle.FontFamily, SKFontStyle.Bold),
         IsAntialias = true,
     };
-    private readonly SKPaint _bodyPaint = new()
-    {
-        Color = new SKColor(96, 96, 96),
-        TextSize = 14f,
-        Typeface = SKTypeface.FromFamilyName(VisualStyle.FontFamily, SKFontStyle.Normal),
-        IsAntialias = true,
-    };
     private readonly SKPaint _cardFillPaint = new()
     {
         Style = SKPaintStyle.Fill,
@@ -93,22 +86,13 @@ public sealed class SymbolicWorkbenchPage : IVisualizerPage
         }
 
         const float margin = 28f;
-        var inputRect = new SKRect(margin, 112f, _coords.Width - margin, 312f);
-        var outputRect = new SKRect(margin, 332f, _coords.Width - margin, 762f);
+        var inputRect = new SKRect(margin, 64f, _coords.Width - margin, 340f);
+        var outputRect = new SKRect(margin, 362f, _coords.Width - margin, 762f);
 
         LayoutInputPanel(inputRect);
         LayoutInspectionPanel(outputRect);
 
         canvas.DrawText("Symbolic Workbench", margin, 42f, _headingPaint);
-        float introY = 74f;
-        PageChrome.DrawWrappedText(
-            canvas,
-            "Parse, elaborate, reduce, evaluate, and negotiate native Core 2 symbolic terms. The input panel is live, so you can use it as a small grammar workbench instead of reading the symbolic layer only through tests.",
-            margin,
-            ref introY,
-            _coords.Width - margin * 2f,
-            _bodyPaint);
-
         DrawCard(canvas, inputRect);
         DrawCard(canvas, outputRect);
     }
@@ -122,7 +106,6 @@ public sealed class SymbolicWorkbenchPage : IVisualizerPage
     {
         Destroy();
         _headingPaint.Dispose();
-        _bodyPaint.Dispose();
         _cardFillPaint.Dispose();
         _cardStrokePaint.Dispose();
     }
@@ -507,12 +490,12 @@ public sealed class SymbolicWorkbenchPage : IVisualizerPage
         y += 28;
         _examplesLabel.SetBounds(padding, y, width, 18);
         y += 22;
-        _exampleButtonPanel.SetBounds(padding, y, width, 80);
-        y += 86;
+        _exampleButtonPanel.SetBounds(padding, y, width, 40);
+        y += 46;
         _contextLabel.SetBounds(padding, y, width, 18);
         y += 22;
-        _contextButtonPanel.SetBounds(padding, y, width, 40);
-        y += 46;
+        _contextButtonPanel.SetBounds(padding, y, width, 34);
+        y += 40;
         _inputLabel.SetBounds(padding, y, width, 18);
         y += 22;
         _inputEditor.SetBounds(padding, y, width, Math.Max(80, _inputPanel.ClientSize.Height - y - padding));

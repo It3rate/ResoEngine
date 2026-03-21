@@ -74,6 +74,26 @@ public sealed class CarrierGraphSymbolicStructuralContext : ISymbolicStructuralC
         return true;
     }
 
+    public bool TryResolveJunctionSummary(
+        SiteReferenceTerm site,
+        out SymbolicJunctionKind kind,
+        out string? note)
+    {
+        ArgumentNullException.ThrowIfNull(site);
+
+        kind = default;
+        note = null;
+
+        if (!_sitesByName.TryGetValue(site.SiteName, out var siteProfile))
+        {
+            note = $"No named site '{site.SiteName}' exists in the structural context.";
+            return false;
+        }
+
+        kind = MapJunction(siteProfile.Summary);
+        return true;
+    }
+
     private static CarrierIncidentKind MapIncident(RouteIncidentKind kind) => kind switch
     {
         RouteIncidentKind.HostNegative => CarrierIncidentKind.HostNegative,
@@ -81,5 +101,15 @@ public sealed class CarrierGraphSymbolicStructuralContext : ISymbolicStructuralC
         RouteIncidentKind.RecessiveSide => CarrierIncidentKind.RecessiveSide,
         RouteIncidentKind.DominantSide => CarrierIncidentKind.DominantSide,
         _ => throw new ArgumentOutOfRangeException(nameof(kind), kind, null),
+    };
+
+    private static SymbolicJunctionKind MapJunction(CarrierJunctionSummary summary) => summary switch
+    {
+        CarrierJunctionSummary.Open => SymbolicJunctionKind.Open,
+        CarrierJunctionSummary.Cusp => SymbolicJunctionKind.Cusp,
+        CarrierJunctionSummary.Branch => SymbolicJunctionKind.Branch,
+        CarrierJunctionSummary.Tee => SymbolicJunctionKind.Tee,
+        CarrierJunctionSummary.Cross => SymbolicJunctionKind.Cross,
+        _ => throw new ArgumentOutOfRangeException(nameof(summary), summary, null),
     };
 }

@@ -33,6 +33,7 @@ public static class SymbolicTermFormatter
             EqualityTerm equality => $"{Format(equality.Left)} == {Format(equality.Right)}",
             SharedCarrierTerm shared => $"share({Format(shared.Left)}, {Format(shared.Right)})",
             RouteTerm route => $"route({Format(route.Site)}, {Format(route.From)}, {Format(route.To)})",
+            JunctionTerm junction => $"junction({Format(junction.Site)}, {FormatJunction(junction.Kind)})",
             RequirementTerm requirement => FormatRequirement(requirement),
             PreferenceTerm preference => FormatPreference(preference),
             ConstraintSetTerm set => $"constraints{{{string.Join(" | ", set.Constraints.Select(Format))}}}",
@@ -59,6 +60,16 @@ public static class SymbolicTermFormatter
         RouteIncidentKind.HostPositive => "host+",
         RouteIncidentKind.RecessiveSide => "i",
         RouteIncidentKind.DominantSide => "u",
+        _ => kind.ToString(),
+    };
+
+    private static string FormatJunction(SymbolicJunctionKind kind) => kind switch
+    {
+        SymbolicJunctionKind.Open => "open",
+        SymbolicJunctionKind.Cusp => "cusp",
+        SymbolicJunctionKind.Branch => "branch",
+        SymbolicJunctionKind.Tee => "tee",
+        SymbolicJunctionKind.Cross => "cross",
         _ => kind.ToString(),
     };
 

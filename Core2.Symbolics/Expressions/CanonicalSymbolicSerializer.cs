@@ -33,6 +33,7 @@ public static class CanonicalSymbolicSerializer
             EqualityTerm equality => $"equal(left={Serialize(equality.Left)},right={Serialize(equality.Right)})",
             SharedCarrierTerm shared => $"share(left={Serialize(shared.Left)},right={Serialize(shared.Right)})",
             RouteTerm route => $"route(site={Serialize(route.Site)},from={Serialize(route.From)},to={Serialize(route.To)})",
+            JunctionTerm junction => $"junction(site={Serialize(junction.Site)},kind={SerializeJunction(junction.Kind)})",
             RequirementTerm requirement => SerializeRequirement(requirement),
             PreferenceTerm preference => SerializePreference(preference),
             ConstraintSetTerm set => $"constraints([{string.Join(",", set.Constraints.Select(Serialize))}])",
@@ -146,6 +147,16 @@ public static class CanonicalSymbolicSerializer
         Core2.Symbolics.Repetition.InverseContinuationRule.PreferPositiveDominant => "prefer-positive",
         Core2.Symbolics.Repetition.InverseContinuationRule.NearestToReference => "nearest",
         _ => rule.ToString(),
+    };
+
+    private static string SerializeJunction(SymbolicJunctionKind kind) => kind switch
+    {
+        SymbolicJunctionKind.Open => "open",
+        SymbolicJunctionKind.Cusp => "cusp",
+        SymbolicJunctionKind.Branch => "branch",
+        SymbolicJunctionKind.Tee => "tee",
+        SymbolicJunctionKind.Cross => "cross",
+        _ => kind.ToString(),
     };
 
     private static string Escape(string value) =>

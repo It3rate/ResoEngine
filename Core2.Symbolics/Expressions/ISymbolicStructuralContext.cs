@@ -15,4 +15,9 @@ public interface ISymbolicStructuralContext
         RouteIncidentKind to,
         out bool exists,
         out string? note);
+
+    bool TryResolveJunctionSummary(
+        SiteReferenceTerm site,
+        out SymbolicJunctionKind kind,
+        out string? note);
 }

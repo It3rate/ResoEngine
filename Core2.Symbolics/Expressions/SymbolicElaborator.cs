@@ -107,6 +107,9 @@ public static class SymbolicElaborator
                 (SiteReferenceTerm)ElaborateTerm(route.Site, environment),
                 route.From,
                 route.To),
+            JunctionTerm junction => new JunctionTerm(
+                (SiteReferenceTerm)ElaborateTerm(junction.Site, environment),
+                junction.Kind),
             RequirementTerm requirement => new RequirementTerm(
                 (RelationTerm)ElaborateTerm(requirement.Relation, environment),
                 requirement.ParticipantName),

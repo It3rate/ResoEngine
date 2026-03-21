@@ -150,6 +150,11 @@ public static class SymbolicParser
                 return ParseRoute();
             }
 
+            if (PeekIdentifier("junction"))
+            {
+                return ParseJunction();
+            }
+
             if (TryPeekBooleanOperation(out _))
             {
                 return ParseBoolean();
@@ -226,6 +231,17 @@ public static class SymbolicParser
             return new RouteTerm(site, from, to);
         }
 
+        private JunctionTerm ParseJunction()
+        {
+            ConsumeIdentifier("junction");
+            Expect(TokenKind.LeftParen);
+            var site = ParseSiteReference();
+            Expect(TokenKind.Comma);
+            var kind = ParseJunctionKind();
+            Expect(TokenKind.RightParen);
+            return new JunctionTerm(site, kind);
+        }
+
         private AxisBooleanTerm ParseBoolean()
         {
             var operation = ParseBooleanOperationIdentifier();
@@ -254,6 +270,11 @@ public static class SymbolicParser
             if (PeekIdentifier("route"))
             {
                 return ParseRoute();
+            }
+
+            if (PeekIdentifier("junction"))
+            {
+                return ParseJunction();
             }
 
             var left = ParseValueLike();
@@ -689,6 +710,20 @@ public static class SymbolicParser
             };
         }
 
+        private SymbolicJunctionKind ParseJunctionKind()
+        {
+            string name = ExpectIdentifier();
+            return name switch
+            {
+                "open" => SymbolicJunctionKind.Open,
+                "cusp" => SymbolicJunctionKind.Cusp,
+                "branch" => SymbolicJunctionKind.Branch,
+                "tee" => SymbolicJunctionKind.Tee,
+                "cross" => SymbolicJunctionKind.Cross,
+                _ => throw Error($"Unknown junction kind '{name}'."),
+            };
+        }
+
         private string? TryParseLeadingParticipantName()
         {
             if (Current.Kind == TokenKind.Identifier &&
@@ -826,7 +861,7 @@ public static class SymbolicParser
         }
 
         private static bool IsReservedRelationHead(string name) =>
-            name is "share" or "route" or "require" or "prefer" or "constraints";
+            name is "share" or "route" or "junction" or "require" or "prefer" or "constraints";
 
         private bool TryPeekBooleanOperation(out AxisBooleanOperation operation)
         {
