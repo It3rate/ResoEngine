@@ -6,6 +6,7 @@ namespace Core2.Interpretation.Analysis;
 public sealed class CarrierGraphSymbolicStructuralContext : ISymbolicStructuralContext
 {
     private readonly IReadOnlyDictionary<string, CarrierSiteStructuralProfile> _sitesByName;
+    private readonly IReadOnlyDictionary<string, CarrierStructuralProfile> _carriersByName;
 
     public CarrierGraphSymbolicStructuralContext(CarrierPinGraphAnalysis analysis)
     {
@@ -15,6 +16,9 @@ public sealed class CarrierGraphSymbolicStructuralContext : ISymbolicStructuralC
         _sitesByName = analysis.SiteProfiles
             .Where(profile => !string.IsNullOrWhiteSpace(profile.Name))
             .ToDictionary(profile => profile.Name!, StringComparer.Ordinal);
+        _carriersByName = analysis.Profiles
+            .Where(profile => !string.IsNullOrWhiteSpace(profile.Carrier.Name))
+            .ToDictionary(profile => profile.Carrier.Name!, StringComparer.Ordinal);
     }
 
     public CarrierPinGraphAnalysis Analysis { get; }
@@ -190,6 +194,56 @@ public sealed class CarrierGraphSymbolicStructuralContext : ISymbolicStructuralC
             _ => throw new InvalidOperationException(
                 $"Site count kind '{count.Kind}' is not valid for named-site counting."),
         };
+        return true;
+    }
+
+    public bool TryResolveCarrierCount(
+        CarrierCountTerm count,
+        out Proportion value,
+        out string? note)
+    {
+        ArgumentNullException.ThrowIfNull(count);
+
+        note = null;
+        if (!_carriersByName.TryGetValue(count.Carrier.Name, out var profile))
+        {
+            value = Proportion.Zero;
+            note = $"No named carrier '{count.Carrier.Name}' exists in the structural context.";
+            return false;
+        }
+
+        value = count.Kind switch
+        {
+            SymbolicCarrierCountKind.HostedSites => new Proportion(profile.HostedSiteCount),
+            SymbolicCarrierCountKind.Attachments => new Proportion(profile.AttachmentCount),
+            SymbolicCarrierCountKind.ReferencingHosts => new Proportion(profile.ReferencingHostCarrierCount),
+            SymbolicCarrierCountKind.ParticipatingSites => new Proportion(profile.ParticipatingSiteCount),
+            SymbolicCarrierCountKind.ThroughSites => new Proportion(profile.ThroughSiteCount),
+            _ => throw new ArgumentOutOfRangeException(nameof(count), count.Kind, null),
+        };
+        return true;
+    }
+
+    public bool TryResolveCarrierSpan(
+        CarrierSpanTerm span,
+        out Proportion value,
+        out string? note)
+    {
+        ArgumentNullException.ThrowIfNull(span);
+
+        note = null;
+        if (!_carriersByName.TryGetValue(span.Carrier.Name, out var profile))
+        {
+            value = Proportion.Zero;
+            note = $"No named carrier '{span.Carrier.Name}' exists in the structural context.";
+            return false;
+        }
+
+        var first = profile.FirstAttachmentPosition;
+        var last = profile.LastAttachmentPosition;
+        value = first is null || last is null
+            ? Proportion.Zero
+            : last - first;
         return true;
     }
 

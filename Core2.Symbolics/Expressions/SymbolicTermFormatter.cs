@@ -18,6 +18,7 @@ public static class SymbolicTermFormatter
             ValueReferenceTerm reference => reference.Name,
             TransformReferenceTerm reference => reference.Name,
             RelationReferenceTerm reference => reference.Name,
+            CarrierReferenceTerm carrier => carrier.Name,
             SiteReferenceTerm site => site.SiteName,
             AnchorReferenceTerm anchor => anchor.QualifiedName,
             IncidentReferenceTerm incident => FormatIncident(incident.Kind),
@@ -26,6 +27,8 @@ public static class SymbolicTermFormatter
             DivideValuesTerm divide => $"{Format(divide.Left)} / {Format(divide.Right)}",
             AnchorPositionTerm position => $"position({Format(position.Anchor)})",
             CountTerm count => FormatCount(count),
+            CarrierCountTerm count => $"count({Format(count.Carrier)}, {FormatCarrierCountKind(count.Kind)})",
+            CarrierSpanTerm span => $"span({Format(span.Carrier)})",
             PowerTerm power => FormatPower(power),
             InverseContinueTerm inverse => FormatInverse(inverse),
             PinTerm pin => $"{Format(pin.Host)} * {Format(pin.AppliedAnchor ?? pin.Applied)} @ {pin.Position}",
@@ -95,6 +98,16 @@ public static class SymbolicTermFormatter
         SymbolicCountKind.Sites => "sites",
         SymbolicCountKind.ParticipatingCarriers => "participating-carriers",
         SymbolicCountKind.ThroughCarriers => "through-carriers",
+        _ => kind.ToString(),
+    };
+
+    private static string FormatCarrierCountKind(SymbolicCarrierCountKind kind) => kind switch
+    {
+        SymbolicCarrierCountKind.HostedSites => "hosted-sites",
+        SymbolicCarrierCountKind.Attachments => "attachments",
+        SymbolicCarrierCountKind.ReferencingHosts => "referencing-hosts",
+        SymbolicCarrierCountKind.ParticipatingSites => "participating-sites",
+        SymbolicCarrierCountKind.ThroughSites => "through-sites",
         _ => kind.ToString(),
     };
 

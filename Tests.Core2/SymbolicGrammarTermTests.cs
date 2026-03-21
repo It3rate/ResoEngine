@@ -241,6 +241,16 @@ public class SymbolicGrammarTermTests
     }
 
     [Fact]
+    public void CarrierQueries_FormatAsStructuralValueQueries()
+    {
+        var count = new CarrierCountTerm(new CarrierReferenceTerm("Bowl"), SymbolicCarrierCountKind.Attachments);
+        var span = new CarrierSpanTerm(new CarrierReferenceTerm("Bowl"));
+
+        Assert.Equal("count(Bowl, attachments)", SymbolicTermFormatter.Format(count));
+        Assert.Equal("span(Bowl)", SymbolicTermFormatter.Format(span));
+    }
+
+    [Fact]
     public void CanonicalSerializer_UsesStableStructuredOutput()
     {
         var preference = new PreferenceTerm(
@@ -455,6 +465,20 @@ public class SymbolicGrammarTermTests
 
         var position = Assert.IsType<AnchorPositionTerm>(parsed);
         Assert.Equal("P4.u", position.Anchor.QualifiedName);
+    }
+
+    [Fact]
+    public void Parser_ParsesCarrierQueries()
+    {
+        var count = SymbolicParser.Parse("count(Bowl, attachments)");
+        var span = SymbolicParser.Parse("span(Bowl)");
+
+        var countTerm = Assert.IsType<CarrierCountTerm>(count);
+        var spanTerm = Assert.IsType<CarrierSpanTerm>(span);
+
+        Assert.Equal("Bowl", countTerm.Carrier.Name);
+        Assert.Equal(SymbolicCarrierCountKind.Attachments, countTerm.Kind);
+        Assert.Equal("Bowl", spanTerm.Carrier.Name);
     }
 
     [Fact]
@@ -992,6 +1016,37 @@ public class SymbolicGrammarTermTests
 
         Assert.Equal(Proportion.Zero, Assert.IsType<ElementLiteralTerm>(topPosition.Output).Value);
         Assert.Equal(Proportion.One, Assert.IsType<ElementLiteralTerm>(bottomPosition.Output).Value);
+    }
+
+    [Fact]
+    public void Reducer_UsesStructuralContextForCarrierQueries()
+    {
+        var stem = CarrierIdentity.Create("Stem");
+        var bowl = CarrierIdentity.Create("Bowl");
+        var host = Axis.FromCoordinates(Proportion.Zero, new Proportion(10));
+
+        var top = CarrierPinSite.FromPointPinning(
+            stem,
+            host.PinAt(new Axis(new Proportion(3, -1), new Proportion(2, 1)), Proportion.Zero),
+            new CarrierSideAttachment(PinSideRole.Recessive, stem, Proportion.Zero),
+            new CarrierSideAttachment(PinSideRole.Dominant, bowl, Proportion.Zero),
+            name: "P4");
+        var bottom = CarrierPinSite.FromPointPinning(
+            stem,
+            host.PinAt(new Axis(new Proportion(-3, -1), new Proportion(2, 1)), Proportion.One),
+            new CarrierSideAttachment(PinSideRole.Recessive, stem, Proportion.One),
+            new CarrierSideAttachment(PinSideRole.Dominant, bowl, Proportion.One),
+            name: "P3");
+
+        var context = new CarrierGraphSymbolicStructuralContext(new CarrierPinGraph([stem, bowl], [top, bottom]).Analyze());
+
+        var hosted = SymbolicReducer.Reduce(SymbolicParser.Parse("count(Stem, hosted-sites)"), structuralContext: context);
+        var attachments = SymbolicReducer.Reduce(SymbolicParser.Parse("count(Bowl, attachments)"), structuralContext: context);
+        var span = SymbolicReducer.Reduce(SymbolicParser.Parse("span(Bowl)"), structuralContext: context);
+
+        Assert.Equal(new Proportion(2), Assert.IsType<ElementLiteralTerm>(hosted.Output).Value);
+        Assert.Equal(new Proportion(2), Assert.IsType<ElementLiteralTerm>(attachments.Output).Value);
+        Assert.Equal(Proportion.One, Assert.IsType<ElementLiteralTerm>(span.Output).Value);
     }
 
     [Fact]

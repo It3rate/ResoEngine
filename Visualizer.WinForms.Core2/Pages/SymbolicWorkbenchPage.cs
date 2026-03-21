@@ -21,6 +21,7 @@ public sealed class SymbolicWorkbenchPage : IVisualizerPage
         ["Power"] = new("pow(i, 2/1)"),
         ["Inverse"] = new("inverse(4, 2/1)"),
         ["Count"] = new("let carriers = count(carriers); let through = count(P4, through-carriers); carriers * through", "Cross"),
+        ["Carrier"] = new("let hosted = count(Stem, hosted-sites); let span = span(Bowl); hosted * span", "Shared"),
         ["Position"] = new("let top = position(P4.u); let bottom = position(P3.u); bottom / 1/1", "Shared"),
         ["Shared"] = new("commit choice = constraints{require(glyph, P4.u == P3.u) | prefer(glyph, branch{1 | i} == i, 2/1)}; choice", "Shared"),
         ["Route"] = new("constraints{require(glyph, route(P4, host-, host+)) | require(glyph, route(P4, i, u))}", "Cross"),

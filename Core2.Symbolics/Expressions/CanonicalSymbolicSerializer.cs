@@ -18,6 +18,7 @@ public static class CanonicalSymbolicSerializer
             ValueReferenceTerm reference => $"ref(sort=Value,name={Escape(reference.Name)})",
             TransformReferenceTerm reference => $"ref(sort=Transform,name={Escape(reference.Name)})",
             RelationReferenceTerm reference => $"ref(sort=Relation,name={Escape(reference.Name)})",
+            CarrierReferenceTerm carrier => $"carrier({Escape(carrier.Name)})",
             SiteReferenceTerm site => $"site({Escape(site.SiteName)})",
             AnchorReferenceTerm anchor => $"anchor(owner={Escape(anchor.OwnerName)},name={Escape(anchor.AnchorName)})",
             IncidentReferenceTerm incident => $"incident({incident.Kind})",
@@ -26,6 +27,8 @@ public static class CanonicalSymbolicSerializer
             DivideValuesTerm divide => $"divide(left={Serialize(divide.Left)},right={Serialize(divide.Right)})",
             AnchorPositionTerm position => $"position(anchor={Serialize(position.Anchor)})",
             CountTerm count => SerializeCount(count),
+            CarrierCountTerm count => $"count(carrier={Serialize(count.Carrier)},kind={SerializeCarrierCountKind(count.Kind)})",
+            CarrierSpanTerm span => $"span(carrier={Serialize(span.Carrier)})",
             PowerTerm power => SerializePower(power),
             InverseContinueTerm inverse => SerializeInverse(inverse),
             PinTerm pin => SerializePin(pin),
@@ -184,6 +187,16 @@ public static class CanonicalSymbolicSerializer
         SymbolicCountKind.Sites => "sites",
         SymbolicCountKind.ParticipatingCarriers => "participating-carriers",
         SymbolicCountKind.ThroughCarriers => "through-carriers",
+        _ => kind.ToString(),
+    };
+
+    private static string SerializeCarrierCountKind(SymbolicCarrierCountKind kind) => kind switch
+    {
+        SymbolicCarrierCountKind.HostedSites => "hosted-sites",
+        SymbolicCarrierCountKind.Attachments => "attachments",
+        SymbolicCarrierCountKind.ReferencingHosts => "referencing-hosts",
+        SymbolicCarrierCountKind.ParticipatingSites => "participating-sites",
+        SymbolicCarrierCountKind.ThroughSites => "through-sites",
         _ => kind.ToString(),
     };
 

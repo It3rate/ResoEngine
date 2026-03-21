@@ -64,6 +64,7 @@ public static class SymbolicElaborator
             RelationReferenceTerm reference when environment.TryResolve(reference.Name, out var resolved) && resolved is RelationTerm relation => relation,
             SiteReferenceTerm reference when environment.TryResolve(reference.SiteName, out var resolved) && resolved is ValueTerm value => value,
             AnchorReferenceTerm reference when environment.TryResolve(reference.QualifiedName, out var resolved) && resolved is ValueTerm value => value,
+            CarrierReferenceTerm => term,
             ApplyTransformTerm apply => new ApplyTransformTerm(
                 (ValueTerm)ElaborateTerm(apply.State, environment),
                 (TransformTerm)ElaborateTerm(apply.Transform, environment)),
@@ -78,6 +79,11 @@ public static class SymbolicElaborator
             CountTerm count => new CountTerm(
                 count.Site is null ? null : (SiteReferenceTerm)ElaborateTerm(count.Site, environment),
                 count.Kind),
+            CarrierCountTerm count => new CarrierCountTerm(
+                (CarrierReferenceTerm)ElaborateTerm(count.Carrier, environment),
+                count.Kind),
+            CarrierSpanTerm span => new CarrierSpanTerm(
+                (CarrierReferenceTerm)ElaborateTerm(span.Carrier, environment)),
             PowerTerm power => new PowerTerm(
                 (ValueTerm)ElaborateTerm(power.Base, environment),
                 power.Exponent,

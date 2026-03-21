@@ -129,6 +129,8 @@ public static class SymbolicReducer
             DivideValuesTerm divide => ReduceDivide(divide, environment, structuralContext),
             AnchorPositionTerm position => ReduceAnchorPosition(position, structuralContext),
             CountTerm count => ReduceCount(count, structuralContext),
+            CarrierCountTerm count => ReduceCarrierCount(count, structuralContext),
+            CarrierSpanTerm span => ReduceCarrierSpan(span, structuralContext),
             PowerTerm power => ReducePower(power, environment, structuralContext),
             InverseContinueTerm inverse => ReduceInverseContinuation(inverse, environment, structuralContext),
             PinTerm pin => new PinTerm(
@@ -234,6 +236,32 @@ public static class SymbolicReducer
         }
 
         return count;
+    }
+
+    private static SymbolicTerm ReduceCarrierCount(
+        CarrierCountTerm count,
+        ISymbolicStructuralContext? structuralContext)
+    {
+        if (structuralContext is not null &&
+            structuralContext.TryResolveCarrierCount(count, out var value, out _))
+        {
+            return new ElementLiteralTerm(value);
+        }
+
+        return count;
+    }
+
+    private static SymbolicTerm ReduceCarrierSpan(
+        CarrierSpanTerm span,
+        ISymbolicStructuralContext? structuralContext)
+    {
+        if (structuralContext is not null &&
+            structuralContext.TryResolveCarrierSpan(span, out var value, out _))
+        {
+            return new ElementLiteralTerm(value);
+        }
+
+        return span;
     }
 
     private static SymbolicTerm ReduceAnchorPosition(

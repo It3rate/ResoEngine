@@ -36,4 +36,14 @@ public interface ISymbolicStructuralContext
         CountTerm count,
         out Core2.Elements.Proportion value,
         out string? note);
+
+    bool TryResolveCarrierCount(
+        CarrierCountTerm count,
+        out Core2.Elements.Proportion value,
+        out string? note);
+
+    bool TryResolveCarrierSpan(
+        CarrierSpanTerm span,
+        out Core2.Elements.Proportion value,
+        out string? note);
 }

@@ -401,6 +401,11 @@ public static class SymbolicParser
                 return ParsePosition();
             }
 
+            if (PeekIdentifier("span"))
+            {
+                return ParseSpan();
+            }
+
             if (PeekIdentifier("pow"))
             {
                 return ParsePower();
@@ -483,7 +488,7 @@ public static class SymbolicParser
             return new BranchFamilyTerm(family);
         }
 
-        private CountTerm ParseCount()
+        private ValueTerm ParseCount()
         {
             ConsumeIdentifier("count");
             Expect(TokenKind.LeftParen);
@@ -497,11 +502,22 @@ public static class SymbolicParser
                 return new CountTerm(globalKind);
             }
 
-            var site = ParseSiteReference();
+            string subjectName = ExpectIdentifier();
             Expect(TokenKind.Comma);
-            var siteKind = ParseSiteCountKind();
+            string kindName = ExpectIdentifier();
             Expect(TokenKind.RightParen);
-            return new CountTerm(site, siteKind);
+
+            if (TryParseSiteCountKind(kindName, out var siteKind))
+            {
+                return new CountTerm(new SiteReferenceTerm(subjectName), siteKind);
+            }
+
+            if (TryParseCarrierCountKind(kindName, out var carrierKind))
+            {
+                return new CarrierCountTerm(new CarrierReferenceTerm(subjectName), carrierKind);
+            }
+
+            throw Error($"Unknown count kind '{kindName}'.");
         }
 
         private AnchorPositionTerm ParsePosition()
@@ -511,6 +527,15 @@ public static class SymbolicParser
             var anchor = ParseAnchorReference();
             Expect(TokenKind.RightParen);
             return new AnchorPositionTerm(anchor);
+        }
+
+        private CarrierSpanTerm ParseSpan()
+        {
+            ConsumeIdentifier("span");
+            Expect(TokenKind.LeftParen);
+            var carrier = ParseCarrierReference();
+            Expect(TokenKind.RightParen);
+            return new CarrierSpanTerm(carrier);
         }
 
         private PowerTerm ParsePower()
@@ -758,6 +783,12 @@ public static class SymbolicParser
             return new AnchorReferenceTerm(ownerName, anchorName);
         }
 
+        private CarrierReferenceTerm ParseCarrierReference()
+        {
+            string name = ExpectIdentifier();
+            return new CarrierReferenceTerm(name);
+        }
+
         private IncidentReferenceTerm ParseIncidentReference()
         {
             string name = ExpectIdentifier();
@@ -809,15 +840,36 @@ public static class SymbolicParser
             return name is "carriers" or "sites";
         }
 
-        private SymbolicCountKind ParseSiteCountKind()
+        private static bool TryParseSiteCountKind(string name, out SymbolicCountKind kind)
         {
-            string name = ExpectIdentifier();
-            return name switch
+            kind = name switch
             {
                 "participating-carriers" => SymbolicCountKind.ParticipatingCarriers,
                 "through-carriers" => SymbolicCountKind.ThroughCarriers,
-                _ => throw Error($"Unknown site count kind '{name}'."),
+                _ => default,
             };
+
+            return name is "participating-carriers" or "through-carriers";
+        }
+
+        private static bool TryParseCarrierCountKind(string name, out SymbolicCarrierCountKind kind)
+        {
+            kind = name switch
+            {
+                "hosted-sites" => SymbolicCarrierCountKind.HostedSites,
+                "attachments" => SymbolicCarrierCountKind.Attachments,
+                "referencing-hosts" => SymbolicCarrierCountKind.ReferencingHosts,
+                "participating-sites" => SymbolicCarrierCountKind.ParticipatingSites,
+                "through-sites" => SymbolicCarrierCountKind.ThroughSites,
+                _ => default,
+            };
+
+            return name is
+                "hosted-sites" or
+                "attachments" or
+                "referencing-hosts" or
+                "participating-sites" or
+                "through-sites";
         }
 
         private string? TryParseLeadingParticipantName()
