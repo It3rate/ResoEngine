@@ -256,6 +256,16 @@ public class SymbolicGrammarTermTests
     }
 
     [Fact]
+    public void Parser_ParsesPowerTerm()
+    {
+        var parsed = SymbolicParser.Parse("pow(3i+2, 2/1)");
+
+        var power = Assert.IsType<PowerTerm>(parsed);
+        Assert.Equal(new Proportion(2, 1), power.Exponent);
+        Assert.Equal("pow([3/1]i + [2/1], 2/1)", SymbolicTermFormatter.Format(power));
+    }
+
+    [Fact]
     public void Parser_ParsesPositionedPinning()
     {
         var parsed = SymbolicParser.Parse("A * B @ 1/2");
@@ -523,6 +533,26 @@ public class SymbolicGrammarTermTests
         var axis = Assert.IsType<Axis>(literal.Value);
         Assert.Equal(new Proportion(7, 41), axis.Recessive);
         Assert.Equal(new Proportion(22, 41), axis.Dominant);
+    }
+
+    [Fact]
+    public void Reducer_ReducesLiteralAxisPower()
+    {
+        var reduced = SymbolicReducer.Reduce(SymbolicParser.Parse("pow(i, 2/1)"));
+
+        var literal = Assert.IsType<ElementLiteralTerm>(reduced.Output);
+        Assert.Equal(Axis.NegativeOne, literal.Value);
+    }
+
+    [Fact]
+    public void Reducer_PreservesAlternativeCandidatesForFractionalPower()
+    {
+        var reduced = SymbolicReducer.Reduce(SymbolicParser.Parse("pow(1, 1/2)"));
+
+        var family = Assert.IsType<BranchFamilyTerm>(reduced.Output);
+        Assert.Equal(2, family.Family.Values.Count);
+        Assert.Contains(family.Family.Values, value => Assert.IsType<ElementLiteralTerm>(value).Value.Equals(Axis.One));
+        Assert.Contains(family.Family.Values, value => Assert.IsType<ElementLiteralTerm>(value).Value.Equals(Axis.NegativeOne));
     }
 
     [Fact]

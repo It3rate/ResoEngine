@@ -2,6 +2,7 @@ using Core2.Boolean;
 using Core2.Algebra;
 using Core2.Branching;
 using Core2.Elements;
+using Core2.Symbolics.Repetition;
 
 namespace Core2.Symbolics.Expressions;
 
@@ -105,6 +106,7 @@ public static class SymbolicReducer
             ApplyTransformTerm apply => ReduceApplyTransform(apply, environment),
             MultiplyValuesTerm multiply => ReduceMultiply(multiply, environment),
             DivideValuesTerm divide => ReduceDivide(divide, environment),
+            PowerTerm power => ReducePower(power, environment),
             PinTerm pin => new PinTerm(
                 (ValueTerm)ElaborateAndReduce(pin.Host, environment),
                 (ValueTerm)ElaborateAndReduce(pin.Applied, environment),
@@ -182,6 +184,18 @@ public static class SymbolicReducer
         }
 
         return new DivideValuesTerm(left, right);
+    }
+
+    private static SymbolicTerm ReducePower(PowerTerm power, SymbolicEnvironment environment)
+    {
+        var @base = (ValueTerm)ElaborateAndReduce(power.Base, environment);
+        if (@base is ElementLiteralTerm literal &&
+            TryReducePower(literal.Value, power.Exponent, out var reduced))
+        {
+            return reduced;
+        }
+
+        return new PowerTerm(@base, power.Exponent);
     }
 
     private static SymbolicTerm ReduceBoolean(AxisBooleanTerm boolean, SymbolicEnvironment environment)
@@ -311,6 +325,48 @@ public static class SymbolicReducer
                 folded = null!;
                 return false;
         }
+    }
+
+    private static bool TryReducePower(IElement value, Proportion exponent, out SymbolicTerm reduced)
+    {
+        switch (value)
+        {
+            case Scalar scalar:
+                return TryProjectPowerResult(PowerEngine.Pow(scalar, exponent), out reduced);
+
+            case Proportion proportion:
+                return TryProjectPowerResult(PowerEngine.Pow(proportion, exponent), out reduced);
+
+            case Axis axis:
+                return TryProjectPowerResult(PowerEngine.Pow(axis, exponent), out reduced);
+
+            case Area area:
+                return TryProjectPowerResult(PowerEngine.Pow(area, exponent), out reduced);
+
+            default:
+                reduced = null!;
+                return false;
+        }
+    }
+
+    private static bool TryProjectPowerResult<T>(PowerResult<T> result, out SymbolicTerm reduced)
+        where T : IElement
+    {
+        if (!result.Succeeded)
+        {
+            reduced = null!;
+            return false;
+        }
+
+        if (result.PrincipalCandidate is not null && result.Candidates.Count == 1)
+        {
+            reduced = new ElementLiteralTerm(result.PrincipalCandidate);
+            return true;
+        }
+
+        reduced = new BranchFamilyTerm(
+            result.Branches.Map<ValueTerm>(candidate => new ElementLiteralTerm(candidate)));
+        return true;
     }
 
     private static bool TryFoldBranchFamily(

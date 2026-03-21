@@ -23,6 +23,7 @@ public static class SymbolicTermFormatter
             ApplyTransformTerm apply => $"{Format(apply.State)} * {Format(apply.Transform)}",
             MultiplyValuesTerm multiply => $"{Format(multiply.Left)} * {Format(multiply.Right)}",
             DivideValuesTerm divide => $"{Format(divide.Left)} / {Format(divide.Right)}",
+            PowerTerm power => $"pow({Format(power.Base)}, {power.Exponent})",
             PinTerm pin => $"{Format(pin.Host)} * {Format(pin.AppliedAnchor ?? pin.Applied)} @ {pin.Position}",
             PinToPinTerm pinToPin => $"pin({Format(pinToPin.HostAnchor)}, {Format(pinToPin.AppliedAnchor)})",
             AxisBooleanTerm boolean => FormatBoolean(boolean),

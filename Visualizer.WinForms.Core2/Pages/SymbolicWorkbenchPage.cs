@@ -255,8 +255,8 @@ public sealed class SymbolicWorkbenchPage : IVisualizerPage
         {
             Text = name,
             AutoSize = false,
-            Width = 90,
-            Height = 28,
+            Width = 110,
+            Height = 32,
             Margin = new Padding(0, 0, 8, 8),
             FlatStyle = FlatStyle.Flat,
             Font = new Font(VisualStyle.UiFontFamily, 8.8f, FontStyle.Bold),
@@ -416,8 +416,8 @@ public sealed class SymbolicWorkbenchPage : IVisualizerPage
         y += 28;
         _examplesLabel.SetBounds(padding, y, width, 18);
         y += 22;
-        _exampleButtonPanel.SetBounds(padding, y, width, 72);
-        y += 78;
+        _exampleButtonPanel.SetBounds(padding, y, width, 80);
+        y += 86;
         _inputLabel.SetBounds(padding, y, width, 18);
         y += 22;
         _inputEditor.SetBounds(padding, y, width, Math.Max(80, _inputPanel.ClientSize.Height - y - padding));

@@ -348,6 +348,11 @@ public static class SymbolicParser
                 return ParseBranch();
             }
 
+            if (PeekIdentifier("pow"))
+            {
+                return ParsePower();
+            }
+
             if (Current.Kind == TokenKind.LeftBracket)
             {
                 return new ElementLiteralTerm(ParseAxisLiteral());
@@ -418,6 +423,17 @@ public static class SymbolicParser
                 values);
 
             return new BranchFamilyTerm(family);
+        }
+
+        private PowerTerm ParsePower()
+        {
+            ConsumeIdentifier("pow");
+            Expect(TokenKind.LeftParen);
+            var @base = ToValueTerm(ParseValueLike());
+            Expect(TokenKind.Comma);
+            var exponent = ParseProportionLiteral();
+            Expect(TokenKind.RightParen);
+            return new PowerTerm(@base, exponent);
         }
 
         private Axis ParseAxisLiteral()

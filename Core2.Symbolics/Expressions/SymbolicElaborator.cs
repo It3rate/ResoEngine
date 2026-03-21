@@ -73,6 +73,9 @@ public static class SymbolicElaborator
             DivideValuesTerm divide => new DivideValuesTerm(
                 (ValueTerm)ElaborateTerm(divide.Left, environment),
                 (ValueTerm)ElaborateTerm(divide.Right, environment)),
+            PowerTerm power => new PowerTerm(
+                (ValueTerm)ElaborateTerm(power.Base, environment),
+                power.Exponent),
             PinTerm pin => new PinTerm(
                 (ValueTerm)ElaborateTerm(pin.Host, environment),
                 (ValueTerm)ElaborateTerm(pin.Applied, environment),
