@@ -96,6 +96,7 @@ public static class SymbolicConstraintEvaluator
             SharedCarrierTerm shared => EvaluateSharedCarrier(shared, structuralContext),
             RouteTerm route => EvaluateRoute(route, structuralContext),
             JunctionTerm junction => EvaluateJunction(junction, structuralContext),
+            SiteFlagTerm flag => EvaluateSiteFlag(flag, structuralContext),
             _ => new ConstraintRelationAssessment(ConstraintTruthKind.Unresolved, null, "Relation form is not yet directly evaluable."),
         };
 
@@ -238,6 +239,28 @@ public static class SymbolicConstraintEvaluator
                 $"Site resolves to junction '{kind.ToString().ToLowerInvariant()}', not '{junction.Kind.ToString().ToLowerInvariant()}'.");
     }
 
+    private static ConstraintRelationAssessment EvaluateSiteFlag(
+        SiteFlagTerm flag,
+        ISymbolicStructuralContext? structuralContext)
+    {
+        if (structuralContext is null)
+        {
+            return new ConstraintRelationAssessment(ConstraintTruthKind.Unresolved, null, "Site-flag evaluation requires carrier graph context.");
+        }
+
+        if (!structuralContext.TryResolveSiteFlag(flag.Site, flag.Kind, out bool value, out var note))
+        {
+            return new ConstraintRelationAssessment(ConstraintTruthKind.Unresolved, null, note ?? "Site-flag evaluation requires carrier graph context.");
+        }
+
+        return value
+            ? new ConstraintRelationAssessment(ConstraintTruthKind.Satisfied)
+            : new ConstraintRelationAssessment(
+                ConstraintTruthKind.Unsatisfied,
+                null,
+                $"Site does not satisfy flag '{FormatSiteFlagKind(flag.Kind)}'.");
+    }
+
     private static bool TryEvaluateAlternativeEquality(
         SymbolicTerm left,
         SymbolicTerm right,
@@ -337,12 +360,21 @@ public static class SymbolicConstraintEvaluator
             SharedCarrierTerm shared => IsClosed(shared.Left) && IsClosed(shared.Right),
             RouteTerm route => IsClosed(route.Site) && IsClosed(route.From) && IsClosed(route.To),
             JunctionTerm junction => IsClosed(junction.Site),
+            SiteFlagTerm flag => IsClosed(flag.Site),
             RequirementTerm requirement => IsClosed(requirement.Relation),
             PreferenceTerm preference => IsClosed(preference.Relation),
             ConstraintSetTerm set => set.Constraints.All(IsClosed),
             BranchFamilyTerm branch => branch.Family.Values.All(IsClosed),
             _ => false,
         };
+
+    private static string FormatSiteFlagKind(SymbolicSiteFlagKind kind) => kind switch
+    {
+        SymbolicSiteFlagKind.HostThrough => "host-through",
+        SymbolicSiteFlagKind.CrossProposal => "cross-proposal",
+        SymbolicSiteFlagKind.TrueCross => "true-cross",
+        _ => kind.ToString().ToLowerInvariant(),
+    };
 
     private static ConstraintParticipantSummary CreateSummary(IGrouping<string?, ConstraintEvaluationItem> group)
     {

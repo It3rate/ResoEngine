@@ -155,6 +155,11 @@ public static class SymbolicParser
                 return ParseJunction();
             }
 
+            if (PeekIdentifier("has"))
+            {
+                return ParseSiteFlag();
+            }
+
             if (TryPeekBooleanOperation(out _))
             {
                 return ParseBoolean();
@@ -242,6 +247,17 @@ public static class SymbolicParser
             return new JunctionTerm(site, kind);
         }
 
+        private SiteFlagTerm ParseSiteFlag()
+        {
+            ConsumeIdentifier("has");
+            Expect(TokenKind.LeftParen);
+            var site = ParseSiteReference();
+            Expect(TokenKind.Comma);
+            var kind = ParseSiteFlagKind();
+            Expect(TokenKind.RightParen);
+            return new SiteFlagTerm(site, kind);
+        }
+
         private AxisBooleanTerm ParseBoolean()
         {
             var operation = ParseBooleanOperationIdentifier();
@@ -275,6 +291,11 @@ public static class SymbolicParser
             if (PeekIdentifier("junction"))
             {
                 return ParseJunction();
+            }
+
+            if (PeekIdentifier("has"))
+            {
+                return ParseSiteFlag();
             }
 
             var left = ParseValueLike();
@@ -724,6 +745,18 @@ public static class SymbolicParser
             };
         }
 
+        private SymbolicSiteFlagKind ParseSiteFlagKind()
+        {
+            string name = ExpectIdentifier();
+            return name switch
+            {
+                "host-through" => SymbolicSiteFlagKind.HostThrough,
+                "cross-proposal" => SymbolicSiteFlagKind.CrossProposal,
+                "true-cross" => SymbolicSiteFlagKind.TrueCross,
+                _ => throw Error($"Unknown site flag '{name}'."),
+            };
+        }
+
         private string? TryParseLeadingParticipantName()
         {
             if (Current.Kind == TokenKind.Identifier &&
@@ -861,7 +894,7 @@ public static class SymbolicParser
         }
 
         private static bool IsReservedRelationHead(string name) =>
-            name is "share" or "route" or "junction" or "require" or "prefer" or "constraints";
+            name is "share" or "route" or "junction" or "has" or "require" or "prefer" or "constraints";
 
         private bool TryPeekBooleanOperation(out AxisBooleanOperation operation)
         {

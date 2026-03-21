@@ -213,6 +213,16 @@ public class SymbolicGrammarTermTests
     }
 
     [Fact]
+    public void SiteFlagTerm_FormatsAsStructuralFlagQuery()
+    {
+        var flag = new SiteFlagTerm(
+            new SiteReferenceTerm("P4"),
+            SymbolicSiteFlagKind.CrossProposal);
+
+        Assert.Equal("has(P4, cross-proposal)", SymbolicTermFormatter.Format(flag));
+    }
+
+    [Fact]
     public void CanonicalSerializer_UsesStableStructuredOutput()
     {
         var preference = new PreferenceTerm(
@@ -392,6 +402,16 @@ public class SymbolicGrammarTermTests
         var junction = Assert.IsType<JunctionTerm>(parsed);
         Assert.Equal("P4", junction.Site.SiteName);
         Assert.Equal(SymbolicJunctionKind.Cross, junction.Kind);
+    }
+
+    [Fact]
+    public void Parser_ParsesSiteFlagRelation()
+    {
+        var parsed = SymbolicParser.Parse("has(P4, true-cross)");
+
+        var flag = Assert.IsType<SiteFlagTerm>(parsed);
+        Assert.Equal("P4", flag.Site.SiteName);
+        Assert.Equal(SymbolicSiteFlagKind.TrueCross, flag.Kind);
     }
 
     [Fact]
@@ -835,6 +855,48 @@ public class SymbolicGrammarTermTests
         Assert.Equal(ConstraintTruthKind.Satisfied, Assert.Single(satisfied.Items).Truth);
         Assert.Equal(ConstraintTruthKind.Unsatisfied, Assert.Single(unsatisfied.Items).Truth);
         Assert.Equal("Site resolves to junction 'cross', not 'tee'.", Assert.Single(unsatisfied.Items).Note);
+    }
+
+    [Fact]
+    public void ConstraintEvaluator_UsesStructuralContextForSiteFlags()
+    {
+        var stem = CarrierIdentity.Create("Stem");
+        var bar = CarrierIdentity.Create("Bar");
+        var host = Axis.FromCoordinates(Proportion.Zero, new Proportion(10));
+
+        var crossSite = CarrierPinSite.FromPointPinning(
+            stem,
+            host.PinAt(new Axis(3, -1, 3, -1), new Proportion(5)),
+            new CarrierSideAttachment(PinSideRole.Recessive, bar, Proportion.Zero),
+            new CarrierSideAttachment(PinSideRole.Dominant, bar, Proportion.One),
+            name: "P4");
+        var teeSite = CarrierPinSite.FromPointPinning(
+            stem,
+            host.PinAt(new Axis(3, -1, 3, -1), new Proportion(10)),
+            new CarrierSideAttachment(PinSideRole.Recessive, bar, Proportion.Zero),
+            new CarrierSideAttachment(PinSideRole.Dominant, bar, Proportion.One),
+            name: "P4");
+
+        var crossContext = new CarrierGraphSymbolicStructuralContext(new CarrierPinGraph([stem, bar], [crossSite]).Analyze());
+        var teeContext = new CarrierGraphSymbolicStructuralContext(new CarrierPinGraph([stem, bar], [teeSite]).Analyze());
+
+        var proposal = SymbolicConstraintEvaluator.Evaluate(
+            SymbolicParser.Parse("constraints{require(glyph, has(P4, cross-proposal))}"),
+            environment: null,
+            structuralContext: crossContext);
+        var trueCross = SymbolicConstraintEvaluator.Evaluate(
+            SymbolicParser.Parse("constraints{require(glyph, has(P4, true-cross))}"),
+            environment: null,
+            structuralContext: crossContext);
+        var hostThrough = SymbolicConstraintEvaluator.Evaluate(
+            SymbolicParser.Parse("constraints{require(glyph, has(P4, host-through))}"),
+            environment: null,
+            structuralContext: teeContext);
+
+        Assert.Equal(ConstraintTruthKind.Satisfied, Assert.Single(proposal.Items).Truth);
+        Assert.Equal(ConstraintTruthKind.Satisfied, Assert.Single(trueCross.Items).Truth);
+        Assert.Equal(ConstraintTruthKind.Unsatisfied, Assert.Single(hostThrough.Items).Truth);
+        Assert.Equal("Site does not satisfy flag 'host-through'.", Assert.Single(hostThrough.Items).Note);
     }
 
     [Fact]

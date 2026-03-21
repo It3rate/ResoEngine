@@ -34,6 +34,7 @@ public static class CanonicalSymbolicSerializer
             SharedCarrierTerm shared => $"share(left={Serialize(shared.Left)},right={Serialize(shared.Right)})",
             RouteTerm route => $"route(site={Serialize(route.Site)},from={Serialize(route.From)},to={Serialize(route.To)})",
             JunctionTerm junction => $"junction(site={Serialize(junction.Site)},kind={SerializeJunction(junction.Kind)})",
+            SiteFlagTerm flag => $"has(site={Serialize(flag.Site)},flag={SerializeSiteFlag(flag.Kind)})",
             RequirementTerm requirement => SerializeRequirement(requirement),
             PreferenceTerm preference => SerializePreference(preference),
             ConstraintSetTerm set => $"constraints([{string.Join(",", set.Constraints.Select(Serialize))}])",
@@ -156,6 +157,14 @@ public static class CanonicalSymbolicSerializer
         SymbolicJunctionKind.Branch => "branch",
         SymbolicJunctionKind.Tee => "tee",
         SymbolicJunctionKind.Cross => "cross",
+        _ => kind.ToString(),
+    };
+
+    private static string SerializeSiteFlag(SymbolicSiteFlagKind kind) => kind switch
+    {
+        SymbolicSiteFlagKind.HostThrough => "host-through",
+        SymbolicSiteFlagKind.CrossProposal => "cross-proposal",
+        SymbolicSiteFlagKind.TrueCross => "true-cross",
         _ => kind.ToString(),
     };
 

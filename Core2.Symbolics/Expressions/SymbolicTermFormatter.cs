@@ -34,6 +34,7 @@ public static class SymbolicTermFormatter
             SharedCarrierTerm shared => $"share({Format(shared.Left)}, {Format(shared.Right)})",
             RouteTerm route => $"route({Format(route.Site)}, {Format(route.From)}, {Format(route.To)})",
             JunctionTerm junction => $"junction({Format(junction.Site)}, {FormatJunction(junction.Kind)})",
+            SiteFlagTerm flag => $"has({Format(flag.Site)}, {FormatSiteFlag(flag.Kind)})",
             RequirementTerm requirement => FormatRequirement(requirement),
             PreferenceTerm preference => FormatPreference(preference),
             ConstraintSetTerm set => $"constraints{{{string.Join(" | ", set.Constraints.Select(Format))}}}",
@@ -70,6 +71,14 @@ public static class SymbolicTermFormatter
         SymbolicJunctionKind.Branch => "branch",
         SymbolicJunctionKind.Tee => "tee",
         SymbolicJunctionKind.Cross => "cross",
+        _ => kind.ToString(),
+    };
+
+    private static string FormatSiteFlag(SymbolicSiteFlagKind kind) => kind switch
+    {
+        SymbolicSiteFlagKind.HostThrough => "host-through",
+        SymbolicSiteFlagKind.CrossProposal => "cross-proposal",
+        SymbolicSiteFlagKind.TrueCross => "true-cross",
         _ => kind.ToString(),
     };
 

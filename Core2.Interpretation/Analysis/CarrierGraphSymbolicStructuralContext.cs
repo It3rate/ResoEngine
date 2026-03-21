@@ -94,6 +94,33 @@ public sealed class CarrierGraphSymbolicStructuralContext : ISymbolicStructuralC
         return true;
     }
 
+    public bool TryResolveSiteFlag(
+        SiteReferenceTerm site,
+        SymbolicSiteFlagKind flag,
+        out bool value,
+        out string? note)
+    {
+        ArgumentNullException.ThrowIfNull(site);
+
+        value = false;
+        note = null;
+
+        if (!_sitesByName.TryGetValue(site.SiteName, out var siteProfile))
+        {
+            note = $"No named site '{site.SiteName}' exists in the structural context.";
+            return false;
+        }
+
+        value = flag switch
+        {
+            SymbolicSiteFlagKind.HostThrough => siteProfile.HostContinues,
+            SymbolicSiteFlagKind.CrossProposal => siteProfile.HasCrossShapedProposal,
+            SymbolicSiteFlagKind.TrueCross => siteProfile.HasTrueCross,
+            _ => throw new ArgumentOutOfRangeException(nameof(flag), flag, null),
+        };
+        return true;
+    }
+
     private static CarrierIncidentKind MapIncident(RouteIncidentKind kind) => kind switch
     {
         RouteIncidentKind.HostNegative => CarrierIncidentKind.HostNegative,

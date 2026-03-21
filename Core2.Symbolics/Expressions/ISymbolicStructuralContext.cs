@@ -20,4 +20,10 @@ public interface ISymbolicStructuralContext
         SiteReferenceTerm site,
         out SymbolicJunctionKind kind,
         out string? note);
+
+    bool TryResolveSiteFlag(
+        SiteReferenceTerm site,
+        SymbolicSiteFlagKind flag,
+        out bool value,
+        out string? note);
 }

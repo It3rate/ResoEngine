@@ -143,6 +143,9 @@ public static class SymbolicReducer
             JunctionTerm junction => new JunctionTerm(
                 (SiteReferenceTerm)ElaborateAndReduce(junction.Site, environment),
                 junction.Kind),
+            SiteFlagTerm flag => new SiteFlagTerm(
+                (SiteReferenceTerm)ElaborateAndReduce(flag.Site, environment),
+                flag.Kind),
             RequirementTerm requirement => new RequirementTerm(
                 (RelationTerm)ElaborateAndReduce(requirement.Relation, environment),
                 requirement.ParticipantName),
