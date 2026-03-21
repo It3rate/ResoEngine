@@ -1,5 +1,6 @@
 using Core2.Elements;
 using Core2.Repetition;
+using Core2.Symbolics.Expressions;
 using ResoEngine.Visualizer.Adapt;
 using ResoEngine.Visualizer.Controls;
 using ResoEngine.Visualizer.Core;
@@ -114,6 +115,13 @@ public class BoundaryRepetitionPage : IVisualizerPage
         TextSize = 13f,
         Typeface = SKTypeface.FromFamilyName(VisualStyle.FontFamily, SKFontStyle.Normal),
         TextAlign = SKTextAlign.Center,
+        IsAntialias = true,
+    };
+    private readonly SKPaint _symbolicTextPaint = new()
+    {
+        Color = new SKColor(64, 64, 64),
+        TextSize = 11f,
+        Typeface = SKTypeface.FromFamilyName("Consolas", SKFontStyle.Normal),
         IsAntialias = true,
     };
 
@@ -253,14 +261,12 @@ public class BoundaryRepetitionPage : IVisualizerPage
 
         DrawGraphFrame(canvas);
         _frameRenderer?.Render(canvas, _frame);
-        DrawRowBadge(canvas, "Frame", FrameY, SegmentColors.Red);
         SyncProbeControlsFromState();
         if (_animateCheck?.Checked != true)
         {
             _probeValue = (decimal)_probeRange.Real;
         }
         DrawProbeSweep(canvas);
-        DrawRowBadge(canvas, "Probe Sweep", ProbeY, SegmentColors.Green);
         DrawCards(canvas);
 
         var originPx = _coords.MathToPixel(0, 0);
@@ -298,6 +304,8 @@ public class BoundaryRepetitionPage : IVisualizerPage
             _bottomTickPaint,
             _topTickTextPaint,
             _bottomTickTextPaint);
+
+        DrawSymbolicSummary(canvas, outerRect);
     }
 
     private void DrawProbeSweep(SKCanvas canvas)
@@ -365,6 +373,71 @@ public class BoundaryRepetitionPage : IVisualizerPage
 
             DrawContinuationCard(canvas, rect, cards[i].Item1, cards[i].Item2);
         }
+    }
+
+    private void DrawSymbolicSummary(SKCanvas canvas, SKRect outerRect)
+    {
+        float y = outerRect.Top + 24f;
+        foreach (var line in BuildSymbolicLines())
+        {
+            PageChrome.DrawWrappedText(
+                canvas,
+                line,
+                outerRect.Left + 18f,
+                ref y,
+                530f,
+                _symbolicTextPaint);
+        }
+    }
+
+    private IReadOnlyList<string> BuildSymbolicLines()
+    {
+        var frame = new ElementLiteralTerm(_frame.Axis);
+        var startValue = CreateProbeValue(_probeRange.Imaginary);
+        var endValue = CreateProbeValue(_probeRange.Real);
+
+        return
+        [
+            $"frame => {SymbolicTermFormatter.Format(frame)}",
+            $"start => {SymbolicTermFormatter.Format(startValue)}",
+            $"end => {SymbolicTermFormatter.Format(endValue)}",
+            BuildContinuationLine("wrap", frame, startValue, endValue, BoundaryContinuationLaw.PeriodicWrap),
+            BuildContinuationLine("reflect", frame, startValue, endValue, BoundaryContinuationLaw.ReflectiveBounce),
+            BuildContinuationLine("clamp", frame, startValue, endValue, BoundaryContinuationLaw.Clamp),
+            BuildContinuationLine("tension", frame, startValue, endValue, BoundaryContinuationLaw.TensionPreserving),
+        ];
+    }
+
+    private string BuildContinuationLine(
+        string name,
+        ElementLiteralTerm frame,
+        ElementLiteralTerm startValue,
+        ElementLiteralTerm endValue,
+        BoundaryContinuationLaw law)
+    {
+        string start = EvaluateContinuation(frame, startValue, law, out bool startTension);
+        string end = EvaluateContinuation(frame, endValue, law, out bool endTension);
+        return $"{name} => start {start}{(startTension ? " [t]" : string.Empty)}, end {end}{(endTension ? " [t]" : string.Empty)}";
+    }
+
+    private string EvaluateContinuation(
+        ElementLiteralTerm frame,
+        ElementLiteralTerm value,
+        BoundaryContinuationLaw law,
+        out bool hasTension)
+    {
+        var proportion = (Proportion)value.Value;
+        var result = _frame.Axis.Continue(proportion, law);
+        hasTension = result.HasTension;
+
+        var reduced = SymbolicReducer.Reduce(new ContinueTerm(frame, value, law));
+        return reduced.Output is null ? "(none)" : SymbolicTermFormatter.Format(reduced.Output);
+    }
+
+    private static ElementLiteralTerm CreateProbeValue(float value)
+    {
+        decimal rounded = decimal.Round((decimal)value, 1, MidpointRounding.AwayFromZero);
+        return new ElementLiteralTerm(((Scalar)rounded).AsProportion(10));
     }
 
     private void DrawContinuationCard(SKCanvas canvas, SKRect rect, string title, BoundaryContinuationLaw law)
@@ -474,47 +547,6 @@ public class BoundaryRepetitionPage : IVisualizerPage
         }
 
         canvas.DrawText($"frame [{frameStart:0.0}, {frameEnd:0.0}]", rect.MidX, rect.Bottom - 12f, _cardTextPaint);
-    }
-
-    private void DrawRowBadge(SKCanvas canvas, string text, float y, SegmentColorSet colors)
-    {
-        if (_coords == null)
-        {
-            return;
-        }
-
-        GetGraphBounds(out _, out _, out var outerRect);
-        var center = _coords.MathToPixel(0f, y);
-        var bounds = new SKRect();
-        _cardTitlePaint.MeasureText(text, ref bounds);
-        float width = Math.Max(82f, bounds.Width + 24f);
-        var rect = new SKRect(outerRect.Left + 14f, center.Y - 16f, outerRect.Left + 14f + width, center.Y + 16f);
-
-        using var fill = new SKPaint
-        {
-            Style = SKPaintStyle.Fill,
-            Color = new SKColor(colors.Grid.Red, colors.Grid.Green, colors.Grid.Blue, 68),
-            IsAntialias = true,
-        };
-        using var border = new SKPaint
-        {
-            Style = SKPaintStyle.Stroke,
-            StrokeWidth = 1.2f,
-            Color = colors.Solid,
-            IsAntialias = true,
-        };
-        using var textPaint = new SKPaint
-        {
-            Color = colors.Solid,
-            TextSize = 15f,
-            Typeface = SKTypeface.FromFamilyName(VisualStyle.FontFamily, SKFontStyle.Bold),
-            TextAlign = SKTextAlign.Center,
-            IsAntialias = true,
-        };
-
-        canvas.DrawRoundRect(rect, 12f, 12f, fill);
-        canvas.DrawRoundRect(rect, 12f, 12f, border);
-        canvas.DrawText(text, rect.MidX, rect.MidY + 5f, textPaint);
     }
 
     private void GetGraphBounds(out decimal minValue, out decimal maxValue, out SKRect outerRect)
@@ -798,5 +830,6 @@ public class BoundaryRepetitionPage : IVisualizerPage
         _originFillPaint.Dispose();
         _originStrokePaint.Dispose();
         _originDotPaint.Dispose();
+        _symbolicTextPaint.Dispose();
     }
 }

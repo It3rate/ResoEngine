@@ -1,6 +1,7 @@
 using Core2.Boolean;
 using Core2.Branching;
 using Core2.Elements;
+using Core2.Repetition;
 
 namespace Core2.Symbolics.Expressions;
 
@@ -25,6 +26,7 @@ public static class CanonicalSymbolicSerializer
             ApplyTransformTerm apply => $"apply(state={Serialize(apply.State)},transform={Serialize(apply.Transform)})",
             MultiplyValuesTerm multiply => $"multiply(left={Serialize(multiply.Left)},right={Serialize(multiply.Right)})",
             DivideValuesTerm divide => $"divide(left={Serialize(divide.Left)},right={Serialize(divide.Right)})",
+            ContinueTerm continuation => $"continue(frame={Serialize(continuation.Frame)},value={Serialize(continuation.Value)},law={SerializeBoundaryLaw(continuation.Law)})",
             AnchorPositionTerm position => $"position(anchor={Serialize(position.Anchor)})",
             CountTerm count => SerializeCount(count),
             CarrierCountTerm count => $"count(carrier={Serialize(count.Carrier)},kind={SerializeCarrierCountKind(count.Kind)})",
@@ -146,6 +148,15 @@ public static class CanonicalSymbolicSerializer
         AxisBooleanOperation.Xor => "xor",
         AxisBooleanOperation.Xnor => "xnor",
         _ => operation.ToString(),
+    };
+
+    private static string SerializeBoundaryLaw(BoundaryContinuationLaw law) => law switch
+    {
+        BoundaryContinuationLaw.PeriodicWrap => "wrap",
+        BoundaryContinuationLaw.ReflectiveBounce => "reflect",
+        BoundaryContinuationLaw.Clamp => "clamp",
+        BoundaryContinuationLaw.TensionPreserving => "tension",
+        _ => law.ToString(),
     };
 
     private static string SerializeRule(Core2.Symbolics.Repetition.InverseContinuationRule rule) => rule switch

@@ -26,7 +26,7 @@ public sealed class AxisPinningGeometryPage : IVisualizerPage
     private SceneLayout? _sceneLayout;
     private DragTargetKind _dragTarget;
     private SKRect _resetButtonRect;
-    private TextBox? _symbolicViewer;
+    private SKRect _copyButtonRect;
 
     private int _recessiveUnitTicks = 5;
     private int _recessiveCoefficient = 3;
@@ -175,6 +175,13 @@ public sealed class AxisPinningGeometryPage : IVisualizerPage
         TextAlign = SKTextAlign.Center,
         IsAntialias = true,
     };
+    private readonly SKPaint _symbolicTextPaint = new()
+    {
+        Color = new SKColor(64, 64, 64),
+        TextSize = 11f,
+        Typeface = SKTypeface.FromFamilyName("Consolas", SKFontStyle.Normal),
+        IsAntialias = true,
+    };
     private static readonly SKColor RecessiveUnitStroke = new(176, 176, 176);
     private static readonly SKColor RecessiveUnitFill = new(173, 233, 255, 84);
     private static readonly SKColor RecessiveUnitSegmentColor = SKColor.Parse("#3797DC");
@@ -190,13 +197,13 @@ public sealed class AxisPinningGeometryPage : IVisualizerPage
     {
         _coords = coords;
         _canvasHost = canvas;
-        EnsureSymbolicViewer();
     }
 
     public void Render(SKCanvas canvas)
     {
         _handles.Clear();
         _resetButtonRect = SKRect.Empty;
+        _copyButtonRect = SKRect.Empty;
 
         float width = _coords?.Width ?? 1100f;
         float height = _coords?.Height ?? 880f;
@@ -213,6 +220,7 @@ public sealed class AxisPinningGeometryPage : IVisualizerPage
 
         var cardRect = new SKRect(24f, 104f, width - 18f, height - 24f);
         _resetButtonRect = new SKRect(cardRect.Right - 128f, cardRect.Top + 16f, cardRect.Right - 22f, cardRect.Top + 52f);
+        _copyButtonRect = new SKRect(_resetButtonRect.Left - 114f, _resetButtonRect.Top, _resetButtonRect.Left - 8f, _resetButtonRect.Bottom);
         var plotRect = new SKRect(cardRect.Left + 22f, cardRect.Top + 18f, cardRect.Right - 22f, cardRect.Bottom - 24f);
 
         canvas.DrawRoundRect(cardRect, 22f, 22f, _cardFillPaint);
@@ -220,13 +228,20 @@ public sealed class AxisPinningGeometryPage : IVisualizerPage
 
         _sceneLayout = BuildSceneLayout(plotRect);
 
+        DrawCopyButton(canvas, _copyButtonRect);
+        DrawSymbolicSummary(canvas, plotRect);
         DrawResetButton(canvas, _resetButtonRect);
         DrawPlot(canvas, _sceneLayout);
-        DrawSymbolicSummary(canvas, plotRect);
     }
 
     public bool OnPointerDown(SKPoint pixelPoint)
     {
+        if (_copyButtonRect.Contains(pixelPoint))
+        {
+            Clipboard.SetText(BuildSymbolicTrace());
+            return true;
+        }
+
         if (_resetButtonRect.Contains(pixelPoint))
         {
             ResetEquation();
@@ -261,7 +276,7 @@ public sealed class AxisPinningGeometryPage : IVisualizerPage
         }
 
         _canvasHost.Cursor =
-            HitHandle(pixelPoint) != null || _resetButtonRect.Contains(pixelPoint)
+            HitHandle(pixelPoint) != null || _resetButtonRect.Contains(pixelPoint) || _copyButtonRect.Contains(pixelPoint)
                 ? Cursors.Hand
                 : Cursors.Default;
     }
@@ -280,13 +295,6 @@ public sealed class AxisPinningGeometryPage : IVisualizerPage
         _handles.Clear();
         _sceneLayout = null;
         _dragTarget = DragTargetKind.None;
-        if (_symbolicViewer is not null && _canvasHost is not null)
-        {
-            _canvasHost.Controls.Remove(_symbolicViewer);
-            _symbolicViewer.Dispose();
-            _symbolicViewer = null;
-        }
-
         _coords = null;
         _canvasHost = null;
     }
@@ -315,6 +323,7 @@ public sealed class AxisPinningGeometryPage : IVisualizerPage
         _buttonFillPaint.Dispose();
         _buttonStrokePaint.Dispose();
         _buttonTextPaint.Dispose();
+        _symbolicTextPaint.Dispose();
     }
 
     private void DrawPlot(SKCanvas canvas, SceneLayout scene)
@@ -331,7 +340,17 @@ public sealed class AxisPinningGeometryPage : IVisualizerPage
 
     private void DrawSymbolicSummary(SKCanvas canvas, SKRect rect)
     {
-        LayoutSymbolicViewer(new SKRect(rect.Left + 14f, rect.Top + 28f, rect.Left + 660f, rect.Top + 250f));
+        float y = rect.Top + 28f;
+        foreach (var line in BuildSymbolicLines())
+        {
+            PageChrome.DrawWrappedText(
+                canvas,
+                line,
+                rect.Left + 14f,
+                ref y,
+                646f,
+                _symbolicTextPaint);
+        }
     }
 
     private void DrawRuler(SKCanvas canvas, SceneLayout scene)
@@ -688,6 +707,13 @@ public sealed class AxisPinningGeometryPage : IVisualizerPage
         canvas.DrawText("Reset", rect.MidX, rect.MidY + 4f, _buttonTextPaint);
     }
 
+    private void DrawCopyButton(SKCanvas canvas, SKRect rect)
+    {
+        canvas.DrawRoundRect(rect, 16f, 16f, _buttonFillPaint);
+        canvas.DrawRoundRect(rect, 16f, 16f, _buttonStrokePaint);
+        canvas.DrawText("Copy", rect.MidX, rect.MidY + 4f, _buttonTextPaint);
+    }
+
     private IReadOnlyList<SymbolicProbe> BuildSymbolicProbes()
     {
         var axis = CurrentAxis();
@@ -740,48 +766,6 @@ public sealed class AxisPinningGeometryPage : IVisualizerPage
         {
             return $"error ({ex.Message})";
         }
-    }
-
-    private void EnsureSymbolicViewer()
-    {
-        if (_canvasHost is null || _symbolicViewer is not null)
-        {
-            return;
-        }
-
-        _symbolicViewer = new TextBox
-        {
-            Multiline = true,
-            ReadOnly = true,
-            BorderStyle = BorderStyle.None,
-            BackColor = Color.FromArgb(252, 252, 252),
-            ForeColor = Color.FromArgb(64, 64, 64),
-            Font = new Font("Consolas", 11f, FontStyle.Regular),
-            ScrollBars = ScrollBars.None,
-            WordWrap = true,
-            ShortcutsEnabled = true,
-            TabStop = true,
-        };
-
-        _canvasHost.Controls.Add(_symbolicViewer);
-        _symbolicViewer.BringToFront();
-    }
-
-    private void LayoutSymbolicViewer(SKRect rect)
-    {
-        EnsureSymbolicViewer();
-        if (_symbolicViewer is null)
-        {
-            return;
-        }
-
-        _symbolicViewer.SetBounds(
-            (int)MathF.Round(rect.Left),
-            (int)MathF.Round(rect.Top),
-            Math.Max(80, (int)MathF.Round(rect.Width)),
-            Math.Max(48, (int)MathF.Round(rect.Height)));
-        _symbolicViewer.Text = BuildSymbolicTrace();
-        _symbolicViewer.BringToFront();
     }
 
     private void UpdateDrag(SKPoint pixelPoint)

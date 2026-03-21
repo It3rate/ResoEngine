@@ -2,6 +2,7 @@ using Core2.Boolean;
 using Core2.Elements;
 using Core2.Branching;
 using Core2.Interpretation.Analysis;
+using Core2.Repetition;
 using Core2.Symbolics.Expressions;
 using Core2.Symbolics.Repetition;
 
@@ -314,6 +315,16 @@ public class SymbolicGrammarTermTests
     }
 
     [Fact]
+    public void Parser_ParsesBoundaryContinuationTerm()
+    {
+        var parsed = SymbolicParser.Parse("continue([4/1]i + [8/1], 9/1, wrap)");
+
+        var continuation = Assert.IsType<ContinueTerm>(parsed);
+        Assert.Equal(BoundaryContinuationLaw.PeriodicWrap, continuation.Law);
+        Assert.Equal("continue([4/1]i + [8/1], 9/1, wrap)", SymbolicTermFormatter.Format(continuation));
+    }
+
+    [Fact]
     public void Parser_ParsesPowerTerm()
     {
         var parsed = SymbolicParser.Parse("pow(3i+2, 2/1)");
@@ -321,6 +332,15 @@ public class SymbolicGrammarTermTests
         var power = Assert.IsType<PowerTerm>(parsed);
         Assert.Equal(new Proportion(2, 1), power.Exponent);
         Assert.Equal("pow([3/1]i + [2/1], 2/1)", SymbolicTermFormatter.Format(power));
+    }
+
+    [Fact]
+    public void Reducer_ReducesBoundaryContinuationTerm()
+    {
+        var reduced = SymbolicReducer.Reduce(
+            SymbolicParser.Parse("continue([4/1]i + [8/1], 9/1, wrap)"));
+
+        Assert.Equal(new Proportion(-3, 1), Assert.IsType<ElementLiteralTerm>(reduced.Output).Value);
     }
 
     [Fact]

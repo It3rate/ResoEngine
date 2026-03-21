@@ -1,6 +1,7 @@
 using Core2.Boolean;
 using Core2.Branching;
 using Core2.Elements;
+using Core2.Repetition;
 using Core2.Symbolics.Repetition;
 using System.Globalization;
 
@@ -417,6 +418,11 @@ public static class SymbolicParser
                 return ParseSpan();
             }
 
+            if (PeekIdentifier("continue"))
+            {
+                return ParseContinueTerm();
+            }
+
             if (PeekIdentifier("pow"))
             {
                 return ParsePower();
@@ -547,6 +553,19 @@ public static class SymbolicParser
             var carrier = ParseCarrierReference();
             Expect(TokenKind.RightParen);
             return new CarrierSpanTerm(carrier);
+        }
+
+        private ContinueTerm ParseContinueTerm()
+        {
+            ConsumeIdentifier("continue");
+            Expect(TokenKind.LeftParen);
+            var frame = ToValueTerm(ParseValueLike());
+            Expect(TokenKind.Comma);
+            var value = ToValueTerm(ParseValueLike());
+            Expect(TokenKind.Comma);
+            var law = ParseBoundaryContinuationLaw();
+            Expect(TokenKind.RightParen);
+            return new ContinueTerm(frame, value, law);
         }
 
         private PowerTerm ParsePower()
@@ -930,6 +949,19 @@ public static class SymbolicParser
                 "prefer-positive" => InverseContinuationRule.PreferPositiveDominant,
                 "nearest" => InverseContinuationRule.NearestToReference,
                 _ => throw Error($"Unknown inverse-continuation rule '{name}'."),
+            };
+        }
+
+        private BoundaryContinuationLaw ParseBoundaryContinuationLaw()
+        {
+            string name = ExpectIdentifier();
+            return name switch
+            {
+                "wrap" => BoundaryContinuationLaw.PeriodicWrap,
+                "reflect" => BoundaryContinuationLaw.ReflectiveBounce,
+                "clamp" => BoundaryContinuationLaw.Clamp,
+                "tension" => BoundaryContinuationLaw.TensionPreserving,
+                _ => throw Error($"Unknown boundary-continuation law '{name}'."),
             };
         }
 

@@ -1,5 +1,6 @@
 using Core2.Boolean;
 using Core2.Elements;
+using Core2.Repetition;
 using Core2.Symbolics.Repetition;
 
 namespace Core2.Symbolics.Expressions;
@@ -25,6 +26,7 @@ public static class SymbolicTermFormatter
             ApplyTransformTerm apply => $"{Format(apply.State)} * {Format(apply.Transform)}",
             MultiplyValuesTerm multiply => $"{Format(multiply.Left)} * {Format(multiply.Right)}",
             DivideValuesTerm divide => $"{Format(divide.Left)} / {Format(divide.Right)}",
+            ContinueTerm continuation => $"continue({Format(continuation.Frame)}, {Format(continuation.Value)}, {FormatBoundaryLaw(continuation.Law)})",
             AnchorPositionTerm position => $"position({Format(position.Anchor)})",
             CountTerm count => FormatCount(count),
             CarrierCountTerm count => $"count({Format(count.Carrier)}, {FormatCarrierCountKind(count.Kind)})",
@@ -68,6 +70,15 @@ public static class SymbolicTermFormatter
         RouteIncidentKind.RecessiveSide => "i",
         RouteIncidentKind.DominantSide => "u",
         _ => kind.ToString(),
+    };
+
+    private static string FormatBoundaryLaw(BoundaryContinuationLaw law) => law switch
+    {
+        BoundaryContinuationLaw.PeriodicWrap => "wrap",
+        BoundaryContinuationLaw.ReflectiveBounce => "reflect",
+        BoundaryContinuationLaw.Clamp => "clamp",
+        BoundaryContinuationLaw.TensionPreserving => "tension",
+        _ => law.ToString(),
     };
 
     private static string FormatJunction(SymbolicJunctionKind kind) => kind switch

@@ -127,6 +127,7 @@ public static class SymbolicReducer
             ApplyTransformTerm apply => ReduceApplyTransform(apply, environment, structuralContext),
             MultiplyValuesTerm multiply => ReduceMultiply(multiply, environment, structuralContext),
             DivideValuesTerm divide => ReduceDivide(divide, environment, structuralContext),
+            ContinueTerm continuation => ReduceContinue(continuation, environment, structuralContext),
             AnchorPositionTerm position => ReduceAnchorPosition(position, structuralContext),
             CountTerm count => ReduceCount(count, structuralContext),
             CarrierCountTerm count => ReduceCarrierCount(count, structuralContext),
@@ -225,6 +226,30 @@ public static class SymbolicReducer
         }
 
         return new DivideValuesTerm(left, right);
+    }
+
+    private static SymbolicTerm ReduceContinue(
+        ContinueTerm continuation,
+        SymbolicEnvironment environment,
+        ISymbolicStructuralContext? structuralContext)
+    {
+        var frame = (ValueTerm)ElaborateAndReduce(continuation.Frame, environment, structuralContext);
+        var value = (ValueTerm)ElaborateAndReduce(continuation.Value, environment, structuralContext);
+
+        if (TryGetAxisLiteral(frame, out var frameAxis))
+        {
+            if (TryGetScalarLiteral(value, out var scalar))
+            {
+                return new ElementLiteralTerm(frameAxis.Continue(scalar, continuation.Law).Value);
+            }
+
+            if (TryGetProportionLiteral(value, out var proportion))
+            {
+                return new ElementLiteralTerm(frameAxis.Continue(proportion, continuation.Law).Value);
+            }
+        }
+
+        return new ContinueTerm(frame, value, continuation.Law);
     }
 
     private static SymbolicTerm ReduceCount(CountTerm count, ISymbolicStructuralContext? structuralContext)
