@@ -121,6 +121,45 @@ public sealed class CarrierGraphSymbolicStructuralContext : ISymbolicStructuralC
         return true;
     }
 
+    public bool TryResolveCount(
+        CountTerm count,
+        out Proportion value,
+        out string? note)
+    {
+        ArgumentNullException.ThrowIfNull(count);
+
+        note = null;
+
+        if (count.IsGlobal)
+        {
+            value = count.Kind switch
+            {
+                SymbolicCountKind.Carriers => new Proportion(Analysis.Profiles.Count),
+                SymbolicCountKind.Sites => new Proportion(Analysis.SiteProfiles.Count),
+                _ =>
+                    throw new InvalidOperationException(
+                        $"Global count kind '{count.Kind}' requires site scope."),
+            };
+            return true;
+        }
+
+        if (!_sitesByName.TryGetValue(count.Site!.SiteName, out var siteProfile))
+        {
+            value = Proportion.Zero;
+            note = $"No named site '{count.Site.SiteName}' exists in the structural context.";
+            return false;
+        }
+
+        value = count.Kind switch
+        {
+            SymbolicCountKind.ParticipatingCarriers => new Proportion(siteProfile.ParticipatingCarriers.Count),
+            SymbolicCountKind.ThroughCarriers => new Proportion(siteProfile.ThroughCarriers.Count),
+            _ => throw new InvalidOperationException(
+                $"Site count kind '{count.Kind}' is not valid for named-site counting."),
+        };
+        return true;
+    }
+
     private static CarrierIncidentKind MapIncident(RouteIncidentKind kind) => kind switch
     {
         RouteIncidentKind.HostNegative => CarrierIncidentKind.HostNegative,

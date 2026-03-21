@@ -26,4 +26,9 @@ public interface ISymbolicStructuralContext
         SymbolicSiteFlagKind flag,
         out bool value,
         out string? note);
+
+    bool TryResolveCount(
+        CountTerm count,
+        out Core2.Elements.Proportion value,
+        out string? note);
 }

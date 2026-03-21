@@ -391,6 +391,11 @@ public static class SymbolicParser
                 return ParseBranch();
             }
 
+            if (PeekIdentifier("count"))
+            {
+                return ParseCount();
+            }
+
             if (PeekIdentifier("pow"))
             {
                 return ParsePower();
@@ -471,6 +476,27 @@ public static class SymbolicParser
                 values);
 
             return new BranchFamilyTerm(family);
+        }
+
+        private CountTerm ParseCount()
+        {
+            ConsumeIdentifier("count");
+            Expect(TokenKind.LeftParen);
+
+            if (Current.Kind == TokenKind.Identifier &&
+                Peek(1).Kind == TokenKind.RightParen &&
+                TryParseGlobalCountKind(Current.Text, out var globalKind))
+            {
+                Advance();
+                Expect(TokenKind.RightParen);
+                return new CountTerm(globalKind);
+            }
+
+            var site = ParseSiteReference();
+            Expect(TokenKind.Comma);
+            var siteKind = ParseSiteCountKind();
+            Expect(TokenKind.RightParen);
+            return new CountTerm(site, siteKind);
         }
 
         private PowerTerm ParsePower()
@@ -754,6 +780,29 @@ public static class SymbolicParser
                 "cross-proposal" => SymbolicSiteFlagKind.CrossProposal,
                 "true-cross" => SymbolicSiteFlagKind.TrueCross,
                 _ => throw Error($"Unknown site flag '{name}'."),
+            };
+        }
+
+        private static bool TryParseGlobalCountKind(string name, out SymbolicCountKind kind)
+        {
+            kind = name switch
+            {
+                "carriers" => SymbolicCountKind.Carriers,
+                "sites" => SymbolicCountKind.Sites,
+                _ => default,
+            };
+
+            return name is "carriers" or "sites";
+        }
+
+        private SymbolicCountKind ParseSiteCountKind()
+        {
+            string name = ExpectIdentifier();
+            return name switch
+            {
+                "participating-carriers" => SymbolicCountKind.ParticipatingCarriers,
+                "through-carriers" => SymbolicCountKind.ThroughCarriers,
+                _ => throw Error($"Unknown site count kind '{name}'."),
             };
         }
 

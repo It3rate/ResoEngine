@@ -24,6 +24,7 @@ public static class CanonicalSymbolicSerializer
             ApplyTransformTerm apply => $"apply(state={Serialize(apply.State)},transform={Serialize(apply.Transform)})",
             MultiplyValuesTerm multiply => $"multiply(left={Serialize(multiply.Left)},right={Serialize(multiply.Right)})",
             DivideValuesTerm divide => $"divide(left={Serialize(divide.Left)},right={Serialize(divide.Right)})",
+            CountTerm count => SerializeCount(count),
             PowerTerm power => SerializePower(power),
             InverseContinueTerm inverse => SerializeInverse(inverse),
             PinTerm pin => SerializePin(pin),
@@ -165,6 +166,23 @@ public static class CanonicalSymbolicSerializer
         SymbolicSiteFlagKind.HostThrough => "host-through",
         SymbolicSiteFlagKind.CrossProposal => "cross-proposal",
         SymbolicSiteFlagKind.TrueCross => "true-cross",
+        _ => kind.ToString(),
+    };
+
+    private static string SerializeCount(CountTerm count)
+    {
+        string sitePart = count.Site is null
+            ? string.Empty
+            : $"site={Serialize(count.Site)},";
+        return $"count({sitePart}kind={SerializeCountKind(count.Kind)})";
+    }
+
+    private static string SerializeCountKind(SymbolicCountKind kind) => kind switch
+    {
+        SymbolicCountKind.Carriers => "carriers",
+        SymbolicCountKind.Sites => "sites",
+        SymbolicCountKind.ParticipatingCarriers => "participating-carriers",
+        SymbolicCountKind.ThroughCarriers => "through-carriers",
         _ => kind.ToString(),
     };
 

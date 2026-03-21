@@ -19,7 +19,7 @@ public static class SymbolicReducer
         return term switch
         {
             ProgramTerm program => ReduceProgram(program, current, structuralContext),
-            _ => new SymbolicReductionResult(current, ElaborateAndReduce(term, current)),
+            _ => new SymbolicReductionResult(current, ElaborateAndReduce(term, current, structuralContext)),
         };
     }
 
@@ -29,16 +29,19 @@ public static class SymbolicReducer
         ISymbolicStructuralContext? structuralContext) =>
         term switch
         {
-            BindTerm bind => ReduceBind(bind, environment),
+            BindTerm bind => ReduceBind(bind, environment, structuralContext),
             CommitTerm commit => ReduceCommit(commit, environment, structuralContext),
-            EmitTerm emit => new SymbolicReductionResult(environment, ElaborateAndReduce(emit.Value, environment)),
+            EmitTerm emit => new SymbolicReductionResult(environment, ElaborateAndReduce(emit.Value, environment, structuralContext)),
             SequenceTerm sequence => ReduceSequence(sequence, environment, structuralContext),
-            _ => new SymbolicReductionResult(environment, ElaborateAndReduce(term, environment)),
+            _ => new SymbolicReductionResult(environment, ElaborateAndReduce(term, environment, structuralContext)),
         };
 
-    private static SymbolicReductionResult ReduceBind(BindTerm bind, SymbolicEnvironment environment)
+    private static SymbolicReductionResult ReduceBind(
+        BindTerm bind,
+        SymbolicEnvironment environment,
+        ISymbolicStructuralContext? structuralContext)
     {
-        var reduced = ElaborateAndReduce(bind.Value, environment);
+        var reduced = ElaborateAndReduce(bind.Value, environment, structuralContext);
         var next = environment.Bind(bind.Target, reduced);
         return new SymbolicReductionResult(next, reduced);
     }
@@ -48,7 +51,7 @@ public static class SymbolicReducer
         SymbolicEnvironment environment,
         ISymbolicStructuralContext? structuralContext)
     {
-        var reduced = ElaborateAndReduce(commit.Value, environment);
+        var reduced = ElaborateAndReduce(commit.Value, environment, structuralContext);
         var current = environment;
         SymbolicTerm output = reduced;
 
@@ -106,64 +109,74 @@ public static class SymbolicReducer
         return new SymbolicReductionResult(current, output);
     }
 
-    private static SymbolicTerm ElaborateAndReduce(SymbolicTerm term, SymbolicEnvironment environment)
+    private static SymbolicTerm ElaborateAndReduce(
+        SymbolicTerm term,
+        SymbolicEnvironment environment,
+        ISymbolicStructuralContext? structuralContext)
     {
         var elaborated = SymbolicElaborator.Elaborate(term, environment);
-        return ReduceResolvedTerm(elaborated.Output ?? term, environment);
+        return ReduceResolvedTerm(elaborated.Output ?? term, environment, structuralContext);
     }
 
-    private static SymbolicTerm ReduceResolvedTerm(SymbolicTerm term, SymbolicEnvironment environment) =>
+    private static SymbolicTerm ReduceResolvedTerm(
+        SymbolicTerm term,
+        SymbolicEnvironment environment,
+        ISymbolicStructuralContext? structuralContext) =>
         term switch
         {
-            ApplyTransformTerm apply => ReduceApplyTransform(apply, environment),
-            MultiplyValuesTerm multiply => ReduceMultiply(multiply, environment),
-            DivideValuesTerm divide => ReduceDivide(divide, environment),
-            PowerTerm power => ReducePower(power, environment),
-            InverseContinueTerm inverse => ReduceInverseContinuation(inverse, environment),
+            ApplyTransformTerm apply => ReduceApplyTransform(apply, environment, structuralContext),
+            MultiplyValuesTerm multiply => ReduceMultiply(multiply, environment, structuralContext),
+            DivideValuesTerm divide => ReduceDivide(divide, environment, structuralContext),
+            CountTerm count => ReduceCount(count, structuralContext),
+            PowerTerm power => ReducePower(power, environment, structuralContext),
+            InverseContinueTerm inverse => ReduceInverseContinuation(inverse, environment, structuralContext),
             PinTerm pin => new PinTerm(
-                (ValueTerm)ElaborateAndReduce(pin.Host, environment),
-                (ValueTerm)ElaborateAndReduce(pin.Applied, environment),
+                (ValueTerm)ElaborateAndReduce(pin.Host, environment, structuralContext),
+                (ValueTerm)ElaborateAndReduce(pin.Applied, environment, structuralContext),
                 pin.Position,
-                pin.AppliedAnchor is null ? null : (AnchorReferenceTerm)ElaborateAndReduce(pin.AppliedAnchor, environment)),
+                pin.AppliedAnchor is null ? null : (AnchorReferenceTerm)ElaborateAndReduce(pin.AppliedAnchor, environment, structuralContext)),
             PinToPinTerm pinToPin => new PinToPinTerm(
-                (AnchorReferenceTerm)ElaborateAndReduce(pinToPin.HostAnchor, environment),
-                (AnchorReferenceTerm)ElaborateAndReduce(pinToPin.AppliedAnchor, environment)),
-            AxisBooleanTerm boolean => ReduceBoolean(boolean, environment),
-            FoldTerm fold => ReduceFold(fold, environment),
+                (AnchorReferenceTerm)ElaborateAndReduce(pinToPin.HostAnchor, environment, structuralContext),
+                (AnchorReferenceTerm)ElaborateAndReduce(pinToPin.AppliedAnchor, environment, structuralContext)),
+            AxisBooleanTerm boolean => ReduceBoolean(boolean, environment, structuralContext),
+            FoldTerm fold => ReduceFold(fold, environment, structuralContext),
             EqualityTerm equality => new EqualityTerm(
-                ElaborateAndReduce(equality.Left, environment),
-                ElaborateAndReduce(equality.Right, environment)),
+                ElaborateAndReduce(equality.Left, environment, structuralContext),
+                ElaborateAndReduce(equality.Right, environment, structuralContext)),
             SharedCarrierTerm shared => new SharedCarrierTerm(
-                (ValueTerm)ElaborateAndReduce(shared.Left, environment),
-                (ValueTerm)ElaborateAndReduce(shared.Right, environment)),
+                (ValueTerm)ElaborateAndReduce(shared.Left, environment, structuralContext),
+                (ValueTerm)ElaborateAndReduce(shared.Right, environment, structuralContext)),
             RouteTerm route => new RouteTerm(
-                (SiteReferenceTerm)ElaborateAndReduce(route.Site, environment),
+                (SiteReferenceTerm)ElaborateAndReduce(route.Site, environment, structuralContext),
                 route.From,
                 route.To),
             JunctionTerm junction => new JunctionTerm(
-                (SiteReferenceTerm)ElaborateAndReduce(junction.Site, environment),
+                (SiteReferenceTerm)ElaborateAndReduce(junction.Site, environment, structuralContext),
                 junction.Kind),
             SiteFlagTerm flag => new SiteFlagTerm(
-                (SiteReferenceTerm)ElaborateAndReduce(flag.Site, environment),
+                (SiteReferenceTerm)ElaborateAndReduce(flag.Site, environment, structuralContext),
                 flag.Kind),
             RequirementTerm requirement => new RequirementTerm(
-                (RelationTerm)ElaborateAndReduce(requirement.Relation, environment),
+                (RelationTerm)ElaborateAndReduce(requirement.Relation, environment, structuralContext),
                 requirement.ParticipantName),
             PreferenceTerm preference => new PreferenceTerm(
-                (RelationTerm)ElaborateAndReduce(preference.Relation, environment),
+                (RelationTerm)ElaborateAndReduce(preference.Relation, environment, structuralContext),
                 preference.Weight,
                 preference.ParticipantName),
             ConstraintSetTerm set => new ConstraintSetTerm(
-                set.Constraints.Select(constraint => (ConstraintTerm)ElaborateAndReduce(constraint, environment)).ToArray()),
+                set.Constraints.Select(constraint => (ConstraintTerm)ElaborateAndReduce(constraint, environment, structuralContext)).ToArray()),
             BranchFamilyTerm branchFamily => new BranchFamilyTerm(
-                branchFamily.Family.Map(value => (ValueTerm)ElaborateAndReduce(value, environment))),
+                branchFamily.Family.Map(value => (ValueTerm)ElaborateAndReduce(value, environment, structuralContext))),
             _ => term,
         };
 
-    private static SymbolicTerm ReduceApplyTransform(ApplyTransformTerm apply, SymbolicEnvironment environment)
+    private static SymbolicTerm ReduceApplyTransform(
+        ApplyTransformTerm apply,
+        SymbolicEnvironment environment,
+        ISymbolicStructuralContext? structuralContext)
     {
-        var state = (ValueTerm)ElaborateAndReduce(apply.State, environment);
-        var transform = (TransformTerm)ElaborateAndReduce(apply.Transform, environment);
+        var state = (ValueTerm)ElaborateAndReduce(apply.State, environment, structuralContext);
+        var transform = (TransformTerm)ElaborateAndReduce(apply.Transform, environment, structuralContext);
 
         if (state is ElementLiteralTerm stateLiteral &&
             transform is TransformLiteralTerm transformLiteral &&
@@ -175,10 +188,13 @@ public static class SymbolicReducer
         return new ApplyTransformTerm(state, transform);
     }
 
-    private static SymbolicTerm ReduceMultiply(MultiplyValuesTerm multiply, SymbolicEnvironment environment)
+    private static SymbolicTerm ReduceMultiply(
+        MultiplyValuesTerm multiply,
+        SymbolicEnvironment environment,
+        ISymbolicStructuralContext? structuralContext)
     {
-        var left = (ValueTerm)ElaborateAndReduce(multiply.Left, environment);
-        var right = (ValueTerm)ElaborateAndReduce(multiply.Right, environment);
+        var left = (ValueTerm)ElaborateAndReduce(multiply.Left, environment, structuralContext);
+        var right = (ValueTerm)ElaborateAndReduce(multiply.Right, environment, structuralContext);
 
         if (left is ElementLiteralTerm leftLiteral &&
             right is ElementLiteralTerm rightLiteral &&
@@ -190,10 +206,13 @@ public static class SymbolicReducer
         return new MultiplyValuesTerm(left, right);
     }
 
-    private static SymbolicTerm ReduceDivide(DivideValuesTerm divide, SymbolicEnvironment environment)
+    private static SymbolicTerm ReduceDivide(
+        DivideValuesTerm divide,
+        SymbolicEnvironment environment,
+        ISymbolicStructuralContext? structuralContext)
     {
-        var left = (ValueTerm)ElaborateAndReduce(divide.Left, environment);
-        var right = (ValueTerm)ElaborateAndReduce(divide.Right, environment);
+        var left = (ValueTerm)ElaborateAndReduce(divide.Left, environment, structuralContext);
+        var right = (ValueTerm)ElaborateAndReduce(divide.Right, environment, structuralContext);
 
         if (left is ElementLiteralTerm leftLiteral &&
             right is ElementLiteralTerm rightLiteral &&
@@ -205,10 +224,24 @@ public static class SymbolicReducer
         return new DivideValuesTerm(left, right);
     }
 
-    private static SymbolicTerm ReducePower(PowerTerm power, SymbolicEnvironment environment)
+    private static SymbolicTerm ReduceCount(CountTerm count, ISymbolicStructuralContext? structuralContext)
     {
-        var @base = (ValueTerm)ElaborateAndReduce(power.Base, environment);
-        var reference = power.Reference is null ? null : (ValueTerm)ElaborateAndReduce(power.Reference, environment);
+        if (structuralContext is not null &&
+            structuralContext.TryResolveCount(count, out var value, out _))
+        {
+            return new ElementLiteralTerm(value);
+        }
+
+        return count;
+    }
+
+    private static SymbolicTerm ReducePower(
+        PowerTerm power,
+        SymbolicEnvironment environment,
+        ISymbolicStructuralContext? structuralContext)
+    {
+        var @base = (ValueTerm)ElaborateAndReduce(power.Base, environment, structuralContext);
+        var reference = power.Reference is null ? null : (ValueTerm)ElaborateAndReduce(power.Reference, environment, structuralContext);
         if (@base is ElementLiteralTerm literal &&
             TryReducePower(literal.Value, power.Exponent, power.Rule, reference, out var reduced))
         {
@@ -218,10 +251,13 @@ public static class SymbolicReducer
         return new PowerTerm(@base, power.Exponent, power.Rule, reference);
     }
 
-    private static SymbolicTerm ReduceInverseContinuation(InverseContinueTerm inverse, SymbolicEnvironment environment)
+    private static SymbolicTerm ReduceInverseContinuation(
+        InverseContinueTerm inverse,
+        SymbolicEnvironment environment,
+        ISymbolicStructuralContext? structuralContext)
     {
-        var source = (ValueTerm)ElaborateAndReduce(inverse.Source, environment);
-        var reference = inverse.Reference is null ? null : (ValueTerm)ElaborateAndReduce(inverse.Reference, environment);
+        var source = (ValueTerm)ElaborateAndReduce(inverse.Source, environment, structuralContext);
+        var reference = inverse.Reference is null ? null : (ValueTerm)ElaborateAndReduce(inverse.Reference, environment, structuralContext);
         if (source is ElementLiteralTerm literal &&
             TryReduceInverseContinuation(literal.Value, inverse.Degree, inverse.Rule, reference, out var reduced))
         {
@@ -231,11 +267,14 @@ public static class SymbolicReducer
         return new InverseContinueTerm(source, inverse.Degree, inverse.Rule, reference);
     }
 
-    private static SymbolicTerm ReduceBoolean(AxisBooleanTerm boolean, SymbolicEnvironment environment)
+    private static SymbolicTerm ReduceBoolean(
+        AxisBooleanTerm boolean,
+        SymbolicEnvironment environment,
+        ISymbolicStructuralContext? structuralContext)
     {
-        var primary = (ValueTerm)ElaborateAndReduce(boolean.Primary, environment);
-        var secondary = (ValueTerm)ElaborateAndReduce(boolean.Secondary, environment);
-        var frame = boolean.Frame is null ? null : (ValueTerm)ElaborateAndReduce(boolean.Frame, environment);
+        var primary = (ValueTerm)ElaborateAndReduce(boolean.Primary, environment, structuralContext);
+        var secondary = (ValueTerm)ElaborateAndReduce(boolean.Secondary, environment, structuralContext);
+        var frame = boolean.Frame is null ? null : (ValueTerm)ElaborateAndReduce(boolean.Frame, environment, structuralContext);
 
         if (TryGetAxisLiteral(primary, out var primaryAxis) &&
             TryGetAxisLiteral(secondary, out var secondaryAxis) &&
@@ -248,9 +287,12 @@ public static class SymbolicReducer
         return new AxisBooleanTerm(primary, secondary, boolean.Operation, frame);
     }
 
-    private static SymbolicTerm ReduceFold(FoldTerm fold, SymbolicEnvironment environment)
+    private static SymbolicTerm ReduceFold(
+        FoldTerm fold,
+        SymbolicEnvironment environment,
+        ISymbolicStructuralContext? structuralContext)
     {
-        var source = (ValueTerm)ElaborateAndReduce(fold.Source, environment);
+        var source = (ValueTerm)ElaborateAndReduce(fold.Source, environment, structuralContext);
         if (source is ElementLiteralTerm literal && TryFoldLiteral(literal.Value, out var folded))
         {
             return new ElementLiteralTerm(folded);

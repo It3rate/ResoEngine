@@ -223,6 +223,16 @@ public class SymbolicGrammarTermTests
     }
 
     [Fact]
+    public void CountTerm_FormatsAsStructuralValueQuery()
+    {
+        var global = new CountTerm(SymbolicCountKind.Carriers);
+        var local = new CountTerm(new SiteReferenceTerm("P4"), SymbolicCountKind.ThroughCarriers);
+
+        Assert.Equal("count(carriers)", SymbolicTermFormatter.Format(global));
+        Assert.Equal("count(P4, through-carriers)", SymbolicTermFormatter.Format(local));
+    }
+
+    [Fact]
     public void CanonicalSerializer_UsesStableStructuredOutput()
     {
         var preference = new PreferenceTerm(
@@ -412,6 +422,22 @@ public class SymbolicGrammarTermTests
         var flag = Assert.IsType<SiteFlagTerm>(parsed);
         Assert.Equal("P4", flag.Site.SiteName);
         Assert.Equal(SymbolicSiteFlagKind.TrueCross, flag.Kind);
+    }
+
+    [Fact]
+    public void Parser_ParsesStructuralCountQueries()
+    {
+        var global = SymbolicParser.Parse("count(carriers)");
+        var local = SymbolicParser.Parse("count(P4, through-carriers)");
+
+        var globalCount = Assert.IsType<CountTerm>(global);
+        var localCount = Assert.IsType<CountTerm>(local);
+
+        Assert.True(globalCount.IsGlobal);
+        Assert.Equal(SymbolicCountKind.Carriers, globalCount.Kind);
+        Assert.False(localCount.IsGlobal);
+        Assert.Equal("P4", localCount.Site!.SiteName);
+        Assert.Equal(SymbolicCountKind.ThroughCarriers, localCount.Kind);
     }
 
     [Fact]
@@ -897,6 +923,29 @@ public class SymbolicGrammarTermTests
         Assert.Equal(ConstraintTruthKind.Satisfied, Assert.Single(trueCross.Items).Truth);
         Assert.Equal(ConstraintTruthKind.Unsatisfied, Assert.Single(hostThrough.Items).Truth);
         Assert.Equal("Site does not satisfy flag 'host-through'.", Assert.Single(hostThrough.Items).Note);
+    }
+
+    [Fact]
+    public void Reducer_UsesStructuralContextForCountQueries()
+    {
+        var stem = CarrierIdentity.Create("Stem");
+        var bar = CarrierIdentity.Create("Bar");
+        var host = Axis.FromCoordinates(Proportion.Zero, new Proportion(10));
+
+        var site = CarrierPinSite.FromPointPinning(
+            stem,
+            host.PinAt(new Axis(3, -1, 3, -1), new Proportion(5)),
+            new CarrierSideAttachment(PinSideRole.Recessive, bar, Proportion.Zero),
+            new CarrierSideAttachment(PinSideRole.Dominant, bar, Proportion.One),
+            name: "P4");
+
+        var context = new CarrierGraphSymbolicStructuralContext(new CarrierPinGraph([stem, bar], [site]).Analyze());
+
+        var global = SymbolicReducer.Reduce(SymbolicParser.Parse("count(carriers)"), structuralContext: context);
+        var local = SymbolicReducer.Reduce(SymbolicParser.Parse("count(P4, through-carriers)"), structuralContext: context);
+
+        Assert.Equal(new Proportion(2), Assert.IsType<ElementLiteralTerm>(global.Output).Value);
+        Assert.Equal(new Proportion(2), Assert.IsType<ElementLiteralTerm>(local.Output).Value);
     }
 
     [Fact]

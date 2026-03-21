@@ -24,6 +24,7 @@ public static class SymbolicTermFormatter
             ApplyTransformTerm apply => $"{Format(apply.State)} * {Format(apply.Transform)}",
             MultiplyValuesTerm multiply => $"{Format(multiply.Left)} * {Format(multiply.Right)}",
             DivideValuesTerm divide => $"{Format(divide.Left)} / {Format(divide.Right)}",
+            CountTerm count => FormatCount(count),
             PowerTerm power => FormatPower(power),
             InverseContinueTerm inverse => FormatInverse(inverse),
             PinTerm pin => $"{Format(pin.Host)} * {Format(pin.AppliedAnchor ?? pin.Applied)} @ {pin.Position}",
@@ -79,6 +80,20 @@ public static class SymbolicTermFormatter
         SymbolicSiteFlagKind.HostThrough => "host-through",
         SymbolicSiteFlagKind.CrossProposal => "cross-proposal",
         SymbolicSiteFlagKind.TrueCross => "true-cross",
+        _ => kind.ToString(),
+    };
+
+    private static string FormatCount(CountTerm count) =>
+        count.Site is null
+            ? $"count({FormatCountKind(count.Kind)})"
+            : $"count({Format(count.Site)}, {FormatCountKind(count.Kind)})";
+
+    private static string FormatCountKind(SymbolicCountKind kind) => kind switch
+    {
+        SymbolicCountKind.Carriers => "carriers",
+        SymbolicCountKind.Sites => "sites",
+        SymbolicCountKind.ParticipatingCarriers => "participating-carriers",
+        SymbolicCountKind.ThroughCarriers => "through-carriers",
         _ => kind.ToString(),
     };
 

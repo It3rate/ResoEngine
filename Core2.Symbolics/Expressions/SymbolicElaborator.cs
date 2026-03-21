@@ -73,6 +73,9 @@ public static class SymbolicElaborator
             DivideValuesTerm divide => new DivideValuesTerm(
                 (ValueTerm)ElaborateTerm(divide.Left, environment),
                 (ValueTerm)ElaborateTerm(divide.Right, environment)),
+            CountTerm count => new CountTerm(
+                count.Site is null ? null : (SiteReferenceTerm)ElaborateTerm(count.Site, environment),
+                count.Kind),
             PowerTerm power => new PowerTerm(
                 (ValueTerm)ElaborateTerm(power.Base, environment),
                 power.Exponent,

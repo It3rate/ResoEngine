@@ -20,6 +20,7 @@ public sealed class SymbolicWorkbenchPage : IVisualizerPage
         ["Divide"] = new("(3i+2) / (4i+5)"),
         ["Power"] = new("pow(i, 2/1)"),
         ["Inverse"] = new("inverse(4, 2/1)"),
+        ["Count"] = new("let carriers = count(carriers); let through = count(P4, through-carriers); carriers * through", "Cross"),
         ["Shared"] = new("commit choice = constraints{require(glyph, P4.u == P3.u) | prefer(glyph, branch{1 | i} == i, 2/1)}; choice", "Shared"),
         ["Route"] = new("constraints{require(glyph, route(P4, host-, host+)) | require(glyph, route(P4, i, u))}", "Cross"),
         ["Commit"] = new("let options = branch{1 | i}; commit choice = constraints{prefer(glyph, options == i, 2/1)}; choice"),
@@ -490,12 +491,14 @@ public sealed class SymbolicWorkbenchPage : IVisualizerPage
         y += 28;
         _examplesLabel.SetBounds(padding, y, width, 18);
         y += 22;
-        _exampleButtonPanel.SetBounds(padding, y, width, 40);
-        y += 46;
+        int exampleHeight = Math.Max(32, _exampleButtonPanel.GetPreferredSize(new Size(width, 0)).Height);
+        _exampleButtonPanel.SetBounds(padding, y, width, exampleHeight);
+        y += exampleHeight + 6;
         _contextLabel.SetBounds(padding, y, width, 18);
         y += 22;
-        _contextButtonPanel.SetBounds(padding, y, width, 34);
-        y += 40;
+        int contextHeight = Math.Max(30, _contextButtonPanel.GetPreferredSize(new Size(width, 0)).Height);
+        _contextButtonPanel.SetBounds(padding, y, width, contextHeight);
+        y += contextHeight + 6;
         _inputLabel.SetBounds(padding, y, width, 18);
         y += 22;
         _inputEditor.SetBounds(padding, y, width, Math.Max(80, _inputPanel.ClientSize.Height - y - padding));
