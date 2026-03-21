@@ -40,6 +40,7 @@ public static class SymbolicTermFormatter
             RouteTerm route => $"route({Format(route.Site)}, {Format(route.From)}, {Format(route.To)})",
             JunctionTerm junction => $"junction({Format(junction.Site)}, {FormatJunction(junction.Kind)})",
             SiteFlagTerm flag => $"has({Format(flag.Site)}, {FormatSiteFlag(flag.Kind)})",
+            CarrierFlagTerm flag => $"has({Format(flag.Carrier)}, {FormatCarrierFlag(flag.Kind)})",
             RequirementTerm requirement => FormatRequirement(requirement),
             PreferenceTerm preference => FormatPreference(preference),
             ConstraintSetTerm set => $"constraints{{{string.Join(" | ", set.Constraints.Select(Format))}}}",
@@ -108,6 +109,16 @@ public static class SymbolicTermFormatter
         SymbolicCarrierCountKind.ReferencingHosts => "referencing-hosts",
         SymbolicCarrierCountKind.ParticipatingSites => "participating-sites",
         SymbolicCarrierCountKind.ThroughSites => "through-sites",
+        _ => kind.ToString(),
+    };
+
+    private static string FormatCarrierFlag(SymbolicCarrierFlagKind kind) => kind switch
+    {
+        SymbolicCarrierFlagKind.Shared => "shared",
+        SymbolicCarrierFlagKind.Recursive => "recursive",
+        SymbolicCarrierFlagKind.Span => "span",
+        SymbolicCarrierFlagKind.Hosted => "hosted",
+        SymbolicCarrierFlagKind.Referenced => "referenced",
         _ => kind.ToString(),
     };
 

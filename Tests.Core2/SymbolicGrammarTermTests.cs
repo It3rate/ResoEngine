@@ -251,6 +251,14 @@ public class SymbolicGrammarTermTests
     }
 
     [Fact]
+    public void CarrierFlagTerm_FormatsAsStructuralRelationQuery()
+    {
+        var flag = new CarrierFlagTerm(new CarrierReferenceTerm("Bowl"), SymbolicCarrierFlagKind.Shared);
+
+        Assert.Equal("has(Bowl, shared)", SymbolicTermFormatter.Format(flag));
+    }
+
+    [Fact]
     public void CanonicalSerializer_UsesStableStructuredOutput()
     {
         var preference = new PreferenceTerm(
@@ -479,6 +487,16 @@ public class SymbolicGrammarTermTests
         Assert.Equal("Bowl", countTerm.Carrier.Name);
         Assert.Equal(SymbolicCarrierCountKind.Attachments, countTerm.Kind);
         Assert.Equal("Bowl", spanTerm.Carrier.Name);
+    }
+
+    [Fact]
+    public void Parser_ParsesCarrierFlagRelation()
+    {
+        var parsed = SymbolicParser.Parse("has(Bowl, shared)");
+
+        var flag = Assert.IsType<CarrierFlagTerm>(parsed);
+        Assert.Equal("Bowl", flag.Carrier.Name);
+        Assert.Equal(SymbolicCarrierFlagKind.Shared, flag.Kind);
     }
 
     [Fact]
@@ -1047,6 +1065,42 @@ public class SymbolicGrammarTermTests
         Assert.Equal(new Proportion(2), Assert.IsType<ElementLiteralTerm>(hosted.Output).Value);
         Assert.Equal(new Proportion(2), Assert.IsType<ElementLiteralTerm>(attachments.Output).Value);
         Assert.Equal(Proportion.One, Assert.IsType<ElementLiteralTerm>(span.Output).Value);
+    }
+
+    [Fact]
+    public void ConstraintEvaluator_UsesStructuralContextForCarrierFlags()
+    {
+        var stem = CarrierIdentity.Create("Stem");
+        var bowl = CarrierIdentity.Create("Bowl");
+        var host = Axis.FromCoordinates(Proportion.Zero, new Proportion(10));
+
+        var top = CarrierPinSite.FromPointPinning(
+            stem,
+            host.PinAt(new Axis(new Proportion(3, -1), new Proportion(2, 1)), Proportion.Zero),
+            new CarrierSideAttachment(PinSideRole.Recessive, stem, Proportion.Zero),
+            new CarrierSideAttachment(PinSideRole.Dominant, bowl, Proportion.Zero),
+            name: "P4");
+        var bottom = CarrierPinSite.FromPointPinning(
+            stem,
+            host.PinAt(new Axis(new Proportion(-3, -1), new Proportion(2, 1)), Proportion.One),
+            new CarrierSideAttachment(PinSideRole.Recessive, stem, Proportion.One),
+            new CarrierSideAttachment(PinSideRole.Dominant, bowl, Proportion.One),
+            name: "P3");
+
+        var context = new CarrierGraphSymbolicStructuralContext(new CarrierPinGraph([stem, bowl], [top, bottom]).Analyze());
+
+        var shared = SymbolicConstraintEvaluator.Evaluate(
+            SymbolicParser.Parse("constraints{require(glyph, has(Bowl, shared))}"),
+            environment: null,
+            structuralContext: context);
+        var recursive = SymbolicConstraintEvaluator.Evaluate(
+            SymbolicParser.Parse("constraints{require(glyph, has(Bowl, recursive))}"),
+            environment: null,
+            structuralContext: context);
+
+        Assert.Equal(ConstraintTruthKind.Satisfied, Assert.Single(shared.Items).Truth);
+        Assert.Equal(ConstraintTruthKind.Unsatisfied, Assert.Single(recursive.Items).Truth);
+        Assert.Equal("Carrier does not satisfy flag 'recursive'.", Assert.Single(recursive.Items).Note);
     }
 
     [Fact]

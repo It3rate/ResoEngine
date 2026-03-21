@@ -46,4 +46,10 @@ public interface ISymbolicStructuralContext
         CarrierSpanTerm span,
         out Core2.Elements.Proportion value,
         out string? note);
+
+    bool TryResolveCarrierFlag(
+        CarrierReferenceTerm carrier,
+        SymbolicCarrierFlagKind flag,
+        out bool value,
+        out string? note);
 }

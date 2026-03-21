@@ -97,6 +97,7 @@ public static class SymbolicConstraintEvaluator
             RouteTerm route => EvaluateRoute(route, structuralContext),
             JunctionTerm junction => EvaluateJunction(junction, structuralContext),
             SiteFlagTerm flag => EvaluateSiteFlag(flag, structuralContext),
+            CarrierFlagTerm flag => EvaluateCarrierFlag(flag, structuralContext),
             _ => new ConstraintRelationAssessment(ConstraintTruthKind.Unresolved, null, "Relation form is not yet directly evaluable."),
         };
 
@@ -261,6 +262,28 @@ public static class SymbolicConstraintEvaluator
                 $"Site does not satisfy flag '{FormatSiteFlagKind(flag.Kind)}'.");
     }
 
+    private static ConstraintRelationAssessment EvaluateCarrierFlag(
+        CarrierFlagTerm flag,
+        ISymbolicStructuralContext? structuralContext)
+    {
+        if (structuralContext is null)
+        {
+            return new ConstraintRelationAssessment(ConstraintTruthKind.Unresolved, null, "Carrier-flag evaluation requires carrier graph context.");
+        }
+
+        if (!structuralContext.TryResolveCarrierFlag(flag.Carrier, flag.Kind, out bool value, out var note))
+        {
+            return new ConstraintRelationAssessment(ConstraintTruthKind.Unresolved, null, note ?? "Carrier-flag evaluation requires carrier graph context.");
+        }
+
+        return value
+            ? new ConstraintRelationAssessment(ConstraintTruthKind.Satisfied)
+            : new ConstraintRelationAssessment(
+                ConstraintTruthKind.Unsatisfied,
+                null,
+                $"Carrier does not satisfy flag '{FormatCarrierFlagKind(flag.Kind)}'.");
+    }
+
     private static bool TryEvaluateAlternativeEquality(
         SymbolicTerm left,
         SymbolicTerm right,
@@ -361,6 +384,7 @@ public static class SymbolicConstraintEvaluator
             RouteTerm route => IsClosed(route.Site) && IsClosed(route.From) && IsClosed(route.To),
             JunctionTerm junction => IsClosed(junction.Site),
             SiteFlagTerm flag => IsClosed(flag.Site),
+            CarrierFlagTerm flag => IsClosed(flag.Carrier),
             RequirementTerm requirement => IsClosed(requirement.Relation),
             PreferenceTerm preference => IsClosed(preference.Relation),
             ConstraintSetTerm set => set.Constraints.All(IsClosed),
@@ -373,6 +397,16 @@ public static class SymbolicConstraintEvaluator
         SymbolicSiteFlagKind.HostThrough => "host-through",
         SymbolicSiteFlagKind.CrossProposal => "cross-proposal",
         SymbolicSiteFlagKind.TrueCross => "true-cross",
+        _ => kind.ToString().ToLowerInvariant(),
+    };
+
+    private static string FormatCarrierFlagKind(SymbolicCarrierFlagKind kind) => kind switch
+    {
+        SymbolicCarrierFlagKind.Shared => "shared",
+        SymbolicCarrierFlagKind.Recursive => "recursive",
+        SymbolicCarrierFlagKind.Span => "span",
+        SymbolicCarrierFlagKind.Hosted => "hosted",
+        SymbolicCarrierFlagKind.Referenced => "referenced",
         _ => kind.ToString().ToLowerInvariant(),
     };
 

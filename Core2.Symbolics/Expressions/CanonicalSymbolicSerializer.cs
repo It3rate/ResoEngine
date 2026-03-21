@@ -40,6 +40,7 @@ public static class CanonicalSymbolicSerializer
             RouteTerm route => $"route(site={Serialize(route.Site)},from={Serialize(route.From)},to={Serialize(route.To)})",
             JunctionTerm junction => $"junction(site={Serialize(junction.Site)},kind={SerializeJunction(junction.Kind)})",
             SiteFlagTerm flag => $"has(site={Serialize(flag.Site)},flag={SerializeSiteFlag(flag.Kind)})",
+            CarrierFlagTerm flag => $"has(carrier={Serialize(flag.Carrier)},flag={SerializeCarrierFlag(flag.Kind)})",
             RequirementTerm requirement => SerializeRequirement(requirement),
             PreferenceTerm preference => SerializePreference(preference),
             ConstraintSetTerm set => $"constraints([{string.Join(",", set.Constraints.Select(Serialize))}])",
@@ -197,6 +198,16 @@ public static class CanonicalSymbolicSerializer
         SymbolicCarrierCountKind.ReferencingHosts => "referencing-hosts",
         SymbolicCarrierCountKind.ParticipatingSites => "participating-sites",
         SymbolicCarrierCountKind.ThroughSites => "through-sites",
+        _ => kind.ToString(),
+    };
+
+    private static string SerializeCarrierFlag(SymbolicCarrierFlagKind kind) => kind switch
+    {
+        SymbolicCarrierFlagKind.Shared => "shared",
+        SymbolicCarrierFlagKind.Recursive => "recursive",
+        SymbolicCarrierFlagKind.Span => "span",
+        SymbolicCarrierFlagKind.Hosted => "hosted",
+        SymbolicCarrierFlagKind.Referenced => "referenced",
         _ => kind.ToString(),
     };
 

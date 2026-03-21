@@ -247,15 +247,26 @@ public static class SymbolicParser
             return new JunctionTerm(site, kind);
         }
 
-        private SiteFlagTerm ParseSiteFlag()
+        private RelationTerm ParseSiteFlag()
         {
             ConsumeIdentifier("has");
             Expect(TokenKind.LeftParen);
-            var site = ParseSiteReference();
+            string subjectName = ExpectIdentifier();
             Expect(TokenKind.Comma);
-            var kind = ParseSiteFlagKind();
+            string kindName = ExpectIdentifier();
             Expect(TokenKind.RightParen);
-            return new SiteFlagTerm(site, kind);
+
+            if (TryParseSiteFlagKind(kindName, out var siteKind))
+            {
+                return new SiteFlagTerm(new SiteReferenceTerm(subjectName), siteKind);
+            }
+
+            if (TryParseCarrierFlagKind(kindName, out var carrierKind))
+            {
+                return new CarrierFlagTerm(new CarrierReferenceTerm(subjectName), carrierKind);
+            }
+
+            throw Error($"Unknown has(...) flag '{kindName}'.");
         }
 
         private AxisBooleanTerm ParseBoolean()
@@ -816,16 +827,17 @@ public static class SymbolicParser
             };
         }
 
-        private SymbolicSiteFlagKind ParseSiteFlagKind()
+        private static bool TryParseSiteFlagKind(string name, out SymbolicSiteFlagKind kind)
         {
-            string name = ExpectIdentifier();
-            return name switch
+            kind = name switch
             {
                 "host-through" => SymbolicSiteFlagKind.HostThrough,
                 "cross-proposal" => SymbolicSiteFlagKind.CrossProposal,
                 "true-cross" => SymbolicSiteFlagKind.TrueCross,
-                _ => throw Error($"Unknown site flag '{name}'."),
+                _ => default,
             };
+
+            return name is "host-through" or "cross-proposal" or "true-cross";
         }
 
         private static bool TryParseGlobalCountKind(string name, out SymbolicCountKind kind)
@@ -870,6 +882,21 @@ public static class SymbolicParser
                 "referencing-hosts" or
                 "participating-sites" or
                 "through-sites";
+        }
+
+        private static bool TryParseCarrierFlagKind(string name, out SymbolicCarrierFlagKind kind)
+        {
+            kind = name switch
+            {
+                "shared" => SymbolicCarrierFlagKind.Shared,
+                "recursive" => SymbolicCarrierFlagKind.Recursive,
+                "span" => SymbolicCarrierFlagKind.Span,
+                "hosted" => SymbolicCarrierFlagKind.Hosted,
+                "referenced" => SymbolicCarrierFlagKind.Referenced,
+                _ => default,
+            };
+
+            return name is "shared" or "recursive" or "span" or "hosted" or "referenced";
         }
 
         private string? TryParseLeadingParticipantName()

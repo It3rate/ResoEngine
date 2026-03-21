@@ -84,6 +84,9 @@ public static class SymbolicElaborator
                 count.Kind),
             CarrierSpanTerm span => new CarrierSpanTerm(
                 (CarrierReferenceTerm)ElaborateTerm(span.Carrier, environment)),
+            CarrierFlagTerm flag => new CarrierFlagTerm(
+                (CarrierReferenceTerm)ElaborateTerm(flag.Carrier, environment),
+                flag.Kind),
             PowerTerm power => new PowerTerm(
                 (ValueTerm)ElaborateTerm(power.Base, environment),
                 power.Exponent,

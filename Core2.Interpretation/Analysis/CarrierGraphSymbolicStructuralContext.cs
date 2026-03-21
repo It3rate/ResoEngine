@@ -247,6 +247,34 @@ public sealed class CarrierGraphSymbolicStructuralContext : ISymbolicStructuralC
         return true;
     }
 
+    public bool TryResolveCarrierFlag(
+        CarrierReferenceTerm carrier,
+        SymbolicCarrierFlagKind flag,
+        out bool value,
+        out string? note)
+    {
+        ArgumentNullException.ThrowIfNull(carrier);
+
+        note = null;
+        if (!_carriersByName.TryGetValue(carrier.Name, out var profile))
+        {
+            value = false;
+            note = $"No named carrier '{carrier.Name}' exists in the structural context.";
+            return false;
+        }
+
+        value = flag switch
+        {
+            SymbolicCarrierFlagKind.Shared => profile.IsSharedAcrossSites,
+            SymbolicCarrierFlagKind.Recursive => profile.ParticipatesInRecursiveCycle,
+            SymbolicCarrierFlagKind.Span => profile.HasAttachmentSpan,
+            SymbolicCarrierFlagKind.Hosted => profile.IsHosted,
+            SymbolicCarrierFlagKind.Referenced => profile.IsReferenced,
+            _ => throw new ArgumentOutOfRangeException(nameof(flag), flag, null),
+        };
+        return true;
+    }
+
     private static CarrierIncidentKind MapIncident(RouteIncidentKind kind) => kind switch
     {
         RouteIncidentKind.HostNegative => CarrierIncidentKind.HostNegative,
