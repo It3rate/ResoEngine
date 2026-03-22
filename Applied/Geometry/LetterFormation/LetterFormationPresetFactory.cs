@@ -18,7 +18,7 @@ public static class LetterFormationPresetFactory
         [
             new LetterFormationSiteState(
                 "LeftBase",
-                env.ResolveRelativePoint(RandomRatio(rng, 8, 24), RandomRatio(rng, 82, 98)),
+                env.ResolveRelativePoint(RandomRatio(rng, 4, 30), RandomRatio(rng, 80, 98)),
                 new Axis(0, 1, 0, 1),
                 PlanarOffset.Zero,
                 [
@@ -27,67 +27,67 @@ public static class LetterFormationPresetFactory
                 ]),
             new LetterFormationSiteState(
                 "LeftJoin",
-                env.ResolveRelativePoint(RandomRatio(rng, 8, 42), RandomRatio(rng, 24, 78)),
+                env.ResolveRelativePoint(RandomRatio(rng, 4, 48), RandomRatio(rng, 18, 84)),
                 new Axis(0, 1, 0, 1),
                 PlanarOffset.Zero,
                 [
                     new FrameProjectionDesire(LetterFormationDirections.Horizontal, new Proportion(32, 100), new Proportion(22, 100), new Proportion(2), "left join stays left of center"),
                     new FrameProjectionDesire(LetterFormationDirections.Vertical, midlineRatio, new Proportion(3, 20), new Proportion(2), "left join near crossbar height"),
-                    new JoinSiteDesire("CrossLeft", new Proportion(3, 10), new Proportion(2), new Proportion(4), "left crossbar pin"),
+                    new JoinSiteDesire("CrossLeft", new Proportion(2, 5), new Proportion(2), new Proportion(4), "left crossbar pin"),
                 ]),
             new LetterFormationSiteState(
                 "LeftApex",
-                env.ResolveRelativePoint(RandomRatio(rng, 16, 46), RandomRatio(rng, 6, 36)),
+                env.ResolveRelativePoint(RandomRatio(rng, 6, 48), RandomRatio(rng, 0, 42)),
                 new Axis(0, 1, 0, 1),
                 PlanarOffset.Zero,
                 [
                     new FrameProjectionDesire(LetterFormationDirections.Horizontal, new Proportion(47, 100), new Proportion(16, 100), new Proportion(3), "apex near centerline"),
                     new FrameProjectionDesire(LetterFormationDirections.Vertical, new Proportion(1, 12), new Proportion(1, 10), new Proportion(4), "apex near topline"),
-                    new JoinSiteDesire("RightApex", new Proportion(3, 10), new Proportion(3), new Proportion(5), "apex join"),
+                    new JoinSiteDesire("RightApex", new Proportion(1, 2), new Proportion(3), new Proportion(5), "apex join"),
                 ]),
             new LetterFormationSiteState(
                 "CrossLeft",
-                env.ResolveRelativePoint(RandomRatio(rng, 5, 48), RandomRatio(rng, 18, 84)),
+                env.ResolveRelativePoint(RandomRatio(rng, 0, 52), RandomRatio(rng, 16, 88)),
                 new Axis(-2, 1, 0, -1),
                 PlanarOffset.Zero,
                 [
                     new SiteProjectionDesire(LetterFormationDirections.Vertical, "CrossRight", Proportion.Zero, new Proportion(1, 8), new Proportion(4), "crossbar stays level"),
                     new FrameProjectionDesire(LetterFormationDirections.Vertical, midlineRatio, new Proportion(3, 20), new Proportion(3), "crossbar near midline"),
-                    new JoinSiteDesire("LeftJoin", new Proportion(3, 10), new Proportion(2), new Proportion(4), "left crossbar pin"),
+                    new JoinSiteDesire("LeftJoin", new Proportion(2, 5), new Proportion(2), new Proportion(4), "left crossbar pin"),
                 ]),
             new LetterFormationSiteState(
                 "CrossRight",
-                env.ResolveRelativePoint(RandomRatio(rng, 52, 95), RandomRatio(rng, 18, 84)),
+                env.ResolveRelativePoint(RandomRatio(rng, 48, 100), RandomRatio(rng, 16, 88)),
                 new Axis(2, 1, 0, -1),
                 PlanarOffset.Zero,
                 [
                     new SiteProjectionDesire(LetterFormationDirections.Vertical, "CrossLeft", Proportion.Zero, new Proportion(1, 8), new Proportion(4), "crossbar stays level"),
                     new FrameProjectionDesire(LetterFormationDirections.Vertical, midlineRatio, new Proportion(3, 20), new Proportion(3), "crossbar near midline"),
-                    new JoinSiteDesire("RightJoin", new Proportion(3, 10), new Proportion(2), new Proportion(4), "right crossbar pin"),
+                    new JoinSiteDesire("RightJoin", new Proportion(2, 5), new Proportion(2), new Proportion(4), "right crossbar pin"),
                 ]),
             new LetterFormationSiteState(
                 "RightApex",
-                env.ResolveRelativePoint(RandomRatio(rng, 54, 84), RandomRatio(rng, 6, 36)),
+                env.ResolveRelativePoint(RandomRatio(rng, 52, 94), RandomRatio(rng, 0, 42)),
                 new Axis(0, 1, 0, 1),
                 PlanarOffset.Zero,
                 [
                     new FrameProjectionDesire(LetterFormationDirections.Horizontal, new Proportion(53, 100), new Proportion(16, 100), new Proportion(3), "apex near centerline"),
                     new FrameProjectionDesire(LetterFormationDirections.Vertical, new Proportion(1, 12), new Proportion(1, 10), new Proportion(4), "apex near topline"),
-                    new JoinSiteDesire("LeftApex", new Proportion(3, 10), new Proportion(3), new Proportion(5), "apex join"),
+                    new JoinSiteDesire("LeftApex", new Proportion(1, 2), new Proportion(3), new Proportion(5), "apex join"),
                 ]),
             new LetterFormationSiteState(
                 "RightJoin",
-                env.ResolveRelativePoint(RandomRatio(rng, 58, 92), RandomRatio(rng, 24, 78)),
+                env.ResolveRelativePoint(RandomRatio(rng, 52, 96), RandomRatio(rng, 18, 84)),
                 new Axis(0, 1, 0, 1),
                 PlanarOffset.Zero,
                 [
                     new FrameProjectionDesire(LetterFormationDirections.Horizontal, new Proportion(68, 100), new Proportion(22, 100), new Proportion(2), "right join stays right of center"),
                     new FrameProjectionDesire(LetterFormationDirections.Vertical, midlineRatio, new Proportion(3, 20), new Proportion(2), "right join near crossbar height"),
-                    new JoinSiteDesire("CrossRight", new Proportion(3, 10), new Proportion(2), new Proportion(4), "right crossbar pin"),
+                    new JoinSiteDesire("CrossRight", new Proportion(2, 5), new Proportion(2), new Proportion(4), "right crossbar pin"),
                 ]),
             new LetterFormationSiteState(
                 "RightBase",
-                env.ResolveRelativePoint(RandomRatio(rng, 76, 92), RandomRatio(rng, 82, 98)),
+                env.ResolveRelativePoint(RandomRatio(rng, 70, 96), RandomRatio(rng, 80, 98)),
                 new Axis(0, 1, 0, 1),
                 PlanarOffset.Zero,
                 [

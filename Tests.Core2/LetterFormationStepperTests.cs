@@ -93,6 +93,32 @@ public class LetterFormationStepperTests
         Assert.Equal(stepped.GetSite("Left").Position, stepped.GetSite("Right").Position);
     }
 
+    [Fact]
+    public void Step_DoesNotJiggleWhenThereAreNoActiveProposals()
+    {
+        var state = new LetterFormationState(
+            "quiet",
+            0,
+            LetterFormationEnvironment.CreateLetterBox(randomMotionWeight: Proportion.One),
+            [
+                new LetterFormationSiteState(
+                    "Quiet",
+                    new PlanarPoint(new Proportion(3), new Proportion(4)),
+                    Axis.Zero,
+                    new PlanarOffset(new Proportion(1, 5), new Proportion(1, 5)),
+                    []),
+            ],
+            [],
+            []);
+
+        var stepped = LetterFormationStepper.Step(state, new Random(7));
+        var original = state.GetSite("Quiet");
+        var quiet = stepped.GetSite("Quiet");
+
+        Assert.True(original.Position.X == quiet.Position.X && original.Position.Y == quiet.Position.Y);
+        Assert.True(quiet.Momentum.Dx == 0 && quiet.Momentum.Dy == 0);
+    }
+
     private static double Sum(IEnumerable<LetterFormationTension> tensions) =>
         tensions.Sum(tension => (double)tension.Magnitude.Numerator / tension.Magnitude.Denominator);
 }

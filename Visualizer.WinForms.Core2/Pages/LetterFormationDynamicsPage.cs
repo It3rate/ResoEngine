@@ -180,10 +180,10 @@ public sealed class LetterFormationDynamicsPage : IVisualizerPage
             return;
         }
 
-        SKRect graphCard = new(34f, 136f, width - 350f, height - 104f);
+        SKRect graphCard = new(34f, 136f, width - 350f, height - 156f);
         SKRect statusCard = new(width - 292f, 150f, width - 34f, 292f);
-        SKRect tensionCard = new(width - 292f, 310f, width - 34f, 590f);
-        SKRect proposalCard = new(width - 292f, 608f, width - 34f, height - 104f);
+        SKRect tensionCard = new(width - 292f, 310f, width - 34f, 560f);
+        SKRect proposalCard = new(width - 292f, 578f, width - 34f, height - 156f);
 
         DrawCard(canvas, graphCard);
         DrawCard(canvas, statusCard);
@@ -392,7 +392,7 @@ public sealed class LetterFormationDynamicsPage : IVisualizerPage
 
         canvas.DrawText("Evolving Letter", cardRect.Left + 22f, cardRect.Top + 30f, _infoTitlePaint);
 
-        SKRect plotRect = new(cardRect.Left + 30f, cardRect.Top + 54f, cardRect.Right - 30f, cardRect.Bottom - 28f);
+        SKRect plotRect = new(cardRect.Left + 30f, cardRect.Top + 24f, cardRect.Right - 30f, cardRect.Bottom - 150f);
         SKRect letterboxRect = FitLetterbox(plotRect, _state.Environment);
 
         canvas.DrawRoundRect(letterboxRect, 18f, 18f, _statusAccentPaint);
@@ -438,12 +438,14 @@ public sealed class LetterFormationDynamicsPage : IVisualizerPage
             canvas.DrawText(carrier.Id, mid.X + 8f, mid.Y - 8f, labelPaint);
         }
 
-        foreach (LetterFormationSiteState site in _state.Sites)
+        foreach (var siteGroup in _state.Sites.GroupBy(site => site.Position))
         {
-            SKPoint point = MapPoint(site.Position, letterboxRect);
+            PlanarPoint position = siteGroup.Key;
+            SKPoint point = MapPoint(position, letterboxRect);
             canvas.DrawCircle(point, 12f, _siteFillPaint);
             canvas.DrawCircle(point, 12f, _siteStrokePaint);
-            canvas.DrawText(site.Id, point.X + 14f, point.Y - 10f, _siteLabelPaint);
+            string label = string.Join(" / ", siteGroup.Select(site => site.Id));
+            canvas.DrawText(label, point.X + 14f, point.Y - 10f, _siteLabelPaint);
         }
     }
 

@@ -9,6 +9,7 @@ public static class LetterFormationStepper
     private const double ProposalResponsiveness = 0.35d;
     private const double MomentumBlend = 0.2d;
     private const double RandomJitterScale = 0.12d;
+    private const double QuietThreshold = 0.05d;
 
     public static IReadOnlyList<LetterFormationProposal> GenerateProposals(LetterFormationState state)
     {
@@ -297,14 +298,25 @@ public static class LetterFormationStepper
 
         double nextHorizontal = totalWeight > 0d ? weightedHorizontal / totalWeight : 0d;
         double nextVertical = totalWeight > 0d ? weightedVertical / totalWeight : 0d;
-        nextHorizontal += LetterFormationGeometry.ToDouble(site.Momentum.Horizontal) * MomentumBlend;
-        nextVertical += LetterFormationGeometry.ToDouble(site.Momentum.Vertical) * MomentumBlend;
+        if (totalWeight > QuietThreshold)
+        {
+            nextHorizontal += LetterFormationGeometry.ToDouble(site.Momentum.Horizontal) * MomentumBlend;
+            nextVertical += LetterFormationGeometry.ToDouble(site.Momentum.Vertical) * MomentumBlend;
+        }
 
-        double jitter = LetterFormationGeometry.ToDouble(environment.RandomMotionWeight) * RandomJitterScale;
+        double jitter = LetterFormationGeometry.ToDouble(environment.RandomMotionWeight) *
+            RandomJitterScale *
+            Math.Min(1d, totalWeight / 3d);
         if (jitter > 0d)
         {
             nextHorizontal += RandomSigned(random) * jitter;
             nextVertical += RandomSigned(random) * jitter;
+        }
+
+        if (totalWeight <= QuietThreshold)
+        {
+            nextHorizontal = 0d;
+            nextVertical = 0d;
         }
 
         nextHorizontal = LetterFormationGeometry.ClampMagnitude(nextHorizontal, MaxProposalStep);
