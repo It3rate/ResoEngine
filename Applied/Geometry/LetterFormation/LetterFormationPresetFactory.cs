@@ -124,55 +124,57 @@ public static class LetterFormationPresetFactory
     {
         IReadOnlyList<LetterFormationSiteState> sites =
         [
-            Site(rng, env, "LeftBase", Axis.Zero,
-                new FrameProjectionDesire(LetterFormationDirections.Horizontal, new Proportion(1, 5), new Proportion(3, 20), new Proportion(3), "base near left side"),
-                new FrameProjectionDesire(LetterFormationDirections.Vertical, Proportion.One, new Proportion(1, 10), new Proportion(5), "base on baseline")),
-            Site(rng, env, "LeftJoin", Axis.Zero,
-                new FrameProjectionDesire(LetterFormationDirections.Horizontal, new Proportion(32, 100), new Proportion(22, 100), new Proportion(2), "left join stays left of center"),
-                new FrameProjectionDesire(LetterFormationDirections.Vertical, midlineRatio, new Proportion(1, 8), new Proportion(5), "left join near crossbar height"),
-                new JoinSiteDesire("CrossLeft", new Proportion(2, 5), new Proportion(2), new Proportion(4), "left crossbar pin")),
-            Site(rng, env, "LeftApex", Axis.Zero,
-                new FrameProjectionDesire(LetterFormationDirections.Horizontal, new Proportion(47, 100), new Proportion(16, 100), new Proportion(3), "apex near centerline"),
-                new FrameProjectionDesire(LetterFormationDirections.Vertical, Proportion.Zero, new Proportion(1, 12), new Proportion(5), "apex near topline"),
-                new JoinSiteDesire("RightApex", new Proportion(3, 5), new Proportion(3), new Proportion(5), "apex join")),
-            Site(rng, env, "CrossLeft", Axis.Zero,
-                new SiteProjectionDesire(LetterFormationDirections.Vertical, "CrossRight", Proportion.Zero, new Proportion(1, 12), new Proportion(5), "crossbar stays level"),
-                new FrameProjectionDesire(LetterFormationDirections.Vertical, midlineRatio, new Proportion(1, 12), new Proportion(7), "crossbar near midline"),
-                new JoinSiteDesire("LeftJoin", new Proportion(2, 5), new Proportion(2), new Proportion(4), "left crossbar pin")),
-            Site(rng, env, "CrossRight", Axis.Zero,
-                new SiteProjectionDesire(LetterFormationDirections.Vertical, "CrossLeft", Proportion.Zero, new Proportion(1, 12), new Proportion(5), "crossbar stays level"),
-                new FrameProjectionDesire(LetterFormationDirections.Vertical, midlineRatio, new Proportion(1, 12), new Proportion(7), "crossbar near midline"),
-                new JoinSiteDesire("RightJoin", new Proportion(2, 5), new Proportion(2), new Proportion(4), "right crossbar pin")),
-            Site(rng, env, "RightApex", Axis.Zero,
-                new FrameProjectionDesire(LetterFormationDirections.Horizontal, new Proportion(53, 100), new Proportion(16, 100), new Proportion(3), "apex near centerline"),
-                new FrameProjectionDesire(LetterFormationDirections.Vertical, Proportion.Zero, new Proportion(1, 12), new Proportion(5), "apex near topline"),
-                new JoinSiteDesire("LeftApex", new Proportion(3, 5), new Proportion(3), new Proportion(5), "apex join")),
-            Site(rng, env, "RightJoin", Axis.Zero,
-                new FrameProjectionDesire(LetterFormationDirections.Horizontal, new Proportion(68, 100), new Proportion(22, 100), new Proportion(2), "right join stays right of center"),
-                new FrameProjectionDesire(LetterFormationDirections.Vertical, midlineRatio, new Proportion(1, 8), new Proportion(5), "right join near crossbar height"),
-                new JoinSiteDesire("CrossRight", new Proportion(2, 5), new Proportion(2), new Proportion(4), "right crossbar pin")),
-            Site(rng, env, "RightBase", Axis.Zero,
-                new FrameProjectionDesire(LetterFormationDirections.Horizontal, new Proportion(4, 5), new Proportion(3, 20), new Proportion(3), "base near right side"),
-                new FrameProjectionDesire(LetterFormationDirections.Vertical, Proportion.One, new Proportion(1, 10), new Proportion(5), "base on baseline")),
+            AnchoredSite(rng, env, "LeftBase", Axis.Zero,
+                NearLeftSide("base near left side", 20, 15, 3),
+                OnBaseline("base on baseline")),
+            AnchoredSite(rng, env, "LeftJoin", Axis.Zero,
+                HorizontalAt(new Proportion(32, 100), new Proportion(22, 100), new Proportion(2), "left join stays left of center"),
+                VerticalAt(midlineRatio, new Proportion(1, 8), new Proportion(5), "left join near crossbar height"),
+                JoinWith("CrossLeft", "left crossbar pin")),
+            AnchoredSite(rng, env, "LeftApex", Axis.Zero,
+                HorizontalAt(new Proportion(47, 100), new Proportion(16, 100), new Proportion(3), "apex near centerline"),
+                NearTopline("apex near topline", 0, 8, 5),
+                JoinWith("RightApex", "apex join", new Proportion(3, 5), new Proportion(3), new Proportion(5))),
+            AnchoredSite(rng, env, "CrossLeft", Axis.Zero,
+                HorizontalAt(new Proportion(32, 100), new Proportion(22, 100), new Proportion(2), "crossbar stays left of center"),
+                VerticalAt(midlineRatio, new Proportion(1, 12), new Proportion(7), "crossbar near midline"),
+                LevelWith("CrossRight", "crossbar stays level"),
+                JoinWith("LeftJoin", "left crossbar pin")),
+            AnchoredSite(rng, env, "CrossRight", Axis.Zero,
+                HorizontalAt(new Proportion(68, 100), new Proportion(22, 100), new Proportion(2), "crossbar stays right of center"),
+                VerticalAt(midlineRatio, new Proportion(1, 12), new Proportion(7), "crossbar near midline"),
+                LevelWith("CrossLeft", "crossbar stays level"),
+                JoinWith("RightJoin", "right crossbar pin")),
+            AnchoredSite(rng, env, "RightApex", Axis.Zero,
+                HorizontalAt(new Proportion(53, 100), new Proportion(16, 100), new Proportion(3), "apex near centerline"),
+                NearTopline("apex near topline", 0, 8, 5),
+                JoinWith("LeftApex", "apex join", new Proportion(3, 5), new Proportion(3), new Proportion(5))),
+            AnchoredSite(rng, env, "RightJoin", Axis.Zero,
+                HorizontalAt(new Proportion(68, 100), new Proportion(22, 100), new Proportion(2), "right join stays right of center"),
+                VerticalAt(midlineRatio, new Proportion(1, 8), new Proportion(5), "right join near crossbar height"),
+                JoinWith("CrossRight", "right crossbar pin")),
+            AnchoredSite(rng, env, "RightBase", Axis.Zero,
+                NearRightSide("base near right side", 80, 15, 3),
+                OnBaseline("base on baseline")),
         ];
 
         IReadOnlyList<LetterFormationCarrierState> carriers =
         [
             Carrier("LeftLower", "LeftBase", "LeftJoin", "LeftStroke", 1, 1, true,
-                new CarrierDirectionDesire(LetterFormationDirections.UpRight, new Proportion(1, 5), new Proportion(3), "left lower rises"),
-                new CarrierSpanDesire(new Proportion(2), new Proportion(12), new Proportion(2), "left lower keeps a reasonable span")),
+                PreferDirection(LetterFormationDirections.UpRight, "left lower rises", new Proportion(1, 5), new Proportion(3)),
+                KeepSpan(new Proportion(2), new Proportion(12), new Proportion(2), "left lower keeps a reasonable span")),
             Carrier("LeftUpper", "LeftJoin", "LeftApex", "LeftStroke", 1, 0, true,
-                new CarrierDirectionDesire(LetterFormationDirections.UpRight, new Proportion(1, 5), new Proportion(3), "left upper rises"),
-                new CarrierSpanDesire(new Proportion(2), new Proportion(12), new Proportion(2), "left upper keeps a reasonable span")),
+                PreferDirection(LetterFormationDirections.UpRight, "left upper rises", new Proportion(1, 5), new Proportion(3)),
+                KeepSpan(new Proportion(2), new Proportion(12), new Proportion(2), "left upper keeps a reasonable span")),
             Carrier("Crossbar", "CrossLeft", "CrossRight", "CrossStroke", 3, 0, false,
-                new CarrierDirectionDesire(LetterFormationDirections.Horizontal, new Proportion(1, 10), new Proportion(4), "crossbar prefers horizontal"),
-                new CarrierSpanDesire(new Proportion(2), new Proportion(10), new Proportion(2), "crossbar keeps a moderate width")),
+                PreferHorizontal("crossbar prefers horizontal"),
+                KeepSpan(new Proportion(2), new Proportion(10), new Proportion(2), "crossbar keeps a moderate width")),
             Carrier("RightUpper", "RightJoin", "RightApex", "RightStroke", 2, 0, true,
-                new CarrierDirectionDesire(LetterFormationDirections.UpLeft, new Proportion(1, 5), new Proportion(3), "right upper rises"),
-                new CarrierSpanDesire(new Proportion(2), new Proportion(12), new Proportion(2), "right upper keeps a reasonable span")),
+                PreferDirection(LetterFormationDirections.UpLeft, "right upper rises", new Proportion(1, 5), new Proportion(3)),
+                KeepSpan(new Proportion(2), new Proportion(12), new Proportion(2), "right upper keeps a reasonable span")),
             Carrier("RightLower", "RightBase", "RightJoin", "RightStroke", 2, 1, true,
-                new CarrierDirectionDesire(LetterFormationDirections.UpLeft, new Proportion(1, 5), new Proportion(3), "right lower rises"),
-                new CarrierSpanDesire(new Proportion(2), new Proportion(12), new Proportion(2), "right lower keeps a reasonable span")),
+                PreferDirection(LetterFormationDirections.UpLeft, "right lower rises", new Proportion(1, 5), new Proportion(3)),
+                KeepSpan(new Proportion(2), new Proportion(12), new Proportion(2), "right lower keeps a reasonable span")),
         ];
 
         return CreateState("CapitalAAssembly", env, sites, carriers);
@@ -182,53 +184,55 @@ public static class LetterFormationPresetFactory
     {
         IReadOnlyList<LetterFormationSiteState> sites =
         [
-            Site(rng, env, "LeftBase", Axis.Zero,
-                new FrameProjectionDesire(LetterFormationDirections.Horizontal, new Proportion(1, 5), new Proportion(3, 20), new Proportion(3), "left base near side"),
-                new FrameProjectionDesire(LetterFormationDirections.Vertical, Proportion.One, new Proportion(1, 10), new Proportion(5), "left base on baseline")),
-            Site(rng, env, "LeftJoin", Axis.Zero,
-                new FrameProjectionDesire(LetterFormationDirections.Horizontal, new Proportion(1, 5), new Proportion(3, 20), new Proportion(3), "left join near side"),
-                new FrameProjectionDesire(LetterFormationDirections.Vertical, midlineRatio, new Proportion(1, 12), new Proportion(6), "left join near midline"),
-                new JoinSiteDesire("CrossLeft", new Proportion(2, 5), new Proportion(2), new Proportion(4), "left bridge pin")),
-            Site(rng, env, "LeftTop", Axis.Zero,
-                new FrameProjectionDesire(LetterFormationDirections.Horizontal, new Proportion(1, 5), new Proportion(3, 20), new Proportion(3), "left top near side"),
-                new FrameProjectionDesire(LetterFormationDirections.Vertical, Proportion.Zero, new Proportion(1, 10), new Proportion(5), "left top near topline")),
-            Site(rng, env, "CrossLeft", Axis.Zero,
-                new SiteProjectionDesire(LetterFormationDirections.Vertical, "CrossRight", Proportion.Zero, new Proportion(1, 12), new Proportion(5), "bridge stays level"),
-                new FrameProjectionDesire(LetterFormationDirections.Vertical, midlineRatio, new Proportion(1, 12), new Proportion(7), "bridge near midline"),
-                new JoinSiteDesire("LeftJoin", new Proportion(2, 5), new Proportion(2), new Proportion(4), "left bridge pin")),
-            Site(rng, env, "CrossRight", Axis.Zero,
-                new SiteProjectionDesire(LetterFormationDirections.Vertical, "CrossLeft", Proportion.Zero, new Proportion(1, 12), new Proportion(5), "bridge stays level"),
-                new FrameProjectionDesire(LetterFormationDirections.Vertical, midlineRatio, new Proportion(1, 12), new Proportion(7), "bridge near midline"),
-                new JoinSiteDesire("RightJoin", new Proportion(2, 5), new Proportion(2), new Proportion(4), "right bridge pin")),
-            Site(rng, env, "RightTop", Axis.Zero,
-                new FrameProjectionDesire(LetterFormationDirections.Horizontal, new Proportion(4, 5), new Proportion(3, 20), new Proportion(3), "right top near side"),
-                new FrameProjectionDesire(LetterFormationDirections.Vertical, Proportion.Zero, new Proportion(1, 10), new Proportion(5), "right top near topline")),
-            Site(rng, env, "RightJoin", Axis.Zero,
-                new FrameProjectionDesire(LetterFormationDirections.Horizontal, new Proportion(4, 5), new Proportion(3, 20), new Proportion(3), "right join near side"),
-                new FrameProjectionDesire(LetterFormationDirections.Vertical, midlineRatio, new Proportion(1, 12), new Proportion(6), "right join near midline"),
-                new JoinSiteDesire("CrossRight", new Proportion(2, 5), new Proportion(2), new Proportion(4), "right bridge pin")),
-            Site(rng, env, "RightBase", Axis.Zero,
-                new FrameProjectionDesire(LetterFormationDirections.Horizontal, new Proportion(4, 5), new Proportion(3, 20), new Proportion(3), "right base near side"),
-                new FrameProjectionDesire(LetterFormationDirections.Vertical, Proportion.One, new Proportion(1, 10), new Proportion(5), "right base on baseline")),
+            AnchoredSite(rng, env, "LeftBase", Axis.Zero,
+                NearLeftSide("left base near side", 20, 15, 3),
+                OnBaseline("left base on baseline")),
+            AnchoredSite(rng, env, "LeftJoin", Axis.Zero,
+                NearLeftSide("left join near side", 20, 15, 3),
+                VerticalAt(midlineRatio, new Proportion(1, 12), new Proportion(6), "left join near midline"),
+                JoinWith("CrossLeft", "left bridge pin")),
+            AnchoredSite(rng, env, "LeftTop", Axis.Zero,
+                NearLeftSide("left top near side", 20, 15, 3),
+                NearTopline("left top near topline", 0, 10, 5)),
+            AnchoredSite(rng, env, "CrossLeft", Axis.Zero,
+                NearLeftSide("bridge starts on left half", 20, 15, 3),
+                VerticalAt(midlineRatio, new Proportion(1, 12), new Proportion(7), "bridge near midline"),
+                LevelWith("CrossRight", "bridge stays level"),
+                JoinWith("LeftJoin", "left bridge pin")),
+            AnchoredSite(rng, env, "CrossRight", Axis.Zero,
+                NearRightSide("bridge ends on right half", 80, 15, 3),
+                VerticalAt(midlineRatio, new Proportion(1, 12), new Proportion(7), "bridge near midline"),
+                LevelWith("CrossLeft", "bridge stays level"),
+                JoinWith("RightJoin", "right bridge pin")),
+            AnchoredSite(rng, env, "RightTop", Axis.Zero,
+                NearRightSide("right top near side", 80, 15, 3),
+                NearTopline("right top near topline", 0, 10, 5)),
+            AnchoredSite(rng, env, "RightJoin", Axis.Zero,
+                NearRightSide("right join near side", 80, 15, 3),
+                VerticalAt(midlineRatio, new Proportion(1, 12), new Proportion(6), "right join near midline"),
+                JoinWith("CrossRight", "right bridge pin")),
+            AnchoredSite(rng, env, "RightBase", Axis.Zero,
+                NearRightSide("right base near side", 80, 15, 3),
+                OnBaseline("right base on baseline")),
         ];
 
         IReadOnlyList<LetterFormationCarrierState> carriers =
         [
             Carrier("LeftLower", "LeftBase", "LeftJoin", "LeftStroke", 1, 1, true,
-                new CarrierDirectionDesire(LetterFormationDirections.Vertical, new Proportion(1, 10), new Proportion(3), "left lower vertical"),
-                new CarrierSpanDesire(new Proportion(2), new Proportion(12), new Proportion(2), "left lower keeps span")),
+                PreferVertical("left lower vertical", new Proportion(1, 10), new Proportion(3)),
+                KeepSpan(new Proportion(2), new Proportion(12), new Proportion(2), "left lower keeps span")),
             Carrier("LeftUpper", "LeftJoin", "LeftTop", "LeftStroke", 1, 0, true,
-                new CarrierDirectionDesire(LetterFormationDirections.Vertical, new Proportion(1, 10), new Proportion(3), "left upper vertical"),
-                new CarrierSpanDesire(new Proportion(2), new Proportion(12), new Proportion(2), "left upper keeps span")),
+                PreferVertical("left upper vertical", new Proportion(1, 10), new Proportion(3)),
+                KeepSpan(new Proportion(2), new Proportion(12), new Proportion(2), "left upper keeps span")),
             Carrier("Crossbar", "CrossLeft", "CrossRight", "BridgeStroke", 3, 0, false,
-                new CarrierDirectionDesire(LetterFormationDirections.Horizontal, new Proportion(1, 10), new Proportion(4), "bridge prefers horizontal"),
-                new CarrierSpanDesire(new Proportion(2), new Proportion(10), new Proportion(2), "bridge keeps width")),
+                PreferHorizontal("bridge prefers horizontal"),
+                KeepSpan(new Proportion(2), new Proportion(10), new Proportion(2), "bridge keeps width")),
             Carrier("RightUpper", "RightJoin", "RightTop", "RightStroke", 2, 0, true,
-                new CarrierDirectionDesire(LetterFormationDirections.Vertical, new Proportion(1, 10), new Proportion(3), "right upper vertical"),
-                new CarrierSpanDesire(new Proportion(2), new Proportion(12), new Proportion(2), "right upper keeps span")),
+                PreferVertical("right upper vertical", new Proportion(1, 10), new Proportion(3)),
+                KeepSpan(new Proportion(2), new Proportion(12), new Proportion(2), "right upper keeps span")),
             Carrier("RightLower", "RightBase", "RightJoin", "RightStroke", 2, 1, true,
-                new CarrierDirectionDesire(LetterFormationDirections.Vertical, new Proportion(1, 10), new Proportion(3), "right lower vertical"),
-                new CarrierSpanDesire(new Proportion(2), new Proportion(12), new Proportion(2), "right lower keeps span")),
+                PreferVertical("right lower vertical", new Proportion(1, 10), new Proportion(3)),
+                KeepSpan(new Proportion(2), new Proportion(12), new Proportion(2), "right lower keeps span")),
         ];
 
         return CreateState("BridgeHAssembly", env, sites, carriers);
@@ -240,41 +244,41 @@ public static class LetterFormationPresetFactory
 
         IReadOnlyList<LetterFormationSiteState> sites =
         [
-            Site(rng, env, "StemBase", Axis.Zero,
-                new FrameProjectionDesire(LetterFormationDirections.Horizontal, new Proportion(1, 2), new Proportion(14, 100), new Proportion(4), "stem base near center"),
-                new FrameProjectionDesire(LetterFormationDirections.Vertical, Proportion.One, new Proportion(1, 10), new Proportion(5), "stem base on baseline")),
-            Site(rng, env, "StemTop", Axis.Zero,
-                new FrameProjectionDesire(LetterFormationDirections.Horizontal, new Proportion(1, 2), new Proportion(10, 100), new Proportion(5), "stem top near center"),
-                new FrameProjectionDesire(LetterFormationDirections.Vertical, topRatio, new Proportion(1, 12), new Proportion(5), "stem top near topline"),
-                new JoinSiteDesire("LeftJoin", new Proportion(1, 2), new Proportion(3), new Proportion(4), "left top junction"),
-                new JoinSiteDesire("RightJoin", new Proportion(1, 2), new Proportion(3), new Proportion(4), "right top junction")),
-            Site(rng, env, "LeftJoin", Axis.Zero,
-                new FrameProjectionDesire(LetterFormationDirections.Horizontal, new Proportion(1, 2), new Proportion(10, 100), new Proportion(4), "left join near stem top"),
-                new FrameProjectionDesire(LetterFormationDirections.Vertical, topRatio, new Proportion(1, 12), new Proportion(5), "left join near topline"),
-                new JoinSiteDesire("StemTop", new Proportion(1, 2), new Proportion(3), new Proportion(4), "left top junction")),
-            Site(rng, env, "LeftTarget", Axis.Zero,
-                new FrameProjectionDesire(LetterFormationDirections.Horizontal, new Proportion(12, 100), new Proportion(14, 100), new Proportion(4), "left target near side"),
-                new FrameProjectionDesire(LetterFormationDirections.Vertical, topRatio, new Proportion(1, 10), new Proportion(5), "left target near topline")),
-            Site(rng, env, "RightJoin", Axis.Zero,
-                new FrameProjectionDesire(LetterFormationDirections.Horizontal, new Proportion(1, 2), new Proportion(10, 100), new Proportion(4), "right join near stem top"),
-                new FrameProjectionDesire(LetterFormationDirections.Vertical, topRatio, new Proportion(1, 12), new Proportion(5), "right join near topline"),
-                new JoinSiteDesire("StemTop", new Proportion(1, 2), new Proportion(3), new Proportion(4), "right top junction")),
-            Site(rng, env, "RightTarget", Axis.Zero,
-                new FrameProjectionDesire(LetterFormationDirections.Horizontal, new Proportion(88, 100), new Proportion(14, 100), new Proportion(4), "right target near side"),
-                new FrameProjectionDesire(LetterFormationDirections.Vertical, topRatio, new Proportion(1, 10), new Proportion(5), "right target near topline")),
+            AnchoredSite(rng, env, "StemBase", Axis.Zero,
+                NearCenter("stem base near center", 14, 4),
+                OnBaseline("stem base on baseline")),
+            AnchoredSite(rng, env, "StemTop", Axis.Zero,
+                NearCenter("stem top near center"),
+                VerticalAt(topRatio, new Proportion(1, 12), new Proportion(5), "stem top near topline"),
+                JoinWith("LeftJoin", "left top junction", new Proportion(1, 2), new Proportion(3), new Proportion(4)),
+                JoinWith("RightJoin", "right top junction", new Proportion(1, 2), new Proportion(3), new Proportion(4))),
+            AnchoredSite(rng, env, "LeftJoin", Axis.Zero,
+                NearCenter("left join near stem top"),
+                VerticalAt(topRatio, new Proportion(1, 12), new Proportion(5), "left join near topline"),
+                JoinWith("StemTop", "left top junction", new Proportion(1, 2), new Proportion(3), new Proportion(4))),
+            AnchoredSite(rng, env, "LeftTarget", Axis.Zero,
+                NearLeftSide("left target near side", 12),
+                VerticalAt(topRatio, new Proportion(1, 10), new Proportion(5), "left target near topline")),
+            AnchoredSite(rng, env, "RightJoin", Axis.Zero,
+                NearCenter("right join near stem top"),
+                VerticalAt(topRatio, new Proportion(1, 12), new Proportion(5), "right join near topline"),
+                JoinWith("StemTop", "right top junction", new Proportion(1, 2), new Proportion(3), new Proportion(4))),
+            AnchoredSite(rng, env, "RightTarget", Axis.Zero,
+                NearRightSide("right target near side", 88),
+                VerticalAt(topRatio, new Proportion(1, 10), new Proportion(5), "right target near topline")),
         ];
 
         IReadOnlyList<LetterFormationCarrierState> carriers =
         [
             Carrier("Stem", "StemBase", "StemTop", "StemStroke", 1, 0, true,
-                new CarrierDirectionDesire(LetterFormationDirections.Vertical, new Proportion(1, 10), new Proportion(4), "stem vertical"),
-                new CarrierSpanDesire(new Proportion(3), new Proportion(13), new Proportion(2), "stem keeps span")),
+                PreferVertical("stem vertical"),
+                KeepSpan(new Proportion(3), new Proportion(13), new Proportion(2), "stem keeps span")),
             Carrier("LeftBar", "LeftJoin", "LeftTarget", "TopStroke", 2, 0, true,
-                new CarrierDirectionDesire(Axis.NegativeOne, new Proportion(1, 10), new Proportion(4), "left bar extends left"),
-                new CarrierSpanDesire(new Proportion(2), new Proportion(10), new Proportion(2), "left bar keeps width")),
+                PreferDirection(Axis.NegativeOne, "left bar extends left"),
+                KeepSpan(new Proportion(2), new Proportion(10), new Proportion(2), "left bar keeps width")),
             Carrier("RightBar", "RightJoin", "RightTarget", "TopStroke", 2, 1, false,
-                new CarrierDirectionDesire(LetterFormationDirections.Horizontal, new Proportion(1, 10), new Proportion(4), "right bar extends right"),
-                new CarrierSpanDesire(new Proportion(2), new Proportion(10), new Proportion(2), "right bar keeps width")),
+                PreferHorizontal("right bar extends right"),
+                KeepSpan(new Proportion(2), new Proportion(10), new Proportion(2), "right bar keeps width")),
         ];
 
         return CreateState("CapitalTAssembly", env, sites, carriers);
@@ -290,41 +294,41 @@ public static class LetterFormationPresetFactory
 
         IReadOnlyList<LetterFormationSiteState> sites =
         [
-            Site(rng, env, "StemBase", Axis.Zero,
-                new FrameProjectionDesire(LetterFormationDirections.Horizontal, new Proportion(1, 2), new Proportion(12, 100), new Proportion(5), "stem base near center"),
-                new FrameProjectionDesire(LetterFormationDirections.Vertical, Proportion.One, new Proportion(1, 12), new Proportion(6), "stem base on baseline")),
-            Site(rng, env, "Junction", Axis.Zero,
-                new FrameProjectionDesire(LetterFormationDirections.Horizontal, new Proportion(1, 2), new Proportion(8, 100), new Proportion(5), "junction near center"),
-                new FrameProjectionDesire(LetterFormationDirections.Vertical, junctionRatio, new Proportion(1, 12), new Proportion(6), "junction below topline"),
-                new JoinSiteDesire("LeftJoin", new Proportion(1, 2), new Proportion(3), new Proportion(4), "left branch attach"),
-                new JoinSiteDesire("RightJoin", new Proportion(1, 2), new Proportion(3), new Proportion(4), "right branch attach")),
-            Site(rng, env, "LeftJoin", Axis.Zero,
-                new FrameProjectionDesire(LetterFormationDirections.Horizontal, new Proportion(1, 2), new Proportion(8, 100), new Proportion(5), "left branch near junction"),
-                new FrameProjectionDesire(LetterFormationDirections.Vertical, junctionRatio, new Proportion(1, 12), new Proportion(6), "left branch near junction height"),
-                new JoinSiteDesire("Junction", new Proportion(1, 2), new Proportion(3), new Proportion(4), "left branch attach")),
-            Site(rng, env, "LeftTarget", Axis.Zero,
-                new FrameProjectionDesire(LetterFormationDirections.Horizontal, new Proportion(14, 100), new Proportion(14, 100), new Proportion(4), "left target near side"),
-                new FrameProjectionDesire(LetterFormationDirections.Vertical, new Proportion(8, 100), new Proportion(1, 12), new Proportion(6), "left target near top")),
-            Site(rng, env, "RightJoin", Axis.Zero,
-                new FrameProjectionDesire(LetterFormationDirections.Horizontal, new Proportion(1, 2), new Proportion(8, 100), new Proportion(5), "right branch near junction"),
-                new FrameProjectionDesire(LetterFormationDirections.Vertical, junctionRatio, new Proportion(1, 12), new Proportion(6), "right branch near junction height"),
-                new JoinSiteDesire("Junction", new Proportion(1, 2), new Proportion(3), new Proportion(4), "right branch attach")),
-            Site(rng, env, "RightTarget", Axis.Zero,
-                new FrameProjectionDesire(LetterFormationDirections.Horizontal, new Proportion(86, 100), new Proportion(14, 100), new Proportion(4), "right target near side"),
-                new FrameProjectionDesire(LetterFormationDirections.Vertical, new Proportion(8, 100), new Proportion(1, 12), new Proportion(6), "right target near top")),
+            AnchoredSite(rng, env, "StemBase", Axis.Zero,
+                NearCenter("stem base near center", 12, 5),
+                OnBaseline("stem base on baseline", 8, 6)),
+            AnchoredSite(rng, env, "Junction", Axis.Zero,
+                NearCenter("junction near center", 8, 5),
+                VerticalAt(junctionRatio, new Proportion(1, 12), new Proportion(6), "junction below topline"),
+                JoinWith("LeftJoin", "left branch attach", new Proportion(1, 2), new Proportion(3), new Proportion(4)),
+                JoinWith("RightJoin", "right branch attach", new Proportion(1, 2), new Proportion(3), new Proportion(4))),
+            AnchoredSite(rng, env, "LeftJoin", Axis.Zero,
+                NearCenter("left branch near junction", 8, 5),
+                VerticalAt(junctionRatio, new Proportion(1, 12), new Proportion(6), "left branch near junction height"),
+                JoinWith("Junction", "left branch attach", new Proportion(1, 2), new Proportion(3), new Proportion(4))),
+            AnchoredSite(rng, env, "LeftTarget", Axis.Zero,
+                NearLeftSide("left target near side", 14),
+                NearTopline("left target near top", 8, 8, 6)),
+            AnchoredSite(rng, env, "RightJoin", Axis.Zero,
+                NearCenter("right branch near junction", 8, 5),
+                VerticalAt(junctionRatio, new Proportion(1, 12), new Proportion(6), "right branch near junction height"),
+                JoinWith("Junction", "right branch attach", new Proportion(1, 2), new Proportion(3), new Proportion(4))),
+            AnchoredSite(rng, env, "RightTarget", Axis.Zero,
+                NearRightSide("right target near side", 86),
+                NearTopline("right target near top", 8, 8, 6)),
         ];
 
         IReadOnlyList<LetterFormationCarrierState> carriers =
         [
             Carrier("Stem", "StemBase", "Junction", "StemStroke", 3, 0, true,
-                new CarrierDirectionDesire(LetterFormationDirections.Vertical, new Proportion(1, 12), new Proportion(5), "stem vertical"),
-                new CarrierSpanDesire(new Proportion(3), new Proportion(12), new Proportion(2), "stem keeps span")),
+                PreferVertical("stem vertical", new Proportion(1, 12), new Proportion(5)),
+                KeepSpan(new Proportion(3), new Proportion(12), new Proportion(2), "stem keeps span")),
             Carrier("LeftArm", "LeftJoin", "LeftTarget", "LeftStroke", 1, 0, true,
-                new CarrierDirectionDesire(LetterFormationDirections.UpLeft, new Proportion(1, 12), new Proportion(5), "left arm rises"),
-                new CarrierSpanDesire(new Proportion(2), new Proportion(10), new Proportion(2), "left arm keeps span")),
+                PreferDirection(LetterFormationDirections.UpLeft, "left arm rises", new Proportion(1, 12), new Proportion(5)),
+                KeepSpan(new Proportion(2), new Proportion(10), new Proportion(2), "left arm keeps span")),
             Carrier("RightArm", "RightJoin", "RightTarget", "RightStroke", 2, 0, true,
-                new CarrierDirectionDesire(LetterFormationDirections.UpRight, new Proportion(1, 12), new Proportion(5), "right arm rises"),
-                new CarrierSpanDesire(new Proportion(2), new Proportion(10), new Proportion(2), "right arm keeps span")),
+                PreferDirection(LetterFormationDirections.UpRight, "right arm rises", new Proportion(1, 12), new Proportion(5)),
+                KeepSpan(new Proportion(2), new Proportion(10), new Proportion(2), "right arm keeps span")),
         ];
 
         return CreateState("CapitalYAssembly", env, sites, carriers);
@@ -334,30 +338,30 @@ public static class LetterFormationPresetFactory
     {
         IReadOnlyList<LetterFormationSiteState> sites =
         [
-            Site(rng, env, "StemTop", Axis.Zero,
-                new FrameProjectionDesire(LetterFormationDirections.Horizontal, new Proportion(18, 100), new Proportion(14, 100), new Proportion(4), "stem top near side"),
-                new FrameProjectionDesire(LetterFormationDirections.Vertical, new Proportion(8, 100), new Proportion(1, 10), new Proportion(5), "stem top near top")),
-            Site(rng, env, "StemBase", Axis.Zero,
-                new FrameProjectionDesire(LetterFormationDirections.Horizontal, new Proportion(18, 100), new Proportion(14, 100), new Proportion(4), "stem base near side"),
-                new FrameProjectionDesire(LetterFormationDirections.Vertical, Proportion.One, new Proportion(1, 10), new Proportion(5), "stem base on baseline"),
-                new JoinSiteDesire("FootJoin", new Proportion(1, 2), new Proportion(3), new Proportion(4), "foot corner attach")),
-            Site(rng, env, "FootJoin", Axis.Zero,
-                new FrameProjectionDesire(LetterFormationDirections.Horizontal, new Proportion(18, 100), new Proportion(14, 100), new Proportion(4), "foot join near side"),
-                new FrameProjectionDesire(LetterFormationDirections.Vertical, Proportion.One, new Proportion(1, 10), new Proportion(5), "foot join on baseline"),
-                new JoinSiteDesire("StemBase", new Proportion(1, 2), new Proportion(3), new Proportion(4), "foot corner attach")),
-            Site(rng, env, "FootRight", Axis.Zero,
-                new FrameProjectionDesire(LetterFormationDirections.Horizontal, new Proportion(84, 100), new Proportion(16, 100), new Proportion(4), "foot right near side"),
-                new FrameProjectionDesire(LetterFormationDirections.Vertical, Proportion.One, new Proportion(1, 10), new Proportion(5), "foot right on baseline")),
+            AnchoredSite(rng, env, "StemTop", Axis.Zero,
+                NearLeftSide("stem top near side", 18),
+                NearTopline("stem top near top")),
+            AnchoredSite(rng, env, "StemBase", Axis.Zero,
+                NearLeftSide("stem base near side", 18),
+                OnBaseline("stem base on baseline"),
+                JoinWith("FootJoin", "foot corner attach", new Proportion(1, 2), new Proportion(3), new Proportion(4))),
+            AnchoredSite(rng, env, "FootJoin", Axis.Zero,
+                NearLeftSide("foot join near side", 18),
+                OnBaseline("foot join on baseline"),
+                JoinWith("StemBase", "foot corner attach", new Proportion(1, 2), new Proportion(3), new Proportion(4))),
+            AnchoredSite(rng, env, "FootRight", Axis.Zero,
+                NearRightSide("foot right near side", 84, 16),
+                OnBaseline("foot right on baseline")),
         ];
 
         IReadOnlyList<LetterFormationCarrierState> carriers =
         [
             Carrier("Stem", "StemBase", "StemTop", "StemStroke", 1, 0, true,
-                new CarrierDirectionDesire(LetterFormationDirections.Vertical, new Proportion(1, 10), new Proportion(4), "stem vertical"),
-                new CarrierSpanDesire(new Proportion(3), new Proportion(13), new Proportion(2), "stem keeps span")),
+                PreferVertical("stem vertical"),
+                KeepSpan(new Proportion(3), new Proportion(13), new Proportion(2), "stem keeps span")),
             Carrier("Foot", "FootJoin", "FootRight", "FootStroke", 2, 0, false,
-                new CarrierDirectionDesire(LetterFormationDirections.Horizontal, new Proportion(1, 10), new Proportion(4), "foot extends right"),
-                new CarrierSpanDesire(new Proportion(2), new Proportion(10), new Proportion(2), "foot keeps width")),
+                PreferHorizontal("foot extends right"),
+                KeepSpan(new Proportion(2), new Proportion(10), new Proportion(2), "foot keeps width")),
         ];
 
         return CreateState("CapitalLAssembly", env, sites, carriers);
@@ -543,40 +547,40 @@ public static class LetterFormationPresetFactory
     {
         IReadOnlyList<LetterFormationSiteState> sites =
         [
-            Site(rng, env, "StemTop", Axis.Zero,
-                new FrameProjectionDesire(LetterFormationDirections.Horizontal, new Proportion(18, 100), new Proportion(14, 100), new Proportion(4), "stem top near side"),
-                new FrameProjectionDesire(LetterFormationDirections.Vertical, new Proportion(8, 100), new Proportion(1, 10), new Proportion(5), "stem top near topline")),
-            Site(rng, env, "StemMid", Axis.Zero,
-                new FrameProjectionDesire(LetterFormationDirections.Horizontal, new Proportion(18, 100), new Proportion(14, 100), new Proportion(4), "stem middle near side"),
-                new FrameProjectionDesire(LetterFormationDirections.Vertical, midlineRatio, new Proportion(1, 10), new Proportion(6), "stem middle near midline")),
-            Site(rng, env, "StemBottom", Axis.Zero,
-                new FrameProjectionDesire(LetterFormationDirections.Horizontal, new Proportion(18, 100), new Proportion(14, 100), new Proportion(4), "stem bottom near side"),
-                new FrameProjectionDesire(LetterFormationDirections.Vertical, Proportion.One, new Proportion(1, 10), new Proportion(5), "stem bottom on baseline")),
-            Site(rng, env, "TopEnd", Axis.Zero,
-                new FrameProjectionDesire(LetterFormationDirections.Horizontal, new Proportion(82, 100), new Proportion(14, 100), new Proportion(4), "top bar reaches right"),
-                new FrameProjectionDesire(LetterFormationDirections.Vertical, new Proportion(8, 100), new Proportion(1, 10), new Proportion(5), "top bar stays high")),
-            Site(rng, env, "MidEnd", Axis.Zero,
-                new FrameProjectionDesire(LetterFormationDirections.Horizontal, new Proportion(64, 100), new Proportion(14, 100), new Proportion(4), "middle bar reaches center-right"),
-                new FrameProjectionDesire(LetterFormationDirections.Vertical, midlineRatio, new Proportion(1, 10), new Proportion(6), "middle bar near midline")),
-            Site(rng, env, "BottomEnd", Axis.Zero,
-                new FrameProjectionDesire(LetterFormationDirections.Horizontal, new Proportion(82, 100), new Proportion(14, 100), new Proportion(4), "bottom bar reaches right"),
-                new FrameProjectionDesire(LetterFormationDirections.Vertical, Proportion.One, new Proportion(1, 10), new Proportion(5), "bottom bar on baseline")),
+            AnchoredSite(rng, env, "StemTop", Axis.Zero,
+                NearLeftSide("stem top near side", 18),
+                NearTopline("stem top near topline")),
+            AnchoredSite(rng, env, "StemMid", Axis.Zero,
+                NearLeftSide("stem middle near side", 18),
+                NearMidline(midlineRatio, "stem middle near midline")),
+            AnchoredSite(rng, env, "StemBottom", Axis.Zero,
+                NearLeftSide("stem bottom near side", 18),
+                OnBaseline("stem bottom on baseline")),
+            AnchoredSite(rng, env, "TopEnd", Axis.Zero,
+                NearRightSide("top bar reaches right", 82),
+                NearTopline("top bar stays high")),
+            AnchoredSite(rng, env, "MidEnd", Axis.Zero,
+                NearRightSide("middle bar reaches center-right", 64),
+                NearMidline(midlineRatio, "middle bar near midline")),
+            AnchoredSite(rng, env, "BottomEnd", Axis.Zero,
+                NearRightSide("bottom bar reaches right", 82),
+                OnBaseline("bottom bar on baseline")),
         ];
 
         IReadOnlyList<LetterFormationCarrierState> carriers =
         [
             Carrier("Stem", "StemBottom", "StemTop", "StemStroke", 1, 0, true,
-                new CarrierDirectionDesire(LetterFormationDirections.Vertical, new Proportion(1, 10), new Proportion(4), "stem vertical"),
-                new CarrierSpanDesire(new Proportion(4), new Proportion(13), new Proportion(2), "stem keeps span")),
+                PreferVertical("stem vertical"),
+                KeepSpan(new Proportion(4), new Proportion(13), new Proportion(2), "stem keeps span")),
             Carrier("TopBar", "StemTop", "TopEnd", "TopStroke", 2, 0, false,
-                new CarrierDirectionDesire(LetterFormationDirections.Horizontal, new Proportion(1, 10), new Proportion(4), "top bar horizontal"),
-                new CarrierSpanDesire(new Proportion(2), new Proportion(10), new Proportion(2), "top bar keeps width")),
+                PreferHorizontal("top bar horizontal"),
+                KeepSpan(new Proportion(2), new Proportion(10), new Proportion(2), "top bar keeps width")),
             Carrier("MidBar", "StemMid", "MidEnd", "MidStroke", 3, 0, false,
-                new CarrierDirectionDesire(LetterFormationDirections.Horizontal, new Proportion(1, 10), new Proportion(4), "mid bar horizontal"),
-                new CarrierSpanDesire(new Proportion(2), new Proportion(8), new Proportion(2), "mid bar keeps width")),
+                PreferHorizontal("mid bar horizontal"),
+                KeepSpan(new Proportion(2), new Proportion(8), new Proportion(2), "mid bar keeps width")),
             Carrier("BottomBar", "StemBottom", "BottomEnd", "BottomStroke", 4, 0, false,
-                new CarrierDirectionDesire(LetterFormationDirections.Horizontal, new Proportion(1, 10), new Proportion(4), "bottom bar horizontal"),
-                new CarrierSpanDesire(new Proportion(2), new Proportion(10), new Proportion(2), "bottom bar keeps width")),
+                PreferHorizontal("bottom bar horizontal"),
+                KeepSpan(new Proportion(2), new Proportion(10), new Proportion(2), "bottom bar keeps width")),
         ];
 
         return CreateState("CapitalEAssembly", env, sites, carriers);
@@ -586,34 +590,34 @@ public static class LetterFormationPresetFactory
     {
         IReadOnlyList<LetterFormationSiteState> sites =
         [
-            Site(rng, env, "StemTop", Axis.Zero,
-                new FrameProjectionDesire(LetterFormationDirections.Horizontal, new Proportion(18, 100), new Proportion(14, 100), new Proportion(4), "stem top near side"),
-                new FrameProjectionDesire(LetterFormationDirections.Vertical, new Proportion(8, 100), new Proportion(1, 10), new Proportion(5), "stem top near topline")),
-            Site(rng, env, "StemMid", Axis.Zero,
-                new FrameProjectionDesire(LetterFormationDirections.Horizontal, new Proportion(18, 100), new Proportion(14, 100), new Proportion(4), "stem middle near side"),
-                new FrameProjectionDesire(LetterFormationDirections.Vertical, midlineRatio, new Proportion(1, 10), new Proportion(6), "stem middle near midline")),
-            Site(rng, env, "StemBottom", Axis.Zero,
-                new FrameProjectionDesire(LetterFormationDirections.Horizontal, new Proportion(18, 100), new Proportion(14, 100), new Proportion(4), "stem bottom near side"),
-                new FrameProjectionDesire(LetterFormationDirections.Vertical, Proportion.One, new Proportion(1, 10), new Proportion(5), "stem bottom on baseline")),
-            Site(rng, env, "TopEnd", Axis.Zero,
-                new FrameProjectionDesire(LetterFormationDirections.Horizontal, new Proportion(82, 100), new Proportion(14, 100), new Proportion(4), "top bar reaches right"),
-                new FrameProjectionDesire(LetterFormationDirections.Vertical, new Proportion(8, 100), new Proportion(1, 10), new Proportion(5), "top bar stays high")),
-            Site(rng, env, "MidEnd", Axis.Zero,
-                new FrameProjectionDesire(LetterFormationDirections.Horizontal, new Proportion(64, 100), new Proportion(14, 100), new Proportion(4), "middle bar reaches center-right"),
-                new FrameProjectionDesire(LetterFormationDirections.Vertical, midlineRatio, new Proportion(1, 10), new Proportion(6), "middle bar near midline")),
+            AnchoredSite(rng, env, "StemTop", Axis.Zero,
+                NearLeftSide("stem top near side", 18),
+                NearTopline("stem top near topline")),
+            AnchoredSite(rng, env, "StemMid", Axis.Zero,
+                NearLeftSide("stem middle near side", 18),
+                NearMidline(midlineRatio, "stem middle near midline")),
+            AnchoredSite(rng, env, "StemBottom", Axis.Zero,
+                NearLeftSide("stem bottom near side", 18),
+                OnBaseline("stem bottom on baseline")),
+            AnchoredSite(rng, env, "TopEnd", Axis.Zero,
+                NearRightSide("top bar reaches right", 82),
+                NearTopline("top bar stays high")),
+            AnchoredSite(rng, env, "MidEnd", Axis.Zero,
+                NearRightSide("middle bar reaches center-right", 64),
+                NearMidline(midlineRatio, "middle bar near midline")),
         ];
 
         IReadOnlyList<LetterFormationCarrierState> carriers =
         [
             Carrier("Stem", "StemBottom", "StemTop", "StemStroke", 1, 0, true,
-                new CarrierDirectionDesire(LetterFormationDirections.Vertical, new Proportion(1, 10), new Proportion(4), "stem vertical"),
-                new CarrierSpanDesire(new Proportion(4), new Proportion(13), new Proportion(2), "stem keeps span")),
+                PreferVertical("stem vertical"),
+                KeepSpan(new Proportion(4), new Proportion(13), new Proportion(2), "stem keeps span")),
             Carrier("TopBar", "StemTop", "TopEnd", "TopStroke", 2, 0, false,
-                new CarrierDirectionDesire(LetterFormationDirections.Horizontal, new Proportion(1, 10), new Proportion(4), "top bar horizontal"),
-                new CarrierSpanDesire(new Proportion(2), new Proportion(10), new Proportion(2), "top bar keeps width")),
+                PreferHorizontal("top bar horizontal"),
+                KeepSpan(new Proportion(2), new Proportion(10), new Proportion(2), "top bar keeps width")),
             Carrier("MidBar", "StemMid", "MidEnd", "MidStroke", 3, 0, false,
-                new CarrierDirectionDesire(LetterFormationDirections.Horizontal, new Proportion(1, 10), new Proportion(4), "mid bar horizontal"),
-                new CarrierSpanDesire(new Proportion(2), new Proportion(8), new Proportion(2), "mid bar keeps width")),
+                PreferHorizontal("mid bar horizontal"),
+                KeepSpan(new Proportion(2), new Proportion(8), new Proportion(2), "mid bar keeps width")),
         ];
 
         return CreateState("CapitalFAssembly", env, sites, carriers);
@@ -666,37 +670,37 @@ public static class LetterFormationPresetFactory
     {
         IReadOnlyList<LetterFormationSiteState> sites =
         [
-            Site(rng, env, "StemTop", Axis.Zero,
-                new FrameProjectionDesire(LetterFormationDirections.Horizontal, new Proportion(1, 2), new Proportion(12, 100), new Proportion(5), "stem top near center"),
-                new FrameProjectionDesire(LetterFormationDirections.Vertical, new Proportion(8, 100), new Proportion(1, 10), new Proportion(5), "stem top near topline")),
-            Site(rng, env, "StemBottom", Axis.Zero,
-                new FrameProjectionDesire(LetterFormationDirections.Horizontal, new Proportion(1, 2), new Proportion(12, 100), new Proportion(5), "stem bottom near center"),
-                new FrameProjectionDesire(LetterFormationDirections.Vertical, Proportion.One, new Proportion(1, 10), new Proportion(5), "stem bottom on baseline")),
-            Site(rng, env, "TopLeft", Axis.Zero,
-                new FrameProjectionDesire(LetterFormationDirections.Horizontal, new Proportion(32, 100), new Proportion(12, 100), new Proportion(4), "top cap starts left"),
-                new FrameProjectionDesire(LetterFormationDirections.Vertical, new Proportion(8, 100), new Proportion(1, 10), new Proportion(5), "top cap stays high")),
-            Site(rng, env, "TopRight", Axis.Zero,
-                new FrameProjectionDesire(LetterFormationDirections.Horizontal, new Proportion(68, 100), new Proportion(12, 100), new Proportion(4), "top cap reaches right"),
-                new FrameProjectionDesire(LetterFormationDirections.Vertical, new Proportion(8, 100), new Proportion(1, 10), new Proportion(5), "top cap stays high")),
-            Site(rng, env, "BottomLeft", Axis.Zero,
-                new FrameProjectionDesire(LetterFormationDirections.Horizontal, new Proportion(32, 100), new Proportion(12, 100), new Proportion(4), "bottom cap starts left"),
-                new FrameProjectionDesire(LetterFormationDirections.Vertical, Proportion.One, new Proportion(1, 10), new Proportion(5), "bottom cap on baseline")),
-            Site(rng, env, "BottomRight", Axis.Zero,
-                new FrameProjectionDesire(LetterFormationDirections.Horizontal, new Proportion(68, 100), new Proportion(12, 100), new Proportion(4), "bottom cap reaches right"),
-                new FrameProjectionDesire(LetterFormationDirections.Vertical, Proportion.One, new Proportion(1, 10), new Proportion(5), "bottom cap on baseline")),
+            AnchoredSite(rng, env, "StemTop", Axis.Zero,
+                NearCenter("stem top near center", 12, 5),
+                NearTopline("stem top near topline")),
+            AnchoredSite(rng, env, "StemBottom", Axis.Zero,
+                NearCenter("stem bottom near center", 12, 5),
+                OnBaseline("stem bottom on baseline")),
+            AnchoredSite(rng, env, "TopLeft", Axis.Zero,
+                HorizontalAt(new Proportion(32, 100), new Proportion(12, 100), new Proportion(4), "top cap starts left"),
+                NearTopline("top cap stays high")),
+            AnchoredSite(rng, env, "TopRight", Axis.Zero,
+                HorizontalAt(new Proportion(68, 100), new Proportion(12, 100), new Proportion(4), "top cap reaches right"),
+                NearTopline("top cap stays high")),
+            AnchoredSite(rng, env, "BottomLeft", Axis.Zero,
+                HorizontalAt(new Proportion(32, 100), new Proportion(12, 100), new Proportion(4), "bottom cap starts left"),
+                OnBaseline("bottom cap on baseline")),
+            AnchoredSite(rng, env, "BottomRight", Axis.Zero,
+                HorizontalAt(new Proportion(68, 100), new Proportion(12, 100), new Proportion(4), "bottom cap reaches right"),
+                OnBaseline("bottom cap on baseline")),
         ];
 
         IReadOnlyList<LetterFormationCarrierState> carriers =
         [
             Carrier("Stem", "StemBottom", "StemTop", "StemStroke", 1, 0, true,
-                new CarrierDirectionDesire(LetterFormationDirections.Vertical, new Proportion(1, 10), new Proportion(4), "stem vertical"),
-                new CarrierSpanDesire(new Proportion(4), new Proportion(13), new Proportion(2), "stem keeps span")),
+                PreferVertical("stem vertical"),
+                KeepSpan(new Proportion(4), new Proportion(13), new Proportion(2), "stem keeps span")),
             Carrier("TopCap", "TopLeft", "TopRight", "TopStroke", 2, 0, false,
-                new CarrierDirectionDesire(LetterFormationDirections.Horizontal, new Proportion(1, 10), new Proportion(4), "top cap horizontal"),
-                new CarrierSpanDesire(new Proportion(1), new Proportion(5), new Proportion(2), "top cap keeps width")),
+                PreferHorizontal("top cap horizontal"),
+                KeepSpan(new Proportion(1), new Proportion(5), new Proportion(2), "top cap keeps width")),
             Carrier("BottomCap", "BottomLeft", "BottomRight", "BottomStroke", 3, 0, false,
-                new CarrierDirectionDesire(LetterFormationDirections.Horizontal, new Proportion(1, 10), new Proportion(4), "bottom cap horizontal"),
-                new CarrierSpanDesire(new Proportion(1), new Proportion(5), new Proportion(2), "bottom cap keeps width")),
+                PreferHorizontal("bottom cap horizontal"),
+                KeepSpan(new Proportion(1), new Proportion(5), new Proportion(2), "bottom cap keeps width")),
         ];
 
         return CreateState("CapitalIAssembly", env, sites, carriers);
@@ -771,31 +775,31 @@ public static class LetterFormationPresetFactory
     {
         IReadOnlyList<LetterFormationSiteState> sites =
         [
-            Site(rng, env, "LeftTop", Axis.Zero,
-                new FrameProjectionDesire(LetterFormationDirections.Horizontal, new Proportion(18, 100), new Proportion(14, 100), new Proportion(4), "left top near side"),
-                new FrameProjectionDesire(LetterFormationDirections.Vertical, new Proportion(8, 100), new Proportion(1, 10), new Proportion(5), "left top near topline")),
-            Site(rng, env, "LeftBottom", Axis.Zero,
-                new FrameProjectionDesire(LetterFormationDirections.Horizontal, new Proportion(18, 100), new Proportion(14, 100), new Proportion(4), "left bottom near side"),
-                new FrameProjectionDesire(LetterFormationDirections.Vertical, Proportion.One, new Proportion(1, 10), new Proportion(5), "left bottom on baseline")),
-            Site(rng, env, "RightTop", Axis.Zero,
-                new FrameProjectionDesire(LetterFormationDirections.Horizontal, new Proportion(82, 100), new Proportion(14, 100), new Proportion(4), "right top near side"),
-                new FrameProjectionDesire(LetterFormationDirections.Vertical, new Proportion(8, 100), new Proportion(1, 10), new Proportion(5), "right top near topline")),
-            Site(rng, env, "RightBottom", Axis.Zero,
-                new FrameProjectionDesire(LetterFormationDirections.Horizontal, new Proportion(82, 100), new Proportion(14, 100), new Proportion(4), "right bottom near side"),
-                new FrameProjectionDesire(LetterFormationDirections.Vertical, Proportion.One, new Proportion(1, 10), new Proportion(5), "right bottom on baseline")),
+            AnchoredSite(rng, env, "LeftTop", Axis.Zero,
+                NearLeftSide("left top near side", 18),
+                NearTopline("left top near topline")),
+            AnchoredSite(rng, env, "LeftBottom", Axis.Zero,
+                NearLeftSide("left bottom near side", 18),
+                OnBaseline("left bottom on baseline")),
+            AnchoredSite(rng, env, "RightTop", Axis.Zero,
+                NearRightSide("right top near side", 82),
+                NearTopline("right top near topline")),
+            AnchoredSite(rng, env, "RightBottom", Axis.Zero,
+                NearRightSide("right bottom near side", 82),
+                OnBaseline("right bottom on baseline")),
         ];
 
         IReadOnlyList<LetterFormationCarrierState> carriers =
         [
             Carrier("LeftStem", "LeftBottom", "LeftTop", "LeftStroke", 1, 0, true,
-                new CarrierDirectionDesire(LetterFormationDirections.Vertical, new Proportion(1, 10), new Proportion(4), "left stem vertical"),
-                new CarrierSpanDesire(new Proportion(4), new Proportion(13), new Proportion(2), "left stem keeps span")),
+                PreferVertical("left stem vertical"),
+                KeepSpan(new Proportion(4), new Proportion(13), new Proportion(2), "left stem keeps span")),
             Carrier("Diagonal", "LeftTop", "RightBottom", "DiagonalStroke", 2, 0, false,
-                new CarrierDirectionDesire(LetterFormationDirections.DownRight, new Proportion(1, 8), new Proportion(4), "diagonal descends"),
-                new CarrierSpanDesire(new Proportion(4), new Proportion(14), new Proportion(2), "diagonal keeps span")),
+                PreferDirection(LetterFormationDirections.DownRight, "diagonal descends", new Proportion(1, 8), new Proportion(4)),
+                KeepSpan(new Proportion(4), new Proportion(14), new Proportion(2), "diagonal keeps span")),
             Carrier("RightStem", "RightBottom", "RightTop", "RightStroke", 3, 0, true,
-                new CarrierDirectionDesire(LetterFormationDirections.Vertical, new Proportion(1, 10), new Proportion(4), "right stem vertical"),
-                new CarrierSpanDesire(new Proportion(4), new Proportion(13), new Proportion(2), "right stem keeps span")),
+                PreferVertical("right stem vertical"),
+                KeepSpan(new Proportion(4), new Proportion(13), new Proportion(2), "right stem keeps span")),
         ];
 
         return CreateState("CapitalNAssembly", env, sites, carriers);
@@ -1046,25 +1050,25 @@ public static class LetterFormationPresetFactory
     {
         IReadOnlyList<LetterFormationSiteState> sites =
         [
-            Site(rng, env, "LeftTop", Axis.Zero,
-                new FrameProjectionDesire(LetterFormationDirections.Horizontal, new Proportion(22, 100), new Proportion(14, 100), new Proportion(4), "left top near side"),
-                new FrameProjectionDesire(LetterFormationDirections.Vertical, new Proportion(10, 100), new Proportion(1, 10), new Proportion(5), "left top high")),
-            Site(rng, env, "Bottom", Axis.Zero,
-                new FrameProjectionDesire(LetterFormationDirections.Horizontal, new Proportion(1, 2), new Proportion(10, 100), new Proportion(5), "bottom near center"),
-                new FrameProjectionDesire(LetterFormationDirections.Vertical, Proportion.One, new Proportion(1, 10), new Proportion(5), "bottom on baseline")),
-            Site(rng, env, "RightTop", Axis.Zero,
-                new FrameProjectionDesire(LetterFormationDirections.Horizontal, new Proportion(78, 100), new Proportion(14, 100), new Proportion(4), "right top near side"),
-                new FrameProjectionDesire(LetterFormationDirections.Vertical, new Proportion(10, 100), new Proportion(1, 10), new Proportion(5), "right top high")),
+            AnchoredSite(rng, env, "LeftTop", Axis.Zero,
+                NearLeftSide("left top near side", 22),
+                NearTopline("left top high", 10)),
+            AnchoredSite(rng, env, "Bottom", Axis.Zero,
+                NearCenter("bottom near center"),
+                OnBaseline("bottom on baseline")),
+            AnchoredSite(rng, env, "RightTop", Axis.Zero,
+                NearRightSide("right top near side", 78),
+                NearTopline("right top high", 10)),
         ];
 
         IReadOnlyList<LetterFormationCarrierState> carriers =
         [
             Carrier("LeftStroke", "Bottom", "LeftTop", "LeftStroke", 1, 0, true,
-                new CarrierDirectionDesire(LetterFormationDirections.UpLeft, new Proportion(1, 8), new Proportion(4), "left stroke rises"),
-                new CarrierSpanDesire(new Proportion(3), new Proportion(12), new Proportion(2), "left stroke keeps span")),
+                PreferDirection(LetterFormationDirections.UpLeft, "left stroke rises", new Proportion(1, 8), new Proportion(4)),
+                KeepSpan(new Proportion(3), new Proportion(12), new Proportion(2), "left stroke keeps span")),
             Carrier("RightStroke", "Bottom", "RightTop", "RightStroke", 2, 0, false,
-                new CarrierDirectionDesire(LetterFormationDirections.UpRight, new Proportion(1, 8), new Proportion(4), "right stroke rises"),
-                new CarrierSpanDesire(new Proportion(3), new Proportion(12), new Proportion(2), "right stroke keeps span")),
+                PreferDirection(LetterFormationDirections.UpRight, "right stroke rises", new Proportion(1, 8), new Proportion(4)),
+                KeepSpan(new Proportion(3), new Proportion(12), new Proportion(2), "right stroke keeps span")),
         ];
 
         return CreateState("CapitalVAssembly", env, sites, carriers);
@@ -1074,37 +1078,37 @@ public static class LetterFormationPresetFactory
     {
         IReadOnlyList<LetterFormationSiteState> sites =
         [
-            Site(rng, env, "LeftTop", Axis.Zero,
-                new FrameProjectionDesire(LetterFormationDirections.Horizontal, new Proportion(14, 100), new Proportion(14, 100), new Proportion(4), "left top near side"),
-                new FrameProjectionDesire(LetterFormationDirections.Vertical, new Proportion(10, 100), new Proportion(1, 10), new Proportion(5), "left top high")),
-            Site(rng, env, "LeftValley", Axis.Zero,
-                new FrameProjectionDesire(LetterFormationDirections.Horizontal, new Proportion(32, 100), new Proportion(12, 100), new Proportion(4), "left valley left of center"),
-                new FrameProjectionDesire(LetterFormationDirections.Vertical, Proportion.One, new Proportion(1, 10), new Proportion(5), "left valley on baseline")),
-            Site(rng, env, "MiddlePeak", Axis.Zero,
-                new FrameProjectionDesire(LetterFormationDirections.Horizontal, new Proportion(1, 2), new Proportion(10, 100), new Proportion(5), "middle peak near center"),
-                new FrameProjectionDesire(LetterFormationDirections.Vertical, new Proportion(12, 100), new Proportion(1, 10), new Proportion(5), "middle peak high")),
-            Site(rng, env, "RightValley", Axis.Zero,
-                new FrameProjectionDesire(LetterFormationDirections.Horizontal, new Proportion(68, 100), new Proportion(12, 100), new Proportion(4), "right valley right of center"),
-                new FrameProjectionDesire(LetterFormationDirections.Vertical, Proportion.One, new Proportion(1, 10), new Proportion(5), "right valley on baseline")),
-            Site(rng, env, "RightTop", Axis.Zero,
-                new FrameProjectionDesire(LetterFormationDirections.Horizontal, new Proportion(86, 100), new Proportion(14, 100), new Proportion(4), "right top near side"),
-                new FrameProjectionDesire(LetterFormationDirections.Vertical, new Proportion(10, 100), new Proportion(1, 10), new Proportion(5), "right top high")),
+            AnchoredSite(rng, env, "LeftTop", Axis.Zero,
+                NearLeftSide("left top near side", 14),
+                NearTopline("left top high", 10)),
+            AnchoredSite(rng, env, "LeftValley", Axis.Zero,
+                HorizontalAt(new Proportion(32, 100), new Proportion(12, 100), new Proportion(4), "left valley left of center"),
+                OnBaseline("left valley on baseline")),
+            AnchoredSite(rng, env, "MiddlePeak", Axis.Zero,
+                NearCenter("middle peak near center"),
+                NearTopline("middle peak high", 12)),
+            AnchoredSite(rng, env, "RightValley", Axis.Zero,
+                HorizontalAt(new Proportion(68, 100), new Proportion(12, 100), new Proportion(4), "right valley right of center"),
+                OnBaseline("right valley on baseline")),
+            AnchoredSite(rng, env, "RightTop", Axis.Zero,
+                NearRightSide("right top near side", 86),
+                NearTopline("right top high", 10)),
         ];
 
         IReadOnlyList<LetterFormationCarrierState> carriers =
         [
             Carrier("LeftStroke", "LeftValley", "LeftTop", "LeftStroke", 1, 0, true,
-                new CarrierDirectionDesire(LetterFormationDirections.UpLeft, new Proportion(1, 8), new Proportion(4), "left stroke rises"),
-                new CarrierSpanDesire(new Proportion(3), new Proportion(12), new Proportion(2), "left stroke keeps span")),
+                PreferDirection(LetterFormationDirections.UpLeft, "left stroke rises", new Proportion(1, 8), new Proportion(4)),
+                KeepSpan(new Proportion(3), new Proportion(12), new Proportion(2), "left stroke keeps span")),
             Carrier("RiseStroke", "LeftValley", "MiddlePeak", "RiseStroke", 2, 0, false,
-                new CarrierDirectionDesire(LetterFormationDirections.UpRight, new Proportion(1, 8), new Proportion(4), "rise stroke climbs"),
-                new CarrierSpanDesire(new Proportion(3), new Proportion(12), new Proportion(2), "rise stroke keeps span")),
+                PreferDirection(LetterFormationDirections.UpRight, "rise stroke climbs", new Proportion(1, 8), new Proportion(4)),
+                KeepSpan(new Proportion(3), new Proportion(12), new Proportion(2), "rise stroke keeps span")),
             Carrier("FallStroke", "RightValley", "MiddlePeak", "FallStroke", 3, 0, true,
-                new CarrierDirectionDesire(LetterFormationDirections.UpLeft, new Proportion(1, 8), new Proportion(4), "fall stroke rises"),
-                new CarrierSpanDesire(new Proportion(3), new Proportion(12), new Proportion(2), "fall stroke keeps span")),
+                PreferDirection(LetterFormationDirections.UpLeft, "fall stroke rises", new Proportion(1, 8), new Proportion(4)),
+                KeepSpan(new Proportion(3), new Proportion(12), new Proportion(2), "fall stroke keeps span")),
             Carrier("RightStroke", "RightValley", "RightTop", "RightStroke", 4, 0, false,
-                new CarrierDirectionDesire(LetterFormationDirections.UpRight, new Proportion(1, 8), new Proportion(4), "right stroke rises"),
-                new CarrierSpanDesire(new Proportion(3), new Proportion(12), new Proportion(2), "right stroke keeps span")),
+                PreferDirection(LetterFormationDirections.UpRight, "right stroke rises", new Proportion(1, 8), new Proportion(4)),
+                KeepSpan(new Proportion(3), new Proportion(12), new Proportion(2), "right stroke keeps span")),
         ];
 
         return CreateState("CapitalWAssembly", env, sites, carriers);
@@ -1114,28 +1118,28 @@ public static class LetterFormationPresetFactory
     {
         IReadOnlyList<LetterFormationSiteState> sites =
         [
-            Site(rng, env, "TopLeft", Axis.Zero,
-                new FrameProjectionDesire(LetterFormationDirections.Horizontal, new Proportion(20, 100), new Proportion(14, 100), new Proportion(4), "top left near side"),
-                new FrameProjectionDesire(LetterFormationDirections.Vertical, new Proportion(10, 100), new Proportion(1, 10), new Proportion(5), "top left high")),
-            Site(rng, env, "BottomRight", Axis.Zero,
-                new FrameProjectionDesire(LetterFormationDirections.Horizontal, new Proportion(80, 100), new Proportion(14, 100), new Proportion(4), "bottom right near side"),
-                new FrameProjectionDesire(LetterFormationDirections.Vertical, Proportion.One, new Proportion(1, 10), new Proportion(5), "bottom right low")),
-            Site(rng, env, "TopRight", Axis.Zero,
-                new FrameProjectionDesire(LetterFormationDirections.Horizontal, new Proportion(80, 100), new Proportion(14, 100), new Proportion(4), "top right near side"),
-                new FrameProjectionDesire(LetterFormationDirections.Vertical, new Proportion(10, 100), new Proportion(1, 10), new Proportion(5), "top right high")),
-            Site(rng, env, "BottomLeft", Axis.Zero,
-                new FrameProjectionDesire(LetterFormationDirections.Horizontal, new Proportion(20, 100), new Proportion(14, 100), new Proportion(4), "bottom left near side"),
-                new FrameProjectionDesire(LetterFormationDirections.Vertical, Proportion.One, new Proportion(1, 10), new Proportion(5), "bottom left low")),
+            AnchoredSite(rng, env, "TopLeft", Axis.Zero,
+                NearLeftSide("top left near side", 20),
+                NearTopline("top left high", 10)),
+            AnchoredSite(rng, env, "BottomRight", Axis.Zero,
+                NearRightSide("bottom right near side", 80),
+                OnBaseline("bottom right low")),
+            AnchoredSite(rng, env, "TopRight", Axis.Zero,
+                NearRightSide("top right near side", 80),
+                NearTopline("top right high", 10)),
+            AnchoredSite(rng, env, "BottomLeft", Axis.Zero,
+                NearLeftSide("bottom left near side", 20),
+                OnBaseline("bottom left low")),
         ];
 
         IReadOnlyList<LetterFormationCarrierState> carriers =
         [
             Carrier("ForwardSlash", "TopLeft", "BottomRight", "ForwardStroke", 1, 0, false,
-                new CarrierDirectionDesire(LetterFormationDirections.DownRight, new Proportion(1, 8), new Proportion(4), "forward slash descends"),
-                new CarrierSpanDesire(new Proportion(4), new Proportion(14), new Proportion(2), "forward slash keeps span")),
+                PreferDirection(LetterFormationDirections.DownRight, "forward slash descends", new Proportion(1, 8), new Proportion(4)),
+                KeepSpan(new Proportion(4), new Proportion(14), new Proportion(2), "forward slash keeps span")),
             Carrier("BackSlash", "TopRight", "BottomLeft", "BackStroke", 2, 0, false,
-                new CarrierDirectionDesire(LetterFormationDirections.DownLeft, new Proportion(1, 8), new Proportion(4), "back slash descends"),
-                new CarrierSpanDesire(new Proportion(4), new Proportion(14), new Proportion(2), "back slash keeps span")),
+                PreferDirection(LetterFormationDirections.DownLeft, "back slash descends", new Proportion(1, 8), new Proportion(4)),
+                KeepSpan(new Proportion(4), new Proportion(14), new Proportion(2), "back slash keeps span")),
         ];
 
         return CreateState("CapitalXAssembly", env, sites, carriers);
@@ -1145,31 +1149,31 @@ public static class LetterFormationPresetFactory
     {
         IReadOnlyList<LetterFormationSiteState> sites =
         [
-            Site(rng, env, "TopLeft", Axis.Zero,
-                new FrameProjectionDesire(LetterFormationDirections.Horizontal, new Proportion(18, 100), new Proportion(14, 100), new Proportion(4), "top left near side"),
-                new FrameProjectionDesire(LetterFormationDirections.Vertical, new Proportion(10, 100), new Proportion(1, 10), new Proportion(5), "top left high")),
-            Site(rng, env, "TopRight", Axis.Zero,
-                new FrameProjectionDesire(LetterFormationDirections.Horizontal, new Proportion(82, 100), new Proportion(14, 100), new Proportion(4), "top right near side"),
-                new FrameProjectionDesire(LetterFormationDirections.Vertical, new Proportion(10, 100), new Proportion(1, 10), new Proportion(5), "top right high")),
-            Site(rng, env, "BottomLeft", Axis.Zero,
-                new FrameProjectionDesire(LetterFormationDirections.Horizontal, new Proportion(18, 100), new Proportion(14, 100), new Proportion(4), "bottom left near side"),
-                new FrameProjectionDesire(LetterFormationDirections.Vertical, Proportion.One, new Proportion(1, 10), new Proportion(5), "bottom left low")),
-            Site(rng, env, "BottomRight", Axis.Zero,
-                new FrameProjectionDesire(LetterFormationDirections.Horizontal, new Proportion(82, 100), new Proportion(14, 100), new Proportion(4), "bottom right near side"),
-                new FrameProjectionDesire(LetterFormationDirections.Vertical, Proportion.One, new Proportion(1, 10), new Proportion(5), "bottom right low")),
+            AnchoredSite(rng, env, "TopLeft", Axis.Zero,
+                NearLeftSide("top left near side", 18),
+                NearTopline("top left high", 10)),
+            AnchoredSite(rng, env, "TopRight", Axis.Zero,
+                NearRightSide("top right near side", 82),
+                NearTopline("top right high", 10)),
+            AnchoredSite(rng, env, "BottomLeft", Axis.Zero,
+                NearLeftSide("bottom left near side", 18),
+                OnBaseline("bottom left low")),
+            AnchoredSite(rng, env, "BottomRight", Axis.Zero,
+                NearRightSide("bottom right near side", 82),
+                OnBaseline("bottom right low")),
         ];
 
         IReadOnlyList<LetterFormationCarrierState> carriers =
         [
             Carrier("TopBar", "TopLeft", "TopRight", "TopStroke", 1, 0, false,
-                new CarrierDirectionDesire(LetterFormationDirections.Horizontal, new Proportion(1, 10), new Proportion(4), "top bar horizontal"),
-                new CarrierSpanDesire(new Proportion(2), new Proportion(10), new Proportion(2), "top bar keeps width")),
+                PreferHorizontal("top bar horizontal"),
+                KeepSpan(new Proportion(2), new Proportion(10), new Proportion(2), "top bar keeps width")),
             Carrier("Diagonal", "TopRight", "BottomLeft", "DiagonalStroke", 2, 0, false,
-                new CarrierDirectionDesire(LetterFormationDirections.DownLeft, new Proportion(1, 8), new Proportion(4), "diagonal descends"),
-                new CarrierSpanDesire(new Proportion(4), new Proportion(14), new Proportion(2), "diagonal keeps span")),
+                PreferDirection(LetterFormationDirections.DownLeft, "diagonal descends", new Proportion(1, 8), new Proportion(4)),
+                KeepSpan(new Proportion(4), new Proportion(14), new Proportion(2), "diagonal keeps span")),
             Carrier("BottomBar", "BottomLeft", "BottomRight", "BottomStroke", 3, 0, false,
-                new CarrierDirectionDesire(LetterFormationDirections.Horizontal, new Proportion(1, 10), new Proportion(4), "bottom bar horizontal"),
-                new CarrierSpanDesire(new Proportion(2), new Proportion(10), new Proportion(2), "bottom bar keeps width")),
+                PreferHorizontal("bottom bar horizontal"),
+                KeepSpan(new Proportion(2), new Proportion(10), new Proportion(2), "bottom bar keeps width")),
         ];
 
         return CreateState("CapitalZAssembly", env, sites, carriers);
@@ -1181,6 +1185,111 @@ public static class LetterFormationPresetFactory
         IReadOnlyList<LetterFormationSiteState> sites,
         IReadOnlyList<LetterFormationCarrierState> carriers) =>
         new(key, 0, environment, sites, carriers, []);
+
+    private static LetterFormationSiteState AnchoredSite(
+        Random rng,
+        LetterFormationEnvironment environment,
+        string id,
+        Axis axis,
+        FrameProjectionDesire horizontal,
+        FrameProjectionDesire vertical,
+        params LetterFormationDesire[] extras) =>
+        Site(rng, environment, id, axis, MergeDesires(horizontal, vertical, extras));
+
+    private static FrameProjectionDesire HorizontalAt(
+        Proportion target,
+        Proportion tolerance,
+        Proportion weight,
+        string description) =>
+        new(LetterFormationDirections.Horizontal, target, tolerance, weight, description);
+
+    private static FrameProjectionDesire VerticalAt(
+        Proportion target,
+        Proportion tolerance,
+        Proportion weight,
+        string description) =>
+        new(LetterFormationDirections.Vertical, target, tolerance, weight, description);
+
+    private static FrameProjectionDesire NearLeftSide(
+        string description,
+        int targetPercent = 20,
+        int tolerancePercent = 14,
+        int weight = 4) =>
+        HorizontalAt(new Proportion(targetPercent, 100), new Proportion(tolerancePercent, 100), new Proportion(weight), description);
+
+    private static FrameProjectionDesire NearRightSide(
+        string description,
+        int targetPercent = 80,
+        int tolerancePercent = 14,
+        int weight = 4) =>
+        HorizontalAt(new Proportion(targetPercent, 100), new Proportion(tolerancePercent, 100), new Proportion(weight), description);
+
+    private static FrameProjectionDesire NearCenter(
+        string description,
+        int tolerancePercent = 10,
+        int weight = 5) =>
+        HorizontalAt(new Proportion(1, 2), new Proportion(tolerancePercent, 100), new Proportion(weight), description);
+
+    private static FrameProjectionDesire NearTopline(
+        string description,
+        int targetPercent = 8,
+        int tolerancePercent = 10,
+        int weight = 5) =>
+        VerticalAt(new Proportion(targetPercent, 100), new Proportion(tolerancePercent, 100), new Proportion(weight), description);
+
+    private static FrameProjectionDesire OnBaseline(
+        string description,
+        int tolerancePercent = 10,
+        int weight = 5) =>
+        VerticalAt(Proportion.One, new Proportion(tolerancePercent, 100), new Proportion(weight), description);
+
+    private static FrameProjectionDesire NearMidline(
+        Proportion midlineRatio,
+        string description,
+        int tolerancePercent = 10,
+        int weight = 6) =>
+        VerticalAt(midlineRatio, new Proportion(tolerancePercent, 100), new Proportion(weight), description);
+
+    private static SiteProjectionDesire LevelWith(
+        string otherId,
+        string description,
+        Proportion? tolerance = null,
+        Proportion? weight = null) =>
+        new(LetterFormationDirections.Vertical, otherId, Proportion.Zero, tolerance ?? new Proportion(1, 12), weight ?? new Proportion(5), description);
+
+    private static JoinSiteDesire JoinWith(
+        string otherId,
+        string description,
+        Proportion? captureRange = null,
+        Proportion? attraction = null,
+        Proportion? retention = null) =>
+        new(otherId, captureRange ?? new Proportion(2, 5), attraction ?? new Proportion(2), retention ?? new Proportion(4), description);
+
+    private static CarrierDirectionDesire PreferDirection(
+        Axis direction,
+        string description,
+        Proportion? tolerance = null,
+        Proportion? weight = null) =>
+        new(direction, tolerance ?? new Proportion(1, 10), weight ?? new Proportion(4), description);
+
+    private static CarrierDirectionDesire PreferVertical(
+        string description,
+        Proportion? tolerance = null,
+        Proportion? weight = null) =>
+        PreferDirection(LetterFormationDirections.Vertical, description, tolerance, weight);
+
+    private static CarrierDirectionDesire PreferHorizontal(
+        string description,
+        Proportion? tolerance = null,
+        Proportion? weight = null) =>
+        PreferDirection(LetterFormationDirections.Horizontal, description, tolerance, weight);
+
+    private static CarrierSpanDesire KeepSpan(
+        Proportion minimum,
+        Proportion preferred,
+        Proportion weight,
+        string description) =>
+        new(minimum, preferred, weight, description);
 
     private static LetterFormationSiteState Site(
         Random rng,
@@ -1205,6 +1314,18 @@ public static class LetterFormationPresetFactory
         bool reverseForStroke = false,
         params LetterFormationDesire[] desires) =>
         new(id, startSiteId, endSiteId, desires, strokeId, strokeOrder, strokeSegmentOrder, reverseForStroke);
+
+    private static LetterFormationDesire[] MergeDesires(
+        LetterFormationDesire horizontal,
+        LetterFormationDesire vertical,
+        params LetterFormationDesire[] extras)
+    {
+        LetterFormationDesire[] merged = new LetterFormationDesire[2 + extras.Length];
+        merged[0] = horizontal;
+        merged[1] = vertical;
+        Array.Copy(extras, 0, merged, 2, extras.Length);
+        return merged;
+    }
 
     private static Proportion RandomRatio(Random rng, int minPercent, int maxPercent) =>
         new Proportion(rng.Next(minPercent, maxPercent + 1), 100);
