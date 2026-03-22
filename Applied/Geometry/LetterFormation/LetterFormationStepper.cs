@@ -210,6 +210,8 @@ public static class LetterFormationStepper
             return [];
         }
 
+        Proportion strength = ResolveCarrierProposalStrength(state, carrier, tension.Magnitude);
+
         return
         [
             CreateProposal(
@@ -218,7 +220,7 @@ public static class LetterFormationStepper
                 desire.Label,
                 -deltaDx / 2d,
                 -deltaDy / 2d,
-                tension.Magnitude,
+                strength,
                 $"Move {carrier.StartSiteId} for {carrier.Id} direction."),
             CreateProposal(
                 carrier.EndSiteId,
@@ -226,7 +228,7 @@ public static class LetterFormationStepper
                 desire.Label,
                 deltaDx / 2d,
                 deltaDy / 2d,
-                tension.Magnitude,
+                strength,
                 $"Move {carrier.EndSiteId} for {carrier.Id} direction."),
         ];
     }
@@ -258,6 +260,7 @@ public static class LetterFormationStepper
                 LetterFormationGeometry.ToDouble(end.Vertical - start.Vertical))
             : ResolveFallbackCarrierDirection(carrier);
         double step = LetterFormationGeometry.ClampMagnitude(delta * 0.25d, MaxProposalStep);
+        Proportion strength = ResolveCarrierProposalStrength(state, carrier, tension.Magnitude);
 
         return
         [
@@ -267,7 +270,7 @@ public static class LetterFormationStepper
                 desire.Label,
                 -(directionX * step) / 2d,
                 -(directionY * step) / 2d,
-                tension.Magnitude,
+                strength,
                 $"Move {carrier.StartSiteId} for {carrier.Id} span."),
             CreateProposal(
                 carrier.EndSiteId,
@@ -275,7 +278,7 @@ public static class LetterFormationStepper
                 desire.Label,
                 (directionX * step) / 2d,
                 (directionY * step) / 2d,
-                tension.Magnitude,
+                strength,
                 $"Move {carrier.EndSiteId} for {carrier.Id} span."),
         ];
     }
@@ -551,6 +554,50 @@ public static class LetterFormationStepper
         return boost <= 1d
             ? currentStrength
             : LetterFormationGeometry.FromDouble(baseStrength * boost);
+    }
+
+    private static Proportion ResolveCarrierProposalStrength(
+        LetterFormationState state,
+        LetterFormationCarrierState carrier,
+        Proportion currentStrength)
+    {
+        double baseStrength = LetterFormationGeometry.ToDouble(currentStrength);
+        if (baseStrength <= 0d)
+        {
+            return currentStrength;
+        }
+
+        bool startAnchored = HasSatisfiedJoin(state, state.GetSite(carrier.StartSiteId));
+        bool endAnchored = HasSatisfiedJoin(state, state.GetSite(carrier.EndSiteId));
+        double boost = startAnchored && endAnchored
+            ? 2.2d
+            : startAnchored || endAnchored
+                ? 1.35d
+                : 1d;
+
+        return boost <= 1d
+            ? currentStrength
+            : LetterFormationGeometry.FromDouble(baseStrength * boost);
+    }
+
+    private static bool HasSatisfiedJoin(LetterFormationState state, LetterFormationSiteState site)
+    {
+        foreach (JoinSiteDesire join in site.Desires.OfType<JoinSiteDesire>())
+        {
+            if (!state.TryGetSite(join.OtherSiteId, out LetterFormationSiteState? other) || other is null)
+            {
+                continue;
+            }
+
+            double distance = LetterFormationGeometry.Distance(site.Position, other.Position);
+            double capture = LetterFormationGeometry.ToDouble(join.CaptureDistance);
+            if (capture > 0d && distance <= capture * 1.15d)
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private static Proportion ResolveJoinProposalStrength(

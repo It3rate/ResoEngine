@@ -5,14 +5,13 @@ namespace Tests.Core2;
 
 public class LetterFormationPresetFactoryTests
 {
+    public static IEnumerable<object[]> AllPresets =>
+        Enum.GetValues<LetterFormationPresetKind>()
+            .Cast<LetterFormationPresetKind>()
+            .Select(preset => new object[] { preset });
+
     [Theory]
-    [InlineData(LetterFormationPresetKind.CapitalD)]
-    [InlineData(LetterFormationPresetKind.BridgeH)]
-    [InlineData(LetterFormationPresetKind.LetterT)]
-    [InlineData(LetterFormationPresetKind.LetterA)]
-    [InlineData(LetterFormationPresetKind.LetterY)]
-    [InlineData(LetterFormationPresetKind.LetterL)]
-    [InlineData(LetterFormationPresetKind.LetterM)]
+    [MemberData(nameof(AllPresets))]
     public void CreateSeed_CanEvaluateAndStepEveryPreset(LetterFormationPresetKind preset)
     {
         var environment = LetterFormationEnvironment.CreateLetterBox(randomMotionWeight: Proportion.Zero);

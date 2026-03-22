@@ -112,6 +112,26 @@ public sealed class LetterFormationDynamicsPage : IVisualizerPage
         Typeface = SKTypeface.FromFamilyName("Consolas", SKFontStyle.Normal),
         IsAntialias = true,
     };
+    private readonly SKPaint _strokeOrderPaint = new()
+    {
+        Color = new SKColor(54, 54, 54),
+        TextSize = 11f,
+        Typeface = SKTypeface.FromFamilyName(VisualStyle.FontFamily, SKFontStyle.Bold),
+        IsAntialias = true,
+    };
+    private readonly SKPaint _strokeOrderBadgePaint = new()
+    {
+        Style = SKPaintStyle.Fill,
+        Color = new SKColor(255, 255, 255, 220),
+        IsAntialias = true,
+    };
+    private readonly SKPaint _strokeOrderBadgeStrokePaint = new()
+    {
+        Style = SKPaintStyle.Stroke,
+        StrokeWidth = 1.4f,
+        Color = new SKColor(205, 205, 205, 220),
+        IsAntialias = true,
+    };
 
     private readonly SKPaint _proposalPaint = new()
     {
@@ -146,23 +166,15 @@ public sealed class LetterFormationDynamicsPage : IVisualizerPage
         IsAntialias = true,
     };
 
-    private readonly Dictionary<string, SKColor> _carrierColors = new(StringComparer.Ordinal)
-    {
-        ["LeftLower"] = SKColor.Parse("#C77000"),
-        ["LeftUpper"] = SKColor.Parse("#D68B1B"),
-        ["Crossbar"] = SKColor.Parse("#12824A"),
-        ["RightUpper"] = SKColor.Parse("#8415D0"),
-        ["RightLower"] = SKColor.Parse("#6A4BE2"),
-    };
     private readonly SKColor[] _fallbackCarrierColors =
     [
         SKColor.Parse("#C77000"),
-        SKColor.Parse("#D68B1B"),
+        SKColor.Parse("#1D6FE8"),
         SKColor.Parse("#12824A"),
         SKColor.Parse("#8415D0"),
-        SKColor.Parse("#6A4BE2"),
         SKColor.Parse("#D34836"),
         SKColor.Parse("#0F8CFF"),
+        SKColor.Parse("#9B59B6"),
     ];
 
     private SkiaCanvas? _canvasHost;
@@ -273,6 +285,9 @@ public sealed class LetterFormationDynamicsPage : IVisualizerPage
         _infoTitlePaint.Dispose();
         _infoTextPaint.Dispose();
         _finePrintPaint.Dispose();
+        _strokeOrderPaint.Dispose();
+        _strokeOrderBadgePaint.Dispose();
+        _strokeOrderBadgeStrokePaint.Dispose();
         _proposalPaint.Dispose();
         _proposalHeadPaint.Dispose();
         _statusAccentPaint.Dispose();
@@ -335,7 +350,7 @@ public sealed class LetterFormationDynamicsPage : IVisualizerPage
         _resetButton.FlatAppearance.BorderColor = Color.FromArgb(214, 214, 214);
         _resetButton.Click += (_, _) => ResetState();
 
-        foreach (LetterFormationPresetKind preset in Enum.GetValues<LetterFormationPresetKind>())
+        foreach (LetterFormationPresetKind preset in GetOrderedPresets())
         {
             var button = new Button
             {
@@ -485,6 +500,24 @@ public sealed class LetterFormationDynamicsPage : IVisualizerPage
         }
     }
 
+    private static IReadOnlyList<LetterFormationPresetKind> GetOrderedPresets() =>
+        Enum.GetValues<LetterFormationPresetKind>()
+            .OrderBy(LetterFormationPresetFactory.GetShortLabel)
+            .ToArray();
+
+    private float ResolvePresetButtonBlockHeight()
+    {
+        if (_presetButtons.Count == 0)
+        {
+            return 0f;
+        }
+
+        const float buttonHeight = 30f;
+        const float gap = 6f;
+        int rows = (int)Math.Ceiling(_presetButtons.Count / 7d);
+        return (rows * buttonHeight) + ((rows - 1) * gap);
+    }
+
     private void PositionPresetButtons(SKRect graphCard)
     {
         if (_canvasHost is null || _presetButtons.Count == 0)
@@ -492,22 +525,22 @@ public sealed class LetterFormationDynamicsPage : IVisualizerPage
             return;
         }
 
-        const int buttonWidth = 60;
-        const int buttonHeight = 34;
-        const int gap = 8;
+        const int buttonWidth = 48;
+        const int buttonHeight = 30;
+        const int gap = 6;
         int startX = (int)graphCard.Left + 22;
         int startY = (int)graphCard.Top + 110;
 
         int index = 0;
-        foreach (LetterFormationPresetKind preset in Enum.GetValues<LetterFormationPresetKind>())
+        foreach (LetterFormationPresetKind preset in GetOrderedPresets())
         {
             if (!_presetButtons.TryGetValue(preset, out Button? button))
             {
                 continue;
             }
 
-            int row = index / 4;
-            int column = index % 4;
+            int row = index / 7;
+            int column = index % 7;
             button.Size = new Size(buttonWidth, buttonHeight);
             button.Location = new Point(
                 startX + (column * (buttonWidth + gap)),
@@ -533,15 +566,17 @@ public sealed class LetterFormationDynamicsPage : IVisualizerPage
 
         canvas.DrawText("Evolving Letter", cardRect.Left + 22f, cardRect.Top + 30f, _infoTitlePaint);
 
+        float buttonBlockHeight = ResolvePresetButtonBlockHeight();
+        float contentTop = cardRect.Top + 54f + buttonBlockHeight + 18f;
         SKRect tensionRect = new(
             cardRect.Left + 20f,
-            cardRect.Top + 132f,
-            cardRect.Left + 120f + GraphSidebarWidth,
+            contentTop,
+            cardRect.Left + 20f + GraphSidebarWidth,
             cardRect.Bottom - 24f);
         SKRect plotRect = new(
-            tensionRect.Right +30f,
-            cardRect.Top + 20f,
-            cardRect.Right - 2f,
+            tensionRect.Right + 30f,
+            contentTop,
+            cardRect.Right - 6f,
             cardRect.Bottom - 20f);
         SKRect letterboxRect = FitLetterbox(plotRect, _state.Environment);
         _lastLetterboxRect = letterboxRect;
@@ -575,7 +610,7 @@ public sealed class LetterFormationDynamicsPage : IVisualizerPage
         for (int carrierIndex = 0; carrierIndex < _state.Carriers.Count; carrierIndex++)
         {
             LetterFormationCarrierState carrier = _state.Carriers[carrierIndex];
-            SKColor color = ResolveCarrierColor(carrier.Id, carrierIndex);
+            SKColor color = ResolveCarrierColor(carrier, carrierIndex);
             using SKPaint carrierPaint = new()
             {
                 Style = SKPaintStyle.Stroke,
@@ -588,6 +623,7 @@ public sealed class LetterFormationDynamicsPage : IVisualizerPage
             SKPoint start = MapPoint(_state.GetStartPoint(carrier.Id), letterboxRect);
             SKPoint end = MapPoint(_state.GetEndPoint(carrier.Id), letterboxRect);
             SKPoint mid = DrawCarrier(canvas, carrier, start, end, carrierPaint, letterboxRect);
+            DrawStrokeDirection(canvas, carrier, start, end, color, letterboxRect);
             using SKPaint labelPaint = _carrierLabelPaint.Clone();
             labelPaint.Color = color;
             canvas.DrawText(carrier.Id, mid.X + 8f, mid.Y - 8f, labelPaint);
@@ -802,6 +838,91 @@ public sealed class LetterFormationDynamicsPage : IVisualizerPage
         return new SKPoint((start.X + end.X) * 0.5f, (start.Y + end.Y) * 0.5f);
     }
 
+    private void DrawStrokeDirection(
+        SKCanvas canvas,
+        LetterFormationCarrierState carrier,
+        SKPoint start,
+        SKPoint end,
+        SKColor color,
+        SKRect letterboxRect)
+    {
+        using SKPaint arrowLinePaint = new()
+        {
+            Style = SKPaintStyle.Stroke,
+            StrokeWidth = 2.8f,
+            Color = new SKColor(color.Red, color.Green, color.Blue, 185),
+            StrokeCap = SKStrokeCap.Round,
+            IsAntialias = true,
+        };
+        using SKPaint arrowHeadPaint = new()
+        {
+            Style = SKPaintStyle.Fill,
+            Color = new SKColor(color.Red, color.Green, color.Blue, 185),
+            IsAntialias = true,
+        };
+        using SKPaint arrowOutlineLinePaint = new()
+        {
+            Style = SKPaintStyle.Stroke,
+            StrokeWidth = 5.4f,
+            Color = new SKColor(255, 255, 255, 215),
+            StrokeCap = SKStrokeCap.Round,
+            IsAntialias = true,
+        };
+        using SKPaint arrowOutlineHeadPaint = new()
+        {
+            Style = SKPaintStyle.Fill,
+            Color = new SKColor(255, 255, 255, 215),
+            IsAntialias = true,
+        };
+
+        if (_selectedPreset == LetterFormationPresetKind.CapitalD &&
+            string.Equals(carrier.Id, "Bowl", StringComparison.Ordinal))
+        {
+            float startT = carrier.ReverseForStroke ? 0.62f : 0.38f;
+            float endT = carrier.ReverseForStroke ? 0.46f : 0.54f;
+            float curveFactor = ResolveCapitalDBowlCurveFactor();
+            float rightmost = Math.Max(start.X, end.X);
+            float outwardRoom = Math.Max(18f, letterboxRect.Right - rightmost - 26f);
+            float controlX = rightmost + (outwardRoom * (0.45f + (0.4f * curveFactor)));
+            SKPoint control1 = new(controlX, start.Y);
+            SKPoint control2 = new(controlX, end.Y);
+            SKPoint arrowStart = EvaluateCubic(start, control1, control2, end, startT);
+            SKPoint arrowEnd = EvaluateCubic(start, control1, control2, end, endT);
+            DrawArrow(canvas, arrowStart, arrowEnd, arrowOutlineLinePaint, arrowOutlineHeadPaint);
+            DrawArrow(canvas, arrowStart, arrowEnd, arrowLinePaint, arrowHeadPaint);
+            DrawStrokeOrderLabel(canvas, carrier, arrowEnd);
+            return;
+        }
+
+        SKPoint directedStart = carrier.ReverseForStroke ? end : start;
+        SKPoint directedEnd = carrier.ReverseForStroke ? start : end;
+        SKPoint arrowStartPoint = Interpolate(directedStart, directedEnd, 0.24f);
+        SKPoint arrowEndPoint = Interpolate(directedStart, directedEnd, 0.40f);
+        SKPoint normal = ResolvePerpendicularOffset(directedStart, directedEnd, 11f);
+        arrowStartPoint = new SKPoint(arrowStartPoint.X + normal.X, arrowStartPoint.Y + normal.Y);
+        arrowEndPoint = new SKPoint(arrowEndPoint.X + normal.X, arrowEndPoint.Y + normal.Y);
+        DrawArrow(canvas, arrowStartPoint, arrowEndPoint, arrowOutlineLinePaint, arrowOutlineHeadPaint);
+        DrawArrow(canvas, arrowStartPoint, arrowEndPoint, arrowLinePaint, arrowHeadPaint);
+        DrawStrokeOrderLabel(canvas, carrier, arrowEndPoint);
+    }
+
+    private void DrawStrokeOrderLabel(SKCanvas canvas, LetterFormationCarrierState carrier, SKPoint anchor)
+    {
+        if (carrier.StrokeOrder <= 0 || carrier.StrokeSegmentOrder != 0)
+        {
+            return;
+        }
+
+        string text = carrier.StrokeOrder.ToString();
+        SKRect bounds = new();
+        _strokeOrderPaint.MeasureText(text, ref bounds);
+        float radius = MathF.Max(8f, MathF.Max(bounds.Width, bounds.Height) * 0.55f);
+        SKPoint center = new(anchor.X + 12f, anchor.Y - 12f);
+        canvas.DrawCircle(center, radius, _strokeOrderBadgePaint);
+        canvas.DrawCircle(center, radius, _strokeOrderBadgeStrokePaint);
+        canvas.DrawText(text, center.X - (bounds.MidX), center.Y - bounds.MidY, _strokeOrderPaint);
+    }
+
     private SKPoint DrawCapitalDBowlCarrier(
         SKCanvas canvas,
         SKPoint start,
@@ -921,10 +1042,31 @@ public sealed class LetterFormationDynamicsPage : IVisualizerPage
         return Math.Clamp(total / 6d, 0d, 1d);
     }
 
-    private SKColor ResolveCarrierColor(string carrierId, int carrierIndex) =>
-        _carrierColors.TryGetValue(carrierId, out SKColor named)
-            ? named
-            : _fallbackCarrierColors[carrierIndex % _fallbackCarrierColors.Length];
+    private SKColor ResolveCarrierColor(LetterFormationCarrierState carrier, int carrierIndex)
+    {
+        int colorIndex = carrier.StrokeOrder > 0
+            ? carrier.StrokeOrder - 1
+            : carrierIndex;
+        return _fallbackCarrierColors[colorIndex % _fallbackCarrierColors.Length];
+    }
+
+    private static SKPoint Interpolate(SKPoint start, SKPoint end, float t) =>
+        new(
+            start.X + ((end.X - start.X) * t),
+            start.Y + ((end.Y - start.Y) * t));
+
+    private static SKPoint ResolvePerpendicularOffset(SKPoint start, SKPoint end, float magnitude)
+    {
+        float dx = end.X - start.X;
+        float dy = end.Y - start.Y;
+        float length = MathF.Sqrt((dx * dx) + (dy * dy));
+        if (length < 0.001f)
+        {
+            return SKPoint.Empty;
+        }
+
+        return new SKPoint((-dy / length) * magnitude, (dx / length) * magnitude);
+    }
 
     private static SKColor LerpColor(SKColor from, SKColor to, float t)
     {
