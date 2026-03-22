@@ -591,7 +591,15 @@ public sealed class LetterFormationDynamicsPage : IVisualizerPage
 
         foreach (IGrouping<PlanarPoint, LetterFormationSiteState> siteGroup in _state.Sites.GroupBy(site => site.Position))
         {
-            DrawSiteHalo(canvas, letterboxRect, siteGroup);
+            IReadOnlyList<LetterFormationSiteState> visibleSites = siteGroup
+                .Where(site => !ShouldHideSiteForDisplay(site.Id))
+                .ToArray();
+            if (visibleSites.Count == 0)
+            {
+                continue;
+            }
+
+            DrawSiteHalo(canvas, letterboxRect, visibleSites, siteGroup.Key);
         }
 
         if (_proposals.Count > 0)
@@ -631,15 +639,23 @@ public sealed class LetterFormationDynamicsPage : IVisualizerPage
 
         foreach (var siteGroup in _state.Sites.GroupBy(site => site.Position))
         {
+            IReadOnlyList<LetterFormationSiteState> visibleSites = siteGroup
+                .Where(site => !ShouldHideSiteForDisplay(site.Id))
+                .ToArray();
+            if (visibleSites.Count == 0)
+            {
+                continue;
+            }
+
             PlanarPoint position = siteGroup.Key;
             SKPoint point = MapPoint(position, letterboxRect);
             canvas.DrawCircle(point, 12f, _siteFillPaint);
             canvas.DrawCircle(point, 12f, _siteStrokePaint);
-            string label = string.Join(" / ", siteGroup.Select(site => site.Id));
+            string label = string.Join(" / ", visibleSites.Select(site => site.Id));
             canvas.DrawText(label, point.X + 14f, point.Y - 10f, _siteLabelPaint);
             _siteHandles.Add(new SiteHandleLayout(
                 new SKRect(point.X - 16f, point.Y - 16f, point.X + 16f, point.Y + 16f),
-                siteGroup.Select(site => site.Id).ToArray()));
+                visibleSites.Select(site => site.Id).ToArray()));
         }
 
         DrawRemainingTensionsOverlay(canvas, tensionRect);
@@ -828,10 +844,9 @@ public sealed class LetterFormationDynamicsPage : IVisualizerPage
         SKPaint carrierPaint,
         SKRect letterboxRect)
     {
-        if (_selectedPreset == LetterFormationPresetKind.CapitalD &&
-            string.Equals(carrier.Id, "Bowl", StringComparison.Ordinal))
+        if (TryResolveCurvedCarrierSpec(carrier, start, end, letterboxRect, out CubicCurveSpec curve))
         {
-            return DrawCapitalDBowlCarrier(canvas, start, end, carrierPaint, letterboxRect);
+            return DrawCubicCarrier(canvas, start, end, carrierPaint, curve);
         }
 
         canvas.DrawLine(start, end, carrierPaint);
@@ -875,19 +890,12 @@ public sealed class LetterFormationDynamicsPage : IVisualizerPage
             IsAntialias = true,
         };
 
-        if (_selectedPreset == LetterFormationPresetKind.CapitalD &&
-            string.Equals(carrier.Id, "Bowl", StringComparison.Ordinal))
+        if (TryResolveCurvedCarrierSpec(carrier, start, end, letterboxRect, out CubicCurveSpec curve))
         {
-            float startT = carrier.ReverseForStroke ? 0.62f : 0.38f;
-            float endT = carrier.ReverseForStroke ? 0.46f : 0.54f;
-            float curveFactor = ResolveCapitalDBowlCurveFactor();
-            float rightmost = Math.Max(start.X, end.X);
-            float outwardRoom = Math.Max(18f, letterboxRect.Right - rightmost - 26f);
-            float controlX = rightmost + (outwardRoom * (0.45f + (0.4f * curveFactor)));
-            SKPoint control1 = new(controlX, start.Y);
-            SKPoint control2 = new(controlX, end.Y);
-            SKPoint arrowStart = EvaluateCubic(start, control1, control2, end, startT);
-            SKPoint arrowEnd = EvaluateCubic(start, control1, control2, end, endT);
+            float startT = carrier.ReverseForStroke ? 1f - curve.ArrowStartT : curve.ArrowStartT;
+            float endT = carrier.ReverseForStroke ? 1f - curve.ArrowEndT : curve.ArrowEndT;
+            SKPoint arrowStart = EvaluateCubic(start, curve.Control1, curve.Control2, end, startT);
+            SKPoint arrowEnd = EvaluateCubic(start, curve.Control1, curve.Control2, end, endT);
             DrawArrow(canvas, arrowStart, arrowEnd, arrowOutlineLinePaint, arrowOutlineHeadPaint);
             DrawArrow(canvas, arrowStart, arrowEnd, arrowLinePaint, arrowHeadPaint);
             DrawStrokeOrderLabel(canvas, carrier, arrowEnd);
@@ -923,68 +931,86 @@ public sealed class LetterFormationDynamicsPage : IVisualizerPage
         canvas.DrawText(text, center.X - (bounds.MidX), center.Y - bounds.MidY, _strokeOrderPaint);
     }
 
-    private SKPoint DrawCapitalDBowlCarrier(
+    private SKPoint DrawCubicCarrier(
         SKCanvas canvas,
         SKPoint start,
         SKPoint end,
         SKPaint carrierPaint,
-        SKRect letterboxRect)
+        CubicCurveSpec curve)
     {
-        float curveFactor = ResolveCapitalDBowlCurveFactor();
-        float rightmost = Math.Max(start.X, end.X);
-        float outwardRoom = Math.Max(18f, letterboxRect.Right - rightmost - 26f);
-        float controlX = rightmost + (outwardRoom * (0.45f + (0.4f * curveFactor)));
-        SKPoint control1 = new(controlX, start.Y);
-        SKPoint control2 = new(controlX, end.Y);
-
         using SKPath path = new();
         path.MoveTo(start);
-        path.CubicTo(control1, control2, end);
+        path.CubicTo(curve.Control1, curve.Control2, end);
         canvas.DrawPath(path, carrierPaint);
 
-        return EvaluateCubic(start, control1, control2, end, 0.5f);
+        return EvaluateCubic(start, curve.Control1, curve.Control2, end, 0.5f);
     }
 
-    private float ResolveCapitalDBowlCurveFactor()
+    private bool TryResolveCurvedCarrierSpec(
+        LetterFormationCarrierState carrier,
+        SKPoint start,
+        SKPoint end,
+        SKRect letterboxRect,
+        out CubicCurveSpec curve)
     {
-        if (_state is null)
-        {
-            return 0.35f;
-        }
-
-        float top = ResolveJoinCloseness("StemTop", "BowlTop");
-        float bottom = ResolveJoinCloseness("StemBottom", "BowlBottom");
-        float joined = (top + bottom) * 0.5f;
-        return 0.35f + (0.65f * joined);
+        _ = letterboxRect;
+        return TryResolveDescriptorCurveSpec(carrier, start, end, out curve);
     }
 
-    private float ResolveJoinCloseness(string siteId, string otherSiteId)
+    private bool TryResolveDescriptorCurveSpec(
+        LetterFormationCarrierState carrier,
+        SKPoint start,
+        SKPoint end,
+        out CubicCurveSpec curve)
     {
-        if (_state is null)
+        curve = default;
+        if (_state is null ||
+            !TryResolveCurveTangent(_state.GetSite(carrier.StartSiteId).Descriptor, out SKPoint startTangent, out float startStrength) ||
+            !TryResolveCurveTangent(_state.GetSite(carrier.EndSiteId).Descriptor, out SKPoint endTangent, out float endStrength))
         {
-            return 0f;
+            return false;
         }
 
-        LetterFormationSiteState site = _state.GetSite(siteId);
-        JoinSiteDesire? desire = site.Desires
-            .OfType<JoinSiteDesire>()
-            .FirstOrDefault(join => string.Equals(join.OtherSiteId, otherSiteId, StringComparison.Ordinal));
-        if (desire is null)
+        float dx = end.X - start.X;
+        float dy = end.Y - start.Y;
+        float span = MathF.Sqrt((dx * dx) + (dy * dy));
+        float averageStrength = MathF.Max(0.35f, (startStrength + endStrength) * 0.5f);
+        float handleFactor = 0.28f + (0.14f * averageStrength);
+        float handle = Math.Clamp(span * handleFactor, 18f, 110f);
+        curve = new CubicCurveSpec(
+            new SKPoint(start.X + (startTangent.X * handle), start.Y + (startTangent.Y * handle)),
+            new SKPoint(end.X - (endTangent.X * handle), end.Y - (endTangent.Y * handle)),
+            0.30f,
+            0.56f);
+        return true;
+    }
+
+    private static bool TryResolveCurveTangent(Core2.Elements.Axis descriptor, out SKPoint direction, out float strength)
+    {
+        double x = ToDirectionalComponent(descriptor.Dominant);
+        double y = ToDirectionalComponent(descriptor.Recessive);
+        double length = Math.Sqrt((x * x) + (y * y));
+        strength = (float)Math.Clamp(length, 0d, 3d);
+        if (length >= 0.0001d)
         {
-            return 0f;
+            x /= length;
+            y /= length;
+        }
+        else
+        {
+            x = 0d;
+            y = 0d;
         }
 
-        LetterFormationSiteState other = _state.GetSite(otherSiteId);
-        double distance = Math.Sqrt(
-            Math.Pow(ToDouble(other.Position.Horizontal - site.Position.Horizontal), 2d) +
-            Math.Pow(ToDouble(other.Position.Vertical - site.Position.Vertical), 2d));
-        double capture = ToDouble(desire.CaptureDistance) * 1.15d;
-        if (capture <= 0d)
+        if (Math.Abs(x) < 0.0001d && Math.Abs(y) < 0.0001d)
         {
-            return 0f;
+            direction = SKPoint.Empty;
+            strength = 0f;
+            return false;
         }
 
-        return (float)Math.Clamp(1d - (distance / capture), 0d, 1d);
+        direction = new SKPoint((float)x, (float)y);
+        return true;
     }
 
     private static SKPoint EvaluateCubic(SKPoint p0, SKPoint p1, SKPoint p2, SKPoint p3, float t)
@@ -999,14 +1025,18 @@ public sealed class LetterFormationDynamicsPage : IVisualizerPage
             (uuu * p0.Y) + (3f * uu * t * p1.Y) + (3f * u * tt * p2.Y) + (ttt * p3.Y));
     }
 
-    private void DrawSiteHalo(SKCanvas canvas, SKRect letterboxRect, IGrouping<PlanarPoint, LetterFormationSiteState> siteGroup)
+    private void DrawSiteHalo(
+        SKCanvas canvas,
+        SKRect letterboxRect,
+        IReadOnlyList<LetterFormationSiteState> visibleSites,
+        PlanarPoint position)
     {
         if (_state is null)
         {
             return;
         }
 
-        double signal = siteGroup.Max(site => ResolveSiteSignal(site.Id));
+        double signal = visibleSites.Max(site => ResolveSiteSignal(site.Id));
         SKColor color = LerpColor(
             new SKColor(78, 176, 92, 22),
             new SKColor(222, 76, 76, 76),
@@ -1014,11 +1044,25 @@ public sealed class LetterFormationDynamicsPage : IVisualizerPage
         _tensionHaloFillPaint.Color = color;
         _tensionHaloStrokePaint.Color = new SKColor(color.Red, color.Green, color.Blue, (byte)Math.Min(96, color.Alpha + 12));
 
-        SKPoint point = MapPoint(siteGroup.Key, letterboxRect);
+        SKPoint point = MapPoint(position, letterboxRect);
         float radius = 17f + (float)(signal * 11d);
         canvas.DrawCircle(point, radius, _tensionHaloFillPaint);
         canvas.DrawCircle(point, radius, _tensionHaloStrokePaint);
     }
+
+    private bool ShouldHideSiteForDisplay(string siteId) =>
+        _selectedPreset switch
+        {
+            LetterFormationPresetKind.LetterB => siteId is "UpperStart" or "UpperOuter" or "UpperJoin" or "LowerJoin" or "LowerOuter" or "LowerEnd",
+            LetterFormationPresetKind.LetterC => siteId is "LeftMid",
+            LetterFormationPresetKind.LetterG => siteId is "LeftMid",
+            LetterFormationPresetKind.LetterJ => siteId is "Bottom",
+            LetterFormationPresetKind.LetterP => siteId is "UpperStart" or "UpperOuter" or "UpperJoin",
+            LetterFormationPresetKind.LetterR => siteId is "UpperStart" or "UpperOuter" or "UpperJoin" or "LegJoin",
+            LetterFormationPresetKind.LetterS => siteId is "UpperLeft" or "Center" or "LowerRight",
+            LetterFormationPresetKind.LetterU => siteId is "BottomLeft" or "BottomRight",
+            _ => false,
+        };
 
     private double ResolveSiteSignal(string siteId)
     {
@@ -1178,6 +1222,18 @@ public sealed class LetterFormationDynamicsPage : IVisualizerPage
     private static double ToDouble(Core2.Elements.Proportion value) =>
         (double)value.Numerator / value.Denominator;
 
+    private static double ToDirectionalComponent(Core2.Elements.Proportion value)
+    {
+        if (value.Numerator == 0)
+        {
+            return 0d;
+        }
+
+        return value.Denominator == 0
+            ? value.Numerator
+            : ToDouble(value);
+    }
+
     private static Core2.Elements.Proportion FromDouble(double value) =>
         new((long)Math.Round(value * 1000d), 1000);
 
@@ -1186,5 +1242,6 @@ public sealed class LetterFormationDynamicsPage : IVisualizerPage
             new Core2.Elements.Proportion((long)Math.Round(horizontal * 1000d), 1000),
             new Core2.Elements.Proportion((long)Math.Round(vertical * 1000d), 1000));
 
+    private readonly record struct CubicCurveSpec(SKPoint Control1, SKPoint Control2, float ArrowStartT, float ArrowEndT);
     private sealed record SiteHandleLayout(SKRect Rect, string[] SiteIds);
 }
