@@ -6,6 +6,8 @@ It is meant to support ordinary mathematical work, but it is also aimed at somet
 
 What makes it different from a more traditional library is that it tries to preserve distinctions that are usually collapsed away early. A value may carry resolution, perspective, directional duality, pinning intent, branch structure, or unresolved tension. A result may be partially reduced, negotiated, or refined later rather than forced into one immediate flattened answer. This makes the library useful not only for geometry-like problems, but also for language, design, dynamic systems, and experiments where interpretation develops over time.
 
+Another important goal is distributed local problem solving. Core 2 is meant to support systems where many parts carry their own local pressures, desires, and tensions, respond to their environment, and only gradually assemble a larger result together. That means the library should be comfortable with partial proposals, local negotiation, branch-sensitive becoming, and later commitment, rather than assuming one global controller must solve everything in one pass.
+
 ## Core Ideas
 
 In very simple terms, Core 2 is built around a few recurring ideas:
@@ -17,6 +19,7 @@ In very simple terms, Core 2 is built around a few recurring ideas:
 - branching and ambiguity are first-class
 - perspective changes reading without necessarily changing the underlying thing
 - some systems should resolve gradually over time instead of all at once
+- local parts can carry and negotiate their own problem-solving pressure
 
 This is why Core 2 can lean toward language as much as toward traditional math. Language constantly depends on:
 

@@ -33,7 +33,10 @@ This stack matters because the end goal is larger than conventional calculation.
 - traversal and flow
 - partial solving over time
 - dynamic proposal and negotiation
+- distributed local problem solving across many cooperating parts
 - concept and language modeling
+
+One of the long-term goals is that intelligence should not have to live only in one global solver. Parts of a system should be able to carry their own local desires, tensions, and partial proposals, respond to the environment around them, and gradually assemble larger outcomes together. That matters for geometry and dynamic systems, but it matters especially for language and concept work, where meaning often emerges from several local pressures being negotiated at once rather than from one top-down calculation.
 
 ## What Makes This Different
 
