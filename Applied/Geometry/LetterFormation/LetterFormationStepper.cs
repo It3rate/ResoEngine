@@ -112,6 +112,7 @@ public static class LetterFormationStepper
         double target = left + (LetterFormationGeometry.ToDouble(desire.RelativeTarget) * (right - left));
         double delta = target - current;
         (double directionX, double directionY) = LetterFormationGeometry.ResolveDirection(desire.Projection);
+        Proportion strength = ResolveFrameProjectionProposalStrength(state, site, desire, tension.Magnitude);
         return CreateSingleSiteProposal(
             site.Id,
             site.Id,
@@ -119,7 +120,7 @@ public static class LetterFormationStepper
             directionX,
             directionY,
             delta,
-            tension.Magnitude,
+            strength,
             $"Move {site.Id} toward {desire.Label}.");
     }
 
@@ -505,6 +506,41 @@ public static class LetterFormationStepper
             MaxProposalStep);
     }
 
+    private static Proportion ResolveFrameProjectionProposalStrength(
+        LetterFormationState state,
+        LetterFormationSiteState site,
+        FrameProjectionDesire desire,
+        Proportion currentStrength)
+    {
+        double baseStrength = LetterFormationGeometry.ToDouble(currentStrength);
+        if (baseStrength <= 0d || !IsVerticalProjection(desire.Projection))
+        {
+            return currentStrength;
+        }
+
+        double boost = 1d;
+        foreach (JoinSiteDesire join in site.Desires.OfType<JoinSiteDesire>())
+        {
+            if (!state.TryGetSite(join.OtherSiteId, out LetterFormationSiteState? other) || other is null)
+            {
+                continue;
+            }
+
+            double distance = LetterFormationGeometry.Distance(site.Position, other.Position);
+            double capture = LetterFormationGeometry.ToDouble(join.CaptureDistance);
+            if (capture <= 0d || distance > capture * 1.15d)
+            {
+                continue;
+            }
+
+            boost = Math.Max(boost, 2.4d);
+        }
+
+        return boost <= 1d
+            ? currentStrength
+            : LetterFormationGeometry.FromDouble(baseStrength * boost);
+    }
+
     private static Proportion ResolveJoinProposalStrength(
         double distance,
         double capture,
@@ -525,6 +561,10 @@ public static class LetterFormationStepper
         double effectiveStrength = baseWeight * Math.Max(0.35d, certainty);
         return LetterFormationGeometry.FromDouble(effectiveStrength);
     }
+
+    private static bool IsVerticalProjection(Axis projection) =>
+        projection.Dominant.Numerator == 0 &&
+        projection.Recessive.Numerator != 0;
 
     private static void AddEdge(Dictionary<string, HashSet<string>> adjacency, string from, string to)
     {
