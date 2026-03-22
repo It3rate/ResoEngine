@@ -6,16 +6,16 @@ public abstract record LetterFormationDesire(
     string Label,
     Proportion Weight);
 
-public sealed record FrameCoordinateDesire(
-    LetterFormationCoordinateAxis Axis,
+public sealed record FrameProjectionDesire(
+    Axis Projection,
     Proportion RelativeTarget,
     Proportion Tolerance,
     Proportion Weight,
     string Label)
     : LetterFormationDesire(Label, Weight);
 
-public sealed record SiteCoordinateDesire(
-    LetterFormationCoordinateAxis Axis,
+public sealed record SiteProjectionDesire(
+    Axis Projection,
     string OtherSiteId,
     Proportion Offset,
     Proportion Tolerance,
@@ -31,8 +31,8 @@ public sealed record JoinSiteDesire(
     string Label)
     : LetterFormationDesire(Label, Weight);
 
-public sealed record CarrierOrientationDesire(
-    LetterFormationOrientationKind Orientation,
+public sealed record CarrierDirectionDesire(
+    Axis PreferredDirection,
     Proportion Tolerance,
     Proportion Weight,
     string Label)

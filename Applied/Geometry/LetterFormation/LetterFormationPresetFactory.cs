@@ -29,8 +29,8 @@ public static class LetterFormationPresetFactory
                 new Axis(0, 1, 0, 1),
                 PlanarOffset.Zero,
                 [
-                    new FrameCoordinateDesire(LetterFormationCoordinateAxis.Horizontal, new Proportion(1, 5), new Proportion(1, 10), new Proportion(3), "base near left side"),
-                    new FrameCoordinateDesire(LetterFormationCoordinateAxis.Vertical, Proportion.One, new Proportion(1, 16), new Proportion(5), "base on baseline"),
+                    new FrameProjectionDesire(LetterFormationDirections.Horizontal, new Proportion(1, 5), new Proportion(1, 10), new Proportion(3), "base near left side"),
+                    new FrameProjectionDesire(LetterFormationDirections.Vertical, Proportion.One, new Proportion(1, 16), new Proportion(5), "base on baseline"),
                 ]),
             new LetterFormationSiteState(
                 "RightBase",
@@ -38,8 +38,8 @@ public static class LetterFormationPresetFactory
                 new Axis(0, 1, 0, 1),
                 PlanarOffset.Zero,
                 [
-                    new FrameCoordinateDesire(LetterFormationCoordinateAxis.Horizontal, new Proportion(4, 5), new Proportion(1, 10), new Proportion(3), "base near right side"),
-                    new FrameCoordinateDesire(LetterFormationCoordinateAxis.Vertical, Proportion.One, new Proportion(1, 16), new Proportion(5), "base on baseline"),
+                    new FrameProjectionDesire(LetterFormationDirections.Horizontal, new Proportion(4, 5), new Proportion(1, 10), new Proportion(3), "base near right side"),
+                    new FrameProjectionDesire(LetterFormationDirections.Vertical, Proportion.One, new Proportion(1, 16), new Proportion(5), "base on baseline"),
                 ]),
             new LetterFormationSiteState(
                 "Apex",
@@ -47,8 +47,8 @@ public static class LetterFormationPresetFactory
                 new Axis(0, 1, 0, 1),
                 PlanarOffset.Zero,
                 [
-                    new FrameCoordinateDesire(LetterFormationCoordinateAxis.Horizontal, new Proportion(1, 2), new Proportion(1, 10), new Proportion(4), "apex near centerline"),
-                    new FrameCoordinateDesire(LetterFormationCoordinateAxis.Vertical, Proportion.Zero, new Proportion(1, 10), new Proportion(5), "apex near topline"),
+                    new FrameProjectionDesire(LetterFormationDirections.Horizontal, new Proportion(1, 2), new Proportion(1, 10), new Proportion(4), "apex near centerline"),
+                    new FrameProjectionDesire(LetterFormationDirections.Vertical, Proportion.Zero, new Proportion(1, 10), new Proportion(5), "apex near topline"),
                 ]),
             new LetterFormationSiteState(
                 "LeftBar",
@@ -56,8 +56,8 @@ public static class LetterFormationPresetFactory
                 new Axis(-2, 1, 0, -1),
                 PlanarOffset.Zero,
                 [
-                    new SiteCoordinateDesire(LetterFormationCoordinateAxis.Vertical, "RightBar", Proportion.Zero, new Proportion(1, 20), new Proportion(4), "crossbar stays level"),
-                    new FrameCoordinateDesire(LetterFormationCoordinateAxis.Vertical, midlineRatio, new Proportion(1, 10), new Proportion(2), "crossbar near midline"),
+                    new SiteProjectionDesire(LetterFormationDirections.Vertical, "RightBar", Proportion.Zero, new Proportion(1, 20), new Proportion(4), "crossbar stays level"),
+                    new FrameProjectionDesire(LetterFormationDirections.Vertical, midlineRatio, new Proportion(1, 10), new Proportion(2), "crossbar near midline"),
                 ]),
             new LetterFormationSiteState(
                 "RightBar",
@@ -65,8 +65,8 @@ public static class LetterFormationPresetFactory
                 new Axis(2, 1, 0, -1),
                 PlanarOffset.Zero,
                 [
-                    new SiteCoordinateDesire(LetterFormationCoordinateAxis.Vertical, "LeftBar", Proportion.Zero, new Proportion(1, 20), new Proportion(4), "crossbar stays level"),
-                    new FrameCoordinateDesire(LetterFormationCoordinateAxis.Vertical, midlineRatio, new Proportion(1, 10), new Proportion(2), "crossbar near midline"),
+                    new SiteProjectionDesire(LetterFormationDirections.Vertical, "LeftBar", Proportion.Zero, new Proportion(1, 20), new Proportion(4), "crossbar stays level"),
+                    new FrameProjectionDesire(LetterFormationDirections.Vertical, midlineRatio, new Proportion(1, 10), new Proportion(2), "crossbar near midline"),
                 ]),
         ];
 
@@ -77,7 +77,7 @@ public static class LetterFormationPresetFactory
                 "LeftBase",
                 "Apex",
                 [
-                    new CarrierOrientationDesire(LetterFormationOrientationKind.UpRight, new Proportion(1, 6), new Proportion(3), "left leg rises toward apex"),
+                    new CarrierDirectionDesire(LetterFormationDirections.UpRight, new Proportion(1, 6), new Proportion(3), "left leg rises toward apex"),
                     new CarrierSpanDesire(new Proportion(5), new Proportion(16), new Proportion(2), "left leg keeps a reasonable span"),
                 ]),
             new LetterFormationCarrierState(
@@ -85,7 +85,7 @@ public static class LetterFormationPresetFactory
                 "RightBase",
                 "Apex",
                 [
-                    new CarrierOrientationDesire(LetterFormationOrientationKind.UpLeft, new Proportion(1, 6), new Proportion(3), "right leg rises toward apex"),
+                    new CarrierDirectionDesire(LetterFormationDirections.UpLeft, new Proportion(1, 6), new Proportion(3), "right leg rises toward apex"),
                     new CarrierSpanDesire(new Proportion(5), new Proportion(16), new Proportion(2), "right leg keeps a reasonable span"),
                 ]),
             new LetterFormationCarrierState(
@@ -93,7 +93,7 @@ public static class LetterFormationPresetFactory
                 "LeftBar",
                 "RightBar",
                 [
-                    new CarrierOrientationDesire(LetterFormationOrientationKind.Horizontal, new Proportion(1, 12), new Proportion(4), "crossbar prefers horizontal"),
+                    new CarrierDirectionDesire(LetterFormationDirections.Horizontal, new Proportion(1, 12), new Proportion(4), "crossbar prefers horizontal"),
                     new CarrierSpanDesire(new Proportion(2), new Proportion(8), new Proportion(2), "crossbar keeps a moderate width"),
                 ]),
         ];
