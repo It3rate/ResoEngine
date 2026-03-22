@@ -964,9 +964,20 @@ public sealed class LetterFormationDynamicsPage : IVisualizerPage
         out CubicCurveSpec curve)
     {
         curve = default;
-        if (_state is null ||
-            !TryResolveCurveTangent(_state.GetSite(carrier.StartSiteId).Descriptor, out SKPoint startTangent, out float startStrength) ||
-            !TryResolveCurveTangent(_state.GetSite(carrier.EndSiteId).Descriptor, out SKPoint endTangent, out float endStrength))
+        if (_state is null)
+        {
+            return false;
+        }
+
+        Core2.Elements.Axis startDescriptor = _state.GetSite(carrier.StartSiteId).Descriptor;
+        Core2.Elements.Axis endDescriptor = _state.GetSite(carrier.EndSiteId).Descriptor;
+        if (IsZeroDescriptor(startDescriptor) && IsZeroDescriptor(endDescriptor))
+        {
+            return false;
+        }
+
+        if (!TryResolveCurveTangent(startDescriptor, out SKPoint startTangent, out float startStrength) ||
+            !TryResolveCurveTangent(endDescriptor, out SKPoint endTangent, out float endStrength))
         {
             return false;
         }
@@ -1053,13 +1064,14 @@ public sealed class LetterFormationDynamicsPage : IVisualizerPage
     private bool ShouldHideSiteForDisplay(string siteId) =>
         _selectedPreset switch
         {
+            LetterFormationPresetKind.CapitalD => siteId is "BowlOuter",
             LetterFormationPresetKind.LetterB => siteId is "UpperStart" or "UpperOuter" or "UpperJoin" or "LowerJoin" or "LowerOuter" or "LowerEnd",
             LetterFormationPresetKind.LetterC => siteId is "LeftMid",
             LetterFormationPresetKind.LetterG => siteId is "LeftMid",
             LetterFormationPresetKind.LetterJ => siteId is "Bottom",
             LetterFormationPresetKind.LetterP => siteId is "UpperStart" or "UpperOuter" or "UpperJoin",
             LetterFormationPresetKind.LetterR => siteId is "UpperStart" or "UpperOuter" or "UpperJoin" or "LegJoin",
-            LetterFormationPresetKind.LetterS => siteId is "UpperLeft" or "Center" or "LowerRight",
+            LetterFormationPresetKind.LetterS => siteId is "UpperLeft" or "LowerRight",
             LetterFormationPresetKind.LetterU => siteId is "BottomLeft" or "BottomRight",
             _ => false,
         };
@@ -1233,6 +1245,10 @@ public sealed class LetterFormationDynamicsPage : IVisualizerPage
             ? value.Numerator
             : ToDouble(value);
     }
+
+    private static bool IsZeroDescriptor(Core2.Elements.Axis descriptor) =>
+        descriptor.Recessive.Numerator == 0 &&
+        descriptor.Dominant.Numerator == 0;
 
     private static Core2.Elements.Proportion FromDouble(double value) =>
         new((long)Math.Round(value * 1000d), 1000);
