@@ -5,6 +5,7 @@ This folder is for reusable symbolic schemas that sit between raw Core 2 structu
 The goal is not to hard-code "language" into the symbolic layer.
 The goal is to define a small abstract set of reusable relation families that can later be invoked by:
 - graph traversal
+- dynamic equations and mathematical flow
 - flow control
 - circuits
 - ornamental and spatial patterns
@@ -49,6 +50,7 @@ The same small family of schemas should be reusable across:
 - motion and path verbs such as `cross`, `exit`, and `approach`
 - dimensional and scalar adjectives such as `tall`, `deep`, and `very`
 - kinship, social distance, and hierarchy terms such as `close friend` and `upper management`
+- dynamic equation patterns such as iterative update, comparison, branching, and stopping bands
 
 At the symbolic layer these are not separate ontologies.
 They are different lexical surfaces over overlapping structural families.

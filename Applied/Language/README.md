@@ -24,6 +24,7 @@ The point is to see whether one small symbolic family can be reused across:
 - space
 - time
 - motion
+- dynamic equation flow
 - scale
 - social distance and hierarchy
 - procedural and narrative flow

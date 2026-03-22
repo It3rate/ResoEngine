@@ -11,6 +11,7 @@ The current pass compares:
 - prepositions and spatial relators
 - temporal words
 - motion and path verbs
+- dynamic equations and control-like mathematical flow
 - dimensional and scalar adjectives
 - kinship, social distance, and hierarchy language
 - image-schema and localist-style families that seem to sit underneath several of those
@@ -84,6 +85,18 @@ The main question is "what recurring structural family is this word invoking?"
 | `branch`, `split`, `merge`, `rejoin` | Branching, Merging, Closure | Procedural and graph-like path structure |
 | `block`, `gate`, `clear`, `release` | Obstruction, Boundary | Gated continuation or removal of a blockage |
 
+## Dynamic Equations and Mathematical Flow
+
+| Expression family | Likely schema families | Notes |
+| --- | --- | --- |
+| `x_{t+1} = x_t + step` | SourceGoal, PathCoincidence | Iterative update reads as traversal along a carrier rather than only static equality |
+| `x > 0`, `x < limit` | Ordering, Boundary | Comparison asks which side of a threshold or boundary the state currently occupies |
+| `if x > 0 then A else B` | Branching, Boundary | A comparison can trigger lawful split into alternative continuations |
+| `while`, `until`, `repeat until inside band` | TemporalSequence, Obstruction, BoundedInterval | Continuation persists until a target region or stopping boundary is reached |
+| `and`, `or`, `not` on intervals or supports | Boundary, Containment, BoundedInterval | Boolean logic can often be read as framed occupancy over regions or spans |
+| `x^n`, repeated update, cycle` | Cycle, Closure, SourceGoal | Repetition and return preserve path identity across steps |
+| inverse continuation such as `sqrt`, branch recovery | Branching, Closure | Reverse continuation naturally produces alternative antecedents or lifted candidate families |
+
 ## Dimensional and Scalar Adjectives
 
 | Lexical family | Likely schema families | Notes |
@@ -120,24 +133,25 @@ The main question is "what recurring structural family is this word invoking?"
 
 ## Cross-Category Overlap
 
-| Schema family | Preposition examples | Temporal examples | Motion/path examples | Scalar examples | Social/hierarchy examples |
-| --- | --- | --- | --- | --- | --- |
-| Adjacency | `near`, `beside` | `while`, `as` | `approach` | `close`, `distant` | `close friend` |
-| Containment | `inside`, `within` | `during` | `enter`, `exit` |  | `within the group` |
-| Boundary | `at`, `by`, `beyond` | `until`, `by` | `enter`, `leave`, `cross` |  | access or exclusion boundaries |
-| BoundedInterval | `between` | bounded duration, midpoint of a schedule | approach the middle stretch | midway, halfway | between ranks or groups |
-| DirectionalOffset | `above`, `behind` | `before`, `after` | move ahead, fall behind | `high`, `low` | `upper management` |
-| SourceGoal | `from`, `to`, `toward` | `since`, lead-up to a deadline | `approach`, `depart`, `reach` | scalar drift upward/downward | movement through rank or status |
-| PathCoincidence | `along` | `throughout`, `spanning` | `follow`, `run along` | distributed growth along a scale | staying on one career path |
-| Crossing | `across`, `through` | crossing a phase boundary | `traverse`, `pass through` | crossing a threshold | crossing departments or levels |
-| CenterPeriphery | central zone, edge | central phase versus fringe interval | move toward the center | `central`, `marginal` | core team, fringe member |
-| Hierarchy |  |  | climb or drop through levels | upper/lower | senior/junior, rank |
-| Obstruction | blocked by, up against | `until` as gate | `block`, `clear`, `release` | bottleneck, capped growth | social barrier or gatekeeper |
+| Schema family | Preposition examples | Temporal examples | Motion/path examples | Equation / dynamic examples | Scalar examples | Social/hierarchy examples |
+| --- | --- | --- | --- | --- | --- | --- |
+| Adjacency | `near`, `beside` | `while`, `as` | `approach` | near-target band | `close`, `distant` | `close friend` |
+| Containment | `inside`, `within` | `during` | `enter`, `exit` | state inside acceptance band |  | `within the group` |
+| Boundary | `at`, `by`, `beyond` | `until`, `by` | `enter`, `leave`, `cross` | `x > 0`, threshold crossing |  | access or exclusion boundaries |
+| BoundedInterval | `between` | bounded duration, midpoint of a schedule | approach the middle stretch | acceptance window `[a, b]` | midway, halfway | between ranks or groups |
+| DirectionalOffset | `above`, `behind` | `before`, `after` | move ahead, fall behind | positive versus negative side | `high`, `low` | `upper management` |
+| SourceGoal | `from`, `to`, `toward` | `since`, lead-up to a deadline | `approach`, `depart`, `reach` | iterative drift toward a target | scalar drift upward/downward | movement through rank or status |
+| PathCoincidence | `along` | `throughout`, `spanning` | `follow`, `run along` | repeated update along one carrier | distributed growth along a scale | staying on one career path |
+| Crossing | `across`, `through` | crossing a phase boundary | `traverse`, `pass through` | passing through a gate or region | crossing a threshold | crossing departments or levels |
+| CenterPeriphery | central zone, edge | central phase versus fringe interval | move toward the center | stable center versus fringe states | `central`, `marginal` | core team, fringe member |
+| Hierarchy |  |  | climb or drop through levels | priority ladder or ordered precedence | upper/lower | senior/junior, rank |
+| Obstruction | blocked by, up against | `until` as gate | `block`, `clear`, `release` | hold iteration until release | bottleneck, capped growth | social barrier or gatekeeper |
 
 ## Overlap Notes
 
 - Many spatial prepositions become temporal words without changing the deeper schema very much.
 - Many motion verbs are just prepositions plus traversal commitment.
+- Many dynamic equations can be read as traversals with comparison gates, branch points, stopping bands, and repetition laws.
 - Many scalar adjectives are directional or extent schemas with magnitude emphasis.
 - Many hierarchy terms are spatial offset or scalar ordering mapped into social space.
 - Image-schema and localist descriptions often look like the same small families seen from a more human-facing angle.

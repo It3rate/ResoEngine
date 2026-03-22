@@ -5,6 +5,7 @@ public enum ConceptualLexicalDomain
     Spatial,
     Temporal,
     Motion,
+    Equation,
     Scalar,
     Social,
     Language,

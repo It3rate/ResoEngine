@@ -5,6 +5,7 @@ public enum ConceptualSurfaceKind
     Preposition,
     TemporalWord,
     MotionVerb,
+    EquationPattern,
     ScalarAdjective,
     ScalarModifier,
     HierarchyTerm,

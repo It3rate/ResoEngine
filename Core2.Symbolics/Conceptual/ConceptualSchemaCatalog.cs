@@ -26,31 +26,31 @@ public static class ConceptualSchemaCatalog
             "between-interval",
             ConceptualRelationFamily.BoundedInterval,
             [ConceptualTopologyKind.Interval, ConceptualTopologyKind.Region],
-            [ConceptualLexicalDomain.Spatial, ConceptualLexicalDomain.Temporal, ConceptualLexicalDomain.Social, ConceptualLexicalDomain.Language],
+            [ConceptualLexicalDomain.Spatial, ConceptualLexicalDomain.Temporal, ConceptualLexicalDomain.Equation, ConceptualLexicalDomain.Social, ConceptualLexicalDomain.Language],
             "A bounded relation inside two anchors, limits, or ordered participants rather than simple nearness to one landmark."),
         new(
             "directional-offset",
             ConceptualRelationFamily.DirectionalOffset,
             [ConceptualTopologyKind.Path, ConceptualTopologyKind.Field],
-            [ConceptualLexicalDomain.Spatial, ConceptualLexicalDomain.Temporal, ConceptualLexicalDomain.Scalar, ConceptualLexicalDomain.Social, ConceptualLexicalDomain.Language],
+            [ConceptualLexicalDomain.Spatial, ConceptualLexicalDomain.Temporal, ConceptualLexicalDomain.Equation, ConceptualLexicalDomain.Scalar, ConceptualLexicalDomain.Social, ConceptualLexicalDomain.Language],
             "A before-after, above-below, front-back, or left-right offset relative to an active host frame."),
         new(
             "source-path-goal",
             ConceptualRelationFamily.SourceGoal,
             [ConceptualTopologyKind.Path, ConceptualTopologyKind.Interval],
-            [ConceptualLexicalDomain.Spatial, ConceptualLexicalDomain.Temporal, ConceptualLexicalDomain.Motion, ConceptualLexicalDomain.Narrative, ConceptualLexicalDomain.ControlFlow, ConceptualLexicalDomain.Circuit, ConceptualLexicalDomain.Graph, ConceptualLexicalDomain.Language],
+            [ConceptualLexicalDomain.Spatial, ConceptualLexicalDomain.Temporal, ConceptualLexicalDomain.Motion, ConceptualLexicalDomain.Equation, ConceptualLexicalDomain.Narrative, ConceptualLexicalDomain.ControlFlow, ConceptualLexicalDomain.Circuit, ConceptualLexicalDomain.Graph, ConceptualLexicalDomain.Language],
             "A directed progression from a source toward a goal, possibly with traversal, delay, or obstruction along the way."),
         new(
             "along-host",
             ConceptualRelationFamily.PathCoincidence,
             [ConceptualTopologyKind.Path, ConceptualTopologyKind.Through],
-            [ConceptualLexicalDomain.Spatial, ConceptualLexicalDomain.Motion, ConceptualLexicalDomain.Circuit, ConceptualLexicalDomain.Graph, ConceptualLexicalDomain.Ornamental, ConceptualLexicalDomain.Language],
+            [ConceptualLexicalDomain.Spatial, ConceptualLexicalDomain.Motion, ConceptualLexicalDomain.Equation, ConceptualLexicalDomain.Circuit, ConceptualLexicalDomain.Graph, ConceptualLexicalDomain.Ornamental, ConceptualLexicalDomain.Language],
             "Continuation that remains constrained by a host route, edge, rail, stroke, or carrier."),
         new(
             "crossing-passage",
             ConceptualRelationFamily.Crossing,
             [ConceptualTopologyKind.Path, ConceptualTopologyKind.Region, ConceptualTopologyKind.Through],
-            [ConceptualLexicalDomain.Spatial, ConceptualLexicalDomain.Motion, ConceptualLexicalDomain.ControlFlow, ConceptualLexicalDomain.Circuit, ConceptualLexicalDomain.Graph, ConceptualLexicalDomain.Language],
+            [ConceptualLexicalDomain.Spatial, ConceptualLexicalDomain.Motion, ConceptualLexicalDomain.Equation, ConceptualLexicalDomain.ControlFlow, ConceptualLexicalDomain.Circuit, ConceptualLexicalDomain.Graph, ConceptualLexicalDomain.Language],
             "Entry, through-occupation, and exit across a host region, line, or guarded span."),
         new(
             "attachment-link",
@@ -86,25 +86,25 @@ public static class ConceptualSchemaCatalog
             "cyclic-return",
             ConceptualRelationFamily.Cycle,
             [ConceptualTopologyKind.Loop, ConceptualTopologyKind.Path],
-            [ConceptualLexicalDomain.Temporal, ConceptualLexicalDomain.Narrative, ConceptualLexicalDomain.ControlFlow, ConceptualLexicalDomain.Circuit, ConceptualLexicalDomain.Ornamental, ConceptualLexicalDomain.Language],
+            [ConceptualLexicalDomain.Temporal, ConceptualLexicalDomain.Equation, ConceptualLexicalDomain.Narrative, ConceptualLexicalDomain.ControlFlow, ConceptualLexicalDomain.Circuit, ConceptualLexicalDomain.Ornamental, ConceptualLexicalDomain.Language],
             "Recurrent return, looping, or phased revisit rather than one-way passage."),
         new(
             "branch-merge-network",
             ConceptualRelationFamily.Branching,
             [ConceptualTopologyKind.Branch, ConceptualTopologyKind.Merge, ConceptualTopologyKind.Path],
-            [ConceptualLexicalDomain.Motion, ConceptualLexicalDomain.Narrative, ConceptualLexicalDomain.ControlFlow, ConceptualLexicalDomain.Circuit, ConceptualLexicalDomain.Graph, ConceptualLexicalDomain.Language],
+            [ConceptualLexicalDomain.Motion, ConceptualLexicalDomain.Equation, ConceptualLexicalDomain.Narrative, ConceptualLexicalDomain.ControlFlow, ConceptualLexicalDomain.Circuit, ConceptualLexicalDomain.Graph, ConceptualLexicalDomain.Language],
             "One route becoming many or many routes reconverging, with alternatives or co-present strands preserved."),
         new(
             "closure-return",
             ConceptualRelationFamily.Closure,
             [ConceptualTopologyKind.Closure, ConceptualTopologyKind.Loop, ConceptualTopologyKind.Path],
-            [ConceptualLexicalDomain.Spatial, ConceptualLexicalDomain.Temporal, ConceptualLexicalDomain.Narrative, ConceptualLexicalDomain.ControlFlow, ConceptualLexicalDomain.Circuit, ConceptualLexicalDomain.Language],
+            [ConceptualLexicalDomain.Spatial, ConceptualLexicalDomain.Temporal, ConceptualLexicalDomain.Equation, ConceptualLexicalDomain.Narrative, ConceptualLexicalDomain.ControlFlow, ConceptualLexicalDomain.Circuit, ConceptualLexicalDomain.Language],
             "A path, relation, or dependency closing back into earlier structure rather than ending open."),
         new(
             "scalar-gradient",
             ConceptualRelationFamily.ScalarExtent,
             [ConceptualTopologyKind.Interval, ConceptualTopologyKind.Field],
-            [ConceptualLexicalDomain.Spatial, ConceptualLexicalDomain.Scalar, ConceptualLexicalDomain.Social, ConceptualLexicalDomain.Language],
+            [ConceptualLexicalDomain.Spatial, ConceptualLexicalDomain.Equation, ConceptualLexicalDomain.Scalar, ConceptualLexicalDomain.Social, ConceptualLexicalDomain.Language],
             "Extent or measured spread along an active dimension such as height, depth, width, closeness, or rank."),
         new(
             "intensity-weighting",
@@ -116,7 +116,7 @@ public static class ConceptualSchemaCatalog
             "ordered-comparison",
             ConceptualRelationFamily.Ordering,
             [ConceptualTopologyKind.Path, ConceptualTopologyKind.Interval],
-            [ConceptualLexicalDomain.Temporal, ConceptualLexicalDomain.Scalar, ConceptualLexicalDomain.Social, ConceptualLexicalDomain.Narrative, ConceptualLexicalDomain.Language],
+            [ConceptualLexicalDomain.Temporal, ConceptualLexicalDomain.Equation, ConceptualLexicalDomain.Scalar, ConceptualLexicalDomain.Social, ConceptualLexicalDomain.Narrative, ConceptualLexicalDomain.Language],
             "Relative earlier-later, higher-lower, or before-after placement in an ordered frame."),
         new(
             "hierarchy-ladder",
@@ -128,19 +128,19 @@ public static class ConceptualSchemaCatalog
             "temporal-window",
             ConceptualRelationFamily.TemporalWindow,
             [ConceptualTopologyKind.Interval, ConceptualTopologyKind.Region],
-            [ConceptualLexicalDomain.Temporal, ConceptualLexicalDomain.Narrative, ConceptualLexicalDomain.ControlFlow, ConceptualLexicalDomain.Language],
+            [ConceptualLexicalDomain.Temporal, ConceptualLexicalDomain.Equation, ConceptualLexicalDomain.Narrative, ConceptualLexicalDomain.ControlFlow, ConceptualLexicalDomain.Language],
             "An occupied, available, or bounded duration read as an interval-like region on a temporal carrier."),
         new(
             "temporal-sequence",
             ConceptualRelationFamily.TemporalSequence,
             [ConceptualTopologyKind.Path, ConceptualTopologyKind.Interval],
-            [ConceptualLexicalDomain.Temporal, ConceptualLexicalDomain.Narrative, ConceptualLexicalDomain.ControlFlow, ConceptualLexicalDomain.Language],
+            [ConceptualLexicalDomain.Temporal, ConceptualLexicalDomain.Equation, ConceptualLexicalDomain.Narrative, ConceptualLexicalDomain.ControlFlow, ConceptualLexicalDomain.Language],
             "Ordered succession, deadline, lead-up, or aftermath along a temporal carrier."),
         new(
             "obstruction-gate",
             ConceptualRelationFamily.Obstruction,
             [ConceptualTopologyKind.Region, ConceptualTopologyKind.Path, ConceptualTopologyKind.Boundary],
-            [ConceptualLexicalDomain.Spatial, ConceptualLexicalDomain.Motion, ConceptualLexicalDomain.Narrative, ConceptualLexicalDomain.ControlFlow, ConceptualLexicalDomain.Circuit, ConceptualLexicalDomain.Language],
+            [ConceptualLexicalDomain.Spatial, ConceptualLexicalDomain.Motion, ConceptualLexicalDomain.Equation, ConceptualLexicalDomain.Narrative, ConceptualLexicalDomain.ControlFlow, ConceptualLexicalDomain.Circuit, ConceptualLexicalDomain.Language],
             "A blockage, guard, or threshold that interrupts continuation until some condition, force, or detour resolves it.")
     ];
 
