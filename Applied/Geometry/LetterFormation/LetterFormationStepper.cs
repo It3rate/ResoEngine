@@ -165,15 +165,15 @@ public static class LetterFormationStepper
         (double directionX, double directionY) = LetterFormationGeometry.Normalize(dx, dy);
         double distance = LetterFormationGeometry.Distance(site.Position, other.Position);
         double capture = LetterFormationGeometry.ToDouble(desire.CaptureDistance);
-        double excess = Math.Max(0d, distance - capture);
-        double step = LetterFormationGeometry.ClampMagnitude(excess * 0.25d, MaxProposalStep);
+        double step = ResolveJoinAttractionStep(distance, capture);
+        Proportion strength = ResolveJoinProposalStrength(distance, capture, tension.Magnitude, desire.Weight, desire.Escalation);
         return CreateProposal(
             site.Id,
             site.Id,
             desire.Label,
             directionX * step,
             directionY * step,
-            tension.Magnitude,
+            strength,
             $"Move {site.Id} toward join with {desire.OtherSiteId}.");
     }
 
@@ -347,7 +347,7 @@ public static class LetterFormationStepper
 
                 double distance = LetterFormationGeometry.Distance(site.Position, other.Position);
                 double capture = LetterFormationGeometry.ToDouble(join.CaptureDistance);
-                if (distance > capture)
+                if (distance > capture * 1.15d)
                 {
                     continue;
                 }
@@ -488,6 +488,43 @@ public static class LetterFormationStepper
 
     private static double RandomSigned(Random random) =>
         (random.NextDouble() * 2d) - 1d;
+
+    private static double ResolveJoinAttractionStep(double distance, double capture)
+    {
+        if (capture <= 0d)
+        {
+            return 0d;
+        }
+
+        double safeDistance = Math.Max(distance, capture * 0.35d);
+        double closeness = capture / safeDistance;
+        double nearFieldAttraction = capture * closeness * closeness * 1.4d;
+        double farFieldAttraction = Math.Max(0d, distance - capture) * 0.08d;
+        return LetterFormationGeometry.ClampMagnitude(
+            Math.Max(nearFieldAttraction, farFieldAttraction),
+            MaxProposalStep);
+    }
+
+    private static Proportion ResolveJoinProposalStrength(
+        double distance,
+        double capture,
+        Proportion currentTension,
+        Proportion desiredWeight,
+        Proportion escalation)
+    {
+        if (capture <= 0d)
+        {
+            return currentTension;
+        }
+
+        double baseWeight = LetterFormationGeometry.ToDouble(desiredWeight);
+        double escalationWeight = Math.Max(1d, LetterFormationGeometry.ToDouble(escalation));
+        double safeDistance = Math.Max(distance, capture * 0.35d);
+        double closeness = capture / safeDistance;
+        double certainty = Math.Min(2.5d, closeness * closeness * escalationWeight);
+        double effectiveStrength = baseWeight * Math.Max(0.35d, certainty);
+        return LetterFormationGeometry.FromDouble(effectiveStrength);
+    }
 
     private static void AddEdge(Dictionary<string, HashSet<string>> adjacency, string from, string to)
     {

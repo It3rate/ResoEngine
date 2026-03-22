@@ -32,7 +32,7 @@ public static class LetterFormationPresetFactory
                 PlanarOffset.Zero,
                 [
                     new FrameProjectionDesire(LetterFormationDirections.Horizontal, new Proportion(32, 100), new Proportion(22, 100), new Proportion(2), "left join stays left of center"),
-                    new FrameProjectionDesire(LetterFormationDirections.Vertical, midlineRatio, new Proportion(3, 20), new Proportion(2), "left join near crossbar height"),
+                    new FrameProjectionDesire(LetterFormationDirections.Vertical, midlineRatio, new Proportion(1, 8), new Proportion(4), "left join near crossbar height"),
                     new JoinSiteDesire("CrossLeft", new Proportion(2, 5), new Proportion(2), new Proportion(4), "left crossbar pin"),
                 ]),
             new LetterFormationSiteState(
@@ -42,8 +42,8 @@ public static class LetterFormationPresetFactory
                 PlanarOffset.Zero,
                 [
                     new FrameProjectionDesire(LetterFormationDirections.Horizontal, new Proportion(47, 100), new Proportion(16, 100), new Proportion(3), "apex near centerline"),
-                    new FrameProjectionDesire(LetterFormationDirections.Vertical, new Proportion(1, 12), new Proportion(1, 10), new Proportion(4), "apex near topline"),
-                    new JoinSiteDesire("RightApex", new Proportion(1, 2), new Proportion(3), new Proportion(5), "apex join"),
+                    new FrameProjectionDesire(LetterFormationDirections.Vertical, Proportion.Zero, new Proportion(1, 12), new Proportion(5), "apex near topline"),
+                    new JoinSiteDesire("RightApex", new Proportion(3, 5), new Proportion(3), new Proportion(5), "apex join"),
                 ]),
             new LetterFormationSiteState(
                 "CrossLeft",
@@ -52,7 +52,7 @@ public static class LetterFormationPresetFactory
                 PlanarOffset.Zero,
                 [
                     new SiteProjectionDesire(LetterFormationDirections.Vertical, "CrossRight", Proportion.Zero, new Proportion(1, 8), new Proportion(4), "crossbar stays level"),
-                    new FrameProjectionDesire(LetterFormationDirections.Vertical, midlineRatio, new Proportion(3, 20), new Proportion(3), "crossbar near midline"),
+                    new FrameProjectionDesire(LetterFormationDirections.Vertical, midlineRatio, new Proportion(1, 8), new Proportion(5), "crossbar near midline"),
                     new JoinSiteDesire("LeftJoin", new Proportion(2, 5), new Proportion(2), new Proportion(4), "left crossbar pin"),
                 ]),
             new LetterFormationSiteState(
@@ -62,7 +62,7 @@ public static class LetterFormationPresetFactory
                 PlanarOffset.Zero,
                 [
                     new SiteProjectionDesire(LetterFormationDirections.Vertical, "CrossLeft", Proportion.Zero, new Proportion(1, 8), new Proportion(4), "crossbar stays level"),
-                    new FrameProjectionDesire(LetterFormationDirections.Vertical, midlineRatio, new Proportion(3, 20), new Proportion(3), "crossbar near midline"),
+                    new FrameProjectionDesire(LetterFormationDirections.Vertical, midlineRatio, new Proportion(1, 8), new Proportion(5), "crossbar near midline"),
                     new JoinSiteDesire("RightJoin", new Proportion(2, 5), new Proportion(2), new Proportion(4), "right crossbar pin"),
                 ]),
             new LetterFormationSiteState(
@@ -72,8 +72,8 @@ public static class LetterFormationPresetFactory
                 PlanarOffset.Zero,
                 [
                     new FrameProjectionDesire(LetterFormationDirections.Horizontal, new Proportion(53, 100), new Proportion(16, 100), new Proportion(3), "apex near centerline"),
-                    new FrameProjectionDesire(LetterFormationDirections.Vertical, new Proportion(1, 12), new Proportion(1, 10), new Proportion(4), "apex near topline"),
-                    new JoinSiteDesire("LeftApex", new Proportion(1, 2), new Proportion(3), new Proportion(5), "apex join"),
+                    new FrameProjectionDesire(LetterFormationDirections.Vertical, Proportion.Zero, new Proportion(1, 12), new Proportion(5), "apex near topline"),
+                    new JoinSiteDesire("LeftApex", new Proportion(3, 5), new Proportion(3), new Proportion(5), "apex join"),
                 ]),
             new LetterFormationSiteState(
                 "RightJoin",
@@ -82,7 +82,7 @@ public static class LetterFormationPresetFactory
                 PlanarOffset.Zero,
                 [
                     new FrameProjectionDesire(LetterFormationDirections.Horizontal, new Proportion(68, 100), new Proportion(22, 100), new Proportion(2), "right join stays right of center"),
-                    new FrameProjectionDesire(LetterFormationDirections.Vertical, midlineRatio, new Proportion(3, 20), new Proportion(2), "right join near crossbar height"),
+                    new FrameProjectionDesire(LetterFormationDirections.Vertical, midlineRatio, new Proportion(1, 8), new Proportion(4), "right join near crossbar height"),
                     new JoinSiteDesire("CrossRight", new Proportion(2, 5), new Proportion(2), new Proportion(4), "right crossbar pin"),
                 ]),
             new LetterFormationSiteState(
