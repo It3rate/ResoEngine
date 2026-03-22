@@ -5,6 +5,8 @@ namespace Applied.Geometry.LetterFormation;
 
 public static class LetterFormationTensionEvaluator
 {
+    private const double SoftAlignmentPersistence = 0.35d;
+
     public static LetterFormationState Evaluate(LetterFormationState state)
     {
         ArgumentNullException.ThrowIfNull(state);
@@ -64,7 +66,7 @@ public static class LetterFormationTensionEvaluator
         double current = LetterFormationGeometry.ResolveRelativeProjection(state.Environment, site.Position, desire.Projection);
         double target = LetterFormationGeometry.ToDouble(desire.RelativeTarget);
         double tolerance = LetterFormationGeometry.ToDouble(desire.Tolerance);
-        double excess = Math.Max(0d, Math.Abs(current - target) - tolerance);
+        double excess = ResolveAlignmentExcess(Math.Abs(current - target), tolerance);
         return CreateTension(site.Id, desire.Label, excess, desire.Weight, $"{site.Id} misses frame projection target.");
     }
 
@@ -81,7 +83,7 @@ public static class LetterFormationTensionEvaluator
         double current = LetterFormationGeometry.ResolveRawProjection(site.Position, desire.Projection) - LetterFormationGeometry.ResolveRawProjection(other.Position, desire.Projection);
         double target = LetterFormationGeometry.ToDouble(desire.Offset);
         double tolerance = LetterFormationGeometry.ToDouble(desire.Tolerance);
-        double excess = Math.Max(0d, Math.Abs(current - target) - tolerance);
+        double excess = ResolveAlignmentExcess(Math.Abs(current - target), tolerance);
         return CreateTension(site.Id, desire.Label, excess, desire.Weight, $"{site.Id} misses projection relation to {desire.OtherSiteId}.");
     }
 
@@ -179,6 +181,27 @@ public static class LetterFormationTensionEvaluator
                 : Math.Max(0d, tolerance - projected);
         }
 
-        return Math.Max(0d, Math.Abs(current - normalizedTarget) - tolerance);
+        return ResolveAlignmentExcess(Math.Abs(current - normalizedTarget), tolerance);
+    }
+
+    private static double ResolveAlignmentExcess(double difference, double tolerance)
+    {
+        if (difference <= 0d)
+        {
+            return 0d;
+        }
+
+        if (tolerance <= 0d)
+        {
+            return difference;
+        }
+
+        if (difference > tolerance)
+        {
+            return difference - tolerance;
+        }
+
+        double ratio = difference / tolerance;
+        return tolerance * ratio * ratio * SoftAlignmentPersistence;
     }
 }

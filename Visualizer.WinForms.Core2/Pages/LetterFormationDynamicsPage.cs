@@ -105,6 +105,13 @@ public sealed class LetterFormationDynamicsPage : IVisualizerPage
         Typeface = SKTypeface.FromFamilyName("Consolas", SKFontStyle.Normal),
         IsAntialias = true,
     };
+    private readonly SKPaint _finePrintPaint = new()
+    {
+        Color = new SKColor(72, 72, 72, 170),
+        TextSize = 10.5f,
+        Typeface = SKTypeface.FromFamilyName("Consolas", SKFontStyle.Normal),
+        IsAntialias = true,
+    };
 
     private readonly SKPaint _proposalPaint = new()
     {
@@ -201,7 +208,7 @@ public sealed class LetterFormationDynamicsPage : IVisualizerPage
             $"This is a fixed-topology {presetName} with only local desires. Sites and carriers start from random positions, keep proposing small moves from their own tensions, and assemble one immutable snapshot at a time until the remaining pulls get quiet.",
             34f,
             ref subtitleY,
-            760f,
+            680f,
             _bodyPaint);
 
         if (_state is null)
@@ -257,6 +264,7 @@ public sealed class LetterFormationDynamicsPage : IVisualizerPage
         _carrierLabelPaint.Dispose();
         _infoTitlePaint.Dispose();
         _infoTextPaint.Dispose();
+        _finePrintPaint.Dispose();
         _proposalPaint.Dispose();
         _proposalHeadPaint.Dispose();
         _statusAccentPaint.Dispose();
@@ -565,6 +573,8 @@ public sealed class LetterFormationDynamicsPage : IVisualizerPage
                 new SKRect(point.X - 16f, point.Y - 16f, point.X + 16f, point.Y + 16f),
                 siteGroup.Select(site => site.Id).ToArray()));
         }
+
+        DrawRemainingTensionsOverlay(canvas, letterboxRect);
     }
 
     private void DrawStatus(SKCanvas canvas, SKRect cardRect)
@@ -638,6 +648,45 @@ public sealed class LetterFormationDynamicsPage : IVisualizerPage
         {
             canvas.DrawText(line, x, y, _infoTextPaint);
             y += _infoTextPaint.TextSize + 5f;
+        }
+    }
+
+    private void DrawRemainingTensionsOverlay(SKCanvas canvas, SKRect letterboxRect)
+    {
+        if (_state is null)
+        {
+            return;
+        }
+
+        float x = letterboxRect.Left + 12f;
+        float y = letterboxRect.Top + 18f;
+        float width = MathF.Min(214f, MathF.Max(150f, letterboxRect.Width * 0.3f));
+        float bottom = letterboxRect.Bottom - 18f;
+
+        IReadOnlyList<LetterFormationTension> tensions = _state.Tensions
+            .OrderByDescending(tension => ToDouble(tension.Magnitude))
+            .ToArray();
+
+        if (tensions.Count == 0)
+        {
+            canvas.DrawText("tensions: none", x, y, _finePrintPaint);
+            return;
+        }
+
+        foreach (LetterFormationTension tension in tensions)
+        {
+            string text = $"{tension.ComponentId}: {tension.Source} {Format(tension.Magnitude)}";
+            foreach (string line in PageChrome.WrapText(text, width, _finePrintPaint))
+            {
+                if (y > bottom)
+                {
+                    canvas.DrawText("...", x, y, _finePrintPaint);
+                    return;
+                }
+
+                canvas.DrawText(line, x, y, _finePrintPaint);
+                y += _finePrintPaint.TextSize + 3f;
+            }
         }
     }
 

@@ -69,6 +69,37 @@ public class LetterFormationTensionEvaluatorTests
     }
 
     [Fact]
+    public void CarrierDirectionDesire_PreservesSmallResidualTensionInsideTolerance()
+    {
+        var state = new LetterFormationState(
+            "test",
+            0,
+            LetterFormationEnvironment.CreateLetterBox(),
+            [
+                new LetterFormationSiteState("A", new PlanarPoint(0, 0), Axis.Zero, PlanarOffset.Zero, []),
+                new LetterFormationSiteState("B", new PlanarPoint(new Proportion(5, 100), new Proportion(-1)), Axis.Zero, PlanarOffset.Zero, []),
+            ],
+            [
+                new LetterFormationCarrierState(
+                    "Stem",
+                    "A",
+                    "B",
+                    [
+                        new CarrierDirectionDesire(
+                            LetterFormationDirections.Vertical,
+                            new Proportion(1, 10),
+                            new Proportion(5),
+                            "vertical"),
+                    ]),
+            ],
+            []);
+
+        var evaluated = LetterFormationTensionEvaluator.Evaluate(state);
+
+        Assert.Contains(evaluated.Tensions, tension => tension.ComponentId == "Stem" && tension.Source == "vertical");
+    }
+
+    [Fact]
     public void CapitalASeed_EvaluatesToStructuredLocalTensions()
     {
         var state = LetterFormationPresetFactory.CreateCapitalASeed(new Random(1234));
