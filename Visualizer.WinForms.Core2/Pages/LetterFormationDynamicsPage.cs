@@ -575,7 +575,7 @@ public sealed class LetterFormationDynamicsPage : IVisualizerPage
             cardRect.Bottom - 24f);
         SKRect plotRect = new(
             tensionRect.Right + 30f,
-            contentTop,
+            cardRect.Top + 20,
             cardRect.Right - 6f,
             cardRect.Bottom - 20f);
         SKRect letterboxRect = FitLetterbox(plotRect, _state.Environment);
