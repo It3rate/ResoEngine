@@ -76,9 +76,12 @@ public class LetterFormationTensionEvaluatorTests
         var evaluated = LetterFormationTensionEvaluator.Evaluate(state);
 
         Assert.NotEmpty(evaluated.Tensions);
-        Assert.Contains(evaluated.Tensions, tension => tension.ComponentId == "Apex");
+        Assert.Contains(evaluated.Tensions, tension => tension.ComponentId == "LeftApex" || tension.ComponentId == "RightApex");
         Assert.Contains(
             evaluated.Tensions,
-            tension => tension.ComponentId == "LeftLeg" || tension.ComponentId == "RightLeg" || tension.ComponentId == "Crossbar");
+            tension => tension.ComponentId == "LeftJoin" ||
+                       tension.ComponentId == "RightJoin" ||
+                       tension.ComponentId == "CrossLeft" ||
+                       tension.ComponentId == "CrossRight");
     }
 }

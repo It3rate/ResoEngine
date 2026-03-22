@@ -9,7 +9,8 @@ public static class LetterFormationStepper
     private const double ProposalResponsiveness = 0.35d;
     private const double MomentumBlend = 0.2d;
     private const double RandomJitterScale = 0.12d;
-    private const double QuietThreshold = 0.05d;
+    private const double QuietThreshold = 0.002d;
+    private const double FullDriveThreshold = 0.05d;
 
     public static IReadOnlyList<LetterFormationProposal> GenerateProposals(LetterFormationState state)
     {
@@ -297,17 +298,18 @@ public static class LetterFormationStepper
             weightedVertical += LetterFormationGeometry.ToDouble(proposal.Offset.Vertical) * weight;
         }
 
-        double nextHorizontal = totalWeight > 0d ? weightedHorizontal / totalWeight : 0d;
-        double nextVertical = totalWeight > 0d ? weightedVertical / totalWeight : 0d;
+        double drive = ResolveDriveFactor(totalWeight);
+        double nextHorizontal = totalWeight > 0d ? (weightedHorizontal / totalWeight) * drive : 0d;
+        double nextVertical = totalWeight > 0d ? (weightedVertical / totalWeight) * drive : 0d;
         if (totalWeight > QuietThreshold)
         {
-            nextHorizontal += LetterFormationGeometry.ToDouble(site.Momentum.Horizontal) * MomentumBlend;
-            nextVertical += LetterFormationGeometry.ToDouble(site.Momentum.Vertical) * MomentumBlend;
+            nextHorizontal += LetterFormationGeometry.ToDouble(site.Momentum.Horizontal) * MomentumBlend * drive;
+            nextVertical += LetterFormationGeometry.ToDouble(site.Momentum.Vertical) * MomentumBlend * drive;
         }
 
         double jitter = LetterFormationGeometry.ToDouble(environment.RandomMotionWeight) *
             RandomJitterScale *
-            Math.Min(1d, totalWeight / 3d);
+            Math.Min(1d, drive);
         if (jitter > 0d)
         {
             nextHorizontal += RandomSigned(random) * jitter;
@@ -331,6 +333,16 @@ public static class LetterFormationStepper
             Position = nextPosition,
             Momentum = nextMomentum,
         };
+    }
+
+    private static double ResolveDriveFactor(double totalWeight)
+    {
+        if (totalWeight <= QuietThreshold)
+        {
+            return 0d;
+        }
+
+        return Math.Clamp(totalWeight / FullDriveThreshold, 0d, 1d);
     }
 
     private static IReadOnlyList<LetterFormationSiteState> ResolveJoinedSites(IReadOnlyList<LetterFormationSiteState> sites)

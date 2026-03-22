@@ -202,8 +202,76 @@ public class LetterFormationStepperTests
         Assert.True(quiet.Momentum.Dx == 0 && quiet.Momentum.Dy == 0);
     }
 
+    [Fact]
+    public void Step_ContinuesToMoveUnderSmallButNonzeroTension()
+    {
+        var environment = LetterFormationEnvironment.CreateLetterBox(randomMotionWeight: Proportion.Zero);
+        var state = new LetterFormationState(
+            "low-drive",
+            0,
+            environment,
+            [
+                new LetterFormationSiteState(
+                    "Probe",
+                    environment.ResolveRelativePoint(new Proportion(58, 100), new Proportion(1, 2)),
+                    Axis.Zero,
+                    PlanarOffset.Zero,
+                    [
+                        new FrameProjectionDesire(
+                            LetterFormationDirections.Horizontal,
+                            new Proportion(1, 2),
+                            Proportion.Zero,
+                            new Proportion(1, 4),
+                            "probe near center"),
+                    ]),
+            ],
+            [],
+            []);
+
+        var evaluated = LetterFormationTensionEvaluator.Evaluate(state);
+        var stepped = LetterFormationStepper.Step(evaluated, new Random(11));
+
+        Assert.NotEmpty(evaluated.Tensions);
+        Assert.True(Sum(evaluated.Tensions) < 0.05d);
+        Assert.NotEqual(state.GetSite("Probe").Position, stepped.GetSite("Probe").Position);
+    }
+
+    [Fact]
+    public void RepeatedSteps_ReduceAlignmentTensionForLetterYSeed()
+    {
+        var environment = LetterFormationEnvironment.CreateLetterBox(randomMotionWeight: Proportion.Zero);
+        var state = LetterFormationPresetFactory.CreateSeed(LetterFormationPresetKind.LetterY, new Random(1234), environment);
+        var initial = LetterFormationTensionEvaluator.Evaluate(state);
+
+        var current = initial;
+        var random = new Random(3333);
+        for (int index = 0; index < 28; index++)
+        {
+            current = LetterFormationStepper.Step(current, random);
+        }
+
+        Assert.True(SumAlignment(current.Tensions) < SumAlignment(initial.Tensions));
+    }
+
     private static double Sum(IEnumerable<LetterFormationTension> tensions) =>
         tensions.Sum(tension => (double)tension.Magnitude.Numerator / tension.Magnitude.Denominator);
+
+    private static double SumAlignment(IEnumerable<LetterFormationTension> tensions) =>
+        tensions
+            .Where(IsAlignmentTension)
+            .Sum(tension => (double)tension.Magnitude.Numerator / tension.Magnitude.Denominator);
+
+    private static bool IsAlignmentTension(LetterFormationTension tension)
+    {
+        string source = tension.Source.ToLowerInvariant();
+        return source.Contains("vertical", StringComparison.Ordinal) ||
+               source.Contains("horizontal", StringComparison.Ordinal) ||
+               source.Contains("level", StringComparison.Ordinal) ||
+               source.Contains("midline", StringComparison.Ordinal) ||
+               source.Contains("rises", StringComparison.Ordinal) ||
+               source.Contains("descends", StringComparison.Ordinal) ||
+               source.Contains("extends", StringComparison.Ordinal);
+    }
 
     private static double Distance(LetterFormationState state)
     {

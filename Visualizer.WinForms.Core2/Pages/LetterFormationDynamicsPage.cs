@@ -127,6 +127,17 @@ public sealed class LetterFormationDynamicsPage : IVisualizerPage
         Color = new SKColor(238, 246, 255),
         IsAntialias = true,
     };
+    private readonly SKPaint _tensionHaloFillPaint = new()
+    {
+        Style = SKPaintStyle.Fill,
+        IsAntialias = true,
+    };
+    private readonly SKPaint _tensionHaloStrokePaint = new()
+    {
+        Style = SKPaintStyle.Stroke,
+        StrokeWidth = 2.2f,
+        IsAntialias = true,
+    };
 
     private readonly Dictionary<string, SKColor> _carrierColors = new(StringComparer.Ordinal)
     {
@@ -136,6 +147,16 @@ public sealed class LetterFormationDynamicsPage : IVisualizerPage
         ["RightUpper"] = SKColor.Parse("#8415D0"),
         ["RightLower"] = SKColor.Parse("#6A4BE2"),
     };
+    private readonly SKColor[] _fallbackCarrierColors =
+    [
+        SKColor.Parse("#C77000"),
+        SKColor.Parse("#D68B1B"),
+        SKColor.Parse("#12824A"),
+        SKColor.Parse("#8415D0"),
+        SKColor.Parse("#6A4BE2"),
+        SKColor.Parse("#D34836"),
+        SKColor.Parse("#0F8CFF"),
+    ];
 
     private SkiaCanvas? _canvasHost;
     private Panel? _controlsPanel;
@@ -147,6 +168,12 @@ public sealed class LetterFormationDynamicsPage : IVisualizerPage
     private LetterFormationState? _state;
     private IReadOnlyList<LetterFormationProposal> _proposals = [];
     private int _resetCount;
+    private LetterFormationPresetKind _selectedPreset = LetterFormationPresetKind.LetterA;
+    private readonly Dictionary<LetterFormationPresetKind, Button> _presetButtons = new();
+    private readonly List<SiteHandleLayout> _siteHandles = [];
+    private string[]? _draggedSiteIds;
+    private SKRect _lastLetterboxRect;
+    private const float SiteHandleRadius = 16f;
 
     public string Title => "Letter Formation Dynamics";
 
@@ -161,15 +188,17 @@ public sealed class LetterFormationDynamicsPage : IVisualizerPage
     public void Render(SKCanvas canvas)
     {
         PageChrome.PositionTopRightPanel(_canvasHost, _controlsPanel);
+        _siteHandles.Clear();
 
         float width = _canvasHost?.ClientSize.Width ?? 1400f;
         float height = _canvasHost?.ClientSize.Height ?? 1000f;
+        string presetName = LetterFormationPresetFactory.GetDisplayName(_selectedPreset);
 
         canvas.DrawText("Letter Formation Dynamics", 34f, 44f, _headingPaint);
         float subtitleY = 70f;
         PageChrome.DrawWrappedText(
             canvas,
-            "This is a fixed-topology capital A with only local desires. Sites and carriers keep proposing small moves based on their own tensions, then the system advances one immutable snapshot at a time until the remaining pulls get quiet.",
+            $"This is a fixed-topology {presetName} with only local desires. Sites and carriers start from random positions, keep proposing small moves from their own tensions, and assemble one immutable snapshot at a time until the remaining pulls get quiet.",
             34f,
             ref subtitleY,
             760f,
@@ -231,6 +260,8 @@ public sealed class LetterFormationDynamicsPage : IVisualizerPage
         _proposalPaint.Dispose();
         _proposalHeadPaint.Dispose();
         _statusAccentPaint.Dispose();
+        _tensionHaloFillPaint.Dispose();
+        _tensionHaloStrokePaint.Dispose();
     }
 
     private void EnsureControls()
@@ -242,7 +273,7 @@ public sealed class LetterFormationDynamicsPage : IVisualizerPage
 
         _controlsPanel = new Panel
         {
-            Size = new Size(232, 126),
+            Size = new Size(232, 222),
             BackColor = Color.FromArgb(248, 248, 248),
         };
 
@@ -281,7 +312,7 @@ public sealed class LetterFormationDynamicsPage : IVisualizerPage
         _stepButton = new Button
         {
             Text = "Step",
-            Location = new Point(14, 78),
+            Location = new Point(14, 174),
             Size = new Size(92, 30),
             FlatStyle = FlatStyle.Flat,
             Font = new Font(VisualStyle.UiFontFamily, 8.5f, FontStyle.Bold),
@@ -293,7 +324,7 @@ public sealed class LetterFormationDynamicsPage : IVisualizerPage
         _resetButton = new Button
         {
             Text = "Reset",
-            Location = new Point(112, 78),
+            Location = new Point(112, 174),
             Size = new Size(92, 30),
             FlatStyle = FlatStyle.Flat,
             Font = new Font(VisualStyle.UiFontFamily, 8.5f, FontStyle.Bold),
@@ -302,12 +333,38 @@ public sealed class LetterFormationDynamicsPage : IVisualizerPage
         _resetButton.FlatAppearance.BorderColor = Color.FromArgb(214, 214, 214);
         _resetButton.Click += (_, _) => ResetState();
 
+        int buttonIndex = 0;
+        foreach (LetterFormationPresetKind preset in Enum.GetValues<LetterFormationPresetKind>())
+        {
+            var button = new Button
+            {
+                Text = LetterFormationPresetFactory.GetShortLabel(preset),
+                Location = new Point(14 + ((buttonIndex % 4) * 50), 78 + ((buttonIndex / 4) * 38)),
+                Size = new Size(44, 28),
+                FlatStyle = FlatStyle.Flat,
+                Font = new Font(VisualStyle.UiFontFamily, 8.5f, FontStyle.Bold),
+                BackColor = Color.White,
+                Tag = preset,
+            };
+            button.FlatAppearance.BorderColor = Color.FromArgb(214, 214, 214);
+            button.Click += (_, _) =>
+            {
+                _selectedPreset = preset;
+                UpdatePresetButtons();
+                ResetState();
+            };
+            _presetButtons[preset] = button;
+            _controlsPanel.Controls.Add(button);
+            buttonIndex++;
+        }
+
         _controlsPanel.Controls.Add(title);
         _controlsPanel.Controls.Add(_animateCheck);
         _controlsPanel.Controls.Add(_showMovesCheck);
         _controlsPanel.Controls.Add(_stepButton);
         _controlsPanel.Controls.Add(_resetButton);
         _canvasHost.Controls.Add(_controlsPanel);
+        UpdatePresetButtons();
         PageChrome.PositionTopRightPanel(_canvasHost, _controlsPanel);
     }
 
@@ -341,7 +398,11 @@ public sealed class LetterFormationDynamicsPage : IVisualizerPage
             heightTicks: 14,
             randomMotionWeight: new Core2.Elements.Proportion(1, 2));
         _state = LetterFormationTensionEvaluator.Evaluate(
-            LetterFormationPresetFactory.CreateCapitalAAssemblySeed(random, environment));
+            LetterFormationPresetFactory.CreateSeed(_selectedPreset, random, environment));
+        if (_animateCheck is not null)
+        {
+            _animateCheck.Checked = true;
+        }
         RefreshProposals();
         _canvasHost?.InvalidateCanvas();
     }
@@ -355,12 +416,6 @@ public sealed class LetterFormationDynamicsPage : IVisualizerPage
 
         _state = LetterFormationStepper.Step(_state);
         RefreshProposals();
-
-        if (SumTension(_state.Tensions) < 0.06d && _animateCheck is not null)
-        {
-            _animateCheck.Checked = false;
-        }
-
         _canvasHost?.InvalidateCanvas();
     }
 
@@ -375,6 +430,61 @@ public sealed class LetterFormationDynamicsPage : IVisualizerPage
         _proposals = _showMovesCheck?.Checked == true
             ? LetterFormationStepper.GenerateProposals(_state)
             : [];
+    }
+
+    public bool OnPointerDown(SKPoint pixelPoint)
+    {
+        SiteHandleLayout? handle = HitSiteHandle(pixelPoint);
+        if (handle is null)
+        {
+            return false;
+        }
+
+        _draggedSiteIds = handle.SiteIds;
+        _canvasHost?.InvalidateCanvas();
+        return true;
+    }
+
+    public void OnPointerMove(SKPoint pixelPoint)
+    {
+        if (_canvasHost is null)
+        {
+            return;
+        }
+
+        if (_draggedSiteIds is not null)
+        {
+            DragSites(pixelPoint);
+            _canvasHost.Cursor = Cursors.SizeAll;
+            return;
+        }
+
+        _canvasHost.Cursor = HitSiteHandle(pixelPoint) is not null
+            ? Cursors.SizeAll
+            : Cursors.Default;
+    }
+
+    public void OnPointerUp(SKPoint pixelPoint)
+    {
+        _draggedSiteIds = null;
+        if (_canvasHost is not null)
+        {
+            _canvasHost.Cursor = Cursors.Default;
+        }
+    }
+
+    private void UpdatePresetButtons()
+    {
+        foreach ((LetterFormationPresetKind preset, Button button) in _presetButtons)
+        {
+            bool selected = preset == _selectedPreset;
+            button.BackColor = selected
+                ? Color.FromArgb(239, 246, 255)
+                : Color.White;
+            button.FlatAppearance.BorderColor = selected
+                ? Color.FromArgb(110, 158, 220)
+                : Color.FromArgb(214, 214, 214);
+        }
     }
 
     private void DrawCard(SKCanvas canvas, SKRect rect)
@@ -394,6 +504,7 @@ public sealed class LetterFormationDynamicsPage : IVisualizerPage
 
         SKRect plotRect = new(cardRect.Left + 30f, cardRect.Top + 24f, cardRect.Right - 30f, cardRect.Bottom - 150f);
         SKRect letterboxRect = FitLetterbox(plotRect, _state.Environment);
+        _lastLetterboxRect = letterboxRect;
 
         canvas.DrawRoundRect(letterboxRect, 18f, 18f, _statusAccentPaint);
         canvas.DrawRoundRect(letterboxRect, 18f, 18f, _letterboxPaint);
@@ -402,6 +513,11 @@ public sealed class LetterFormationDynamicsPage : IVisualizerPage
         float midY = MapY(_state.Environment.MidlineY, letterboxRect);
         canvas.DrawLine(centerX, letterboxRect.Top, centerX, letterboxRect.Bottom, _guidePaint);
         canvas.DrawLine(letterboxRect.Left, midY, letterboxRect.Right, midY, _guidePaint);
+
+        foreach (IGrouping<PlanarPoint, LetterFormationSiteState> siteGroup in _state.Sites.GroupBy(site => site.Position))
+        {
+            DrawSiteHalo(canvas, letterboxRect, siteGroup);
+        }
 
         if (_showMovesCheck?.Checked == true)
         {
@@ -416,9 +532,10 @@ public sealed class LetterFormationDynamicsPage : IVisualizerPage
             }
         }
 
-        foreach (LetterFormationCarrierState carrier in _state.Carriers)
+        for (int carrierIndex = 0; carrierIndex < _state.Carriers.Count; carrierIndex++)
         {
-            SKColor color = _carrierColors.TryGetValue(carrier.Id, out SKColor named) ? named : new SKColor(96, 96, 96);
+            LetterFormationCarrierState carrier = _state.Carriers[carrierIndex];
+            SKColor color = ResolveCarrierColor(carrier.Id, carrierIndex);
             using SKPaint carrierPaint = new()
             {
                 Style = SKPaintStyle.Stroke,
@@ -430,9 +547,7 @@ public sealed class LetterFormationDynamicsPage : IVisualizerPage
 
             SKPoint start = MapPoint(_state.GetStartPoint(carrier.Id), letterboxRect);
             SKPoint end = MapPoint(_state.GetEndPoint(carrier.Id), letterboxRect);
-            canvas.DrawLine(start, end, carrierPaint);
-
-            SKPoint mid = new((start.X + end.X) * 0.5f, (start.Y + end.Y) * 0.5f);
+            SKPoint mid = DrawCarrier(canvas, carrier, start, end, carrierPaint, letterboxRect);
             using SKPaint labelPaint = _carrierLabelPaint.Clone();
             labelPaint.Color = color;
             canvas.DrawText(carrier.Id, mid.X + 8f, mid.Y - 8f, labelPaint);
@@ -446,6 +561,9 @@ public sealed class LetterFormationDynamicsPage : IVisualizerPage
             canvas.DrawCircle(point, 12f, _siteStrokePaint);
             string label = string.Join(" / ", siteGroup.Select(site => site.Id));
             canvas.DrawText(label, point.X + 14f, point.Y - 10f, _siteLabelPaint);
+            _siteHandles.Add(new SiteHandleLayout(
+                new SKRect(point.X - 16f, point.Y - 16f, point.X + 16f, point.Y + 16f),
+                siteGroup.Select(site => site.Id).ToArray()));
         }
     }
 
@@ -458,6 +576,7 @@ public sealed class LetterFormationDynamicsPage : IVisualizerPage
 
         canvas.DrawText("Status", cardRect.Left + 18f, cardRect.Top + 28f, _infoTitlePaint);
         float y = cardRect.Top + 54f;
+        DrawInfoLine(canvas, cardRect.Left + 18f, ref y, $"preset => {LetterFormationPresetFactory.GetShortLabel(_selectedPreset)}");
         DrawInfoLine(canvas, cardRect.Left + 18f, ref y, $"step => {_state.StepIndex}");
         DrawInfoLine(canvas, cardRect.Left + 18f, ref y, $"sites => {_state.Sites.Count}");
         DrawInfoLine(canvas, cardRect.Left + 18f, ref y, $"carriers => {_state.Carriers.Count}");
@@ -590,6 +709,222 @@ public sealed class LetterFormationDynamicsPage : IVisualizerPage
         canvas.DrawPath(path, headPaint);
     }
 
+    private SKPoint DrawCarrier(
+        SKCanvas canvas,
+        LetterFormationCarrierState carrier,
+        SKPoint start,
+        SKPoint end,
+        SKPaint carrierPaint,
+        SKRect letterboxRect)
+    {
+        if (_selectedPreset == LetterFormationPresetKind.CapitalD &&
+            string.Equals(carrier.Id, "Bowl", StringComparison.Ordinal))
+        {
+            return DrawCapitalDBowlCarrier(canvas, start, end, carrierPaint, letterboxRect);
+        }
+
+        canvas.DrawLine(start, end, carrierPaint);
+        return new SKPoint((start.X + end.X) * 0.5f, (start.Y + end.Y) * 0.5f);
+    }
+
+    private SKPoint DrawCapitalDBowlCarrier(
+        SKCanvas canvas,
+        SKPoint start,
+        SKPoint end,
+        SKPaint carrierPaint,
+        SKRect letterboxRect)
+    {
+        float curveFactor = ResolveCapitalDBowlCurveFactor();
+        float rightmost = Math.Max(start.X, end.X);
+        float outwardRoom = Math.Max(18f, letterboxRect.Right - rightmost - 26f);
+        float controlX = rightmost + (outwardRoom * (0.45f + (0.4f * curveFactor)));
+        SKPoint control1 = new(controlX, start.Y);
+        SKPoint control2 = new(controlX, end.Y);
+
+        using SKPath path = new();
+        path.MoveTo(start);
+        path.CubicTo(control1, control2, end);
+        canvas.DrawPath(path, carrierPaint);
+
+        return EvaluateCubic(start, control1, control2, end, 0.5f);
+    }
+
+    private float ResolveCapitalDBowlCurveFactor()
+    {
+        if (_state is null)
+        {
+            return 0.35f;
+        }
+
+        float top = ResolveJoinCloseness("StemTop", "BowlTop");
+        float bottom = ResolveJoinCloseness("StemBottom", "BowlBottom");
+        float joined = (top + bottom) * 0.5f;
+        return 0.35f + (0.65f * joined);
+    }
+
+    private float ResolveJoinCloseness(string siteId, string otherSiteId)
+    {
+        if (_state is null)
+        {
+            return 0f;
+        }
+
+        LetterFormationSiteState site = _state.GetSite(siteId);
+        JoinSiteDesire? desire = site.Desires
+            .OfType<JoinSiteDesire>()
+            .FirstOrDefault(join => string.Equals(join.OtherSiteId, otherSiteId, StringComparison.Ordinal));
+        if (desire is null)
+        {
+            return 0f;
+        }
+
+        LetterFormationSiteState other = _state.GetSite(otherSiteId);
+        double distance = Math.Sqrt(
+            Math.Pow(ToDouble(other.Position.Horizontal - site.Position.Horizontal), 2d) +
+            Math.Pow(ToDouble(other.Position.Vertical - site.Position.Vertical), 2d));
+        double capture = ToDouble(desire.CaptureDistance) * 1.15d;
+        if (capture <= 0d)
+        {
+            return 0f;
+        }
+
+        return (float)Math.Clamp(1d - (distance / capture), 0d, 1d);
+    }
+
+    private static SKPoint EvaluateCubic(SKPoint p0, SKPoint p1, SKPoint p2, SKPoint p3, float t)
+    {
+        float u = 1f - t;
+        float tt = t * t;
+        float uu = u * u;
+        float uuu = uu * u;
+        float ttt = tt * t;
+        return new SKPoint(
+            (uuu * p0.X) + (3f * uu * t * p1.X) + (3f * u * tt * p2.X) + (ttt * p3.X),
+            (uuu * p0.Y) + (3f * uu * t * p1.Y) + (3f * u * tt * p2.Y) + (ttt * p3.Y));
+    }
+
+    private void DrawSiteHalo(SKCanvas canvas, SKRect letterboxRect, IGrouping<PlanarPoint, LetterFormationSiteState> siteGroup)
+    {
+        if (_state is null)
+        {
+            return;
+        }
+
+        double signal = siteGroup.Max(site => ResolveSiteSignal(site.Id));
+        SKColor color = LerpColor(
+            new SKColor(78, 176, 92, 22),
+            new SKColor(222, 76, 76, 76),
+            (float)signal);
+        _tensionHaloFillPaint.Color = color;
+        _tensionHaloStrokePaint.Color = new SKColor(color.Red, color.Green, color.Blue, (byte)Math.Min(96, color.Alpha + 12));
+
+        SKPoint point = MapPoint(siteGroup.Key, letterboxRect);
+        float radius = 17f + (float)(signal * 11d);
+        canvas.DrawCircle(point, radius, _tensionHaloFillPaint);
+        canvas.DrawCircle(point, radius, _tensionHaloStrokePaint);
+    }
+
+    private double ResolveSiteSignal(string siteId)
+    {
+        if (_state is null)
+        {
+            return 0d;
+        }
+
+        double siteTension = _state.Tensions
+            .Where(tension => string.Equals(tension.ComponentId, siteId, StringComparison.Ordinal))
+            .Sum(tension => ToDouble(tension.Magnitude));
+
+        double carrierTension = _state.Carriers
+            .Where(carrier =>
+                string.Equals(carrier.StartSiteId, siteId, StringComparison.Ordinal) ||
+                string.Equals(carrier.EndSiteId, siteId, StringComparison.Ordinal))
+            .SelectMany(carrier => _state.Tensions.Where(tension => string.Equals(tension.ComponentId, carrier.Id, StringComparison.Ordinal)))
+            .Sum(tension => ToDouble(tension.Magnitude) * 0.45d);
+
+        double total = siteTension + carrierTension;
+        return Math.Clamp(total / 6d, 0d, 1d);
+    }
+
+    private SKColor ResolveCarrierColor(string carrierId, int carrierIndex) =>
+        _carrierColors.TryGetValue(carrierId, out SKColor named)
+            ? named
+            : _fallbackCarrierColors[carrierIndex % _fallbackCarrierColors.Length];
+
+    private static SKColor LerpColor(SKColor from, SKColor to, float t)
+    {
+        t = Math.Clamp(t, 0f, 1f);
+        byte Lerp(byte a, byte b) => (byte)(a + ((b - a) * t));
+        return new SKColor(
+            Lerp(from.Red, to.Red),
+            Lerp(from.Green, to.Green),
+            Lerp(from.Blue, to.Blue),
+            Lerp(from.Alpha, to.Alpha));
+    }
+
+    private static double SumAlignmentTension(IEnumerable<LetterFormationTension> tensions) =>
+        tensions
+            .Where(IsAlignmentTension)
+            .Sum(tension => ToDouble(tension.Magnitude));
+
+    private static bool IsAlignmentTension(LetterFormationTension tension)
+    {
+        string source = tension.Source.ToLowerInvariant();
+        return source.Contains("vertical", StringComparison.Ordinal) ||
+               source.Contains("horizontal", StringComparison.Ordinal) ||
+               source.Contains("level", StringComparison.Ordinal) ||
+               source.Contains("midline", StringComparison.Ordinal) ||
+               source.Contains("rises", StringComparison.Ordinal) ||
+               source.Contains("descends", StringComparison.Ordinal) ||
+               source.Contains("extends", StringComparison.Ordinal);
+    }
+
+    private SiteHandleLayout? HitSiteHandle(SKPoint pixelPoint) =>
+        _siteHandles.FirstOrDefault(handle => handle.Rect.Contains(pixelPoint));
+
+    private void DragSites(SKPoint pixelPoint)
+    {
+        if (_state is null || _draggedSiteIds is null)
+        {
+            return;
+        }
+
+        PlanarPoint target = MapPixelToPoint(pixelPoint);
+        HashSet<string> draggedIds = new(_draggedSiteIds, StringComparer.Ordinal);
+        IReadOnlyList<LetterFormationSiteState> updatedSites = _state.Sites
+            .Select(site => draggedIds.Contains(site.Id)
+                ? site with { Position = target, Momentum = PlanarOffset.Zero }
+                : site)
+            .ToArray();
+
+        _state = LetterFormationTensionEvaluator.Evaluate(_state with
+        {
+            Sites = updatedSites,
+            Tensions = [],
+        });
+        if (_animateCheck is not null)
+        {
+            _animateCheck.Checked = true;
+        }
+
+        RefreshProposals();
+        _canvasHost?.InvalidateCanvas();
+    }
+
+    private PlanarPoint MapPixelToPoint(SKPoint pixelPoint)
+    {
+        if (_state is null || _lastLetterboxRect.Width <= 0f || _lastLetterboxRect.Height <= 0f)
+        {
+            return new PlanarPoint(Core2.Elements.Proportion.Zero, Core2.Elements.Proportion.Zero);
+        }
+
+        double horizontalRatio = Math.Clamp((pixelPoint.X - _lastLetterboxRect.Left) / _lastLetterboxRect.Width, 0d, 1d);
+        double verticalRatio = Math.Clamp((pixelPoint.Y - _lastLetterboxRect.Top) / _lastLetterboxRect.Height, 0d, 1d);
+        return new PlanarPoint(
+            _state.Environment.Left + (_state.Environment.Width * FromDouble(horizontalRatio)),
+            _state.Environment.Top + (_state.Environment.Height * FromDouble(verticalRatio)));
+    }
+
     private static IReadOnlyList<(string SiteId, PlanarOffset Offset)> AggregateSiteProposals(IReadOnlyList<LetterFormationProposal> proposals) =>
         proposals
             .GroupBy(proposal => proposal.SiteId, StringComparer.Ordinal)
@@ -626,8 +961,13 @@ public sealed class LetterFormationDynamicsPage : IVisualizerPage
     private static double ToDouble(Core2.Elements.Proportion value) =>
         (double)value.Numerator / value.Denominator;
 
+    private static Core2.Elements.Proportion FromDouble(double value) =>
+        new((long)Math.Round(value * 1000d), 1000);
+
     private static PlanarOffset ToOffset(double horizontal, double vertical) =>
         new(
             new Core2.Elements.Proportion((long)Math.Round(horizontal * 1000d), 1000),
             new Core2.Elements.Proportion((long)Math.Round(vertical * 1000d), 1000));
+
+    private sealed record SiteHandleLayout(SKRect Rect, string[] SiteIds);
 }
