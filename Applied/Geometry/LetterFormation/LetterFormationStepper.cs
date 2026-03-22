@@ -34,6 +34,7 @@ public static class LetterFormationStepper
                 evaluated.Environment,
                 rng))
             .ToArray();
+        advancedSites = ResolveJoinedSites(advancedSites);
 
         LetterFormationState advanced = evaluated with
         {
@@ -319,6 +320,92 @@ public static class LetterFormationStepper
         };
     }
 
+    private static IReadOnlyList<LetterFormationSiteState> ResolveJoinedSites(IReadOnlyList<LetterFormationSiteState> sites)
+    {
+        Dictionary<string, LetterFormationSiteState> siteById = sites.ToDictionary(site => site.Id, StringComparer.Ordinal);
+        Dictionary<string, HashSet<string>> adjacency = new(StringComparer.Ordinal);
+        foreach (LetterFormationSiteState site in sites)
+        {
+            foreach (JoinSiteDesire join in site.Desires.OfType<JoinSiteDesire>())
+            {
+                if (!siteById.TryGetValue(join.OtherSiteId, out LetterFormationSiteState? other))
+                {
+                    continue;
+                }
+
+                double distance = LetterFormationGeometry.Distance(site.Position, other.Position);
+                double capture = LetterFormationGeometry.ToDouble(join.CaptureDistance);
+                if (distance > capture)
+                {
+                    continue;
+                }
+
+                AddEdge(adjacency, site.Id, other.Id);
+                AddEdge(adjacency, other.Id, site.Id);
+            }
+        }
+
+        if (adjacency.Count == 0)
+        {
+            return sites;
+        }
+
+        HashSet<string> visited = new(StringComparer.Ordinal);
+        Dictionary<string, LetterFormationSiteState> updated = new(siteById, StringComparer.Ordinal);
+
+        foreach (string siteId in adjacency.Keys)
+        {
+            if (!visited.Add(siteId))
+            {
+                continue;
+            }
+
+            List<string> component = [];
+            Queue<string> frontier = new();
+            frontier.Enqueue(siteId);
+            while (frontier.Count > 0)
+            {
+                string current = frontier.Dequeue();
+                component.Add(current);
+                if (!adjacency.TryGetValue(current, out HashSet<string>? neighbors))
+                {
+                    continue;
+                }
+
+                foreach (string neighbor in neighbors)
+                {
+                    if (visited.Add(neighbor))
+                    {
+                        frontier.Enqueue(neighbor);
+                    }
+                }
+            }
+
+            if (component.Count <= 1)
+            {
+                continue;
+            }
+
+            double averageHorizontal = component.Average(id => LetterFormationGeometry.ToDouble(siteById[id].Position.Horizontal));
+            double averageVertical = component.Average(id => LetterFormationGeometry.ToDouble(siteById[id].Position.Vertical));
+            PlanarPoint pinnedPoint = LetterFormationGeometry.Reexpress(
+                new PlanarPoint(
+                    LetterFormationGeometry.FromDouble(averageHorizontal),
+                    LetterFormationGeometry.FromDouble(averageVertical)));
+
+            foreach (string member in component)
+            {
+                updated[member] = siteById[member] with
+                {
+                    Position = pinnedPoint,
+                    Momentum = PlanarOffset.Zero,
+                };
+            }
+        }
+
+        return sites.Select(site => updated[site.Id]).ToArray();
+    }
+
     private static LetterFormationProposal? CreateSingleSiteProposal(
         string siteId,
         string componentId,
@@ -389,4 +476,15 @@ public static class LetterFormationStepper
 
     private static double RandomSigned(Random random) =>
         (random.NextDouble() * 2d) - 1d;
+
+    private static void AddEdge(Dictionary<string, HashSet<string>> adjacency, string from, string to)
+    {
+        if (!adjacency.TryGetValue(from, out HashSet<string>? neighbors))
+        {
+            neighbors = new HashSet<string>(StringComparer.Ordinal);
+            adjacency[from] = neighbors;
+        }
+
+        neighbors.Add(to);
+    }
 }

@@ -130,9 +130,11 @@ public sealed class LetterFormationDynamicsPage : IVisualizerPage
 
     private readonly Dictionary<string, SKColor> _carrierColors = new(StringComparer.Ordinal)
     {
-        ["LeftLeg"] = SKColor.Parse("#C77000"),
-        ["RightLeg"] = SKColor.Parse("#8415D0"),
+        ["LeftLower"] = SKColor.Parse("#C77000"),
+        ["LeftUpper"] = SKColor.Parse("#D68B1B"),
         ["Crossbar"] = SKColor.Parse("#12824A"),
+        ["RightUpper"] = SKColor.Parse("#8415D0"),
+        ["RightLower"] = SKColor.Parse("#6A4BE2"),
     };
 
     private SkiaCanvas? _canvasHost;
@@ -178,10 +180,10 @@ public sealed class LetterFormationDynamicsPage : IVisualizerPage
             return;
         }
 
-        SKRect graphCard = new(34f, 136f, width - 350f, height - 36f);
+        SKRect graphCard = new(34f, 136f, width - 350f, height - 104f);
         SKRect statusCard = new(width - 292f, 150f, width - 34f, 292f);
-        SKRect tensionCard = new(width - 292f, 310f, width - 34f, 632f);
-        SKRect proposalCard = new(width - 292f, 650f, width - 34f, height - 36f);
+        SKRect tensionCard = new(width - 292f, 310f, width - 34f, 590f);
+        SKRect proposalCard = new(width - 292f, 608f, width - 34f, height - 104f);
 
         DrawCard(canvas, graphCard);
         DrawCard(canvas, statusCard);
@@ -339,7 +341,7 @@ public sealed class LetterFormationDynamicsPage : IVisualizerPage
             heightTicks: 14,
             randomMotionWeight: new Core2.Elements.Proportion(1, 2));
         _state = LetterFormationTensionEvaluator.Evaluate(
-            LetterFormationPresetFactory.CreateCapitalASeed(random, environment));
+            LetterFormationPresetFactory.CreateCapitalAAssemblySeed(random, environment));
         RefreshProposals();
         _canvasHost?.InvalidateCanvas();
     }

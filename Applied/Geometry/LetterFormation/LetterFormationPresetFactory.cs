@@ -5,6 +5,150 @@ namespace Applied.Geometry.LetterFormation;
 
 public static class LetterFormationPresetFactory
 {
+    public static LetterFormationState CreateCapitalAAssemblySeed(
+        Random? random = null,
+        LetterFormationEnvironment? environment = null)
+    {
+        Random rng = random ?? Random.Shared;
+        LetterFormationEnvironment env = environment ?? LetterFormationEnvironment.CreateLetterBox();
+
+        Proportion midlineRatio = SafeRatio(env.MidlineY - env.Top, env.Height);
+
+        IReadOnlyList<LetterFormationSiteState> sites =
+        [
+            new LetterFormationSiteState(
+                "LeftBase",
+                env.ResolveRelativePoint(RandomRatio(rng, 8, 24), RandomRatio(rng, 82, 98)),
+                new Axis(0, 1, 0, 1),
+                PlanarOffset.Zero,
+                [
+                    new FrameProjectionDesire(LetterFormationDirections.Horizontal, new Proportion(1, 5), new Proportion(3, 20), new Proportion(3), "base near left side"),
+                    new FrameProjectionDesire(LetterFormationDirections.Vertical, Proportion.One, new Proportion(1, 10), new Proportion(5), "base on baseline"),
+                ]),
+            new LetterFormationSiteState(
+                "LeftJoin",
+                env.ResolveRelativePoint(RandomRatio(rng, 8, 42), RandomRatio(rng, 24, 78)),
+                new Axis(0, 1, 0, 1),
+                PlanarOffset.Zero,
+                [
+                    new FrameProjectionDesire(LetterFormationDirections.Horizontal, new Proportion(32, 100), new Proportion(22, 100), new Proportion(2), "left join stays left of center"),
+                    new FrameProjectionDesire(LetterFormationDirections.Vertical, midlineRatio, new Proportion(3, 20), new Proportion(2), "left join near crossbar height"),
+                    new JoinSiteDesire("CrossLeft", new Proportion(3, 10), new Proportion(2), new Proportion(4), "left crossbar pin"),
+                ]),
+            new LetterFormationSiteState(
+                "LeftApex",
+                env.ResolveRelativePoint(RandomRatio(rng, 16, 46), RandomRatio(rng, 6, 36)),
+                new Axis(0, 1, 0, 1),
+                PlanarOffset.Zero,
+                [
+                    new FrameProjectionDesire(LetterFormationDirections.Horizontal, new Proportion(47, 100), new Proportion(16, 100), new Proportion(3), "apex near centerline"),
+                    new FrameProjectionDesire(LetterFormationDirections.Vertical, new Proportion(1, 12), new Proportion(1, 10), new Proportion(4), "apex near topline"),
+                    new JoinSiteDesire("RightApex", new Proportion(3, 10), new Proportion(3), new Proportion(5), "apex join"),
+                ]),
+            new LetterFormationSiteState(
+                "CrossLeft",
+                env.ResolveRelativePoint(RandomRatio(rng, 5, 48), RandomRatio(rng, 18, 84)),
+                new Axis(-2, 1, 0, -1),
+                PlanarOffset.Zero,
+                [
+                    new SiteProjectionDesire(LetterFormationDirections.Vertical, "CrossRight", Proportion.Zero, new Proportion(1, 8), new Proportion(4), "crossbar stays level"),
+                    new FrameProjectionDesire(LetterFormationDirections.Vertical, midlineRatio, new Proportion(3, 20), new Proportion(3), "crossbar near midline"),
+                    new JoinSiteDesire("LeftJoin", new Proportion(3, 10), new Proportion(2), new Proportion(4), "left crossbar pin"),
+                ]),
+            new LetterFormationSiteState(
+                "CrossRight",
+                env.ResolveRelativePoint(RandomRatio(rng, 52, 95), RandomRatio(rng, 18, 84)),
+                new Axis(2, 1, 0, -1),
+                PlanarOffset.Zero,
+                [
+                    new SiteProjectionDesire(LetterFormationDirections.Vertical, "CrossLeft", Proportion.Zero, new Proportion(1, 8), new Proportion(4), "crossbar stays level"),
+                    new FrameProjectionDesire(LetterFormationDirections.Vertical, midlineRatio, new Proportion(3, 20), new Proportion(3), "crossbar near midline"),
+                    new JoinSiteDesire("RightJoin", new Proportion(3, 10), new Proportion(2), new Proportion(4), "right crossbar pin"),
+                ]),
+            new LetterFormationSiteState(
+                "RightApex",
+                env.ResolveRelativePoint(RandomRatio(rng, 54, 84), RandomRatio(rng, 6, 36)),
+                new Axis(0, 1, 0, 1),
+                PlanarOffset.Zero,
+                [
+                    new FrameProjectionDesire(LetterFormationDirections.Horizontal, new Proportion(53, 100), new Proportion(16, 100), new Proportion(3), "apex near centerline"),
+                    new FrameProjectionDesire(LetterFormationDirections.Vertical, new Proportion(1, 12), new Proportion(1, 10), new Proportion(4), "apex near topline"),
+                    new JoinSiteDesire("LeftApex", new Proportion(3, 10), new Proportion(3), new Proportion(5), "apex join"),
+                ]),
+            new LetterFormationSiteState(
+                "RightJoin",
+                env.ResolveRelativePoint(RandomRatio(rng, 58, 92), RandomRatio(rng, 24, 78)),
+                new Axis(0, 1, 0, 1),
+                PlanarOffset.Zero,
+                [
+                    new FrameProjectionDesire(LetterFormationDirections.Horizontal, new Proportion(68, 100), new Proportion(22, 100), new Proportion(2), "right join stays right of center"),
+                    new FrameProjectionDesire(LetterFormationDirections.Vertical, midlineRatio, new Proportion(3, 20), new Proportion(2), "right join near crossbar height"),
+                    new JoinSiteDesire("CrossRight", new Proportion(3, 10), new Proportion(2), new Proportion(4), "right crossbar pin"),
+                ]),
+            new LetterFormationSiteState(
+                "RightBase",
+                env.ResolveRelativePoint(RandomRatio(rng, 76, 92), RandomRatio(rng, 82, 98)),
+                new Axis(0, 1, 0, 1),
+                PlanarOffset.Zero,
+                [
+                    new FrameProjectionDesire(LetterFormationDirections.Horizontal, new Proportion(4, 5), new Proportion(3, 20), new Proportion(3), "base near right side"),
+                    new FrameProjectionDesire(LetterFormationDirections.Vertical, Proportion.One, new Proportion(1, 10), new Proportion(5), "base on baseline"),
+                ]),
+        ];
+
+        IReadOnlyList<LetterFormationCarrierState> carriers =
+        [
+            new LetterFormationCarrierState(
+                "LeftLower",
+                "LeftBase",
+                "LeftJoin",
+                [
+                    new CarrierDirectionDesire(LetterFormationDirections.UpRight, new Proportion(1, 5), new Proportion(3), "left lower rises"),
+                    new CarrierSpanDesire(new Proportion(2), new Proportion(10), new Proportion(2), "left lower keeps a reasonable span"),
+                ]),
+            new LetterFormationCarrierState(
+                "LeftUpper",
+                "LeftJoin",
+                "LeftApex",
+                [
+                    new CarrierDirectionDesire(LetterFormationDirections.UpRight, new Proportion(1, 5), new Proportion(3), "left upper rises"),
+                    new CarrierSpanDesire(new Proportion(2), new Proportion(10), new Proportion(2), "left upper keeps a reasonable span"),
+                ]),
+            new LetterFormationCarrierState(
+                "Crossbar",
+                "CrossLeft",
+                "CrossRight",
+                [
+                    new CarrierDirectionDesire(LetterFormationDirections.Horizontal, new Proportion(1, 10), new Proportion(4), "crossbar prefers horizontal"),
+                    new CarrierSpanDesire(new Proportion(2), new Proportion(9), new Proportion(2), "crossbar keeps a moderate width"),
+                ]),
+            new LetterFormationCarrierState(
+                "RightUpper",
+                "RightJoin",
+                "RightApex",
+                [
+                    new CarrierDirectionDesire(LetterFormationDirections.UpLeft, new Proportion(1, 5), new Proportion(3), "right upper rises"),
+                    new CarrierSpanDesire(new Proportion(2), new Proportion(10), new Proportion(2), "right upper keeps a reasonable span"),
+                ]),
+            new LetterFormationCarrierState(
+                "RightLower",
+                "RightBase",
+                "RightJoin",
+                [
+                    new CarrierDirectionDesire(LetterFormationDirections.UpLeft, new Proportion(1, 5), new Proportion(3), "right lower rises"),
+                    new CarrierSpanDesire(new Proportion(2), new Proportion(10), new Proportion(2), "right lower keeps a reasonable span"),
+                ]),
+        ];
+
+        return new LetterFormationState(
+            "CapitalAAssembly",
+            0,
+            env,
+            sites,
+            carriers,
+            []);
+    }
+
     public static LetterFormationState CreateCapitalASeed(
         Random? random = null,
         LetterFormationEnvironment? environment = null)
