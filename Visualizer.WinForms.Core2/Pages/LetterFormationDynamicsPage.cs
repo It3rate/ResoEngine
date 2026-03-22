@@ -168,7 +168,6 @@ public sealed class LetterFormationDynamicsPage : IVisualizerPage
     private SkiaCanvas? _canvasHost;
     private Panel? _controlsPanel;
     private CheckBox? _animateCheck;
-    private CheckBox? _showMovesCheck;
     private Button? _stepButton;
     private Button? _resetButton;
     private System.Windows.Forms.Timer? _timer;
@@ -181,6 +180,7 @@ public sealed class LetterFormationDynamicsPage : IVisualizerPage
     private string[]? _draggedSiteIds;
     private SKRect _lastLetterboxRect;
     private const float SiteHandleRadius = 16f;
+    private const float GraphSidebarWidth = 214f;
 
     public string Title => "Letter Formation Dynamics";
 
@@ -216,16 +216,17 @@ public sealed class LetterFormationDynamicsPage : IVisualizerPage
             return;
         }
 
-        SKRect graphCard = new(34f, 136f, width - 350f, height - 156f);
+        SKRect graphCard = new(14f, 116f, width - 490f, height - 320f);
         SKRect statusCard = new(width - 292f, 150f, width - 34f, 292f);
         SKRect tensionCard = new(width - 292f, 310f, width - 34f, 560f);
-        SKRect proposalCard = new(width - 292f, 578f, width - 34f, height - 156f);
+        SKRect proposalCard = new(width - 292f, 578f, width - 34f, height - 190f);
 
         DrawCard(canvas, graphCard);
         DrawCard(canvas, statusCard);
         DrawCard(canvas, tensionCard);
         DrawCard(canvas, proposalCard);
 
+        PositionPresetButtons(graphCard);
         DrawGraph(canvas, graphCard);
         DrawStatus(canvas, statusCard);
         DrawTopTensions(canvas, tensionCard);
@@ -234,6 +235,13 @@ public sealed class LetterFormationDynamicsPage : IVisualizerPage
 
     public void Destroy()
     {
+        foreach (Button button in _presetButtons.Values)
+        {
+            _canvasHost?.Controls.Remove(button);
+            button.Dispose();
+        }
+        _presetButtons.Clear();
+
         if (_controlsPanel is not null)
         {
             _canvasHost?.Controls.Remove(_controlsPanel);
@@ -281,7 +289,7 @@ public sealed class LetterFormationDynamicsPage : IVisualizerPage
 
         _controlsPanel = new Panel
         {
-            Size = new Size(232, 222),
+            Size = new Size(232, 110),
             BackColor = Color.FromArgb(248, 248, 248),
         };
 
@@ -299,28 +307,14 @@ public sealed class LetterFormationDynamicsPage : IVisualizerPage
             Text = "Animate",
             Checked = true,
             Location = new Point(14, 38),
-            Size = new Size(92, 22),
+            Size = new Size(112, 22),
             Font = new Font(VisualStyle.UiFontFamily, 8.5f, FontStyle.Bold),
-        };
-
-        _showMovesCheck = new CheckBox
-        {
-            Text = "Show moves",
-            Checked = true,
-            Location = new Point(112, 38),
-            Size = new Size(102, 22),
-            Font = new Font(VisualStyle.UiFontFamily, 8.5f, FontStyle.Bold),
-        };
-        _showMovesCheck.CheckedChanged += (_, _) =>
-        {
-            RefreshProposals();
-            _canvasHost?.InvalidateCanvas();
         };
 
         _stepButton = new Button
         {
             Text = "Step",
-            Location = new Point(14, 174),
+            Location = new Point(14, 66),
             Size = new Size(92, 30),
             FlatStyle = FlatStyle.Flat,
             Font = new Font(VisualStyle.UiFontFamily, 8.5f, FontStyle.Bold),
@@ -332,7 +326,7 @@ public sealed class LetterFormationDynamicsPage : IVisualizerPage
         _resetButton = new Button
         {
             Text = "Reset",
-            Location = new Point(112, 174),
+            Location = new Point(112, 66),
             Size = new Size(92, 30),
             FlatStyle = FlatStyle.Flat,
             Font = new Font(VisualStyle.UiFontFamily, 8.5f, FontStyle.Bold),
@@ -341,18 +335,18 @@ public sealed class LetterFormationDynamicsPage : IVisualizerPage
         _resetButton.FlatAppearance.BorderColor = Color.FromArgb(214, 214, 214);
         _resetButton.Click += (_, _) => ResetState();
 
-        int buttonIndex = 0;
         foreach (LetterFormationPresetKind preset in Enum.GetValues<LetterFormationPresetKind>())
         {
             var button = new Button
             {
                 Text = LetterFormationPresetFactory.GetShortLabel(preset),
-                Location = new Point(14 + ((buttonIndex % 4) * 50), 78 + ((buttonIndex / 4) * 38)),
-                Size = new Size(44, 28),
+                Location = new Point(0, 0),
+                Size = new Size(60, 34),
                 FlatStyle = FlatStyle.Flat,
-                Font = new Font(VisualStyle.UiFontFamily, 8.5f, FontStyle.Bold),
+                Font = new Font(VisualStyle.UiFontFamily, 9f, FontStyle.Bold),
                 BackColor = Color.White,
                 Tag = preset,
+                Visible = true,
             };
             button.FlatAppearance.BorderColor = Color.FromArgb(214, 214, 214);
             button.Click += (_, _) =>
@@ -362,13 +356,11 @@ public sealed class LetterFormationDynamicsPage : IVisualizerPage
                 ResetState();
             };
             _presetButtons[preset] = button;
-            _controlsPanel.Controls.Add(button);
-            buttonIndex++;
+            _canvasHost.Controls.Add(button);
         }
 
         _controlsPanel.Controls.Add(title);
         _controlsPanel.Controls.Add(_animateCheck);
-        _controlsPanel.Controls.Add(_showMovesCheck);
         _controlsPanel.Controls.Add(_stepButton);
         _controlsPanel.Controls.Add(_resetButton);
         _canvasHost.Controls.Add(_controlsPanel);
@@ -435,9 +427,7 @@ public sealed class LetterFormationDynamicsPage : IVisualizerPage
             return;
         }
 
-        _proposals = _showMovesCheck?.Checked == true
-            ? LetterFormationStepper.GenerateProposals(_state)
-            : [];
+        _proposals = LetterFormationStepper.GenerateProposals(_state);
     }
 
     public bool OnPointerDown(SKPoint pixelPoint)
@@ -495,6 +485,39 @@ public sealed class LetterFormationDynamicsPage : IVisualizerPage
         }
     }
 
+    private void PositionPresetButtons(SKRect graphCard)
+    {
+        if (_canvasHost is null || _presetButtons.Count == 0)
+        {
+            return;
+        }
+
+        const int buttonWidth = 60;
+        const int buttonHeight = 34;
+        const int gap = 8;
+        int startX = (int)graphCard.Left + 22;
+        int startY = (int)graphCard.Top + 110;
+
+        int index = 0;
+        foreach (LetterFormationPresetKind preset in Enum.GetValues<LetterFormationPresetKind>())
+        {
+            if (!_presetButtons.TryGetValue(preset, out Button? button))
+            {
+                continue;
+            }
+
+            int row = index / 4;
+            int column = index % 4;
+            button.Size = new Size(buttonWidth, buttonHeight);
+            button.Location = new Point(
+                startX + (column * (buttonWidth + gap)),
+                startY + (row * (buttonHeight + gap)));
+            button.Visible = true;
+            button.BringToFront();
+            index++;
+        }
+    }
+
     private void DrawCard(SKCanvas canvas, SKRect rect)
     {
         canvas.DrawRoundRect(rect, 22f, 22f, _cardFillPaint);
@@ -510,7 +533,16 @@ public sealed class LetterFormationDynamicsPage : IVisualizerPage
 
         canvas.DrawText("Evolving Letter", cardRect.Left + 22f, cardRect.Top + 30f, _infoTitlePaint);
 
-        SKRect plotRect = new(cardRect.Left + 30f, cardRect.Top + 24f, cardRect.Right - 30f, cardRect.Bottom - 150f);
+        SKRect tensionRect = new(
+            cardRect.Left + 20f,
+            cardRect.Top + 132f,
+            cardRect.Left + 120f + GraphSidebarWidth,
+            cardRect.Bottom - 24f);
+        SKRect plotRect = new(
+            tensionRect.Right +30f,
+            cardRect.Top + 20f,
+            cardRect.Right - 2f,
+            cardRect.Bottom - 20f);
         SKRect letterboxRect = FitLetterbox(plotRect, _state.Environment);
         _lastLetterboxRect = letterboxRect;
 
@@ -527,7 +559,7 @@ public sealed class LetterFormationDynamicsPage : IVisualizerPage
             DrawSiteHalo(canvas, letterboxRect, siteGroup);
         }
 
-        if (_showMovesCheck?.Checked == true)
+        if (_proposals.Count > 0)
         {
             foreach ((string siteId, PlanarOffset offset) in AggregateSiteProposals(_proposals))
             {
@@ -574,7 +606,7 @@ public sealed class LetterFormationDynamicsPage : IVisualizerPage
                 siteGroup.Select(site => site.Id).ToArray()));
         }
 
-        DrawRemainingTensionsOverlay(canvas, letterboxRect);
+        DrawRemainingTensionsOverlay(canvas, tensionRect);
     }
 
     private void DrawStatus(SKCanvas canvas, SKRect cardRect)
@@ -623,12 +655,6 @@ public sealed class LetterFormationDynamicsPage : IVisualizerPage
         canvas.DrawText("Top Moves", cardRect.Left + 18f, cardRect.Top + 28f, _infoTitlePaint);
         float y = cardRect.Top + 54f;
 
-        if (_showMovesCheck?.Checked != true)
-        {
-            DrawInfoLine(canvas, cardRect.Left + 18f, ref y, "move display => off", cardRect.Width - 34f);
-            return;
-        }
-
         foreach (LetterFormationProposal proposal in _proposals
                      .OrderByDescending(proposal => ToDouble(proposal.Strength))
                      .Take(8))
@@ -651,17 +677,17 @@ public sealed class LetterFormationDynamicsPage : IVisualizerPage
         }
     }
 
-    private void DrawRemainingTensionsOverlay(SKCanvas canvas, SKRect letterboxRect)
+    private void DrawRemainingTensionsOverlay(SKCanvas canvas, SKRect tensionRect)
     {
         if (_state is null)
         {
             return;
         }
 
-        float x = letterboxRect.Left + 12f;
-        float y = letterboxRect.Top + 18f;
-        float width = MathF.Min(214f, MathF.Max(150f, letterboxRect.Width * 0.3f));
-        float bottom = letterboxRect.Bottom - 18f;
+        float x = tensionRect.Left;
+        float y = tensionRect.Top;
+        float width = tensionRect.Width;
+        float bottom = tensionRect.Bottom;
 
         IReadOnlyList<LetterFormationTension> tensions = _state.Tensions
             .OrderByDescending(tension => ToDouble(tension.Magnitude))
