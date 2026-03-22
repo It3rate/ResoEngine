@@ -61,9 +61,9 @@ public static class LetterFormationTensionEvaluator
         LetterFormationSiteState site,
         FrameProjectionDesire desire)
     {
-        double current = ResolveRelativeProjection(state.Environment, site.Position, desire.Projection);
-        double target = ToDouble(desire.RelativeTarget);
-        double tolerance = ToDouble(desire.Tolerance);
+        double current = LetterFormationGeometry.ResolveRelativeProjection(state.Environment, site.Position, desire.Projection);
+        double target = LetterFormationGeometry.ToDouble(desire.RelativeTarget);
+        double tolerance = LetterFormationGeometry.ToDouble(desire.Tolerance);
         double excess = Math.Max(0d, Math.Abs(current - target) - tolerance);
         return CreateTension(site.Id, desire.Label, excess, desire.Weight, $"{site.Id} misses frame projection target.");
     }
@@ -78,9 +78,9 @@ public static class LetterFormationTensionEvaluator
             return new LetterFormationTension(site.Id, desire.Label, desire.Weight, $"Missing related site '{desire.OtherSiteId}'.");
         }
 
-        double current = ResolveRawProjection(site.Position, desire.Projection) - ResolveRawProjection(other.Position, desire.Projection);
-        double target = ToDouble(desire.Offset);
-        double tolerance = ToDouble(desire.Tolerance);
+        double current = LetterFormationGeometry.ResolveRawProjection(site.Position, desire.Projection) - LetterFormationGeometry.ResolveRawProjection(other.Position, desire.Projection);
+        double target = LetterFormationGeometry.ToDouble(desire.Offset);
+        double tolerance = LetterFormationGeometry.ToDouble(desire.Tolerance);
         double excess = Math.Max(0d, Math.Abs(current - target) - tolerance);
         return CreateTension(site.Id, desire.Label, excess, desire.Weight, $"{site.Id} misses projection relation to {desire.OtherSiteId}.");
     }
@@ -95,9 +95,9 @@ public static class LetterFormationTensionEvaluator
             return new LetterFormationTension(site.Id, desire.Label, desire.Weight, $"Missing join site '{desire.OtherSiteId}'.");
         }
 
-        double distance = Distance(site.Position, other.Position);
-        double capture = ToDouble(desire.CaptureDistance);
-        double excess = Math.Max(0d, distance - capture) * Math.Max(1d, ToDouble(desire.Escalation));
+        double distance = LetterFormationGeometry.Distance(site.Position, other.Position);
+        double capture = LetterFormationGeometry.ToDouble(desire.CaptureDistance);
+        double excess = Math.Max(0d, distance - capture) * Math.Max(1d, LetterFormationGeometry.ToDouble(desire.Escalation));
         return CreateTension(site.Id, desire.Label, excess, desire.Weight, $"{site.Id} remains unjoined from {desire.OtherSiteId}.");
     }
 
@@ -108,16 +108,16 @@ public static class LetterFormationTensionEvaluator
     {
         PlanarPoint start = state.GetStartPoint(carrier.Id);
         PlanarPoint end = state.GetEndPoint(carrier.Id);
-        (double currentX, double currentY) = Normalize(
-            ToDouble(end.Horizontal - start.Horizontal),
-            ToDouble(end.Vertical - start.Vertical));
+        (double currentX, double currentY) = LetterFormationGeometry.Normalize(
+            LetterFormationGeometry.ToDouble(end.Horizontal - start.Horizontal),
+            LetterFormationGeometry.ToDouble(end.Vertical - start.Vertical));
         Proportion desiredHorizontal = desire.PreferredDirection.Dominant;
         Proportion desiredVertical = desire.PreferredDirection.Recessive;
-        (double desiredX, double desiredY) = Normalize(
-            ToDirectionalComponent(desiredHorizontal),
-            ToDirectionalComponent(desiredVertical));
+        (double desiredX, double desiredY) = LetterFormationGeometry.Normalize(
+            LetterFormationGeometry.ToDirectionalComponent(desiredHorizontal),
+            LetterFormationGeometry.ToDirectionalComponent(desiredVertical));
 
-        double tolerance = ToDouble(desire.Tolerance);
+        double tolerance = LetterFormationGeometry.ToDouble(desire.Tolerance);
         double mismatch = 0d;
         mismatch += EvaluateCarrierDirectionComponent(currentX, desiredHorizontal, desiredX, tolerance);
         mismatch += EvaluateCarrierDirectionComponent(currentY, desiredVertical, desiredY, tolerance);
@@ -132,9 +132,9 @@ public static class LetterFormationTensionEvaluator
     {
         PlanarPoint start = state.GetStartPoint(carrier.Id);
         PlanarPoint end = state.GetEndPoint(carrier.Id);
-        double length = Distance(start, end);
-        double minimum = ToDouble(desire.Minimum);
-        double maximum = ToDouble(desire.Maximum);
+        double length = LetterFormationGeometry.Distance(start, end);
+        double minimum = LetterFormationGeometry.ToDouble(desire.Minimum);
+        double maximum = LetterFormationGeometry.ToDouble(desire.Maximum);
         double excess = length < minimum
             ? minimum - length
             : Math.Max(0d, length - maximum);
@@ -156,47 +156,8 @@ public static class LetterFormationTensionEvaluator
         return new LetterFormationTension(
             componentId,
             source,
-            FromDouble(excess * Math.Max(0d, ToDouble(weight))),
+            LetterFormationGeometry.FromDouble(excess * Math.Max(0d, LetterFormationGeometry.ToDouble(weight))),
             description);
-    }
-
-    private static double ResolveRelativeProjection(LetterFormationEnvironment environment, PlanarPoint point, Axis projection)
-    {
-        double current = ResolveRawProjection(point, projection);
-        double left = ResolveRawProjection(environment.TopLeft, projection);
-        double right = ResolveRawProjection(environment.BottomRight, projection);
-        double span = right - left;
-        if (Math.Abs(span) < 0.0001d)
-        {
-            return 0d;
-        }
-
-        return (current - left) / span;
-    }
-
-    private static double ResolveRawProjection(PlanarPoint point, Axis projection)
-    {
-        double projectionX = ToDirectionalComponent(projection.Dominant);
-        double projectionY = ToDirectionalComponent(projection.Recessive);
-        return (ToDouble(point.Horizontal) * projectionX) + (ToDouble(point.Vertical) * projectionY);
-    }
-
-    private static (double X, double Y) Normalize(double x, double y)
-    {
-        double length = Math.Sqrt((x * x) + (y * y));
-        if (length < 0.0001d)
-        {
-            return (0d, 0d);
-        }
-
-        return (x / length, y / length);
-    }
-
-    private static double Distance(PlanarPoint left, PlanarPoint right)
-    {
-        double dx = ToDouble(right.Horizontal - left.Horizontal);
-        double dy = ToDouble(right.Vertical - left.Vertical);
-        return Math.Sqrt((dx * dx) + (dy * dy));
     }
 
     private static double EvaluateCarrierDirectionComponent(
@@ -220,21 +181,4 @@ public static class LetterFormationTensionEvaluator
 
         return Math.Max(0d, Math.Abs(current - normalizedTarget) - tolerance);
     }
-
-    private static double ToDouble(Proportion value) => (double)value.Numerator / value.Denominator;
-
-    private static double ToDirectionalComponent(Proportion value)
-    {
-        if (value.Numerator == 0)
-        {
-            return 0d;
-        }
-
-        return value.Denominator == 0
-            ? value.Numerator
-            : ToDouble(value);
-    }
-
-    private static Proportion FromDouble(double value) =>
-        new Proportion((long)Math.Round(value * 1000d), 1000);
 }
