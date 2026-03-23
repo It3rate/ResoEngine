@@ -41,7 +41,7 @@ public sealed class LetterGoalPinsPage : IVisualizerPage
 
         foreach (LetterGoalPin pin in _prototype.Pins)
         {
-            SKPoint point = MapPin(letterBox, pin);
+            SKPoint point = MapPin(frameRect, pin);
             canvas.DrawCircle(point, 18f, _pinFillPaint);
             canvas.DrawCircle(point, 18f, _pinStrokePaint);
 
@@ -85,7 +85,7 @@ public sealed class LetterGoalPinsPage : IVisualizerPage
     private static SKPoint MapPoint(SKRect frameRect, Applied.Geometry.Utils.PlanarPoint point) =>
         new(
             frameRect.Left + (frameRect.Width * ToFloat(point.Horizontal)),
-            frameRect.Top + (frameRect.Height * ToFloat(point.Vertical)));
+            frameRect.Bottom - (frameRect.Height * ToFloat(point.Vertical)));
 
     private static float ToFloat(Proportion value) => (float)(double)value.Fold();
 
