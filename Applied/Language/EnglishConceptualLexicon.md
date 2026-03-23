@@ -91,6 +91,7 @@ The main question is "what recurring structural family is this word invoking?"
 | --- | --- | --- |
 | `x_{t+1} = x_t + step` | SourceGoal, PathCoincidence | Iterative update reads as traversal along a carrier rather than only static equality |
 | `x > 0`, `x < limit` | Ordering, Boundary | Comparison asks which side of a threshold or boundary the state currently occupies |
+| `a <= x <= b`, `(x > 0) and (x < 10)` | BoundedInterval, Boundary | Interval tests often reconstruct one admissible region from two comparisons |
 | `if x > 0 then A else B` | Branching, Boundary | A comparison can trigger lawful split into alternative continuations |
 | `while`, `until`, `repeat until inside band` | TemporalSequence, Obstruction, BoundedInterval | Continuation persists until a target region or stopping boundary is reached |
 | `and`, `or`, `not` on intervals or supports | Boundary, Containment, BoundedInterval | Boolean logic can often be read as framed occupancy over regions or spans |
@@ -138,7 +139,7 @@ The main question is "what recurring structural family is this word invoking?"
 | Adjacency | `near`, `beside` | `while`, `as` | `approach` | near-target band | `close`, `distant` | `close friend` |
 | Containment | `inside`, `within` | `during` | `enter`, `exit` | state inside acceptance band |  | `within the group` |
 | Boundary | `at`, `by`, `beyond` | `until`, `by` | `enter`, `leave`, `cross` | `x > 0`, threshold crossing |  | access or exclusion boundaries |
-| BoundedInterval | `between` | bounded duration, midpoint of a schedule | approach the middle stretch | acceptance window `[a, b]` | midway, halfway | between ranks or groups |
+| BoundedInterval | `between` | bounded duration, midpoint of a schedule | approach the middle stretch | acceptance window `[a, b]`, `(x > 0) and (x < 10)` | midway, halfway | between ranks or groups |
 | DirectionalOffset | `above`, `behind` | `before`, `after` | move ahead, fall behind | positive versus negative side | `high`, `low` | `upper management` |
 | SourceGoal | `from`, `to`, `toward` | `since`, lead-up to a deadline | `approach`, `depart`, `reach` | iterative drift toward a target | scalar drift upward/downward | movement through rank or status |
 | PathCoincidence | `along` | `throughout`, `spanning` | `follow`, `run along` | repeated update along one carrier | distributed growth along a scale | staying on one career path |
@@ -152,6 +153,7 @@ The main question is "what recurring structural family is this word invoking?"
 - Many spatial prepositions become temporal words without changing the deeper schema very much.
 - Many motion verbs are just prepositions plus traversal commitment.
 - Many dynamic equations can be read as traversals with comparison gates, branch points, stopping bands, and repetition laws.
+- Many interval tests are boolean reconstructions of one admissible region rather than fundamentally different objects.
 - Many scalar adjectives are directional or extent schemas with magnitude emphasis.
 - Many hierarchy terms are spatial offset or scalar ordering mapped into social space.
 - Image-schema and localist descriptions often look like the same small families seen from a more human-facing angle.

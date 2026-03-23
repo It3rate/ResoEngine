@@ -291,3 +291,60 @@ So an equation flow can often be read as:
 - inverse as branch-family recovery
 
 That is one reason it feels so mathematically close to the other domains.
+
+## Comparison and Interval-Test Examples
+
+### `x > 0`
+
+Approximate encoding:
+
+```text
+x > 0 := locate(x, positive_side(boundary(0)))
+```
+
+Reading:
+This is a sidedness test relative to a boundary on an ordered carrier.
+
+### `a <= x <= b`
+
+Approximate encoding:
+
+```text
+a <= x <= b := locate(x, interior(span(a, b)))
+```
+
+Reading:
+This is a bounded admissible region, not just two unrelated comparisons.
+
+### `(x > 0) and (x < 10)`
+
+Approximate encoding:
+
+```text
+(x > 0) and (x < 10) := positive_side(boundary(0)) AND negative_side(boundary(10))
+```
+
+Reading:
+Boolean conjunction reconstructs one interior band from two half-space conditions.
+
+### `not inside target_band`
+
+Approximate encoding:
+
+```text
+not_inside(state, target_band) := NOT locate(state, interior(target_band))
+```
+
+Reading:
+Boolean negation here is exterior occupancy relative to an active admissible region.
+
+## Why These Are Good Bridge Cases
+
+These comparison and interval examples are useful because they sit very near both math and language.
+
+- `x > 0` is like `above zero`, `after the boundary`, or `beyond the gate`
+- `a <= x <= b` is like `between`, `during`, or `inside the acceptable window`
+- `(x > 0) and (x < 10)` is like reconstructing `between 0 and 10` from two edges
+- `not inside target_band` is like `outside`, `beyond`, or `not yet within range`
+
+So this is a very good narrow slice for testing whether the metaphor is doing real work.
