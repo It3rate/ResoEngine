@@ -31,78 +31,155 @@ public readonly record struct AxisSectionWindow(
 {
     public Proportion Representative => (Start + End) / new Proportion(2);
     public bool IsPoint => Start == End;
+
+    public Axis ToOriginAxis(Proportion origin) =>
+        Axis.FromCoordinates(Start - origin, End - origin);
+}
+
+public static class AxisSectionKindExtensions
+{
+    public static AxisSectionWindow ResolveWindow(
+        this AxisSectionKind section,
+        long startValue,
+        long middleValue,
+        long endValue)
+    {
+        Validate(startValue, middleValue, endValue);
+
+        return section switch
+        {
+            AxisSectionKind.Start => Point(startValue, endValue),
+            AxisSectionKind.Early => InteriorBand(startValue, middleValue, endValue),
+            AxisSectionKind.Middle => Point(middleValue, endValue),
+            AxisSectionKind.Late => InteriorBand(middleValue, endValue, endValue),
+            AxisSectionKind.End => Point(endValue, endValue),
+            _ => Point(middleValue, endValue),
+        };
+    }
+
+    public static Proportion ResolveRepresentative(
+        this AxisSectionKind section,
+        long startValue,
+        long middleValue,
+        long endValue) =>
+        section.ResolveWindow(startValue, middleValue, endValue).Representative;
+
+    public static Axis ResolveOriginAxis(
+        this AxisSectionKind section,
+        long startValue,
+        long middleValue,
+        long endValue) =>
+        section.ResolveWindow(startValue, middleValue, endValue)
+            .ToOriginAxis(new Proportion(middleValue, endValue));
+
+    private static AxisSectionWindow Point(long value, long denominator) =>
+        new(new Proportion(value, denominator), new Proportion(value, denominator));
+
+    private static AxisSectionWindow InteriorBand(long bandStart, long bandEnd, long denominator)
+    {
+        long start = bandStart + 1;
+        long end = bandEnd - 1;
+        if (start > end)
+        {
+            long fallback = (bandStart + bandEnd) / 2;
+            return Point(fallback, denominator);
+        }
+
+        return new AxisSectionWindow(
+            new Proportion(start, denominator),
+            new Proportion(end, denominator));
+    }
+
+    private static void Validate(long startValue, long middleValue, long endValue)
+    {
+        if (endValue <= 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(endValue), "End value must be positive.");
+        }
+
+        if (startValue < 0 || startValue > middleValue || middleValue > endValue)
+        {
+            throw new ArgumentException("Section anchors must satisfy start <= middle <= end with nonnegative values.");
+        }
+    }
 }
 
 public sealed record AxisSectionCalibration(
-    AxisSectionWindow Start,
-    AxisSectionWindow Early,
-    AxisSectionWindow Middle,
-    AxisSectionWindow Late,
-    AxisSectionWindow End)
+    long StartValue,
+    long MiddleValue,
+    long EndValue)
 {
-    public static AxisSectionCalibration Default { get; } = new(
-        Point(0, 8),
-        Range(1, 8, 3, 8),
-        Point(4, 8),
-        Range(5, 8, 7, 8),
-        Point(8, 8));
+    public long Resolution => EndValue;
 
     public AxisSectionWindow Resolve(AxisSectionKind section) =>
-        section switch
-        {
-            AxisSectionKind.Start => Start,
-            AxisSectionKind.Early => Early,
-            AxisSectionKind.Middle => Middle,
-            AxisSectionKind.Late => Late,
-            AxisSectionKind.End => End,
-            _ => Middle,
-        };
+        section.ResolveWindow(StartValue, MiddleValue, EndValue);
 
-    private static AxisSectionWindow Point(long numerator, long denominator) =>
-        new(new Proportion(numerator, denominator), new Proportion(numerator, denominator));
+    public Proportion Representative(AxisSectionKind section) =>
+        section.ResolveRepresentative(StartValue, MiddleValue, EndValue);
 
-    private static AxisSectionWindow Range(long startNumerator, long denominator, long endNumerator, long endDenominator) =>
-        new(new Proportion(startNumerator, denominator), new Proportion(endNumerator, endDenominator));
+    public Axis OriginAxis(AxisSectionKind section) =>
+        section.ResolveOriginAxis(StartValue, MiddleValue, EndValue);
+
+    public Axis FullAxis() =>
+        Axis.FromCoordinates(
+            new Proportion(StartValue - MiddleValue, EndValue),
+            new Proportion(EndValue - MiddleValue, EndValue));
+
+    public Axis Between(AxisSectionKind from, AxisSectionKind to)
+    {
+        Proportion origin = new Proportion(MiddleValue, EndValue);
+        return Axis.FromCoordinates(
+            Representative(from) - origin,
+            Representative(to) - origin);
+    }
+}
+
+public static class AxisSectionCalibrationCatalog
+{
+    public static AxisSectionCalibration RomanUppercase { get; } = new(0, 4, 8);
+
+    public static AxisSectionCalibration HighMidlineUppercase { get; } = new(0, 5, 8);
 }
 
 public sealed record PinAxisGoal(
     string PinId,
-    string TargetId,
-    AxisSectionKind PositionOnTarget);
+    string AxisId,
+    AxisSectionKind PositionOnAxis);
 
 public sealed record AxisPairGoal(
-    string FromId,
+    string FromAxisId,
     AxisSectionKind FromPosition,
-    string ToId,
+    string ToAxisId,
     AxisSectionKind ToPosition);
 
 public sealed record LetterGoalPin(
     string Id,
-    AxisSectionKind Horizontal,
-    AxisSectionKind Vertical,
+    PinAxisGoal Placement,
     Axis Descriptor);
 
 public sealed record LetterGoalPrototype(
     string Id,
-    IReadOnlyList<LetterGoalPin> Pins,
-    AxisSectionCalibration? Calibration = null)
+    LetterBoxFrame Frame,
+    IReadOnlyList<LetterGoalPin> Pins)
 {
-    public AxisSectionCalibration ActiveCalibration => Calibration ?? AxisSectionCalibration.Default;
+    public AxisSectionCalibration HorizontalCalibration => Frame.HorizontalCalibration;
+    public AxisSectionCalibration VerticalCalibration => Frame.VerticalCalibration;
 }
 
 public static class LetterGoalPrototypeCatalog
 {
     public static LetterGoalPrototype CapitalA { get; } = new(
         "LetterA",
+        LetterBoxFrameCatalog.HighMidlineUppercase,
         [
-            Pin("P1", AxisSectionKind.Early, AxisSectionKind.End),
-            Pin("P2", AxisSectionKind.Middle, AxisSectionKind.Start),
-            Pin("P3", AxisSectionKind.Late, AxisSectionKind.End),
+            Pin("P1", "Baseline", AxisSectionKind.Early),
+            Pin("P2", "Topline", AxisSectionKind.Middle),
+            Pin("P3", "Baseline", AxisSectionKind.Late),
         ]);
 
     private static LetterGoalPin Pin(
         string id,
-        AxisSectionKind horizontal,
-        AxisSectionKind vertical) =>
-        new(id, horizontal, vertical, Axis.Zero);
+        string axisId,
+        AxisSectionKind positionOnAxis) =>
+        new(id, new PinAxisGoal(id, axisId, positionOnAxis), Axis.Zero);
 }

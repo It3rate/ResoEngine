@@ -24,16 +24,20 @@ public sealed class LetterGoalPinsPage : IVisualizerPage
 
         canvas.DrawText("Letter A Goal Pins", 38f, 48f, _titlePaint);
 
-        float boxWidth = MathF.Min(520f, width - 180f);
-        float boxHeight = MathF.Min(760f, height - 160f);
+        float boxWidth = MathF.Min(620f, width - 180f);
+        float boxHeight = MathF.Min(820f, height - 170f);
+        float boxTop = 86f + MathF.Max(0f, (height - 86f - boxHeight - 80f) * 0.5f);
         SKRect letterBox = new(
             (width - boxWidth) * 0.5f,
-            86f + MathF.Max(0f, (height - 86f - boxHeight - 80f) * 0.5f),
+            boxTop,
             (width + boxWidth) * 0.5f,
-            86f + MathF.Max(0f, (height - 86f - boxHeight - 80f) * 0.5f) + boxHeight);
+            boxTop + boxHeight);
 
         canvas.DrawRoundRect(letterBox, 28f, 28f, _letterBoxFillPaint);
         canvas.DrawRoundRect(letterBox, 28f, 28f, _letterBoxStrokePaint);
+
+        SKRect frameRect = CreateFrameRect(letterBox);
+        DrawFrame(canvas, frameRect);
 
         foreach (LetterGoalPin pin in _prototype.Pins)
         {
@@ -41,7 +45,7 @@ public sealed class LetterGoalPinsPage : IVisualizerPage
             canvas.DrawCircle(point, 18f, _pinFillPaint);
             canvas.DrawCircle(point, 18f, _pinStrokePaint);
 
-            bool placeLeft = ToFloat(_prototype.ActiveCalibration.Resolve(pin.Horizontal).Representative) >= 0.66f;
+            bool placeLeft = point.X >= frameRect.MidX;
             float labelX = placeLeft ? point.X - 16f : point.X + 16f;
             float labelY = point.Y - 12f;
             float labelWidth = _pinLabelPaint.MeasureText(pin.Id);
@@ -53,10 +57,35 @@ public sealed class LetterGoalPinsPage : IVisualizerPage
         }
     }
 
-    private SKPoint MapPin(SKRect letterBox, LetterGoalPin pin) =>
+    private void DrawFrame(SKCanvas canvas, SKRect frameRect)
+    {
+        foreach (LetterBoxFrameAxis axis in _prototype.Frame.Axes)
+        {
+            (Applied.Geometry.Utils.PlanarPoint from, Applied.Geometry.Utils.PlanarPoint to) = _prototype.Frame.ResolveEndpoints(axis);
+            canvas.DrawLine(MapPoint(frameRect, from), MapPoint(frameRect, to), _frameAxisPaint);
+        }
+    }
+
+    private static SKRect CreateFrameRect(SKRect container)
+    {
+        const float fillRatio = 0.8f;
+        const float letterAspect = 0.68f;
+        float availableWidth = container.Width * fillRatio;
+        float availableHeight = container.Height * fillRatio;
+        float frameHeight = MathF.Min(availableHeight, availableWidth / letterAspect);
+        float frameWidth = frameHeight * letterAspect;
+        float left = container.MidX - (frameWidth * 0.5f);
+        float top = container.MidY - (frameHeight * 0.5f);
+        return new SKRect(left, top, left + frameWidth, top + frameHeight);
+    }
+
+    private SKPoint MapPin(SKRect frameRect, LetterGoalPin pin) =>
+        MapPoint(frameRect, _prototype.Frame.ResolvePoint(pin.Placement.AxisId, pin.Placement.PositionOnAxis));
+
+    private static SKPoint MapPoint(SKRect frameRect, Applied.Geometry.Utils.PlanarPoint point) =>
         new(
-            letterBox.Left + (letterBox.Width * ToFloat(_prototype.ActiveCalibration.Resolve(pin.Horizontal).Representative)),
-            letterBox.Top + (letterBox.Height * ToFloat(_prototype.ActiveCalibration.Resolve(pin.Vertical).Representative)));
+            frameRect.Left + (frameRect.Width * ToFloat(point.Horizontal)),
+            frameRect.Top + (frameRect.Height * ToFloat(point.Vertical)));
 
     private static float ToFloat(Proportion value) => (float)(double)value.Fold();
 
@@ -84,6 +113,15 @@ public sealed class LetterGoalPinsPage : IVisualizerPage
         Style = SKPaintStyle.Stroke,
         StrokeWidth = 2f,
         Color = new SKColor(205, 214, 224),
+        IsAntialias = true,
+    };
+
+    private readonly SKPaint _frameAxisPaint = new()
+    {
+        Style = SKPaintStyle.Stroke,
+        StrokeWidth = 1.5f,
+        Color = new SKColor(150, 150, 150),
+        PathEffect = SKPathEffect.CreateDash([6f, 6f], 0f),
         IsAntialias = true,
     };
 
