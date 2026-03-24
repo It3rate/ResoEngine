@@ -1,6 +1,7 @@
 <Solution>
   <Project Path="Applied/Applied.csproj" Id="4da92b62-e67f-4b23-838c-3ee6688433b0" />
   <Project Path="Core2/Core2.csproj" />
+  <Project Path="Core3/Core3.csproj" />
   <Project Path="Core2.Symbolics/Core2.Symbolics.csproj" />
   <Project Path="Core2.Interpretation/Core2.Interpretation.csproj" />
   <Project Path="Tests.Core2/Tests.Core2.csproj" />
