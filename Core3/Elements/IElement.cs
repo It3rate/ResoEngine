@@ -7,8 +7,8 @@ namespace Core3.Elements;
 /// </summary>
 public interface IElement
 {
-    long Start { get; }
-    long End { get; }
+    InboundCarrier Start { get; }
+    OutboundCarrier End { get; }
     InboundCarrier GetInboundCarrier(Pin pin);
     OutboundCarrier GetOutboundCarrier(Pin pin);
 }

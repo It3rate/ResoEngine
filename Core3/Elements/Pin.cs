@@ -17,7 +17,7 @@ public readonly record struct Pin(Proportion Position, IElement Attachment)
 
     public OutboundCarrierRef OutboundCarrierRef => new(this);
 
-    public Proportion ToProportion() => new(new RawExtent(-InboundCarrier.Value, OutboundCarrier.Value));
+    public Proportion ToProportion() => new(new RawExtent(InboundCarrier.RawValue, OutboundCarrier.RawValue));
 
     public override string ToString() => $"@{ResolvedPosition} : in {InboundCarrier}, out {OutboundCarrier}";
 }
