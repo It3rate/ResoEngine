@@ -7,7 +7,7 @@ namespace Core3.Elements;
 /// </summary>
 public readonly record struct Pin(Proportion Position, IElement Attachment)
 {
-    public long ResolvedPosition => Position.GetPositionOn(Attachment);
+    public OutboundCarrier ResolvedPosition => Position.GetPositionOn(Attachment);
 
     public InboundCarrier InboundCarrier => Attachment.GetInboundCarrier(this);
 

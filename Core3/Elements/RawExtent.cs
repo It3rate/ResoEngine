@@ -15,12 +15,9 @@ public readonly record struct RawExtent(long Start, long End) : IElement
 
     public RawExtent Reverse() => new(End, Start);
 
-    public long GetPositionAt(Proportion relativePosition) =>
-        checked((long)Math.Round(Start + ((End - Start) * relativePosition.ToDecimal())));
+    public InboundCarrier GetInboundCarrier(Pin pin) => new(Start - pin.ResolvedPosition.Value);
 
-    public InboundCarrier GetInboundCarrier(Pin pin) => new(Start - pin.ResolvedPosition);
-
-    public OutboundCarrier GetOutboundCarrier(Pin pin) => new(End - pin.ResolvedPosition);
+    public OutboundCarrier GetOutboundCarrier(Pin pin) => new(End - pin.ResolvedPosition.Value);
 
     public Pin At(Proportion relativePosition) => new(relativePosition, this);
 
