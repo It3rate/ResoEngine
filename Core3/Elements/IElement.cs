@@ -8,6 +8,6 @@ namespace Core3.Elements;
 public interface IElement
 {
     long GetPositionAt(Proportion relativePosition);
-    long GetInboundCarrier(Pin pin);
-    long GetOutboundCarrier(Pin pin);
+    InboundCarrier GetInboundCarrier(Pin pin);
+    OutboundCarrier GetOutboundCarrier(Pin pin);
 }

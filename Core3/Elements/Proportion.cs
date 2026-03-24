@@ -11,13 +11,14 @@ public readonly record struct Proportion(RawExtent Extent, long PinPosition)
     {
     }
 
-    public long InboundCarrier => PinPosition - Extent.Start;
-    public long OutboundCarrier => Extent.End - PinPosition;
-    public bool IsDegenerate => InboundCarrier == 0 && OutboundCarrier == 0;
+    public InboundCarrier InboundCarrier => new(Extent.Start - PinPosition);
+    public OutboundCarrier OutboundCarrier => new(Extent.End - PinPosition);
+    public bool IsDegenerate => InboundCarrier.IsZero && OutboundCarrier.IsZero;
+    public long GetPositionOn(IElement element) => element.GetPositionAt(this);
 
-    public decimal ToDecimal() => ToDecimalRatio(InboundCarrier, OutboundCarrier);
+    public override string ToString() => $"{OutboundCarrier.Value}/{InboundCarrier.Value}";
 
-    public override string ToString() => $"{OutboundCarrier}/{InboundCarrier}";
+    internal decimal ToDecimal() => ToDecimalRatio(InboundCarrier.Value, OutboundCarrier.Value);
 
     private static decimal ToDecimalRatio(long inboundCarrier, long outboundCarrier)
     {

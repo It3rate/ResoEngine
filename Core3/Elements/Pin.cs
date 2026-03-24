@@ -7,13 +7,17 @@ namespace Core3.Elements;
 /// </summary>
 public readonly record struct Pin(Proportion Position, IElement Attachment)
 {
-    public long ResolvedPosition => Attachment.GetPositionAt(Position);
+    public long ResolvedPosition => Position.GetPositionOn(Attachment);
 
-    public long InboundCarrier => Attachment.GetInboundCarrier(this);
+    public InboundCarrier InboundCarrier => Attachment.GetInboundCarrier(this);
 
-    public long OutboundCarrier => Attachment.GetOutboundCarrier(this);
+    public OutboundCarrier OutboundCarrier => Attachment.GetOutboundCarrier(this);
 
-    public Proportion ToProportion() => new(new RawExtent(-InboundCarrier, OutboundCarrier));
+    public InboundCarrierRef InboundCarrierRef => new(this);
+
+    public OutboundCarrierRef OutboundCarrierRef => new(this);
+
+    public Proportion ToProportion() => new(new RawExtent(-InboundCarrier.Value, OutboundCarrier.Value));
 
     public override string ToString() => $"@{ResolvedPosition} : in {InboundCarrier}, out {OutboundCarrier}";
 }
