@@ -5,27 +5,33 @@ namespace Core3.Elements;
 /// It does not generate carriers. Instead it reads one attached raw extent into
 /// an inbound port value and an outbound port value relative to the pin origin.
 /// </summary>
-public readonly record struct Pin(long Position, RawExtent Attachment)
+public readonly record struct Pin(IScalar Position, IElement Attachment) : IScalar
 {
-    /// <summary>
-    /// The carrier value of the inbound port. This is the start point read relative
-    /// to the pin origin, so left-of-pin starts read positive and right-of-pin starts
-    /// read negative only after the sign is folded through the inbound role.
-    /// </summary>
-    public long InboundCarrier => Position - Attachment.Start;
+    public long ResolvedPosition => Attachment.GetPositionAt(Position);
 
-    /// <summary>
-    /// The carrier value of the outbound port. This is the end point read directly
-    /// from the pin origin toward the stored end point.
-    /// </summary>
-    public long OutboundCarrier => Attachment.End - Position;
+    public long InboundCarrier => Attachment.GetInboundCarrier(this);
 
-    public bool HasInbound => InboundCarrier != 0;
-    public bool HasOutbound => OutboundCarrier != 0;
-    public bool InboundIsPositive => InboundCarrier > 0;
-    public bool OutboundIsPositive => OutboundCarrier > 0;
-    public bool InboundIsNegative => InboundCarrier < 0;
-    public bool OutboundIsNegative => OutboundCarrier < 0;
+    public long OutboundCarrier => Attachment.GetOutboundCarrier(this);
 
-    public override string ToString() => $"@{Position} : in {InboundCarrier}, out {OutboundCarrier}";
+    public decimal ToScalar() => ToScalarRatio(InboundCarrier, OutboundCarrier);
+
+    public override string ToString() => $"@{ResolvedPosition} : in {InboundCarrier}, out {OutboundCarrier}";
+
+    private static decimal ToScalarRatio(long inboundCarrier, long outboundCarrier)
+    {
+        decimal inbound = inboundCarrier;
+        decimal outbound = outboundCarrier;
+
+        if (inbound == 0m)
+        {
+            if (outbound == 0m)
+            {
+                return 0m;
+            }
+
+            return outbound > 0m ? decimal.MaxValue : decimal.MinValue;
+        }
+
+        return outbound / inbound;
+    }
 }
