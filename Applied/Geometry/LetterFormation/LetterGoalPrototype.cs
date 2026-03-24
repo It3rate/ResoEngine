@@ -1,3 +1,4 @@
+using Applied.Geometry.Utils;
 using Core2.Elements;
 
 namespace Applied.Geometry.LetterFormation;
@@ -25,6 +26,16 @@ public sealed record LetterGoalPrototype(
 {
     public AxisSectionCalibration HorizontalCalibration => Frame.HorizontalCalibration;
     public AxisSectionCalibration VerticalCalibration => Frame.VerticalCalibration;
+
+    public LetterGoalPin GetPin(string id) =>
+        Pins.FirstOrDefault(pin => string.Equals(pin.Id, id, StringComparison.Ordinal))
+        ?? throw new KeyNotFoundException($"Unknown goal pin '{id}'.");
+
+    public PlanarPoint ResolvePinPoint(string id)
+    {
+        LetterGoalPin pin = GetPin(id);
+        return Frame.ResolvePoint(pin.Placement.AxisId, pin.Placement.PositionOnAxis);
+    }
 }
 
 public static class LetterGoalPrototypeCatalog

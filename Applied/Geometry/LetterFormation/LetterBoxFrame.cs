@@ -150,6 +150,10 @@ public sealed record LetterBoxFrameAxis(
     AxisSectionKind FromPosition,
     AxisSectionKind ToPosition);
 
+public readonly record struct AxisPointProjection(
+    Proportion Along,
+    Proportion Cross);
+
 public sealed record LetterBoxFrame(
     string Id,
     AxisSectionCalibration HorizontalCalibration,
@@ -170,6 +174,34 @@ public sealed record LetterBoxFrame(
             : new PlanarPoint(
                 HorizontalCalibration.Representative(axis.FixedSection),
                 VerticalCalibration.Representative(positionOnAxis));
+    }
+
+    public AxisSectionWindow ResolveWindow(string axisId, AxisSectionKind positionOnAxis)
+    {
+        LetterBoxFrameAxis axis = GetAxis(axisId);
+        return axis.IsHorizontal
+            ? HorizontalCalibration.Resolve(positionOnAxis)
+            : VerticalCalibration.Resolve(positionOnAxis);
+    }
+
+    public Axis ResolveOriginAxis(string axisId, AxisSectionKind positionOnAxis)
+    {
+        LetterBoxFrameAxis axis = GetAxis(axisId);
+        return axis.IsHorizontal
+            ? HorizontalCalibration.OriginAxis(positionOnAxis)
+            : VerticalCalibration.OriginAxis(positionOnAxis);
+    }
+
+    public AxisPointProjection ProjectPoint(string axisId, PlanarPoint point)
+    {
+        LetterBoxFrameAxis axis = GetAxis(axisId);
+        return axis.IsHorizontal
+            ? new AxisPointProjection(
+                point.Horizontal,
+                point.Vertical - VerticalCalibration.Representative(axis.FixedSection))
+            : new AxisPointProjection(
+                point.Vertical,
+                point.Horizontal - HorizontalCalibration.Representative(axis.FixedSection));
     }
 
     public (PlanarPoint From, PlanarPoint To) ResolveEndpoints(LetterBoxFrameAxis axis) =>
