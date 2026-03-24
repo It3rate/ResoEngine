@@ -15,33 +15,18 @@ public readonly record struct RawExtent(long Start, long End) : IElement
 
     public RawExtent Reverse() => new(End, Start);
 
-    public long GetPositionAt(IScalar relativePosition) =>
-        checked((long)Math.Round(Start + ((End - Start) * relativePosition.ToScalar())));
+    public long GetPositionAt(Proportion relativePosition) =>
+        checked((long)Math.Round(Start + ((End - Start) * relativePosition.ToDecimal())));
 
     public long GetInboundCarrier(Pin pin) => pin.ResolvedPosition - Start;
 
     public long GetOutboundCarrier(Pin pin) => End - pin.ResolvedPosition;
 
-    public Pin At(IScalar relativePosition) => new(relativePosition, this);
+    public Pin At(Proportion relativePosition) => new(relativePosition, this);
 
-    public decimal ToScalar() => ToScalarRatio(-Start, End);
+    public Proportion ToProportion() => new(this);
 
     public bool HasSameMagnitude(RawExtent other) => Magnitude == other.Magnitude;
 
     public override string ToString() => $"<{Start}..{End}> |{Magnitude}|";
-
-    private static decimal ToScalarRatio(decimal inboundCarrier, decimal outboundCarrier)
-    {
-        if (inboundCarrier == 0m)
-        {
-            if (outboundCarrier == 0m)
-            {
-                return 0m;
-            }
-
-            return outboundCarrier > 0m ? decimal.MaxValue : decimal.MinValue;
-        }
-
-        return outboundCarrier / inboundCarrier;
-    }
 }
