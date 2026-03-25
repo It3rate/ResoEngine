@@ -65,6 +65,16 @@ public sealed class Core3ElementTests
     }
 
     [Fact]
+    public void Elements_ExposeCurrentGradeLadder()
+    {
+        Assert.Equal(0, new RawExtent(10, 20).Grade);
+        Assert.Equal(1, new Proportion(new RawExtent(-5, 10)).Grade);
+        Assert.Equal(2, new Axis(
+            new LongCarrier(-5, CarrierSide.Inbound),
+            new LongCarrier(10, CarrierSide.Outbound)).Grade);
+    }
+
+    [Fact]
     public void Proportion_DefaultsToZeroPinBootstrap()
     {
         var proportion = new Proportion(new RawExtent(-5, 10));
@@ -138,7 +148,7 @@ public sealed class Core3ElementTests
     }
 
     [Fact]
-    public void Pin_ToProportion_RebuildsPinRelativeMeasure()
+    public void Proportion_CanBeBuiltFromPinReadout()
     {
         var halfPosition = new Proportion(new RawExtent(-10, 5));
         var pin = new Pin(
@@ -146,7 +156,7 @@ public sealed class Core3ElementTests
             new LongCarrier(10, CarrierSide.Inbound),
             new LongCarrier(20, CarrierSide.Outbound));
 
-        var rebuilt = pin.ToProportion();
+        var rebuilt = new Proportion(pin);
 
         Assert.Equal(5, rebuilt.Start.Value);
         Assert.Equal(5, rebuilt.End.Value);
@@ -222,22 +232,5 @@ public sealed class Core3ElementTests
         Assert.Equal(10, pin.InboundCarrier.Value);
         Assert.Equal(10, pin.OutboundCarrier.RawValue);
         Assert.Equal(10, pin.OutboundCarrier.Value);
-    }
-
-    [Fact]
-    public void Pin_ToAxis_RebuildsCarrierBackedElement()
-    {
-        var halfPosition = new Proportion(new RawExtent(-10, 5));
-        var pin = new Pin(
-            halfPosition,
-            new LongCarrier(10, CarrierSide.Inbound),
-            new LongCarrier(20, CarrierSide.Outbound));
-
-        var axis = pin.ToAxis();
-
-        Assert.Equal(pin.InboundCarrier.RawValue, axis.Start.RawValue);
-        Assert.Equal(pin.InboundCarrier.Side, axis.Start.Side);
-        Assert.Equal(pin.OutboundCarrier.RawValue, axis.End.RawValue);
-        Assert.Equal(pin.OutboundCarrier.Side, axis.End.Side);
     }
 }

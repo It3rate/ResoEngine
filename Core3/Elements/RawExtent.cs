@@ -7,6 +7,7 @@ namespace Core3.Elements;
 /// </summary>
 public readonly record struct RawExtent(long StartValue, long EndValue) : IElement
 {
+    public int Grade => 0;
     public ICarrier Start => new LongCarrier(StartValue, CarrierSide.Inbound);
     public ICarrier End => new LongCarrier(EndValue, CarrierSide.Outbound);
     public long Lower => Math.Min(StartValue, EndValue);

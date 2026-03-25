@@ -23,6 +23,7 @@ public readonly record struct Axis : IElement
     {
     }
 
+    public int Grade => 2;
     public ICarrier Start { get; }
     public ICarrier End { get; }
     public bool IsDegenerate => Start.IsZero && End.IsZero;
@@ -32,8 +33,6 @@ public readonly record struct Axis : IElement
         Start.Negate().AsOutbound());
 
     public Pin At(Proportion position) => new(position, Start, End);
-
-    public Proportion ToProportion() => new(new RawExtent(Start.RawValue, End.RawValue));
 
     public override string ToString() => $"in {Start}, out {End}";
 }

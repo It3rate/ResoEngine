@@ -21,6 +21,7 @@ public readonly record struct Proportion(RawExtent Extent, long PinPosition) : I
     {
     }
 
+    public int Grade => 1;
     public ICarrier Start => new LongCarrier(Extent.Start.RawValue - PinPosition, CarrierSide.Inbound);
     public ICarrier End => new LongCarrier(Extent.End.RawValue - PinPosition, CarrierSide.Outbound);
     public bool IsDegenerate => Start.IsZero && End.IsZero;
