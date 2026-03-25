@@ -2,20 +2,21 @@ namespace Core3.Elements;
 
 /// <summary>
 /// A valve-like pin located on the ambient line.
-/// It does not generate carriers. Instead it reads one attached raw extent into
-/// an inbound port value and an outbound port value relative to the pin origin.
+/// It does not generate carriers. Instead it joins two carriers at one located
+/// site and reads their inbound and outbound spans relative to that position.
 /// </summary>
-public readonly record struct Pin(Proportion Position, IElement Attachment)
+public readonly record struct Pin(Proportion Position, ICarrier Start, ICarrier End)
 {
-    public OutboundCarrier ResolvedPosition => Position.GetPositionOn(Attachment);
+    public Pin(Proportion position, IElement attachment)
+        : this(position, attachment.Start, attachment.End)
+    {
+    }
 
-    public InboundCarrier InboundCarrier => Attachment.GetInboundCarrier(this);
+    public ICarrier ResolvedPosition => Start.PositionAt(End, Position);
 
-    public OutboundCarrier OutboundCarrier => Attachment.GetOutboundCarrier(this);
+    public ICarrier InboundCarrier => Start.Subtract(ResolvedPosition).AsInbound();
 
-    public InboundCarrierRef InboundCarrierRef => new(this);
-
-    public OutboundCarrierRef OutboundCarrierRef => new(this);
+    public ICarrier OutboundCarrier => End.Subtract(ResolvedPosition).AsOutbound();
 
     public Proportion ToProportion() => new(new RawExtent(InboundCarrier.RawValue, OutboundCarrier.RawValue));
 

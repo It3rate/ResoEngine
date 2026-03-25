@@ -7,8 +7,8 @@ namespace Core3.Elements;
 /// </summary>
 public readonly record struct RawExtent(long StartValue, long EndValue) : IElement
 {
-    public InboundCarrier Start => new(StartValue);
-    public OutboundCarrier End => new(EndValue);
+    public ICarrier Start => new LongCarrier(StartValue, CarrierSide.Inbound);
+    public ICarrier End => new LongCarrier(EndValue, CarrierSide.Outbound);
     public long Lower => Math.Min(StartValue, EndValue);
     public long Upper => Math.Max(StartValue, EndValue);
     public long StoredDelta => EndValue - StartValue;
@@ -17,11 +17,9 @@ public readonly record struct RawExtent(long StartValue, long EndValue) : IEleme
 
     public RawExtent Reverse() => new(EndValue, StartValue);
 
-    public InboundCarrier GetInboundCarrier(Pin pin) => new(Start.RawValue - pin.ResolvedPosition.RawValue);
+    public IElement Mirror() => new RawExtent(-EndValue, -StartValue);
 
-    public OutboundCarrier GetOutboundCarrier(Pin pin) => new(End.RawValue - pin.ResolvedPosition.RawValue);
-
-    public Pin At(Proportion relativePosition) => new(relativePosition, this);
+    public Pin At(Proportion relativePosition) => new(relativePosition, Start, End);
 
     public Proportion ToProportion() => new(this);
 
