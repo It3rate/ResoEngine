@@ -152,4 +152,92 @@ public sealed class Core3ElementTests
         Assert.Equal(5, rebuilt.End.Value);
         Assert.Equal(1m, (decimal)rebuilt.End.Value / rebuilt.Start.Value);
     }
+
+    [Fact]
+    public void Axis_NormalizesToInboundStartAndOutboundEnd()
+    {
+        var axis = new Axis(
+            new LongCarrier(-5, CarrierSide.Outbound),
+            new LongCarrier(10, CarrierSide.Inbound));
+
+        Assert.Equal(CarrierSide.Inbound, axis.Start.Side);
+        Assert.Equal(-5, axis.Start.RawValue);
+        Assert.Equal(5, axis.Start.Value);
+
+        Assert.Equal(CarrierSide.Outbound, axis.End.Side);
+        Assert.Equal(10, axis.End.RawValue);
+        Assert.Equal(10, axis.End.Value);
+    }
+
+    [Fact]
+    public void Axis_CanBeBuiltFromPinReadout()
+    {
+        var halfPosition = new Proportion(new RawExtent(-10, 5));
+        var pin = new Pin(
+            halfPosition,
+            new LongCarrier(10, CarrierSide.Inbound),
+            new LongCarrier(20, CarrierSide.Outbound));
+
+        var axis = new Axis(pin);
+
+        Assert.Equal(pin.InboundCarrier.Side, axis.Start.Side);
+        Assert.Equal(pin.InboundCarrier.RawValue, axis.Start.RawValue);
+        Assert.Equal(pin.InboundCarrier.Value, axis.Start.Value);
+
+        Assert.Equal(pin.OutboundCarrier.Side, axis.End.Side);
+        Assert.Equal(pin.OutboundCarrier.RawValue, axis.End.RawValue);
+        Assert.Equal(pin.OutboundCarrier.Value, axis.End.Value);
+    }
+
+    [Fact]
+    public void Axis_Mirror_NegatesAndSwapsCarrierCoordinates()
+    {
+        var axis = new Axis(
+            new LongCarrier(-5, CarrierSide.Inbound),
+            new LongCarrier(10, CarrierSide.Outbound));
+
+        var mirrored = Assert.IsType<Axis>(axis.Mirror());
+
+        Assert.Equal(CarrierSide.Inbound, mirrored.Start.Side);
+        Assert.Equal(-10, mirrored.Start.RawValue);
+        Assert.Equal(10, mirrored.Start.Value);
+
+        Assert.Equal(CarrierSide.Outbound, mirrored.End.Side);
+        Assert.Equal(5, mirrored.End.RawValue);
+        Assert.Equal(5, mirrored.End.Value);
+    }
+
+    [Fact]
+    public void Axis_At_UsesCarrierCoordinatesForPinResolution()
+    {
+        var axis = new Axis(
+            new LongCarrier(-5, CarrierSide.Inbound),
+            new LongCarrier(15, CarrierSide.Outbound));
+
+        var pin = axis.At(new Proportion(new RawExtent(-10, 5)));
+
+        Assert.Equal(5, pin.ResolvedPosition.RawValue);
+        Assert.Equal(5, pin.ResolvedPosition.Value);
+        Assert.Equal(-10, pin.InboundCarrier.RawValue);
+        Assert.Equal(10, pin.InboundCarrier.Value);
+        Assert.Equal(10, pin.OutboundCarrier.RawValue);
+        Assert.Equal(10, pin.OutboundCarrier.Value);
+    }
+
+    [Fact]
+    public void Pin_ToAxis_RebuildsCarrierBackedElement()
+    {
+        var halfPosition = new Proportion(new RawExtent(-10, 5));
+        var pin = new Pin(
+            halfPosition,
+            new LongCarrier(10, CarrierSide.Inbound),
+            new LongCarrier(20, CarrierSide.Outbound));
+
+        var axis = pin.ToAxis();
+
+        Assert.Equal(pin.InboundCarrier.RawValue, axis.Start.RawValue);
+        Assert.Equal(pin.InboundCarrier.Side, axis.Start.Side);
+        Assert.Equal(pin.OutboundCarrier.RawValue, axis.End.RawValue);
+        Assert.Equal(pin.OutboundCarrier.Side, axis.End.Side);
+    }
 }

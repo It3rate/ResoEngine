@@ -18,6 +18,8 @@ public readonly record struct Pin(Proportion Position, ICarrier Start, ICarrier 
 
     public ICarrier OutboundCarrier => End.Subtract(ResolvedPosition).AsOutbound();
 
+    public Axis ToAxis() => new(this);
+
     public Proportion ToProportion() => new(new RawExtent(InboundCarrier.RawValue, OutboundCarrier.RawValue));
 
     public override string ToString() => $"@{ResolvedPosition} : in {InboundCarrier}, out {OutboundCarrier}";
