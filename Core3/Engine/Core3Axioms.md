@@ -102,31 +102,49 @@ graded element.
     else in the engine.
     The dominant child remains outbound.
 
-15. Addition is a same-space fold.
+15. Positioned pins derive local sides from subtraction.
+    When a pin is given a host-relative position in the host child grade:
+    - declared span = host dominant - host recessive
+    - inbound side = position - host recessive
+    - outbound side = host dominant - position
+    These are exact derived reads, not stored annotations.
+
+16. Outbound remainder is inbound tension.
+    The host outbound remainder at a positioned pin may be read as inbound
+    tension:
+    - positive means excess support or pressure past the join
+    - negative means deficit or open pull before the join
+    - zero means exact fit
+
+17. Same-space continuation can carry outbound tension.
+    When same-space continuation exists beyond the pin, the host declared span
+    may be carried forward as outbound tension on the surviving continuation.
+
+18. Addition is a same-space fold.
     Addition is natural only when the normalized children occupy the same unit
     space after local normalization.
 
-16. Multiplication is a contrast fold.
+19. Multiplication is a contrast fold.
     Multiplication is natural when the normalized children remain distinct after
     local normalization.
     If the children collapse into the same unit space, multiplication requires a
     lift such as sequence, phase, or another ordered distinction.
 
-17. Boolean operations are support/frame folds.
+20. Boolean operations are support/frame folds.
     Boolean folds compare occupancy or support and do not require arithmetic
     reduction.
 
-18. Forced folds require lift or preserve tension.
+21. Forced folds require lift or preserve tension.
     If a requested operation is not natural in the current normalized space, the
     engine should not silently fake it.
     It should preserve the contradiction or add the smallest lawful lift.
 
-19. Pinning and dimensional lift are distinct.
+22. Pinning and dimensional lift are distinct.
     Pinning always creates a new relation object.
     It does not automatically create a new independent dimension.
     Dimensional lift is a later consequence of unit relation and fold choice.
 
-20. Result grade is operation-defined.
+23. Result grade is operation-defined.
     Pinning raises representation grade because it creates a new relation.
     Folding may preserve, lower, branch, or lift the represented result grade.
 
@@ -168,6 +186,15 @@ The unit number itself should be read numerically:
 - negative unit: orthogonal force
 - zero unit: unresolved carrier choice
 - absolute unit magnitude: exact support or resolution
+
+For positioned pins on a line-like host:
+
+- `declared span` is the host's full local claim
+- `inbound side` is the realized reach from host recessive side to the pin
+- `outbound side` is the host remainder beyond the pin
+- `outbound side` may be read as inbound tension
+- `declared span` may be read as outbound tension when continuation carries it
+  forward
 
 ## Relationship To Existing Core3 Elements
 

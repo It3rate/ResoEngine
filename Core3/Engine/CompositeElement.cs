@@ -53,5 +53,21 @@ public sealed record CompositeElement : GradedElement
         return false;
     }
 
+    public override bool TrySubtract(GradedElement other, out GradedElement? difference)
+    {
+        if (other is CompositeElement composite &&
+            Recessive.TrySubtract(composite.Recessive, out var recessiveDifference) &&
+            Dominant.TrySubtract(composite.Dominant, out var dominantDifference) &&
+            recessiveDifference is not null &&
+            dominantDifference is not null)
+        {
+            difference = new CompositeElement(recessiveDifference, dominantDifference);
+            return true;
+        }
+
+        difference = null;
+        return false;
+    }
+
     public override string ToString() => $"<{Recessive} | {Dominant}>";
 }

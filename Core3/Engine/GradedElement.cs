@@ -12,8 +12,10 @@ public abstract record GradedElement
     public abstract GradedElement InvertPerspective();
     public abstract bool SharesUnitSpace(GradedElement other);
     public abstract bool TryAdd(GradedElement other, out GradedElement? sum);
+    public abstract bool TrySubtract(GradedElement other, out GradedElement? difference);
 
     public bool CanAdd(GradedElement other) => TryAdd(other, out _);
+    public bool CanSubtract(GradedElement other) => TrySubtract(other, out _);
 
     protected static void RequireSameGrade(GradedElement left, GradedElement right)
     {

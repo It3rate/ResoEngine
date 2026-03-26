@@ -25,6 +25,42 @@ public static class EngineFolding
         return pin.SharesUnitSpace;
     }
 
+    public static GradedElement? ResolvedPosition(EnginePin pin)
+    {
+        ArgumentNullException.ThrowIfNull(pin);
+        return pin.ResolvedPosition;
+    }
+
+    public static GradedElement? DeclaredSpan(EnginePin pin)
+    {
+        ArgumentNullException.ThrowIfNull(pin);
+        return pin.DeclaredSpan;
+    }
+
+    public static GradedElement? InboundSide(EnginePin pin)
+    {
+        ArgumentNullException.ThrowIfNull(pin);
+        return pin.InboundSide;
+    }
+
+    public static GradedElement? OutboundSide(EnginePin pin)
+    {
+        ArgumentNullException.ThrowIfNull(pin);
+        return pin.OutboundSide;
+    }
+
+    public static GradedElement? InboundTension(EnginePin pin)
+    {
+        ArgumentNullException.ThrowIfNull(pin);
+        return pin.InboundTension;
+    }
+
+    public static GradedElement? OutboundTension(EnginePin pin)
+    {
+        ArgumentNullException.ThrowIfNull(pin);
+        return pin.OutboundTension;
+    }
+
     public static GradedElement? Add(EnginePin pin)
     {
         ArgumentNullException.ThrowIfNull(pin);

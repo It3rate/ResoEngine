@@ -37,6 +37,18 @@ public sealed record AtomicElement(long Value, long Unit) : GradedElement
         return false;
     }
 
+    public override bool TrySubtract(GradedElement other, out GradedElement? difference)
+    {
+        if (other is AtomicElement atomic && SharesUnitSpace(atomic))
+        {
+            difference = new AtomicElement(checked(Value - atomic.Value), Unit);
+            return true;
+        }
+
+        difference = null;
+        return false;
+    }
+
     public FoldedRatio Fold() => new(Value, Unit);
 
     public override string ToString() => $"{Value}/{Unit}";
