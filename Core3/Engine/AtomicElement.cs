@@ -1,13 +1,14 @@
 namespace Core3.Engine;
 
 /// <summary>
-/// Grade-0 engine value carrying a signed amount and a unit number.
-/// Opposite perspective negates the realized value but preserves the unit.
+/// Grade-0 engine value carrying an exact signed amount and an exact unit
+/// number. Opposite perspective negates the realized value but preserves the
+/// unit.
 /// </summary>
-public sealed record AtomicElement(decimal Value, decimal Unit) : GradedElement
+public sealed record AtomicElement(long Value, long Unit) : GradedElement
 {
     public override int Grade => 0;
-    public override bool HasResolvedUnits => Unit != 0m;
+    public override bool HasResolvedUnits => Unit != 0;
 
     public override GradedElement InvertPerspective() => new AtomicElement(-Value, Unit);
 
@@ -21,13 +22,15 @@ public sealed record AtomicElement(decimal Value, decimal Unit) : GradedElement
     {
         if (other is AtomicElement atomic && SharesUnitSpace(atomic))
         {
-            sum = new AtomicElement(Value + atomic.Value, Unit);
+            sum = new AtomicElement(checked(Value + atomic.Value), Unit);
             return true;
         }
 
         sum = null;
         return false;
     }
+
+    public FoldedApproximation Fold() => new(Value, Unit);
 
     public override string ToString() => $"{Value}/{Unit}";
 }

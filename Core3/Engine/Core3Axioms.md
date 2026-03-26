@@ -20,6 +20,11 @@ Names such as `RawExtent`, `Proportion`, `Axis`, and later `Area` are treated as
 helpful language views over recurring engine configurations, not as the deepest
 primitive categories.
 
+`RawExtent` is not itself a true engine element.
+It is a descriptive bootstrap for uncalibrated support that helps a computer
+hold the idea of "some extent exists here" before that support is turned into a
+graded element.
+
 ## Axioms
 
 1. Grade is structural.
@@ -36,26 +41,32 @@ primitive categories.
 4. Grade-0 is the leaf numeric pair.
    A grade-0 engine element carries:
    - a signed realized value
-   - a unit number
+   - an exact unit number
    Opposite perspective negates the value but preserves the unit.
 
-5. Opposite perspective is recursive.
+5. Folded decimal reads are outside the engine.
+   Folding a grade-0 element may produce a decimal-like approximation for
+   display or external use.
+   That folded read is not itself a graded element and should not re-enter the
+   engine as though it preserved full provenance.
+
+6. Opposite perspective is recursive.
    At every composite grade, opposite perspective is:
    - recursively invert each child
    - reverse child order
    The same law is used at every grade.
 
-6. Perspective is local.
+7. Perspective is local.
    Each observer uses the same local chart rules.
    What changes between observers is the opposite-perspective transform, not the
    local meaning of right-side versus left-side reading.
 
-7. Unit kind is preserved under opposite perspective.
+8. Unit kind is preserved under opposite perspective.
    If a unit represents aligned versus orthogonal carrier preference, that kind
    remains the same under observer inversion.
    Opposite perspective changes direction, not carrier class.
 
-8. New grade capabilities are emergent, not separately stored.
+9. New grade capabilities are emergent, not separately stored.
    At grade 1, perspective change mainly appears as re-reading of the paired
    numeric structure.
    At grade 2 and above, the same recursive rule makes new orientation
@@ -63,42 +74,42 @@ primitive categories.
    handedness.
    These are read from the ordered child numbers after transformation.
 
-9. Pinning creates relation before reduction.
+10. Pinning creates relation before reduction.
    A pin is a located relation between a recessive child and a dominant child.
    It does not by itself force addition, multiplication, boolean reduction, or
    any other fold.
 
-10. Pinning normalizes locally.
+11. Pinning normalizes locally.
     In the generic contrastive read, the recessive child is transformed into the
     inbound reading by the same opposite-perspective rule that applies anywhere
     else in the engine.
     The dominant child remains outbound.
 
-11. Addition is a same-space fold.
+12. Addition is a same-space fold.
     Addition is natural only when the normalized children occupy the same unit
     space after local normalization.
 
-12. Multiplication is a contrast fold.
+13. Multiplication is a contrast fold.
     Multiplication is natural when the normalized children remain distinct after
     local normalization.
     If the children collapse into the same unit space, multiplication requires a
     lift such as sequence, phase, or another ordered distinction.
 
-13. Boolean operations are support/frame folds.
+14. Boolean operations are support/frame folds.
     Boolean folds compare occupancy or support and do not require arithmetic
     reduction.
 
-14. Forced folds require lift or preserve tension.
+15. Forced folds require lift or preserve tension.
     If a requested operation is not natural in the current normalized space, the
     engine should not silently fake it.
     It should preserve the contradiction or add the smallest lawful lift.
 
-15. Pinning and dimensional lift are distinct.
+16. Pinning and dimensional lift are distinct.
     Pinning always creates a new relation object.
     It does not automatically create a new independent dimension.
     Dimensional lift is a later consequence of unit relation and fold choice.
 
-16. Result grade is operation-defined.
+17. Result grade is operation-defined.
     Pinning raises representation grade because it creates a new relation.
     Folding may preserve, lower, branch, or lift the represented result grade.
 
