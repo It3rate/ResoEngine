@@ -24,13 +24,34 @@ public sealed record CompositeElement : GradedElement
     public GradedElement Dominant { get; }
 
     public override int Grade => Recessive.Grade + 1;
-    public override EngineSignature Signature => new CompositeSignature(
-        Recessive.Signature,
-        Dominant.Signature);
+    public override bool HasResolvedUnits => Recessive.HasResolvedUnits && Dominant.HasResolvedUnits;
 
-    public override GradedElement Mirror() => new CompositeElement(
-        Dominant.Mirror(),
-        Recessive.Mirror());
+    public override GradedElement InvertPerspective() => new CompositeElement(
+        Dominant.InvertPerspective(),
+        Recessive.InvertPerspective());
+
+    public override bool SharesUnitSpace(GradedElement other) =>
+        other is CompositeElement composite &&
+        HasResolvedUnits &&
+        composite.HasResolvedUnits &&
+        Recessive.SharesUnitSpace(composite.Recessive) &&
+        Dominant.SharesUnitSpace(composite.Dominant);
+
+    public override bool TryAdd(GradedElement other, out GradedElement? sum)
+    {
+        if (other is CompositeElement composite &&
+            Recessive.TryAdd(composite.Recessive, out var recessiveSum) &&
+            Dominant.TryAdd(composite.Dominant, out var dominantSum) &&
+            recessiveSum is not null &&
+            dominantSum is not null)
+        {
+            sum = new CompositeElement(recessiveSum, dominantSum);
+            return true;
+        }
+
+        sum = null;
+        return false;
+    }
 
     public override string ToString() => $"<{Recessive} | {Dominant}>";
 }

@@ -31,10 +31,20 @@ public sealed record EnginePin
     public GradedElement? Position { get; }
     public int Grade => Recessive.Grade + 1;
 
-    public NormalizedPin Normalize() => new(
-        Recessive.Mirror(),
-        Dominant,
-        Position);
+    public GradedElement Inbound => Recessive.InvertPerspective();
+    public GradedElement Outbound => Dominant;
+    public bool HasResolvedUnits => Inbound.HasResolvedUnits && Outbound.HasResolvedUnits;
+    public bool SharesUnitSpace => Inbound.SharesUnitSpace(Outbound);
+    public bool HasContrastSpace => HasResolvedUnits && !SharesUnitSpace;
 
-    public override string ToString() => $"pin({Recessive}, {Dominant})";
+    public GradedElement? Add() =>
+        Inbound.TryAdd(Outbound, out var sum)
+            ? sum
+            : null;
+
+    public CompositeElement Contrast() => new(Inbound, Outbound);
+
+    public bool MultiplyRequiresLift() => HasResolvedUnits && SharesUnitSpace;
+
+    public override string ToString() => $"pin(in {Inbound}, out {Outbound})";
 }

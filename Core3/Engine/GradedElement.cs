@@ -8,7 +8,18 @@ namespace Core3.Engine;
 public abstract record GradedElement
 {
     public abstract int Grade { get; }
-    public abstract EngineSignature Signature { get; }
-    public bool HasResolvedSignature => Signature.IsResolved;
-    public abstract GradedElement Mirror();
+    public abstract bool HasResolvedUnits { get; }
+    public abstract GradedElement InvertPerspective();
+    public abstract bool SharesUnitSpace(GradedElement other);
+    public abstract bool TryAdd(GradedElement other, out GradedElement? sum);
+
+    public bool CanAdd(GradedElement other) => TryAdd(other, out _);
+
+    protected static void RequireSameGrade(GradedElement left, GradedElement right)
+    {
+        if (left.Grade != right.Grade)
+        {
+            throw new InvalidOperationException("Elements must have the same grade.");
+        }
+    }
 }
