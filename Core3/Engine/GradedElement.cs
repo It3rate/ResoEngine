@@ -10,7 +10,6 @@ public abstract record GradedElement
     public abstract int Grade { get; }
     public abstract bool HasResolvedUnits { get; }
     public abstract GradedElement Negate();
-    public abstract GradedElement Mirror();
     public abstract GradedElement SwapOrder();
     public abstract GradedElement FlipPerspective();
     public abstract bool SharesUnitSpace(GradedElement other);

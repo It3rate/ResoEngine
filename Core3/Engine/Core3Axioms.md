@@ -70,7 +70,6 @@ graded element.
 9. Primitive transforms remain distinct.
    The engine should expose at least:
    - negation
-   - mirror
    - order swap
    - perspective flip
    These may share implementation machinery, but they should remain separate
@@ -80,38 +79,46 @@ graded element.
     Negation changes realized value direction without changing unit sign or local
     child order.
 
-11. Mirror is not the same as perspective.
-    Mirror acts on the local mirrored/unmirrored read of the current grade.
-    If a grade does not carry that capability, mirror is the identity there.
-
-12. Order swap is grade-local.
+11. Order swap is grade-local.
     Order swap reverses the recessive/dominant order of the current composite
     grade.
     If a grade has no such local order, order swap is the identity there.
 
-13. Opposite perspective is recursive.
+12. Opposite perspective is recursive.
    At every composite grade, opposite perspective is:
    - recursively invert each child
    - reverse child order
    The same law is used at every grade.
 
-14. Perspective is local.
+13. Perspective is local.
    Each observer uses the same local chart rules.
    What changes between observers is the opposite-perspective transform, not the
    local meaning of right-side versus left-side reading.
 
-15. Unit kind is preserved under opposite perspective.
+14. Unit kind is preserved under opposite perspective.
    If a unit represents aligned versus orthogonal carrier preference, that kind
    remains the same under observer inversion.
    Opposite perspective changes direction, not carrier class.
 
-16. New grade capabilities are emergent, not separately stored.
+15. New grade capabilities are emergent, not separately stored.
    At grade 1, perspective change mainly appears as re-reading of the paired
    numeric structure.
    At grade 2 and above, the same recursive rule makes new orientation
    capabilities visible, such as endpoint order, sheet order, and later
    handedness.
    These are read from the ordered child numbers after transformation.
+
+16. Reflection is later and parameterized.
+   A geometric mirror is not currently treated as one generic grade-only
+   primitive.
+   Reflection normally requires a chosen mirror subspace:
+   - a point at grade 0
+   - a line at grade 1 or 2
+   - a plane at grade 2 or 3
+   and so on.
+   The current named element layer may still expose view-specific `Mirror()`
+   operations, but the generic engine should not pretend there is already one
+   settled no-argument reflection law.
 
 17. Pinning creates relation before reduction.
    A pin is a located relation between a recessive child and a dominant child.
@@ -191,10 +198,40 @@ Perspective should be read recursively:
 The explicit named transforms should stay separate:
 
 - `Negate()` flips realized direction
-- `Mirror()` applies the local mirrored read where that capability exists
 - `SwapOrder()` reverses current recessive/dominant order where that capability
   exists
 - `FlipPerspective()` is the recursive observer-change transform
+
+`FlipPerspective()` should not be confused with reciprocal-like folding.
+At grade 1:
+
+- a bare `SwapOrder()` may look reciprocal if the swapped pair is later folded
+  under the same chart
+- but `FlipPerspective()` is a chart change, not a reciprocal
+- the slot meanings move with the chart, so the underlying object is preserved
+
+For example, a proportion read as `1 / 3` from one perspective should not become
+`3 / 1` as a different object from the opposite perspective.
+It is the same object re-read in the opposite chart, where the denominator/value
+roles move with the perspective.
+
+Recursion means:
+
+- first apply the same transform to the lower-grade children
+- then apply the current grade's own structural effect, if that grade has one
+
+This gives the current transform table:
+
+| Grade | `Negate()` | `SwapOrder()` | `FlipPerspective()` |
+| --- | --- | --- | --- |
+| 0 | Flip realized value sign. | Identity. No child order yet. | Same as `Negate()` because there is no higher order to reverse yet. |
+| 1 | Negate the lower-grade realized read. | Swap the pair. Under later folding this can look reciprocal-like. | Re-read the same pair from the opposite chart. The object stays the same; meanings move with the chart. |
+| 2 | Negate child reads without changing local start/end order. | Reverse start/end order. | Flip both child perspectives, then reverse start/end order. |
+| 3 | Negate child reads without changing current sheet order. | Reverse current grade-3 child order. | Flip both child perspectives, then reverse current grade-3 order, making sheet orientation appear inverted. |
+
+The user-facing word "mirror" may still be useful, but at the generic engine
+level it should be reserved for a later transform that takes an explicit mirror
+subspace or axis rather than being derived solely from grade.
 
 This allows the engine to say:
 

@@ -19,8 +19,6 @@ public sealed record AtomicElement(long Value, long Unit) : GradedElement
 
     public override GradedElement Negate() => new AtomicElement(-Value, Unit);
 
-    public override GradedElement Mirror() => new AtomicElement(Unit, Value);
-
     public override GradedElement SwapOrder() => this;
 
     public override GradedElement FlipPerspective() => Negate();

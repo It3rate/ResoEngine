@@ -30,10 +30,6 @@ public sealed record CompositeElement : GradedElement
         Recessive.Negate(),
         Dominant.Negate());
 
-    public override GradedElement Mirror() => new CompositeElement(
-        Recessive.Mirror(),
-        Dominant.Mirror());
-
     public override GradedElement SwapOrder() => new CompositeElement(
         Dominant,
         Recessive);
