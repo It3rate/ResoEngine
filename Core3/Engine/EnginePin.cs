@@ -36,7 +36,7 @@ public sealed record EnginePin
     /// This differs from the host-local inbound side derived from a positioned
     /// host.
     /// </summary>
-    public GradedElement Inbound => Recessive.InvertPerspective();
+    public GradedElement Inbound => Recessive.FlipPerspective();
     public GradedElement Outbound => Dominant;
     public bool HasResolvedUnits => Inbound.HasResolvedUnits && Outbound.HasResolvedUnits;
     public bool SharesUnitSpace => Inbound.SharesUnitSpace(Outbound);

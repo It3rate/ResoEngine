@@ -26,9 +26,21 @@ public sealed record CompositeElement : GradedElement
     public override int Grade => Recessive.Grade + 1;
     public override bool HasResolvedUnits => Recessive.HasResolvedUnits && Dominant.HasResolvedUnits;
 
-    public override GradedElement InvertPerspective() => new CompositeElement(
-        Dominant.InvertPerspective(),
-        Recessive.InvertPerspective());
+    public override GradedElement Negate() => new CompositeElement(
+        Recessive.Negate(),
+        Dominant.Negate());
+
+    public override GradedElement Mirror() => new CompositeElement(
+        Recessive.Mirror(),
+        Dominant.Mirror());
+
+    public override GradedElement SwapOrder() => new CompositeElement(
+        Dominant,
+        Recessive);
+
+    public override GradedElement FlipPerspective() => new CompositeElement(
+        Dominant.FlipPerspective(),
+        Recessive.FlipPerspective());
 
     public override bool SharesUnitSpace(GradedElement other) =>
         other is CompositeElement composite &&

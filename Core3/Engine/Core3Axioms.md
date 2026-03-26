@@ -67,23 +67,45 @@ graded element.
    Decimal or floating display is an external approximation choice, not an
    engine value.
 
-9. Opposite perspective is recursive.
+9. Primitive transforms remain distinct.
+   The engine should expose at least:
+   - negation
+   - mirror
+   - order swap
+   - perspective flip
+   These may share implementation machinery, but they should remain separate
+   named transforms because their meanings diverge at higher grades.
+
+10. Negation flips realized direction.
+    Negation changes realized value direction without changing unit sign or local
+    child order.
+
+11. Mirror is not the same as perspective.
+    Mirror acts on the local mirrored/unmirrored read of the current grade.
+    If a grade does not carry that capability, mirror is the identity there.
+
+12. Order swap is grade-local.
+    Order swap reverses the recessive/dominant order of the current composite
+    grade.
+    If a grade has no such local order, order swap is the identity there.
+
+13. Opposite perspective is recursive.
    At every composite grade, opposite perspective is:
    - recursively invert each child
    - reverse child order
    The same law is used at every grade.
 
-10. Perspective is local.
+14. Perspective is local.
    Each observer uses the same local chart rules.
    What changes between observers is the opposite-perspective transform, not the
    local meaning of right-side versus left-side reading.
 
-11. Unit kind is preserved under opposite perspective.
+15. Unit kind is preserved under opposite perspective.
    If a unit represents aligned versus orthogonal carrier preference, that kind
    remains the same under observer inversion.
    Opposite perspective changes direction, not carrier class.
 
-12. New grade capabilities are emergent, not separately stored.
+16. New grade capabilities are emergent, not separately stored.
    At grade 1, perspective change mainly appears as re-reading of the paired
    numeric structure.
    At grade 2 and above, the same recursive rule makes new orientation
@@ -91,60 +113,60 @@ graded element.
    handedness.
    These are read from the ordered child numbers after transformation.
 
-13. Pinning creates relation before reduction.
+17. Pinning creates relation before reduction.
    A pin is a located relation between a recessive child and a dominant child.
    It does not by itself force addition, multiplication, boolean reduction, or
    any other fold.
 
-14. Pinning normalizes locally.
+18. Pinning normalizes locally.
     In the generic contrastive read, the recessive child is transformed into the
     inbound reading by the same opposite-perspective rule that applies anywhere
     else in the engine.
     The dominant child remains outbound.
 
-15. Positioned pins derive local sides from subtraction.
+19. Positioned pins derive local sides from subtraction.
     When a pin is given a host-relative position in the host child grade:
     - declared span = host dominant - host recessive
     - inbound side = position - host recessive
     - outbound side = host dominant - position
     These are exact derived reads, not stored annotations.
 
-16. Outbound remainder is inbound tension.
+20. Outbound remainder is inbound tension.
     The host outbound remainder at a positioned pin may be read as inbound
     tension:
     - positive means excess support or pressure past the join
     - negative means deficit or open pull before the join
     - zero means exact fit
 
-17. Same-space continuation can carry outbound tension.
+21. Same-space continuation can carry outbound tension.
     When same-space continuation exists beyond the pin, the host declared span
     may be carried forward as outbound tension on the surviving continuation.
 
-18. Addition is a same-space fold.
+22. Addition is a same-space fold.
     Addition is natural only when the normalized children occupy the same unit
     space after local normalization.
 
-19. Multiplication is a contrast fold.
+23. Multiplication is a contrast fold.
     Multiplication is natural when the normalized children remain distinct after
     local normalization.
     If the children collapse into the same unit space, multiplication requires a
     lift such as sequence, phase, or another ordered distinction.
 
-20. Boolean operations are support/frame folds.
+24. Boolean operations are support/frame folds.
     Boolean folds compare occupancy or support and do not require arithmetic
     reduction.
 
-21. Forced folds require lift or preserve tension.
+25. Forced folds require lift or preserve tension.
     If a requested operation is not natural in the current normalized space, the
     engine should not silently fake it.
     It should preserve the contradiction or add the smallest lawful lift.
 
-22. Pinning and dimensional lift are distinct.
+26. Pinning and dimensional lift are distinct.
     Pinning always creates a new relation object.
     It does not automatically create a new independent dimension.
     Dimensional lift is a later consequence of unit relation and fold choice.
 
-23. Result grade is operation-defined.
+27. Result grade is operation-defined.
     Pinning raises representation grade because it creates a new relation.
     Folding may preserve, lower, branch, or lift the represented result grade.
 
@@ -165,6 +187,14 @@ Perspective should be read recursively:
 - grade 3 and above: the same rule continues, and higher-order orientation
   features are read from the transformed child order rather than from stored
   flags
+
+The explicit named transforms should stay separate:
+
+- `Negate()` flips realized direction
+- `Mirror()` applies the local mirrored read where that capability exists
+- `SwapOrder()` reverses current recessive/dominant order where that capability
+  exists
+- `FlipPerspective()` is the recursive observer-change transform
 
 This allows the engine to say:
 

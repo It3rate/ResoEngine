@@ -9,7 +9,10 @@ public abstract record GradedElement
 {
     public abstract int Grade { get; }
     public abstract bool HasResolvedUnits { get; }
-    public abstract GradedElement InvertPerspective();
+    public abstract GradedElement Negate();
+    public abstract GradedElement Mirror();
+    public abstract GradedElement SwapOrder();
+    public abstract GradedElement FlipPerspective();
     public abstract bool SharesUnitSpace(GradedElement other);
     public abstract bool TryAdd(GradedElement other, out GradedElement? sum);
     public abstract bool TrySubtract(GradedElement other, out GradedElement? difference);

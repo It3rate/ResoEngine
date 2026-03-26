@@ -17,7 +17,13 @@ public sealed record AtomicElement(long Value, long Unit) : GradedElement
     public bool IsClampLike => Unit == 0 && Value == 0;
     public long Resolution => Math.Abs(Unit);
 
-    public override GradedElement InvertPerspective() => new AtomicElement(-Value, Unit);
+    public override GradedElement Negate() => new AtomicElement(-Value, Unit);
+
+    public override GradedElement Mirror() => new AtomicElement(Unit, Value);
+
+    public override GradedElement SwapOrder() => this;
+
+    public override GradedElement FlipPerspective() => Negate();
 
     public override bool SharesUnitSpace(GradedElement other) =>
         other is AtomicElement atomic &&
