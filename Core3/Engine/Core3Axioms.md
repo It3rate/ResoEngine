@@ -41,32 +41,49 @@ graded element.
 4. Grade-0 is the leaf numeric pair.
    A grade-0 engine element carries:
    - a signed realized value
-   - an exact unit number
+   - an exact signed unit number
    Opposite perspective negates the value but preserves the unit.
 
-5. Folded decimal reads are outside the engine.
-   Folding a grade-0 element may produce a decimal-like approximation for
-   display or external use.
-   That folded read is not itself a graded element and should not re-enter the
-   engine as though it preserved full provenance.
+5. Unit sign gives carrier relation.
+   A positive unit preserves the current carrier.
+   A negative unit expresses orthogonal force relative to the current carrier.
+   A zero unit preserves unresolved carrier choice and should not be silently
+   treated as either aligned or orthogonal.
 
-6. Opposite perspective is recursive.
+6. Unit magnitude gives resolution support.
+   The absolute unit magnitude is exact resolution support.
+   `10` and `-10` therefore share support magnitude while differing in carrier
+   relation.
+
+7. Zero-unit behavior remains unresolved until later relation.
+   A zero unit is not addable with positive or negative units.
+   `0/0` is clamp-like hold.
+   A zero unit with nonzero value may still emit or receive traversal pressure,
+   but its carrier direction remains unresolved until pinning or later fold
+   gives it a lawful read.
+
+8. Folded reads remain exact rational.
+   Folding a grade-0 element lowers it to an exact rational read `value / unit`.
+   Decimal or floating display is an external approximation choice, not an
+   engine value.
+
+9. Opposite perspective is recursive.
    At every composite grade, opposite perspective is:
    - recursively invert each child
    - reverse child order
    The same law is used at every grade.
 
-7. Perspective is local.
+10. Perspective is local.
    Each observer uses the same local chart rules.
    What changes between observers is the opposite-perspective transform, not the
    local meaning of right-side versus left-side reading.
 
-8. Unit kind is preserved under opposite perspective.
+11. Unit kind is preserved under opposite perspective.
    If a unit represents aligned versus orthogonal carrier preference, that kind
    remains the same under observer inversion.
    Opposite perspective changes direction, not carrier class.
 
-9. New grade capabilities are emergent, not separately stored.
+12. New grade capabilities are emergent, not separately stored.
    At grade 1, perspective change mainly appears as re-reading of the paired
    numeric structure.
    At grade 2 and above, the same recursive rule makes new orientation
@@ -74,42 +91,42 @@ graded element.
    handedness.
    These are read from the ordered child numbers after transformation.
 
-10. Pinning creates relation before reduction.
+13. Pinning creates relation before reduction.
    A pin is a located relation between a recessive child and a dominant child.
    It does not by itself force addition, multiplication, boolean reduction, or
    any other fold.
 
-11. Pinning normalizes locally.
+14. Pinning normalizes locally.
     In the generic contrastive read, the recessive child is transformed into the
     inbound reading by the same opposite-perspective rule that applies anywhere
     else in the engine.
     The dominant child remains outbound.
 
-12. Addition is a same-space fold.
+15. Addition is a same-space fold.
     Addition is natural only when the normalized children occupy the same unit
     space after local normalization.
 
-13. Multiplication is a contrast fold.
+16. Multiplication is a contrast fold.
     Multiplication is natural when the normalized children remain distinct after
     local normalization.
     If the children collapse into the same unit space, multiplication requires a
     lift such as sequence, phase, or another ordered distinction.
 
-14. Boolean operations are support/frame folds.
+17. Boolean operations are support/frame folds.
     Boolean folds compare occupancy or support and do not require arithmetic
     reduction.
 
-15. Forced folds require lift or preserve tension.
+18. Forced folds require lift or preserve tension.
     If a requested operation is not natural in the current normalized space, the
     engine should not silently fake it.
     It should preserve the contradiction or add the smallest lawful lift.
 
-16. Pinning and dimensional lift are distinct.
+19. Pinning and dimensional lift are distinct.
     Pinning always creates a new relation object.
     It does not automatically create a new independent dimension.
     Dimensional lift is a later consequence of unit relation and fold choice.
 
-17. Result grade is operation-defined.
+20. Result grade is operation-defined.
     Pinning raises representation grade because it creates a new relation.
     Folding may preserve, lower, branch, or lift the represented result grade.
 
@@ -144,6 +161,13 @@ or:
 - they normalize into contrastive space
 - multiplication is the natural fold
 - addition would require contradiction handling or lift
+
+The unit number itself should be read numerically:
+
+- positive unit: same-carrier support
+- negative unit: orthogonal force
+- zero unit: unresolved carrier choice
+- absolute unit magnitude: exact support or resolution
 
 ## Relationship To Existing Core3 Elements
 
