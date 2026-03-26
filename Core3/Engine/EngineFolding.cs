@@ -37,18 +37,6 @@ public static class EngineFolding
         return pin.DeclaredSpan;
     }
 
-    public static GradedElement? InboundSide(EnginePin pin)
-    {
-        ArgumentNullException.ThrowIfNull(pin);
-        return pin.InboundSide;
-    }
-
-    public static GradedElement? OutboundSide(EnginePin pin)
-    {
-        ArgumentNullException.ThrowIfNull(pin);
-        return pin.OutboundSide;
-    }
-
     public static GradedElement? InboundTension(EnginePin pin)
     {
         ArgumentNullException.ThrowIfNull(pin);

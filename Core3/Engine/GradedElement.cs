@@ -12,9 +12,11 @@ public abstract record GradedElement
     public abstract GradedElement Negate();
     public abstract GradedElement SwapOrder();
     public abstract GradedElement FlipPerspective();
+    public abstract bool TryFoldRatio(out FoldedRatio? ratio);
     public abstract bool SharesUnitSpace(GradedElement other);
     public abstract bool TryAdd(GradedElement other, out GradedElement? sum);
     public abstract bool TrySubtract(GradedElement other, out GradedElement? difference);
+    public abstract bool TryScale(FoldedRatio ratio, out GradedElement? scaled);
 
     public bool CanAdd(GradedElement other) => TryAdd(other, out _);
     public bool CanSubtract(GradedElement other) => TrySubtract(other, out _);

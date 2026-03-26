@@ -1,51 +1,52 @@
 namespace Core3.Engine;
 
 /// <summary>
-/// Generic pin relation between two equal-grade children.
-/// The pin is a relation first; folding is decided later.
+/// A generic pin relation.
+/// It may either split one hosted carrier/object at a position, or explicitly
+/// join an inbound side to an outbound side.
 /// </summary>
 public sealed record EnginePin
 {
-    public EnginePin(GradedElement recessive, GradedElement dominant, GradedElement? position = null)
+    public EnginePin(CompositeElement host, GradedElement pinPosition)
     {
-        ArgumentNullException.ThrowIfNull(recessive);
-        ArgumentNullException.ThrowIfNull(dominant);
+        ArgumentNullException.ThrowIfNull(host);
+        ArgumentNullException.ThrowIfNull(pinPosition);
 
-        if (recessive.Grade != dominant.Grade)
+        if (!TryResolveHostedPin(host, pinPosition, out var resolvedPosition, out var inbound, out var outbound))
         {
-            throw new InvalidOperationException("Pins require children of the same grade.");
+            throw new InvalidOperationException("Hosted pins require either a compatible host-local position or an exact ratio-bearing position that can scale onto the host.");
         }
 
-        if (position is not null && position.Grade > recessive.Grade)
-        {
-            throw new InvalidOperationException("Pin position cannot have a higher grade than the pinned children.");
-        }
-
-        Recessive = recessive;
-        Dominant = dominant;
-        Position = position;
+        Host = host;
+        PinPosition = pinPosition;
+        ResolvedPosition = resolvedPosition;
+        Inbound = inbound;
+        Outbound = outbound;
     }
 
-    public GradedElement Recessive { get; }
-    public GradedElement Dominant { get; }
-    public GradedElement? Position { get; }
-    public int Grade => Recessive.Grade + 1;
+    public EnginePin(GradedElement inbound, GradedElement outbound)
+    {
+        ArgumentNullException.ThrowIfNull(inbound);
+        ArgumentNullException.ThrowIfNull(outbound);
 
-    /// <summary>
-    /// The generic contrastive inbound read used for fold classification.
-    /// This differs from the host-local inbound side derived from a positioned
-    /// host.
-    /// </summary>
-    public GradedElement Inbound => Recessive.FlipPerspective();
-    public GradedElement Outbound => Dominant;
+        RequireSameGrade(inbound, outbound);
+
+        Inbound = inbound;
+        Outbound = outbound;
+    }
+
+    public CompositeElement? Host { get; }
+    public GradedElement? PinPosition { get; }
+    public GradedElement? ResolvedPosition { get; }
+    public GradedElement Inbound { get; }
+    public GradedElement Outbound { get; }
+    public int Grade => Inbound.Grade + 1;
+
     public bool HasResolvedUnits => Inbound.HasResolvedUnits && Outbound.HasResolvedUnits;
     public bool SharesUnitSpace => Inbound.SharesUnitSpace(Outbound);
     public bool HasContrastSpace => HasResolvedUnits && !SharesUnitSpace;
-    public GradedElement? ResolvedPosition => TryResolvePosition(out var resolvedPosition) ? resolvedPosition : null;
     public GradedElement? DeclaredSpan => TryGetDeclaredSpan(out var declaredSpan) ? declaredSpan : null;
-    public GradedElement? InboundSide => TryGetInboundSide(out var inboundSide) ? inboundSide : null;
-    public GradedElement? OutboundSide => TryGetOutboundSide(out var outboundSide) ? outboundSide : null;
-    public GradedElement? InboundTension => OutboundSide;
+    public GradedElement? InboundTension => Host is not null ? Outbound : null;
     public GradedElement? OutboundTension => TryGetOutboundTension(out var tension) ? tension : null;
 
     public GradedElement? Add() =>
@@ -57,15 +58,24 @@ public sealed record EnginePin
 
     public bool MultiplyRequiresLift() => HasResolvedUnits && SharesUnitSpace;
 
-    public EnginePin SlideTo(GradedElement position) => new(Recessive, Dominant, position);
+    public EnginePin SlideTo(GradedElement pinPosition)
+    {
+        if (Host is null)
+        {
+            throw new InvalidOperationException("Only hosted pins can be slid to a new position.");
+        }
+
+        return new EnginePin(Host, pinPosition);
+    }
 
     public bool TrySlideBy(GradedElement offset, out EnginePin? shifted)
     {
-        if (Position is not null &&
-            Position.TryAdd(offset, out var shiftedPosition) &&
+        if (Host is not null &&
+            ResolvedPosition is not null &&
+            ResolvedPosition.TryAdd(offset, out var shiftedPosition) &&
             shiftedPosition is not null)
         {
-            shifted = new EnginePin(Recessive, Dominant, shiftedPosition);
+            shifted = new EnginePin(Host, shiftedPosition);
             return true;
         }
 
@@ -75,23 +85,10 @@ public sealed record EnginePin
 
     public override string ToString() => $"pin(in {Inbound}, out {Outbound})";
 
-    private bool TryResolvePosition(out GradedElement? resolvedPosition)
-    {
-        if (TryGetHostFrame(out _, out var position))
-        {
-            resolvedPosition = position;
-            return true;
-        }
-
-        resolvedPosition = null;
-        return false;
-    }
-
     private bool TryGetDeclaredSpan(out GradedElement? declaredSpan)
     {
-        if (TryGetHostFrame(out var host, out _) &&
-            host is not null &&
-            host.Dominant.TrySubtract(host.Recessive, out declaredSpan) &&
+        if (Host is not null &&
+            Host.Dominant.TrySubtract(Host.Recessive, out declaredSpan) &&
             declaredSpan is not null)
         {
             return true;
@@ -101,42 +98,11 @@ public sealed record EnginePin
         return false;
     }
 
-    private bool TryGetInboundSide(out GradedElement? inboundSide)
-    {
-        if (TryGetHostFrame(out var host, out var position) &&
-            host is not null &&
-            position is not null &&
-            position.TrySubtract(host.Recessive, out inboundSide) &&
-            inboundSide is not null)
-        {
-            return true;
-        }
-
-        inboundSide = null;
-        return false;
-    }
-
-    private bool TryGetOutboundSide(out GradedElement? outboundSide)
-    {
-        if (TryGetHostFrame(out var host, out var position) &&
-            host is not null &&
-            position is not null &&
-            host.Dominant.TrySubtract(position, out outboundSide) &&
-            outboundSide is not null)
-        {
-            return true;
-        }
-
-        outboundSide = null;
-        return false;
-    }
-
     private bool TryGetOutboundTension(out GradedElement? tension)
     {
-        if (Dominant is CompositeElement applied &&
-            TryGetDeclaredSpan(out var declaredSpan) &&
+        if (TryGetDeclaredSpan(out var declaredSpan) &&
             declaredSpan is not null &&
-            declaredSpan.SharesUnitSpace(applied.Dominant))
+            declaredSpan.SharesUnitSpace(Outbound))
         {
             tension = declaredSpan;
             return true;
@@ -146,15 +112,80 @@ public sealed record EnginePin
         return false;
     }
 
-    private bool TryGetHostFrame(out CompositeElement? host, out GradedElement? position)
+    private static bool TryResolveHostedPin(
+        CompositeElement host,
+        GradedElement pinPosition,
+        out GradedElement? resolvedPosition,
+        out GradedElement inbound,
+        out GradedElement outbound)
     {
-        host = Recessive as CompositeElement;
-        position = Position;
+        if (TryResolveHostedSides(host, pinPosition, out inbound, out outbound))
+        {
+            resolvedPosition = pinPosition;
+            return true;
+        }
 
-        return host is not null &&
-            position is not null &&
-            position.Grade == host.Recessive.Grade &&
-            position.CanSubtract(host.Recessive) &&
-            host.Dominant.CanSubtract(position);
+        if (TryResolvePositionFromRatio(host, pinPosition, out resolvedPosition) &&
+            resolvedPosition is not null &&
+            TryResolveHostedSides(host, resolvedPosition, out inbound, out outbound))
+        {
+            return true;
+        }
+
+        resolvedPosition = null;
+        inbound = null!;
+        outbound = null!;
+        return false;
+    }
+
+    private static bool TryResolveHostedSides(
+        CompositeElement host,
+        GradedElement position,
+        out GradedElement inbound,
+        out GradedElement outbound)
+    {
+        if (position.Grade == host.Recessive.Grade &&
+            position.TrySubtract(host.Recessive, out var inboundSide) &&
+            host.Dominant.TrySubtract(position, out var outboundSide) &&
+            inboundSide is not null &&
+            outboundSide is not null)
+        {
+            inbound = inboundSide;
+            outbound = outboundSide;
+            return true;
+        }
+
+        inbound = null!;
+        outbound = null!;
+        return false;
+    }
+
+    private static bool TryResolvePositionFromRatio(
+        CompositeElement host,
+        GradedElement pinPosition,
+        out GradedElement? resolvedPosition)
+    {
+        if (host.Dominant.TrySubtract(host.Recessive, out var declaredSpan) &&
+            declaredSpan is not null &&
+            pinPosition.TryFoldRatio(out var ratio) &&
+            ratio is not null &&
+            declaredSpan.TryScale(ratio, out var offset) &&
+            offset is not null &&
+            host.Recessive.TryAdd(offset, out resolvedPosition) &&
+            resolvedPosition is not null)
+        {
+            return true;
+        }
+
+        resolvedPosition = null;
+        return false;
+    }
+
+    private static void RequireSameGrade(GradedElement left, GradedElement right)
+    {
+        if (left.Grade != right.Grade)
+        {
+            throw new InvalidOperationException("Pins require children of the same grade.");
+        }
     }
 }

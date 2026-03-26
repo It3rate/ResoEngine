@@ -121,59 +121,100 @@ graded element.
    settled no-argument reflection law.
 
 17. Pinning creates relation before reduction.
-   A pin is a located relation between a recessive child and a dominant child.
+   A pin is a local inbound/outbound relation.
    It does not by itself force addition, multiplication, boolean reduction, or
    any other fold.
 
-18. Pinning normalizes locally.
-    In the generic contrastive read, the recessive child is transformed into the
-    inbound reading by the same opposite-perspective rule that applies anywhere
-    else in the engine.
-    The dominant child remains outbound.
+18. Pinning has two canonical construction modes.
+   A pin may be built either as:
+   - a hosted split: one host plus a position
+   - an explicit local join: one inbound side plus one outbound side
+   These are two ways of forming the same local pin relation.
 
-19. Positioned pins derive local sides from subtraction.
-    When a pin is given a host-relative position in the host child grade:
+19. Hosted pin positions may be resolved or ratio-bearing.
+   In hosted mode, a pin position may be supplied either as:
+   - an already resolved host-local coordinate in the host child grade
+   - a graded element that can fold to one exact ratio
+   Ratio-based pinning should remain exact and should not use decimal
+   interpolation.
+
+20. Ratio-based pinning scales to host resolution.
+    Given host span `S` and exact ratio `r = a / b`, exact positioning uses
+    ratio arithmetic:
+    - read `r` as an exact folded ratio
+    - scale the host span by that ratio
+    - add the resulting offset to the host recessive side
+    This is equivalent to scaling one resolution to the other, but should be
+    implemented through exact structure rather than decimal rounding.
+
+21. Hosted pins derive local sides from subtraction.
+    When a hosted pin is given a host-relative position in the host child grade:
     - declared span = host dominant - host recessive
     - inbound side = position - host recessive
     - outbound side = host dominant - position
     These are exact derived reads, not stored annotations.
 
-20. Outbound remainder is inbound tension.
-    The host outbound remainder at a positioned pin may be read as inbound
+22. Explicit joins supply local sides directly.
+    In explicit local-join mode, the inbound and outbound sides are already
+    present and the pin position is implicit at their join site.
+
+23. Outbound remainder is inbound tension.
+    The host outbound remainder at a hosted pin may be read as inbound
     tension:
     - positive means excess support or pressure past the join
     - negative means deficit or open pull before the join
     - zero means exact fit
 
-21. Same-space continuation can carry outbound tension.
+24. Same-space continuation can carry outbound tension.
     When same-space continuation exists beyond the pin, the host declared span
     may be carried forward as outbound tension on the surviving continuation.
 
-22. Addition is a same-space fold.
+25. Later fold laws may reinterpret local roles.
+    A pin constructor only establishes or derives local inbound/outbound sides.
+    Later fold laws may still re-express those sides for additive, contrastive,
+    or other readings.
+
+26. Addition is a same-space fold.
     Addition is natural only when the normalized children occupy the same unit
     space after local normalization.
 
-23. Multiplication is a contrast fold.
+27. Multiplication is a contrast fold.
     Multiplication is natural when the normalized children remain distinct after
     local normalization.
     If the children collapse into the same unit space, multiplication requires a
     lift such as sequence, phase, or another ordered distinction.
 
-24. Boolean operations are support/frame folds.
+28. Boolean operations are support/frame folds.
     Boolean folds compare occupancy or support and do not require arithmetic
     reduction.
 
-25. Forced folds require lift or preserve tension.
+29. Forced folds require lift or preserve tension.
     If a requested operation is not natural in the current normalized space, the
     engine should not silently fake it.
     It should preserve the contradiction or add the smallest lawful lift.
 
-26. Pinning and dimensional lift are distinct.
+30. Named views are opinionated common cases.
+    One structural grade may admit several lawful recurring configurations.
+    For example, grade 2 may support both an axis-like directed pair and a
+    grid-like two-axis origin system.
+    Named views should construct one canonical configuration on top of the
+    generic engine, but should remain reducible back to the underlying graded
+    element without loss.
+
+31. Exact ratio view is generic, not limited to grade 1.
+    Any graded element that can lawfully fold its recessive and dominant sides
+    to exact ratios may expose one exact ratio read:
+    - inbound or recessive fold becomes the denominator side
+    - outbound or dominant fold becomes the numerator side
+    The common named proportion remains the grade-1 view, but exact ratio
+    reading is not restricted to that grade.
+
+32. Pinning and dimensional lift are distinct.
     Pinning always creates a new relation object.
     It does not automatically create a new independent dimension.
     Dimensional lift is a later consequence of unit relation and fold choice.
 
-27. Result grade is operation-defined.
+33. Result grade is operation-defined.
     Pinning raises representation grade because it creates a new relation.
     Folding may preserve, lower, branch, or lift the represented result grade.
 
@@ -232,6 +273,15 @@ This gives the current transform table:
 The user-facing word "mirror" may still be useful, but at the generic engine
 level it should be reserved for a later transform that takes an explicit mirror
 subspace or axis rather than being derived solely from grade.
+
+Exact ratio-based positioning should be read the same way:
+
+- a named proportion is one common grade-1 view over the generic engine
+- but any graded element may contribute a placement ratio if it can fold to one
+  exact ratio lawfully
+- host placement should use that exact ratio view
+- the host span is scaled by that ratio as a ratio of ratios
+- no decimal interpolation is needed or desired
 
 This allows the engine to say:
 

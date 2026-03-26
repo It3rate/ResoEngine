@@ -23,6 +23,18 @@ public sealed record AtomicElement(long Value, long Unit) : GradedElement
 
     public override GradedElement FlipPerspective() => Negate();
 
+    public override bool TryFoldRatio(out FoldedRatio? ratio)
+    {
+        if (HasResolvedUnits)
+        {
+            ratio = new FoldedRatio(Value, Unit);
+            return true;
+        }
+
+        ratio = null;
+        return false;
+    }
+
     public override bool SharesUnitSpace(GradedElement other) =>
         other is AtomicElement atomic &&
         HasResolvedUnits &&
@@ -53,7 +65,21 @@ public sealed record AtomicElement(long Value, long Unit) : GradedElement
         return false;
     }
 
-    public FoldedRatio Fold() => new(Value, Unit);
+    public override bool TryScale(FoldedRatio ratio, out GradedElement? scaled)
+    {
+        ArgumentNullException.ThrowIfNull(ratio);
+
+        if (!HasResolvedUnits)
+        {
+            scaled = null;
+            return false;
+        }
+
+        scaled = new AtomicElement(
+            checked(Value * ratio.Numerator),
+            checked(Unit * ratio.Denominator));
+        return true;
+    }
 
     public override string ToString() => $"{Value}/{Unit}";
 }

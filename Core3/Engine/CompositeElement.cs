@@ -38,6 +38,22 @@ public sealed record CompositeElement : GradedElement
         Dominant.FlipPerspective(),
         Recessive.FlipPerspective());
 
+    public override bool TryFoldRatio(out FoldedRatio? ratio)
+    {
+        if (Recessive.TryFoldRatio(out var inboundRatio) &&
+            inboundRatio is not null &&
+            inboundRatio.Numerator != 0 &&
+            Dominant.TryFoldRatio(out var outboundRatio) &&
+            outboundRatio is not null)
+        {
+            ratio = FoldedRatio.Divide(outboundRatio, inboundRatio);
+            return true;
+        }
+
+        ratio = null;
+        return false;
+    }
+
     public override bool SharesUnitSpace(GradedElement other) =>
         other is CompositeElement composite &&
         HasResolvedUnits &&
@@ -74,6 +90,23 @@ public sealed record CompositeElement : GradedElement
         }
 
         difference = null;
+        return false;
+    }
+
+    public override bool TryScale(FoldedRatio ratio, out GradedElement? scaled)
+    {
+        ArgumentNullException.ThrowIfNull(ratio);
+
+        if (Recessive.TryScale(ratio, out var recessiveScaled) &&
+            Dominant.TryScale(ratio, out var dominantScaled) &&
+            recessiveScaled is not null &&
+            dominantScaled is not null)
+        {
+            scaled = new CompositeElement(recessiveScaled, dominantScaled);
+            return true;
+        }
+
+        scaled = null;
         return false;
     }
 
