@@ -453,6 +453,32 @@ pass.
 - uncertainty, roughness, and confidence-sensitive support choice are later
   layers and should not yet be faked by silent support collapse
 
+The current engine should also treat support as bounded on both ends.
+
+- resolution bounds the low end by stating the smallest active distinction
+- frame/span/support bounds the high end by stating the largest active extent
+- these two bounds are different and should not be collapsed into one number
+- host-relative pinning already expresses the upper bound operationally: moving
+  beyond the host does not silently continue to infinity, it raises tension
+- infinity should therefore not be treated as the primitive default; it is a
+  later interpretation that appears only when lower and upper bounds are
+  intentionally left open
+
+Shared calibration should also be treated as a first-class relation.
+
+- a created space may later measure or host further structure without each child
+  owning a duplicate copy of that space
+- this is not only container behavior
+- it also covers ruler-like, graph-like, scale-like, and remote-sensor-like
+  measurement relations
+- the important thing is that a previously established frame lends calibration
+  to a later subject
+- at grade 1 this often appears as shared denominator/support reuse
+- at higher grades the same idea can appear as shared axis, grid, sheet, or
+  other frame reuse
+- this relation should stay close to existing Core3 math by reusing hosted
+  pinning and child composition rather than inventing an unrelated storage model
+
 ## Relationship To Existing Core3 Elements
 
 `Core3.Elements` remains the practical semantic reference.

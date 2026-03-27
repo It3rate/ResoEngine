@@ -319,6 +319,23 @@ public sealed class Core3ElementTests
     }
 
     [Fact]
+    public void EngineReference_CanReuseExistingCalibrationWithoutCopyingFrameOwnership()
+    {
+        var frame = new CompositeElement(
+            new AtomicElement(10, 10),
+            new AtomicElement(3, 10));
+        var subject = new AtomicElement(7, 1);
+
+        var reference = new EngineReference(frame, subject);
+
+        Assert.True(reference.TryMeasureOnCalibration(out var measured));
+
+        var calibrated = Assert.IsType<CompositeElement>(measured);
+        Assert.Equal(frame.Recessive, calibrated.Recessive);
+        Assert.Equal(new AtomicElement(70, 10), calibrated.Dominant);
+    }
+
+    [Fact]
     public void AtomicScale_PreservesExactWorkingSupportWithoutReducing()
     {
         var whole = new AtomicElement(10, 1);
