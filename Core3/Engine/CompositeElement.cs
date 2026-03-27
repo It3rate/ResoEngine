@@ -106,7 +106,8 @@ public sealed record CompositeElement : GradedElement
             return false;
         }
 
-        if (EngineEvaluation.TryFoldToAtomic(this, out var left) &&
+        if (Grade == 1 &&
+            EngineEvaluation.TryFoldToAtomic(this, out var left) &&
             left is not null &&
             EngineEvaluation.TryFoldToAtomic(composite, out var right) &&
             right is not null)
@@ -114,8 +115,7 @@ public sealed record CompositeElement : GradedElement
             return EngineEvaluation.TryMultiplyAtomic(left, right, out product);
         }
 
-        product = null;
-        return false;
+        return EngineEvaluation.TryMultiplyKernel(this, composite, out product);
     }
 
     public override bool TryScale(AtomicElement factor, out GradedElement? scaled)

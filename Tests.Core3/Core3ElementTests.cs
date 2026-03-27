@@ -341,7 +341,7 @@ public sealed class Core3ElementTests
     }
 
     [Fact]
-    public void CompositeMultiply_UsesFoldFirstExactMultiplication()
+    public void GradeOneCompositeMultiply_UsesFoldFirstExactMultiplication()
     {
         var left = new CompositeElement(
             new AtomicElement(10, 1),
@@ -355,6 +355,48 @@ public sealed class Core3ElementTests
         var atomic = Assert.IsType<AtomicElement>(product);
         Assert.Equal(3, atomic.Value);
         Assert.Equal(40, atomic.Unit);
+    }
+
+    [Fact]
+    public void GradeTwoCompositeMultiply_ReducesAlignedKernelLikeComplexPairing()
+    {
+        var left = new CompositeElement(
+            new CompositeElement(new AtomicElement(1, 1), new AtomicElement(2, 1)),
+            new CompositeElement(new AtomicElement(1, 1), new AtomicElement(3, 1)));
+        var right = new CompositeElement(
+            new CompositeElement(new AtomicElement(1, 1), new AtomicElement(4, 1)),
+            new CompositeElement(new AtomicElement(1, 1), new AtomicElement(5, 1)));
+
+        Assert.True(left.TryMultiply(right, out var product));
+
+        var reduced = Assert.IsType<CompositeElement>(product);
+        Assert.Equal(1, reduced.Grade);
+        Assert.Equal(new AtomicElement(-7, 1), reduced.Recessive);
+        Assert.Equal(new AtomicElement(22, 1), reduced.Dominant);
+    }
+
+    [Fact]
+    public void GradeTwoCompositeMultiply_PreservesRawKernelWhenOrthogonalityPreventsReduction()
+    {
+        var left = new CompositeElement(
+            new CompositeElement(new AtomicElement(1, 1), new AtomicElement(2, 1)),
+            new CompositeElement(new AtomicElement(1, -1), new AtomicElement(3, -1)));
+        var right = new CompositeElement(
+            new CompositeElement(new AtomicElement(1, 1), new AtomicElement(4, 1)),
+            new CompositeElement(new AtomicElement(1, -1), new AtomicElement(5, -1)));
+
+        Assert.True(left.TryMultiply(right, out var product));
+
+        var kernel = Assert.IsType<CompositeElement>(product);
+        Assert.Equal(2, kernel.Grade);
+
+        var squares = Assert.IsType<CompositeElement>(kernel.Recessive);
+        var cross = Assert.IsType<CompositeElement>(kernel.Dominant);
+
+        Assert.Equal(new AtomicElement(8, 1), squares.Recessive);
+        Assert.Equal(new AtomicElement(15, -1), squares.Dominant);
+        Assert.Equal(new AtomicElement(10, -1), cross.Recessive);
+        Assert.Equal(new AtomicElement(12, -1), cross.Dominant);
     }
 
     [Fact]

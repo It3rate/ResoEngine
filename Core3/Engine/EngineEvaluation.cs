@@ -82,6 +82,43 @@ internal static class EngineEvaluation
         return true;
     }
 
+    internal static bool TryMultiplyKernel(
+        CompositeElement left,
+        CompositeElement right,
+        out GradedElement? product)
+    {
+        ArgumentNullException.ThrowIfNull(left);
+        ArgumentNullException.ThrowIfNull(right);
+
+        if (!left.Recessive.TryMultiply(right.Recessive, out var rr) ||
+            rr is null ||
+            !left.Recessive.TryMultiply(right.Dominant, out var rd) ||
+            rd is null ||
+            !left.Dominant.TryMultiply(right.Recessive, out var dr) ||
+            dr is null ||
+            !left.Dominant.TryMultiply(right.Dominant, out var dd) ||
+            dd is null)
+        {
+            product = null;
+            return false;
+        }
+
+        if (rr.TrySubtract(dd, out var squareDifference) &&
+            squareDifference is not null &&
+            rd.TryAdd(dr, out var crossSum) &&
+            crossSum is not null &&
+            squareDifference.Grade == crossSum.Grade)
+        {
+            product = new CompositeElement(squareDifference, crossSum);
+            return true;
+        }
+
+        product = new CompositeElement(
+            new CompositeElement(rr, dd),
+            new CompositeElement(rd, dr));
+        return true;
+    }
+
     private static long GreatestCommonDivisor(long left, long right)
     {
         while (right != 0)
