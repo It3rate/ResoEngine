@@ -165,11 +165,16 @@ public sealed record EnginePin
         GradedElement pinPosition,
         out GradedElement? resolvedPosition)
     {
+        if (!EngineEvaluation.TryFoldToAtomic(pinPosition, out var ratio) ||
+            ratio is null ||
+            !ratio.IsAlignedUnit)
+        {
+            resolvedPosition = null;
+            return false;
+        }
+
         if (host.Dominant.TrySubtract(host.Recessive, out var declaredSpan) &&
             declaredSpan is not null &&
-            pinPosition.TryFoldRatio(out var ratio) &&
-            ratio is not null &&
-            ratio.HasAlignedCarrier &&
             declaredSpan.TryScale(ratio, out var offset) &&
             offset is not null &&
             host.Recessive.TryAdd(offset, out resolvedPosition) &&

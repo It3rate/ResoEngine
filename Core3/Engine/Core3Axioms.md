@@ -400,6 +400,15 @@ readings:
 What varies is not the distributive expansion itself, but the later reduction
 or fold law.
 
+Public folds should remain in element space.
+
+- a folded result should still be a `GradedElement`
+- folding normally lowers or re-expresses grade, but should not escape into a
+  separate public ontology of special result types
+- exact ratio-style evaluation may still occur internally when a calculation
+  specifically needs it, such as host-relative pin placement
+- that internal evaluation helper is not itself the public mathematical object
+
 For positioned pins on a line-like host:
 
 - `declared span` is the host's full local claim

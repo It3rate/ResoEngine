@@ -23,16 +23,10 @@ public sealed record AtomicElement(long Value, long Unit) : GradedElement
 
     public override GradedElement FlipPerspective() => Negate();
 
-    public override bool TryFoldRatio(out FoldedRatio? ratio)
+    public override bool TryFold(out GradedElement? folded)
     {
-        if (HasResolvedUnits)
-        {
-            ratio = new FoldedRatio(Value, Unit);
-            return true;
-        }
-
-        ratio = null;
-        return false;
+        folded = this;
+        return true;
     }
 
     public override bool SharesUnitSpace(GradedElement other) =>
@@ -65,18 +59,18 @@ public sealed record AtomicElement(long Value, long Unit) : GradedElement
         return false;
     }
 
-    public override bool TryScale(FoldedRatio ratio, out GradedElement? scaled)
+    public override bool TryScale(AtomicElement factor, out GradedElement? scaled)
     {
-        ArgumentNullException.ThrowIfNull(ratio);
+        ArgumentNullException.ThrowIfNull(factor);
 
-        if (!HasResolvedUnits)
+        if (!HasResolvedUnits || !factor.HasResolvedUnits)
         {
             scaled = null;
             return false;
         }
 
-        var scaledValue = checked(Value * ratio.Numerator);
-        var scaledUnit = checked(Unit * ratio.Denominator);
+        var scaledValue = checked(Value * factor.Value);
+        var scaledUnit = checked(Unit * factor.Unit);
         var divisor = GreatestCommonDivisor(Math.Abs(scaledValue), Math.Abs(scaledUnit));
 
         scaled = new AtomicElement(

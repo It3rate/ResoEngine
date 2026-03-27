@@ -38,19 +38,24 @@ public sealed record CompositeElement : GradedElement
         Dominant.FlipPerspective(),
         Recessive.FlipPerspective());
 
-    public override bool TryFoldRatio(out FoldedRatio? ratio)
+    public override bool TryFold(out GradedElement? folded)
     {
-        if (Recessive.TryFoldRatio(out var inboundRatio) &&
-            inboundRatio is not null &&
-            Dominant.TryFoldRatio(out var outboundRatio) &&
-            outboundRatio is not null &&
-            outboundRatio.CanComposeRatioWith(inboundRatio))
+        if (Recessive is AtomicElement denominator &&
+            Dominant is AtomicElement numerator)
         {
-            ratio = FoldedRatio.Divide(outboundRatio, inboundRatio);
+            return EngineEvaluation.TryComposeRatio(numerator, denominator, out folded);
+        }
+
+        if (Recessive.TryFold(out var foldedRecessive) &&
+            Dominant.TryFold(out var foldedDominant) &&
+            foldedRecessive is not null &&
+            foldedDominant is not null)
+        {
+            folded = new CompositeElement(foldedRecessive, foldedDominant);
             return true;
         }
 
-        ratio = null;
+        folded = null;
         return false;
     }
 
@@ -93,12 +98,12 @@ public sealed record CompositeElement : GradedElement
         return false;
     }
 
-    public override bool TryScale(FoldedRatio ratio, out GradedElement? scaled)
+    public override bool TryScale(AtomicElement factor, out GradedElement? scaled)
     {
-        ArgumentNullException.ThrowIfNull(ratio);
+        ArgumentNullException.ThrowIfNull(factor);
 
-        if (Recessive.TryScale(ratio, out var recessiveScaled) &&
-            Dominant.TryScale(ratio, out var dominantScaled) &&
+        if (Recessive.TryScale(factor, out var recessiveScaled) &&
+            Dominant.TryScale(factor, out var dominantScaled) &&
             recessiveScaled is not null &&
             dominantScaled is not null)
         {

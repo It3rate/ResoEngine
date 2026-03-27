@@ -236,66 +236,69 @@ public sealed class Core3ElementTests
     }
 
     [Fact]
-    public void FoldedRatio_PreservesCarrierPolarityFromAtomicElement()
+    public void CompositeFold_PreservesCarrierPolarityFromAtomicResult()
     {
-        var orthogonal = new AtomicElement(1, -2);
-        var reversed = new AtomicElement(-1, 2);
+        var orthogonalRatio = new CompositeElement(
+            new AtomicElement(2, -1),
+            new AtomicElement(1, -1));
+        var reversedRatio = new CompositeElement(
+            new AtomicElement(2, 1),
+            new AtomicElement(-1, 1));
 
-        Assert.True(orthogonal.TryFoldRatio(out var orthogonalRatio));
-        Assert.True(reversed.TryFoldRatio(out var reversedRatio));
+        Assert.True(orthogonalRatio.TryFold(out var orthogonalFolded));
+        Assert.True(reversedRatio.TryFold(out var reversedFolded));
 
-        Assert.NotNull(orthogonalRatio);
-        Assert.NotNull(reversedRatio);
-        Assert.True(orthogonalRatio!.HasOrthogonalCarrier);
-        Assert.False(reversedRatio!.HasOrthogonalCarrier);
-        Assert.Equal(-2, orthogonalRatio.Denominator);
-        Assert.Equal(-1, reversedRatio.Numerator);
+        var orthogonal = Assert.IsType<AtomicElement>(orthogonalFolded);
+        var reversed = Assert.IsType<AtomicElement>(reversedFolded);
+
+        Assert.True(orthogonal.IsOrthogonalUnit);
+        Assert.False(reversed.IsOrthogonalUnit);
+        Assert.Equal(-2, orthogonal.Unit);
+        Assert.Equal(-1, reversed.Value);
     }
 
     [Fact]
-    public void FoldedRatio_Divide_KeepsValueSignSeparateFromCarrierPolarity()
+    public void CompositeFold_KeepsValueSignSeparateFromUnitPolarity()
     {
-        var left = Assert.IsType<AtomicElement>(new AtomicElement(3, 1));
-        var right = Assert.IsType<AtomicElement>(new AtomicElement(-2, 1));
+        var ratio = new CompositeElement(
+            new AtomicElement(2, 1),
+            new AtomicElement(-3, 1));
 
-        Assert.True(left.TryFoldRatio(out var leftRatio));
-        Assert.True(right.TryFoldRatio(out var rightRatio));
+        Assert.True(ratio.TryFold(out var folded));
 
-        var quotient = FoldedRatio.Divide(leftRatio!, rightRatio!);
-
-        Assert.Equal(-3, quotient.Numerator);
-        Assert.Equal(2, quotient.Denominator);
-        Assert.True(quotient.HasAlignedCarrier);
+        var atomic = Assert.IsType<AtomicElement>(folded);
+        Assert.Equal(-3, atomic.Value);
+        Assert.Equal(2, atomic.Unit);
+        Assert.True(atomic.IsAlignedUnit);
     }
 
     [Fact]
-    public void FoldedProduct_PreservesOrthogonalCarrierParticipation()
-    {
-        var aligned = new AtomicElement(2, 3);
-        var orthogonal = new AtomicElement(4, -5);
-        var orthogonalAgain = new AtomicElement(6, -7);
-
-        Assert.True(aligned.TryFoldRatio(out var alignedRatio));
-        Assert.True(orthogonal.TryFoldRatio(out var orthogonalRatio));
-        Assert.True(orthogonalAgain.TryFoldRatio(out var orthogonalAgainRatio));
-
-        var contrast = FoldedRatio.Multiply(alignedRatio!, orthogonalRatio!);
-        var orthogonalSquare = FoldedRatio.Multiply(orthogonalRatio!, orthogonalAgainRatio!);
-
-        Assert.True(contrast.IsContrastCandidate);
-        Assert.False(contrast.IsSameSpaceSquareCandidate);
-        Assert.True(orthogonalSquare.IsOrthogonalFamilySquareCandidate);
-        Assert.Equal(24, orthogonalSquare.SignedValueProduct);
-    }
-
-    [Fact]
-    public void CompositeElement_TryFoldRatio_RejectsContrastCarrierChildren()
+    public void CompositeFold_RejectsContrastCarrierChildren()
     {
         var contrastive = new CompositeElement(
             new AtomicElement(2, 1),
             new AtomicElement(3, -1));
 
-        Assert.False(contrastive.TryFoldRatio(out _));
+        Assert.False(contrastive.TryFold(out _));
+    }
+
+    [Fact]
+    public void HigherGradeFold_StaysInsideElementSpace()
+    {
+        var gradeTwo = new CompositeElement(
+            new CompositeElement(
+                new AtomicElement(10, 1),
+                new AtomicElement(3, 1)),
+            new CompositeElement(
+                new AtomicElement(8, 1),
+                new AtomicElement(2, 1)));
+
+        Assert.True(gradeTwo.TryFold(out var folded));
+
+        var lowered = Assert.IsType<CompositeElement>(folded);
+        Assert.Equal(1, lowered.Grade);
+        Assert.Equal(new AtomicElement(3, 10), lowered.Recessive);
+        Assert.Equal(new AtomicElement(1, 4), lowered.Dominant);
     }
 
     [Fact]
