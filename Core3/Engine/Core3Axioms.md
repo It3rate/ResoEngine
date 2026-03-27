@@ -439,6 +439,20 @@ For positioned pins on a line-like host:
 - `declared span` may be read as outbound tension when continuation carries it
   forward
 
+Current engine resolution should also be read as a deliberately small first
+pass.
+
+- exact working arithmetic should preserve support rather than reduce it by
+  coincidence
+- `TryScale` should therefore keep the full multiplied support
+- exact re-expression to a chosen support is a separate operation
+- exact alignment for addition and subtraction should use a temporary common
+  support rather than requiring identical stored support
+- committing to a displayed support is a later explicit choice, not a side
+  effect of arithmetic
+- uncertainty, roughness, and confidence-sensitive support choice are later
+  layers and should not yet be faked by silent support collapse
+
 ## Relationship To Existing Core3 Elements
 
 `Core3.Elements` remains the practical semantic reference.

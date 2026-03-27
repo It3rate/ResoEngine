@@ -298,7 +298,7 @@ public sealed class Core3ElementTests
         var lowered = Assert.IsType<CompositeElement>(folded);
         Assert.Equal(1, lowered.Grade);
         Assert.Equal(new AtomicElement(3, 10), lowered.Recessive);
-        Assert.Equal(new AtomicElement(1, 4), lowered.Dominant);
+        Assert.Equal(new AtomicElement(2, 8), lowered.Dominant);
     }
 
     [Fact]
@@ -313,9 +313,52 @@ public sealed class Core3ElementTests
 
         var pin = new EnginePin(host, ratioPosition);
 
-        Assert.Equal(new AtomicElement(3, 1), pin.ResolvedPosition);
-        Assert.Equal(new AtomicElement(3, 1), pin.Inbound);
-        Assert.Equal(new AtomicElement(7, 1), pin.Outbound);
+        Assert.Equal(new AtomicElement(30, 10), pin.ResolvedPosition);
+        Assert.Equal(new AtomicElement(30, 10), pin.Inbound);
+        Assert.Equal(new AtomicElement(70, 10), pin.Outbound);
+    }
+
+    [Fact]
+    public void AtomicScale_PreservesExactWorkingSupportWithoutReducing()
+    {
+        var whole = new AtomicElement(10, 1);
+        var tenth = new AtomicElement(3, 10);
+        var balanced = new AtomicElement(10, 10);
+
+        Assert.True(whole.TryScale(tenth, out var scaledWhole));
+        Assert.True(balanced.TryScale(new AtomicElement(10, 1), out var scaledValue));
+        Assert.True(balanced.TryScale(new AtomicElement(1, 10), out var scaledSupport));
+
+        Assert.Equal(new AtomicElement(30, 10), Assert.IsType<AtomicElement>(scaledWhole));
+        Assert.Equal(new AtomicElement(100, 10), Assert.IsType<AtomicElement>(scaledValue));
+        Assert.Equal(new AtomicElement(10, 100), Assert.IsType<AtomicElement>(scaledSupport));
+    }
+
+    [Fact]
+    public void AtomicAdd_AlignsExactSupportBeforeCombining()
+    {
+        var half = new AtomicElement(1, 2);
+        var quarter = new AtomicElement(1, 4);
+
+        Assert.True(half.TryAdd(quarter, out var sum));
+        Assert.True(half.TrySubtract(quarter, out var difference));
+
+        Assert.Equal(new AtomicElement(3, 4), Assert.IsType<AtomicElement>(sum));
+        Assert.Equal(new AtomicElement(1, 4), Assert.IsType<AtomicElement>(difference));
+    }
+
+    [Fact]
+    public void AtomicCommitToSupport_ReexpressesExactlyWithoutChangingFoldedValue()
+    {
+        var ratio = new AtomicElement(3, 10);
+
+        Assert.True(ratio.TryCommitToSupport(100, out var committed));
+        Assert.True(ratio.TryCommitToSupport(50, out var refined));
+        Assert.False(ratio.TryCommitToSupport(6, out _));
+
+        Assert.Equal(new AtomicElement(30, 100), committed);
+        Assert.Equal(new AtomicElement(15, 50), refined);
+        Assert.Equal(new AtomicElement(3, 10), ratio);
     }
 
     [Fact]
@@ -353,8 +396,8 @@ public sealed class Core3ElementTests
         Assert.True(left.TryMultiply(right, out var product));
 
         var atomic = Assert.IsType<AtomicElement>(product);
-        Assert.Equal(3, atomic.Value);
-        Assert.Equal(40, atomic.Unit);
+        Assert.Equal(6, atomic.Value);
+        Assert.Equal(80, atomic.Unit);
     }
 
     [Fact]

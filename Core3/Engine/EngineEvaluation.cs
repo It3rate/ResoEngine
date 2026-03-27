@@ -48,11 +48,7 @@ internal static class EngineEvaluation
         }
 
         var unit = checked(Math.Sign(numerator.Unit) * Math.Abs(numerator.Unit) * Math.Abs(denominator.Value));
-        var divisor = GreatestCommonDivisor(Math.Abs(value), Math.Abs(unit));
-
-        folded = new AtomicElement(
-            value / divisor,
-            unit / divisor);
+        folded = new AtomicElement(value, unit);
         return true;
     }
 
@@ -74,11 +70,7 @@ internal static class EngineEvaluation
         var unitMagnitude = checked(Math.Abs(left.Unit) * Math.Abs(right.Unit));
         var unitSign = left.IsOrthogonalUnit || right.IsOrthogonalUnit ? -1L : 1L;
         var unit = checked(unitSign * unitMagnitude);
-        var divisor = GreatestCommonDivisor(Math.Abs(value), Math.Abs(unit));
-
-        product = new AtomicElement(
-            value / divisor,
-            unit / divisor);
+        product = new AtomicElement(value, unit);
         return true;
     }
 
@@ -117,17 +109,5 @@ internal static class EngineEvaluation
             new CompositeElement(rr, dd),
             new CompositeElement(rd, dr));
         return true;
-    }
-
-    private static long GreatestCommonDivisor(long left, long right)
-    {
-        while (right != 0)
-        {
-            var remainder = left % right;
-            left = right;
-            right = remainder;
-        }
-
-        return left == 0 ? 1 : left;
     }
 }
