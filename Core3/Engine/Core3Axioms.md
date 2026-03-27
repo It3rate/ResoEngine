@@ -304,6 +304,102 @@ The unit number itself should be read numerically:
 - zero unit: unresolved carrier choice
 - absolute unit magnitude: exact support or resolution
 
+## Carrier Polarity And Products
+
+When denominator polarity is used structurally, it should not be collapsed into
+ordinary scalar negation.
+
+In conventional algebra, expressions such as `1 / (-3)` and `1 / (-i)` are
+already lawful and reduce by moving the scalar minus sign out of the
+denominator. For example:
+
+- `1 / (-3) = -1 / 3`
+- `1 / (-i) = -1 / i`
+- in ordinary complex arithmetic, `1 / (-i) = i`
+
+Core3 should not silently reuse that rule when the denominator sign is being
+used to encode carrier polarity rather than scalar sign. In this engine:
+
+- `-1 / i` means negated or reversed value on carrier `i`
+- `1 / -i` means positive value on an orthogonally polarized `i` carrier
+
+Those are not the same state and should not be normalized into each other.
+
+When clarity is needed, it is better to name the denominator-polarity state as
+something like `perp(i)` rather than writing `-i` and inviting ordinary scalar
+algebra to erase the distinction. In the same spirit:
+
+- `rev(i)` is a helpful reading for `-1 / i`
+- `perp(i)` is a helpful reading for `1 / -i`
+
+This is similar in spirit to how ordinary mathematics introduced `i` as a new
+named object rather than leaving it forever as an awkward "negative-unit
+placeholder." If a denominator-polarity state survives as an irreducible and
+lawful participant in operations, giving it a distinct name is a strength, not
+a weakness.
+
+Products should therefore be read in three layers.
+
+### 1. Value-Sign Layer
+
+Numerator value signs multiply exactly as usual:
+
+| left | right | result |
+| --- | --- | --- |
+| `+` | `+` | `+` |
+| `+` | `-` | `-` |
+| `-` | `+` | `-` |
+| `-` | `-` | `+` |
+
+### 2. Carrier Layer
+
+The raw structural product should preserve carrier information instead of
+forcing early collapse.
+
+If `a / c1` and `b / c2` are multiplied, the raw product kernel is:
+
+`(a / c1) * (b / c2) = (ab) / carrier_product(c1, c2)`
+
+where `carrier_product(...)` is a carrier product, not ordinary scalar
+denominator arithmetic.
+
+At this layer:
+
+- aligned carrier times aligned carrier yields a same-space square candidate
+- aligned carrier times orthogonal carrier yields a contrast candidate
+- orthogonal carrier times aligned carrier yields an ordered contrast candidate
+- orthogonal carrier times orthogonal carrier yields an orthogonal-family square
+  candidate
+
+The important point is that orthogonality should not disappear in the raw
+product merely because two signs multiplied to `+`.
+
+### 3. Unit-Signature Layer
+
+The carrier product may later fold into a unit-signature product or a
+higher-grade geometric reading.
+
+Examples:
+
+- distance times distance may fold to distance squared
+- east-west times north-south may fold to an area-like sheet
+- distance times mass may fold to a compound signature such as ton-mile
+
+This means that aligned times orthogonal does not preserve the original carrier
+family. It creates a new composite candidate whose later fold depends on
+context, view, and requested operation.
+
+The same raw multiplication law may therefore support several later named
+readings:
+
+- complex-like
+- axis-like sequential
+- area-like
+- compound-unit
+
+What varies is not the distributive expansion itself, but the later reduction
+or fold law.
+
 For positioned pins on a line-like host:
 
 - `declared span` is the host's full local claim
