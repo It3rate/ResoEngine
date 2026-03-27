@@ -59,6 +59,17 @@ public sealed record AtomicElement(long Value, long Unit) : GradedElement
         return false;
     }
 
+    public override bool TryMultiply(GradedElement other, out GradedElement? product)
+    {
+        if (other is AtomicElement atomic)
+        {
+            return EngineEvaluation.TryMultiplyAtomic(this, atomic, out product);
+        }
+
+        product = null;
+        return false;
+    }
+
     public override bool TryScale(AtomicElement factor, out GradedElement? scaled)
     {
         ArgumentNullException.ThrowIfNull(factor);

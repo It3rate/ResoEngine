@@ -98,6 +98,26 @@ public sealed record CompositeElement : GradedElement
         return false;
     }
 
+    public override bool TryMultiply(GradedElement other, out GradedElement? product)
+    {
+        if (other is not CompositeElement composite || Grade != composite.Grade)
+        {
+            product = null;
+            return false;
+        }
+
+        if (EngineEvaluation.TryFoldToAtomic(this, out var left) &&
+            left is not null &&
+            EngineEvaluation.TryFoldToAtomic(composite, out var right) &&
+            right is not null)
+        {
+            return EngineEvaluation.TryMultiplyAtomic(left, right, out product);
+        }
+
+        product = null;
+        return false;
+    }
+
     public override bool TryScale(AtomicElement factor, out GradedElement? scaled)
     {
         ArgumentNullException.ThrowIfNull(factor);

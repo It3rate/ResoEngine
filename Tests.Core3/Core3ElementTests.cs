@@ -317,4 +317,61 @@ public sealed class Core3ElementTests
         Assert.Equal(new AtomicElement(3, 1), pin.Inbound);
         Assert.Equal(new AtomicElement(7, 1), pin.Outbound);
     }
+
+    [Fact]
+    public void AtomicMultiply_PreservesOrthogonalCarrierWhenEitherFactorIsOrthogonal()
+    {
+        var aligned = new AtomicElement(2, 3);
+        var orthogonal = new AtomicElement(4, -5);
+        var orthogonalAgain = new AtomicElement(6, -7);
+
+        Assert.True(aligned.TryMultiply(orthogonal, out var contrastProduct));
+        Assert.True(orthogonal.TryMultiply(orthogonalAgain, out var orthogonalProduct));
+
+        var contrast = Assert.IsType<AtomicElement>(contrastProduct);
+        var orthogonalSquare = Assert.IsType<AtomicElement>(orthogonalProduct);
+
+        Assert.Equal(8, contrast.Value);
+        Assert.Equal(-15, contrast.Unit);
+        Assert.True(contrast.IsOrthogonalUnit);
+
+        Assert.Equal(24, orthogonalSquare.Value);
+        Assert.Equal(-35, orthogonalSquare.Unit);
+        Assert.True(orthogonalSquare.IsOrthogonalUnit);
+    }
+
+    [Fact]
+    public void CompositeMultiply_UsesFoldFirstExactMultiplication()
+    {
+        var left = new CompositeElement(
+            new AtomicElement(10, 1),
+            new AtomicElement(3, 1));
+        var right = new CompositeElement(
+            new AtomicElement(8, 1),
+            new AtomicElement(2, 1));
+
+        Assert.True(left.TryMultiply(right, out var product));
+
+        var atomic = Assert.IsType<AtomicElement>(product);
+        Assert.Equal(3, atomic.Value);
+        Assert.Equal(40, atomic.Unit);
+    }
+
+    [Fact]
+    public void EnginePin_Multiply_IsNaturalOnlyForContrastSpace()
+    {
+        var contrastPin = new EnginePin(
+            new AtomicElement(2, 1),
+            new AtomicElement(3, -1));
+        var sameSpacePin = new EnginePin(
+            new AtomicElement(2, 1),
+            new AtomicElement(3, 1));
+
+        var contrastProduct = contrastPin.Multiply();
+        var sameSpaceProduct = sameSpacePin.Multiply();
+
+        Assert.IsType<CompositeElement>(contrastProduct);
+        Assert.Null(sameSpaceProduct);
+        Assert.True(sameSpacePin.MultiplyRequiresLift());
+    }
 }

@@ -54,6 +54,11 @@ public sealed record EnginePin
             ? sum
             : null;
 
+    public GradedElement? Multiply() =>
+        HasContrastSpace
+            ? Contrast()
+            : null;
+
     public CompositeElement Contrast() => new(Inbound, Outbound);
 
     public bool MultiplyRequiresLift() => HasResolvedUnits && SharesUnitSpace;

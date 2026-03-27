@@ -16,10 +16,12 @@ public abstract record GradedElement
     public abstract bool SharesUnitSpace(GradedElement other);
     public abstract bool TryAdd(GradedElement other, out GradedElement? sum);
     public abstract bool TrySubtract(GradedElement other, out GradedElement? difference);
+    public abstract bool TryMultiply(GradedElement other, out GradedElement? product);
     public abstract bool TryScale(AtomicElement factor, out GradedElement? scaled);
 
     public bool CanAdd(GradedElement other) => TryAdd(other, out _);
     public bool CanSubtract(GradedElement other) => TrySubtract(other, out _);
+    public bool CanMultiply(GradedElement other) => TryMultiply(other, out _);
 
     protected static void RequireSameGrade(GradedElement left, GradedElement right)
     {

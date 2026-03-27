@@ -409,6 +409,22 @@ Public folds should remain in element space.
   specifically needs it, such as host-relative pin placement
 - that internal evaluation helper is not itself the public mathematical object
 
+Current engine multiplication should be read as a deliberately small first pass.
+
+- atomic multiplication multiplies numerator values exactly
+- unit magnitude multiplies exactly
+- orthogonal carrier polarity is preserving: if either factor is orthogonal, the
+  current folded product remains orthogonal
+- higher-grade element multiplication currently uses fold-first multiplication
+  by lowering both operands to exact atomic elements before multiplying
+- pin-level multiplication remains the more structural read: contrastive pins
+  multiply naturally, while same-space pins require lift
+
+This means the current engine already supports a lawful element-to-element
+multiplication, but it should be understood as a fold-first multiplication law,
+not yet as the full raw distributive product kernel for every higher-grade
+configuration.
+
 For positioned pins on a line-like host:
 
 - `declared span` is the host's full local claim

@@ -56,6 +56,32 @@ internal static class EngineEvaluation
         return true;
     }
 
+    internal static bool TryMultiplyAtomic(
+        AtomicElement left,
+        AtomicElement right,
+        out GradedElement? product)
+    {
+        ArgumentNullException.ThrowIfNull(left);
+        ArgumentNullException.ThrowIfNull(right);
+
+        if (!left.HasResolvedUnits || !right.HasResolvedUnits)
+        {
+            product = null;
+            return false;
+        }
+
+        var value = checked(left.Value * right.Value);
+        var unitMagnitude = checked(Math.Abs(left.Unit) * Math.Abs(right.Unit));
+        var unitSign = left.IsOrthogonalUnit || right.IsOrthogonalUnit ? -1L : 1L;
+        var unit = checked(unitSign * unitMagnitude);
+        var divisor = GreatestCommonDivisor(Math.Abs(value), Math.Abs(unit));
+
+        product = new AtomicElement(
+            value / divisor,
+            unit / divisor);
+        return true;
+    }
+
     private static long GreatestCommonDivisor(long left, long right)
     {
         while (right != 0)

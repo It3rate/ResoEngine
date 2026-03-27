@@ -55,10 +55,10 @@ public static class EngineFolding
         return pin.Add();
     }
 
-    public static CompositeElement Multiply(EnginePin pin)
+    public static GradedElement? Multiply(EnginePin pin)
     {
         ArgumentNullException.ThrowIfNull(pin);
-        return pin.Contrast();
+        return pin.Multiply();
     }
 
     public static bool MultiplyRequiresLift(EnginePin pin)
