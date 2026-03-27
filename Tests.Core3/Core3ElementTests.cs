@@ -1,4 +1,5 @@
 using Core3.Elements;
+using Core3.Engine;
 
 namespace Tests.Core3;
 
@@ -232,5 +233,85 @@ public sealed class Core3ElementTests
         Assert.Equal(10, pin.InboundCarrier.Value);
         Assert.Equal(10, pin.OutboundCarrier.RawValue);
         Assert.Equal(10, pin.OutboundCarrier.Value);
+    }
+
+    [Fact]
+    public void FoldedRatio_PreservesCarrierPolarityFromAtomicElement()
+    {
+        var orthogonal = new AtomicElement(1, -2);
+        var reversed = new AtomicElement(-1, 2);
+
+        Assert.True(orthogonal.TryFoldRatio(out var orthogonalRatio));
+        Assert.True(reversed.TryFoldRatio(out var reversedRatio));
+
+        Assert.NotNull(orthogonalRatio);
+        Assert.NotNull(reversedRatio);
+        Assert.True(orthogonalRatio!.HasOrthogonalCarrier);
+        Assert.False(reversedRatio!.HasOrthogonalCarrier);
+        Assert.Equal(-2, orthogonalRatio.Denominator);
+        Assert.Equal(-1, reversedRatio.Numerator);
+    }
+
+    [Fact]
+    public void FoldedRatio_Divide_KeepsValueSignSeparateFromCarrierPolarity()
+    {
+        var left = Assert.IsType<AtomicElement>(new AtomicElement(3, 1));
+        var right = Assert.IsType<AtomicElement>(new AtomicElement(-2, 1));
+
+        Assert.True(left.TryFoldRatio(out var leftRatio));
+        Assert.True(right.TryFoldRatio(out var rightRatio));
+
+        var quotient = FoldedRatio.Divide(leftRatio!, rightRatio!);
+
+        Assert.Equal(-3, quotient.Numerator);
+        Assert.Equal(2, quotient.Denominator);
+        Assert.True(quotient.HasAlignedCarrier);
+    }
+
+    [Fact]
+    public void FoldedProduct_PreservesOrthogonalCarrierParticipation()
+    {
+        var aligned = new AtomicElement(2, 3);
+        var orthogonal = new AtomicElement(4, -5);
+        var orthogonalAgain = new AtomicElement(6, -7);
+
+        Assert.True(aligned.TryFoldRatio(out var alignedRatio));
+        Assert.True(orthogonal.TryFoldRatio(out var orthogonalRatio));
+        Assert.True(orthogonalAgain.TryFoldRatio(out var orthogonalAgainRatio));
+
+        var contrast = FoldedRatio.Multiply(alignedRatio!, orthogonalRatio!);
+        var orthogonalSquare = FoldedRatio.Multiply(orthogonalRatio!, orthogonalAgainRatio!);
+
+        Assert.True(contrast.IsContrastCandidate);
+        Assert.False(contrast.IsSameSpaceSquareCandidate);
+        Assert.True(orthogonalSquare.IsOrthogonalFamilySquareCandidate);
+        Assert.Equal(24, orthogonalSquare.SignedValueProduct);
+    }
+
+    [Fact]
+    public void CompositeElement_TryFoldRatio_RejectsContrastCarrierChildren()
+    {
+        var contrastive = new CompositeElement(
+            new AtomicElement(2, 1),
+            new AtomicElement(3, -1));
+
+        Assert.False(contrastive.TryFoldRatio(out _));
+    }
+
+    [Fact]
+    public void EnginePin_CanResolveHostedPositionFromAlignedRatioBearingElement()
+    {
+        var host = new CompositeElement(
+            new AtomicElement(0, 1),
+            new AtomicElement(10, 1));
+        var ratioPosition = new CompositeElement(
+            new AtomicElement(10, 1),
+            new AtomicElement(3, 1));
+
+        var pin = new EnginePin(host, ratioPosition);
+
+        Assert.Equal(new AtomicElement(3, 1), pin.ResolvedPosition);
+        Assert.Equal(new AtomicElement(3, 1), pin.Inbound);
+        Assert.Equal(new AtomicElement(7, 1), pin.Outbound);
     }
 }

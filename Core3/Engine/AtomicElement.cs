@@ -75,11 +75,27 @@ public sealed record AtomicElement(long Value, long Unit) : GradedElement
             return false;
         }
 
+        var scaledValue = checked(Value * ratio.Numerator);
+        var scaledUnit = checked(Unit * ratio.Denominator);
+        var divisor = GreatestCommonDivisor(Math.Abs(scaledValue), Math.Abs(scaledUnit));
+
         scaled = new AtomicElement(
-            checked(Value * ratio.Numerator),
-            checked(Unit * ratio.Denominator));
+            scaledValue / divisor,
+            scaledUnit / divisor);
         return true;
     }
 
     public override string ToString() => $"{Value}/{Unit}";
+
+    private static long GreatestCommonDivisor(long left, long right)
+    {
+        while (right != 0)
+        {
+            var remainder = left % right;
+            left = right;
+            right = remainder;
+        }
+
+        return left == 0 ? 1 : left;
+    }
 }

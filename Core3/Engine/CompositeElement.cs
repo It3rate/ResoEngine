@@ -42,9 +42,9 @@ public sealed record CompositeElement : GradedElement
     {
         if (Recessive.TryFoldRatio(out var inboundRatio) &&
             inboundRatio is not null &&
-            inboundRatio.Numerator != 0 &&
             Dominant.TryFoldRatio(out var outboundRatio) &&
-            outboundRatio is not null)
+            outboundRatio is not null &&
+            outboundRatio.CanComposeRatioWith(inboundRatio))
         {
             ratio = FoldedRatio.Divide(outboundRatio, inboundRatio);
             return true;

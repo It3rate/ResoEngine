@@ -169,6 +169,7 @@ public sealed record EnginePin
             declaredSpan is not null &&
             pinPosition.TryFoldRatio(out var ratio) &&
             ratio is not null &&
+            ratio.HasAlignedCarrier &&
             declaredSpan.TryScale(ratio, out var offset) &&
             offset is not null &&
             host.Recessive.TryAdd(offset, out resolvedPosition) &&
