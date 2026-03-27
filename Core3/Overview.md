@@ -1,174 +1,147 @@
 # Core3 Overview
 
-`Core3` is an attempt to build a very small mathematical system from which
-universal patterns can emerge, that are common to from numeric systems all the 
-way to language. Key aspects are a resolution system built into the numbers themselves, and
-separation of opposing perspectives can be used to create higher grade structures.
+`Core3` is an attempt to build a very small system from which a much wider
+range of patterns can emerge.
 
-These structures once formed, can be related, measured, transformed, branched, merged,
-and tensioned, in a way that can support something as physical as geometry and
-something as fluid as language.
+All things are indistinguishable, or ordered in some way. 
+Order begins in mathematics, but it is not only for mathematics. The hope is to
+make a system that can talk about magnitude, resolution, structure, change,
+ambiguity, tension, and perspective. In that sense it is meant
+to be useful not only for numbers and geometry, but also for concepts and
+language. A physics for concepts.
 
-## The Core Patterns
+Two ideas matter especially early:
 
-- all information comes from comparison, which requires a separation into two
-- each of this will have their own opposing perspective, which was needed to separate them
-- the set up of this duality is the first act of structure, and it is the source of all later structure
-- there can be many of these structures each with different perspectives, resolution, and error
-- this source of tension can help resolve structures, or generate resolving extensions
-- the structures blend from measures to graded numbers to equations to concepts
-- one structure can used to create, store, manipulate, run, and/or read, as one chooses.
-- solutions happen over time, and the 'correct' is when the system is within some tolerance
- 
-## The Mechanics
+- resolution belongs inside the structure, not just in the display
+- all information is created by tension between two opposing perspectives
 
-Every non-leaf graded element is formed from two lower-grade elements in a
-binary coupling. This coupling is more general than a single geometric pinning
-case. It can later be read as:
+That means a value is not only "how much." It also carries something about how
+finely it is being distinguished, and from which perspective it holds. Those
+two facts turn out to create a surprising amount of later structure.
 
-- a composite element
-- a localized pin
-- a measurement/reference relation
-- an operator acting on an operand
-- a tension pair waiting for reduction
+## A System Of Relations
 
-The binary act is primary.
-Named readings such as `Proportion`, `Axis`, `Pin`, or later `Area` are helpful
-views over recurring binary structures, not the deepest ontology.
+At its heart, `Core3` grows by intentionally coupling two things.
+
+A simple number, a measured interval, a directed span, a reference frame, a
+folded result, even a tension that has not yet settled, can all be understood
+as different readings of structure that came from putting two things into
+relation and deciding how to read the result.
+
+This is why the system keeps returning to pairs:
+
+- two sides
+- two perspectives
+- two compared things
+- two structures under one relation
+- inbound and outbound flows
+
+From that binary relation, a new thing can be created. And in the other direction,
+what looks like one thing may be unfolded back into the pair that made it.
 
 ## Grades
 
-Grade is structural.
+This is what grade means in `Core3`.
 
-- grade 0 is the exact numeric leaf
-- grade 1 is built from two grade-0 elements
-- grade 2 is built from two grade-1 elements
-- and so on
+A higher grade is not just "more data." It is a new level of relation made from
+two lower ones. Each time that happens, new kinds of symmetry become available.
+Something can now be read not only as an amount, but as a direction, a span, a
+frame, a surface, a branching relation, or something else still forming.
 
-Each new grade introduces new possible symmetries and new possible ways for
-structure to be read. The important point is that these higher capabilities are
-not meant to be stored as separate flags when they can be read from the ordered
-numeric child structure itself.
+The important point is that these richer behaviors are not meant to be pasted
+on from outside as extra labels - they can be read directly from the
+structure itself. A lot of expressive power falls out of
+very small rules applied repeatedly.
 
-So a higher grade is not just "more data."
-It is a new level at which relation, symmetry, and fold become possible.
+## Folding And Unfolding
 
-## Coupling, Composites, And Roles
+One of the main distinctions in `Core3` is the difference between creating a
+relation and deciding what it means.
 
-A composite element is the result of coupling two lower elements.
+First, things are brought together.
+Then, later, they may be folded into a more committed reading. Think joining
+two values into a multiplicative relation. You can use these two values as
+a XY graph, and later you can fold them into an area. These are distinct structures.
 
-Those two child elements are not a different species from the parent. They are
-the same kind of thing one grade lower, read in a certain role.
+Sometimes that fold gives a lower-grade result.
+Sometimes it preserves the current structure.
+Sometimes it branches.
+Sometimes it cannot be completed honestly without lifting into a richer form.
 
-This is why `carrier` is best understood as a role rather than as a separate
-ontology. A child may be read as support, boundary, recessive side, dominant
-side, inbound side, outbound side, calibration side, or realized side depending
-on context.
+That is why the system cares so much about reverse continuation (e.g. square roots) as well. If a
+structure can fold down, it should also make sense to ask how it might unfold
+again, or how several valid antecedents might still remain present. An area could 
+unfold into two equal sides, or you could preserve both the area and graph's X and Y.
 
-That same binary structure can be:
+This is part of why the system feels close to language. Meaning also works this
+way. A phrase can stay open for a while at a low resolution, then later settle into 
+one reading, or split into several lawful ones.
 
-- tightly joined and read as one number
-- loosely related and read as a measurement
-- localized at an origin and read as a pin
-- left unresolved and read as tension
+## Tension Is Real Structure
 
-## Folding, Lifting, And Reverse Continuation
+`Core3` does not want contradiction to disappear too early.
 
-Folding is not the same as coupling.
+When two related things do not fit cleanly in the same frame, that mismatch is
+not always an error. Sometimes it is the very thing that creates a new
+direction, a new grade, or a new kind of space.
 
-Coupling creates relation.
-Folding is a later reading or reduction of that relation.
+So tension is not only a problem to remove. It is often a record that something
+important has happened but has not yet been fully resolved. In mathematics this
+can look like a lift into a new structure. In language it can look like
+ambiguity, emphasis, pressure, or competing interpretations that are still
+alive. Seeing 2+3=7 from some perspective is wrong, but it is also information. And
+we don't need to commit to the 7 being the problem, it might be the 2.
 
-Examples:
+## Measurement And Shared Frames
 
-- a composite may fold to one lower-grade result
-- it may preserve its current grade if the structure should remain explicit
-- it may branch
-- it may require lift into a richer structure
+Another central idea is that one structure can be used to measure another.
 
-Reverse continuation is the companion idea.
-If folding can make one from two, reverse continuation asks how one can yield
-two lawful antecedents, components, or branch candidates again.
-
-This matters not only for arithmetic but for ambiguity, interpretation, and
-reconstruction.
-
-## Tension And Orthogonal Pressure
-
-Contradiction is not always failure.
-Very often it is the source of new structure.
-
-When two coupled sides cannot reduce naturally in their current shared space,
-the result should not be normalized away too early. The contradiction may be
-preserved as tension, or it may create orthogonal pressure that lifts the
-structure into a new grade, direction, sheet, or phase.
-
-This is one of the central intuitions of `Core3`:
-
-- opposition can preserve identity
-- contradiction can generate new structure
-- unresolved relation can be informative rather than invalid
-
-## Measurement, Reference, And Shared Calibration
-
-`Core3` treats measurement as structural, not as an afterthought.
-
-A previously created space can later be reused to measure another thing without
-that measured thing owning a duplicate copy of the space.
-
-This is why `Core3` cares about:
-
-- hosted pinning
-- shared calibration
-- reference relations
-- exact support and resolution
-
-A graph can measure data.
+A graph can be used to place data.
 A ruler can measure an external object.
-A scale can weigh what is placed on it.
-A temperature tool can measure something at a distance.
+A scale can weigh something placed on it.
+A dog can be compared to a cat.
+A reference frame can lend its calibration without being copied into every
+thing it measures.
 
-These are not all containers in the literal sense, but they all involve one
-structure lending calibration to another.
+So `Core3` is not only about objects. It is also about the spaces, frames, and
+local origins by which objects become readable.
+
+This is part of why pinning, reference, and shared calibration matter so much.
+They are all ways of saying that one thing may help another thing become
+measurable, locatable, or meaningful.
 
 ## Resolution And Bounds
 
-Resolution is not just a display convenience.
-It is part of the structure being preserved.
+Resolution matters because it tells us what the smallest active distinction is.
+But every active frame also has a largest meaningful span.
 
-The denominator or support side of a reading carries the active substrate of
-distinctions. That support is bounded in two directions:
+So the system is bounded in both directions:
 
-- lower bound: the smallest active tick
-- upper bound: the largest active frame or span
+- there is a lower bound on what can be distinctly resolved
+- there is an upper bound on what the current frame can still honestly carry
 
-So `Core3` does not take infinity as a primitive default.
-Both minimum distinction and maximum active extent matter, and both can shape
-what folds are lawful.
+This is important because it keeps infinity from being the silent default.
+Things can run out of room in the small direction and the large direction. 
+Both facts shape behaviour at the edge - wrapping, reflecting, clamping, or 
+generating new tension.
 
-## More Than Mathematics
+## More Than Math
 
-All of this relates to familiar mathematics, but the intention is wider than
-ordinary calculation.
+All of this clearly relates to mathematics, but the intention is broader.
 
-`Core3` is meant to support a mathematics that can also behave like a physics
-for concepts and language:
+The hope behind `Core3` is that the same structural ideas can help describe how
+concepts behave, how language shifts meaning with perspective and emphasis, how
+ambiguity stays alive before selection, and how tensions between readings can
+produce new structure rather than just failure.
 
-- meaning can persist across transformation
-- ambiguity can remain lawful before selection
-- focus can change what support persists
-- contradiction can drive lift
-- structure can be runnable rather than merely described
-
-In that sense, `Core3` is trying to stay close to mathematics while also being
-capable of modeling how concepts behave, how language shifts emphasis, and how
-interpretation becomes physically structured.
+In that sense, `Core3` is aiming at a mathematics that can become a kind of
+physics for concepts: something structured enough to go beyond just describing,
+to also run, evalutate, and predict.
 
 ## Current Status
 
-`Core3` is still intentionally small.
+`Core3` is still deliberately small.
 
-The goal is not to finish the taxonomy early.
-The goal is to keep the primitive rules tight enough that geometry,
-measurement, traversal, conceptual structure, and language can all grow from
-the same foundation without the foundation becoming vague.
+The goal is not to define every category early. The goal is to get the
+primitive moves clear enough that richer mathematics, richer geometry, and
+richer conceptual behavior can all grow from the same small foundation.
