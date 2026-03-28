@@ -336,6 +336,72 @@ public sealed class Core3ElementTests
     }
 
     [Fact]
+    public void AtomicAlignExact_UsesResolutionPolicy()
+    {
+        var host = new AtomicElement(1, 2);
+        var applied = new AtomicElement(2, 4);
+
+        Assert.True(host.TryAlignExact(applied, ResolutionPolicy.PreserveHost, out var hostPreserved, out var appliedCommitted));
+        Assert.True(host.TryAlignExact(applied, ResolutionPolicy.PreserveApplied, out var hostCommitted, out var appliedPreserved));
+        Assert.True(host.TryAlignExact(applied, ResolutionPolicy.ExactCommonFrame, out var commonLeft, out var commonRight));
+        Assert.True(host.TryAlignExact(applied, ResolutionPolicy.ComposeSupport, out var composedLeft, out var composedRight));
+
+        Assert.Equal(new AtomicElement(1, 2), Assert.IsType<AtomicElement>(hostPreserved));
+        Assert.Equal(new AtomicElement(1, 2), Assert.IsType<AtomicElement>(appliedCommitted));
+
+        Assert.Equal(new AtomicElement(2, 4), Assert.IsType<AtomicElement>(hostCommitted));
+        Assert.Equal(new AtomicElement(2, 4), Assert.IsType<AtomicElement>(appliedPreserved));
+
+        Assert.Equal(new AtomicElement(2, 4), Assert.IsType<AtomicElement>(commonLeft));
+        Assert.Equal(new AtomicElement(2, 4), Assert.IsType<AtomicElement>(commonRight));
+
+        Assert.Equal(new AtomicElement(4, 8), Assert.IsType<AtomicElement>(composedLeft));
+        Assert.Equal(new AtomicElement(4, 8), Assert.IsType<AtomicElement>(composedRight));
+    }
+
+    [Fact]
+    public void CompositeCommitToCalibration_RecursesChildwise()
+    {
+        var subject = new CompositeElement(
+            new AtomicElement(1, 2),
+            new AtomicElement(3, 12));
+        var calibration = new CompositeElement(
+            new AtomicElement(2, 4),
+            new AtomicElement(10, 40));
+
+        Assert.True(subject.TryCommitToCalibration(calibration, out var committed));
+
+        var aligned = Assert.IsType<CompositeElement>(committed);
+        Assert.Equal(new AtomicElement(2, 4), aligned.Recessive);
+        Assert.Equal(new AtomicElement(10, 40), aligned.Dominant);
+    }
+
+    [Fact]
+    public void EngineReference_UsesGenericGradedCommitPath()
+    {
+        var frame = new CompositeElement(
+            new CompositeElement(
+                new AtomicElement(2, 4),
+                new AtomicElement(10, 40)),
+            new CompositeElement(
+                new AtomicElement(1, 1),
+                new AtomicElement(3, 1)));
+        var subject = new CompositeElement(
+            new AtomicElement(1, 2),
+            new AtomicElement(3, 12));
+
+        var reference = new EngineReference(frame, subject);
+
+        Assert.True(reference.TryMeasureOnCalibration(out var measured));
+
+        var calibrated = Assert.IsType<CompositeElement>(measured);
+        Assert.Equal(frame.Recessive, calibrated.Recessive);
+        Assert.Equal(new CompositeElement(
+            new AtomicElement(2, 4),
+            new AtomicElement(10, 40)), calibrated.Dominant);
+    }
+
+    [Fact]
     public void AtomicScale_PreservesExactWorkingSupportWithoutReducing()
     {
         var whole = new AtomicElement(10, 1);

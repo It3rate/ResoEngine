@@ -13,11 +13,16 @@ public abstract record GradedElement
     public abstract GradedElement SwapOrder();
     public abstract GradedElement FlipPerspective();
     public abstract bool TryFold(out GradedElement? folded);
+    public abstract bool TryCommitToCalibration(GradedElement calibration, out GradedElement? committed);
+    public abstract bool TryAlignExact(GradedElement other, ResolutionPolicy policy, out GradedElement? leftAligned, out GradedElement? rightAligned);
     public abstract bool SharesUnitSpace(GradedElement other);
     public abstract bool TryAdd(GradedElement other, out GradedElement? sum);
     public abstract bool TrySubtract(GradedElement other, out GradedElement? difference);
     public abstract bool TryMultiply(GradedElement other, out GradedElement? product);
     public abstract bool TryScale(AtomicElement factor, out GradedElement? scaled);
+
+    public bool TryAlignExact(GradedElement other, out GradedElement? leftAligned, out GradedElement? rightAligned) =>
+        TryAlignExact(other, ResolutionPolicy.ExactCommonFrame, out leftAligned, out rightAligned);
 
     public bool CanAdd(GradedElement other) => TryAdd(other, out _);
     public bool CanSubtract(GradedElement other) => TrySubtract(other, out _);

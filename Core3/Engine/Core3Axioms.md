@@ -450,6 +450,8 @@ pass.
   support rather than requiring identical stored support
 - committing to a displayed support is a later explicit choice, not a side
   effect of arithmetic
+- exact alignment should be able to follow a small explicit policy such as:
+  preserve host, preserve applied, exact common frame, or compose support
 - uncertainty, roughness, and confidence-sensitive support choice are later
   layers and should not yet be faked by silent support collapse
 

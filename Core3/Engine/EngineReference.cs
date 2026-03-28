@@ -32,14 +32,11 @@ public sealed record EngineReference
 
     public bool TryMeasureOnCalibration(out CompositeElement? measured)
     {
-        // Long term when we have explicit support operations, this will become one generic rule on GradedElement, and then the atomic special case will disappear.
-        if (Calibration is AtomicElement calibration &&
-            Subject is AtomicElement subjectAtomic &&
-            calibration.SharesUnitSpace(subjectAtomic) &&
-            subjectAtomic.TryCommitToSupport(calibration.Resolution, out var alignedSubject) &&
+        if (Calibration.Grade == Subject.Grade &&
+            Subject.TryCommitToCalibration(Calibration, out var alignedSubject) &&
             alignedSubject is not null)
         {
-            measured = new CompositeElement(calibration, alignedSubject);
+            measured = new CompositeElement(Calibration, alignedSubject);
             return true;
         }
 

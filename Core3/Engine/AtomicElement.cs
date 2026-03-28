@@ -57,30 +57,65 @@ public sealed record AtomicElement(long Value, long Unit) : GradedElement
     public bool TryCommitToSupport(long targetResolution, out AtomicElement? committed) =>
         TryReexpressToSupport(targetResolution, out committed);
 
-    public bool TryAlignExact(AtomicElement other, out AtomicElement? leftAligned, out AtomicElement? rightAligned)
+    public override bool TryCommitToCalibration(GradedElement calibration, out GradedElement? committed)
     {
-        ArgumentNullException.ThrowIfNull(other);
-
-        if (!SharesUnitSpace(other))
+        if (calibration is AtomicElement atomicCalibration &&
+            SharesUnitSpace(atomicCalibration) &&
+            TryCommitToSupport(atomicCalibration.Resolution, out var committedAtomic) &&
+            committedAtomic is not null)
         {
-            leftAligned = null;
-            rightAligned = null;
-            return false;
+            committed = committedAtomic;
+            return true;
         }
 
-        var targetResolution = LeastCommonMultiple(Resolution, other.Resolution);
+        committed = null;
+        return false;
+    }
 
-        if (TryReexpressToSupport(targetResolution, out leftAligned) &&
-            other.TryReexpressToSupport(targetResolution, out rightAligned) &&
-            leftAligned is not null &&
-            rightAligned is not null)
+    public bool TryAlignExact(AtomicElement other, out AtomicElement? leftAligned, out AtomicElement? rightAligned)
+    {
+        if (TryAlignExact(other, ResolutionPolicy.ExactCommonFrame, out var leftCommitted, out var rightCommitted) &&
+            leftCommitted is AtomicElement leftAtomic &&
+            rightCommitted is AtomicElement rightAtomic)
         {
+            leftAligned = leftAtomic;
+            rightAligned = rightAtomic;
             return true;
         }
 
         leftAligned = null;
         rightAligned = null;
         return false;
+    }
+
+    public override bool TryAlignExact(
+        GradedElement other,
+        ResolutionPolicy policy,
+        out GradedElement? leftAligned,
+        out GradedElement? rightAligned)
+    {
+        if (other is not AtomicElement atomic)
+        {
+            leftAligned = null;
+            rightAligned = null;
+            return false;
+        }
+
+        if (!SharesUnitSpace(atomic) ||
+            !TryResolveAlignmentResolution(atomic, policy, out var targetResolution) ||
+            !TryCommitToSupport(targetResolution, out var committedLeft) ||
+            committedLeft is null ||
+            !atomic.TryCommitToSupport(targetResolution, out var committedRight) ||
+            committedRight is null)
+        {
+            leftAligned = null;
+            rightAligned = null;
+            return false;
+        }
+
+        leftAligned = committedLeft;
+        rightAligned = committedRight;
+        return true;
     }
 
     public override bool SharesUnitSpace(GradedElement other) =>
@@ -91,14 +126,13 @@ public sealed record AtomicElement(long Value, long Unit) : GradedElement
 
     public override bool TryAdd(GradedElement other, out GradedElement? sum)
     {
-        if (other is AtomicElement atomic &&
-            TryAlignExact(atomic, out var leftAligned, out var rightAligned) &&
-            leftAligned is not null &&
-            rightAligned is not null)
+        if (TryAlignExact(other, ResolutionPolicy.ExactCommonFrame, out var leftAligned, out var rightAligned) &&
+            leftAligned is AtomicElement leftAtomic &&
+            rightAligned is AtomicElement rightAtomic)
         {
             sum = new AtomicElement(
-                checked(leftAligned.Value + rightAligned.Value),
-                leftAligned.Unit);
+                checked(leftAtomic.Value + rightAtomic.Value),
+                leftAtomic.Unit);
             return true;
         }
 
@@ -108,14 +142,13 @@ public sealed record AtomicElement(long Value, long Unit) : GradedElement
 
     public override bool TrySubtract(GradedElement other, out GradedElement? difference)
     {
-        if (other is AtomicElement atomic &&
-            TryAlignExact(atomic, out var leftAligned, out var rightAligned) &&
-            leftAligned is not null &&
-            rightAligned is not null)
+        if (TryAlignExact(other, ResolutionPolicy.ExactCommonFrame, out var leftAligned, out var rightAligned) &&
+            leftAligned is AtomicElement leftAtomic &&
+            rightAligned is AtomicElement rightAtomic)
         {
             difference = new AtomicElement(
-                checked(leftAligned.Value - rightAligned.Value),
-                leftAligned.Unit);
+                checked(leftAtomic.Value - rightAtomic.Value),
+                leftAtomic.Unit);
             return true;
         }
 
@@ -151,6 +184,23 @@ public sealed record AtomicElement(long Value, long Unit) : GradedElement
     }
 
     public override string ToString() => $"{Value}/{Unit}";
+
+    private bool TryResolveAlignmentResolution(
+        AtomicElement other,
+        ResolutionPolicy policy,
+        out long targetResolution)
+    {
+        targetResolution = policy switch
+        {
+            ResolutionPolicy.PreserveHost => Resolution,
+            ResolutionPolicy.PreserveApplied => other.Resolution,
+            ResolutionPolicy.ExactCommonFrame => LeastCommonMultiple(Resolution, other.Resolution),
+            ResolutionPolicy.ComposeSupport => checked(Resolution * other.Resolution),
+            _ => 0
+        };
+
+        return targetResolution > 0;
+    }
 
     private static long LeastCommonMultiple(long left, long right) =>
         checked((left / GreatestCommonDivisor(left, right)) * right);

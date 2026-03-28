@@ -59,6 +59,80 @@ public sealed record CompositeElement : GradedElement
         return false;
     }
 
+    public override bool TryCommitToCalibration(GradedElement calibration, out GradedElement? committed)
+    {
+        if (calibration is CompositeElement compositeCalibration &&
+            Grade == compositeCalibration.Grade &&
+            Recessive.TryCommitToCalibration(compositeCalibration.Recessive, out var committedRecessive) &&
+            Dominant.TryCommitToCalibration(compositeCalibration.Dominant, out var committedDominant) &&
+            committedRecessive is not null &&
+            committedDominant is not null)
+        {
+            committed = new CompositeElement(committedRecessive, committedDominant);
+            return true;
+        }
+
+        committed = null;
+        return false;
+    }
+
+    public override bool TryAlignExact(
+        GradedElement other,
+        ResolutionPolicy policy,
+        out GradedElement? leftAligned,
+        out GradedElement? rightAligned)
+    {
+        if (other is not CompositeElement composite || Grade != composite.Grade)
+        {
+            leftAligned = null;
+            rightAligned = null;
+            return false;
+        }
+
+        switch (policy)
+        {
+            case ResolutionPolicy.PreserveHost:
+                if (composite.TryCommitToCalibration(this, out rightAligned) &&
+                    rightAligned is not null)
+                {
+                    leftAligned = this;
+                    return true;
+                }
+
+                break;
+
+            case ResolutionPolicy.PreserveApplied:
+                if (TryCommitToCalibration(composite, out leftAligned) &&
+                    leftAligned is not null)
+                {
+                    rightAligned = composite;
+                    return true;
+                }
+
+                break;
+
+            case ResolutionPolicy.ExactCommonFrame:
+            case ResolutionPolicy.ComposeSupport:
+                if (Recessive.TryAlignExact(composite.Recessive, policy, out var leftRecessive, out var rightRecessive) &&
+                    Dominant.TryAlignExact(composite.Dominant, policy, out var leftDominant, out var rightDominant) &&
+                    leftRecessive is not null &&
+                    rightRecessive is not null &&
+                    leftDominant is not null &&
+                    rightDominant is not null)
+                {
+                    leftAligned = new CompositeElement(leftRecessive, leftDominant);
+                    rightAligned = new CompositeElement(rightRecessive, rightDominant);
+                    return true;
+                }
+
+                break;
+        }
+
+        leftAligned = null;
+        rightAligned = null;
+        return false;
+    }
+
     public override bool SharesUnitSpace(GradedElement other) =>
         other is CompositeElement composite &&
         HasResolvedUnits &&
