@@ -1,4 +1,6 @@
-namespace Core3.Engine;
+using Core3.Engine;
+
+namespace Core3.Engine.Operations;
 
 /// <summary>
 /// Carries an operation result together with the frame context that produced it.

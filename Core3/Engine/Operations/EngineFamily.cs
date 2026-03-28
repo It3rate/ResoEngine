@@ -1,4 +1,6 @@
-namespace Core3.Engine;
+using Core3.Engine;
+
+namespace Core3.Engine.Operations;
 
 /// <summary>
 /// Operation-scoped grouping of subjects read in one frame.

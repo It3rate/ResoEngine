@@ -1,5 +1,6 @@
 using Core3.Elements;
 using Core3.Engine;
+using Core3.Engine.Operations;
 using System.Numerics;
 
 namespace Tests.Core3;

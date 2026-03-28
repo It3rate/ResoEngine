@@ -1,4 +1,6 @@
-namespace Core3.Engine;
+using Core3.Engine;
+
+namespace Core3.Engine.Operations;
 
 /// <summary>
 /// One-shot framed operations for cases where the family does not need to

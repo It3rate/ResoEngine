@@ -1,4 +1,4 @@
-namespace Core3.Engine;
+namespace Core3.Engine.Operations;
 
 /// <summary>
 /// Four-bit binary truth table for boolean occupancy inside a common frame.
