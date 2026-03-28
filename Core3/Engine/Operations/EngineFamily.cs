@@ -35,6 +35,44 @@ public sealed class EngineFamily
 
     public void ClearMembers() => _members.Clear();
 
+    public bool TryFocusMember(int index, out EngineFamily? focusedFamily)
+    {
+        if (index < 0 || index >= _members.Count)
+        {
+            focusedFamily = null;
+            return false;
+        }
+
+        var focusedMember = _members[index];
+
+        if (!TryReadMember(focusedMember, out var focusedFrame) ||
+            focusedFrame is null)
+        {
+            focusedFamily = null;
+            return false;
+        }
+
+        focusedFamily = new EngineFamily(focusedFrame);
+
+        for (var memberIndex = 0; memberIndex < _members.Count; memberIndex++)
+        {
+            if (memberIndex == index)
+            {
+                continue;
+            }
+
+            focusedFamily.AddMember(_members[memberIndex]);
+        }
+
+        return true;
+    }
+
+    public bool TryFocusMember(GradedElement member, out EngineFamily? focusedFamily)
+    {
+        ArgumentNullException.ThrowIfNull(member);
+        return TryFocusMember(_members.IndexOf(member), out focusedFamily);
+    }
+
     public bool TryReadMember(GradedElement member, out GradedElement? read)
     {
         ArgumentNullException.ThrowIfNull(member);

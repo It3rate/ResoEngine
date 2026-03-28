@@ -457,6 +457,29 @@ public sealed class Core3ElementTests
     }
 
     [Fact]
+    public void EngineFamily_CanTemporarilyFocusMemberIntoFrameRole()
+    {
+        var family = new EngineFamily(new AtomicElement(4, 4));
+        var first = new AtomicElement(1, 2);
+        var focused = new AtomicElement(3, 4);
+        var third = new AtomicElement(1, 4);
+        family.AddMember(first);
+        family.AddMember(focused);
+        family.AddMember(third);
+
+        Assert.True(family.TryFocusMember(focused, out var focusedFamily));
+
+        var reframed = Assert.IsType<EngineFamily>(focusedFamily);
+        Assert.Equal(new AtomicElement(3, 4), Assert.IsType<AtomicElement>(reframed.Frame));
+        Assert.Equal(2, reframed.Count);
+        Assert.Equal(first, reframed.Members[0]);
+        Assert.Equal(third, reframed.Members[1]);
+
+        Assert.True(reframed.TryAddAll(out var sum));
+        Assert.Equal(new AtomicElement(3, 4), Assert.IsType<AtomicElement>(sum));
+    }
+
+    [Fact]
     public void EngineFamily_CanReportMemberBoundaryAxis()
     {
         var family = new EngineFamily(new AtomicElement(4, 4));

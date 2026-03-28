@@ -99,40 +99,52 @@ lowest-retention member of a broader family of local comparison laws.
 This should be treated as a guiding idea rather than a settled implementation
 rule.
 
-## Focused Member
+## Focused Member As Temporary Frame
 
-The current engine does not yet have an explicit focused-member object.
+At the moment, the cleanest reading is that a focused member does not require a
+new special runtime species.
 
-What it has now is:
+Instead:
 
-- a frame
-- a family of referenced members
-- binary operations where the compared pair is explicit
+- a member is first read into its current parent frame
+- that read is temporarily elevated into frame role
+- the remaining members are then referenced against it
 
-A future focused-member mode would mean:
+So a focused-member operation can be treated as a temporary reframing of an
+existing family, not as a new ontology.
 
-- one member of the family is treated as the current carrier-inheritance target
-- the other members are compared against it one by one
-- the focused member receives modification, preservation, suppression, or
-  tension according to the operation law
+This preserves a few important Core3 principles:
 
-This is different from whole-family evaluation, where no one member is special
-and the result often wants a new carrier or a frame-carried result instead.
+- elements remain interchangeable in substance
+- only their roles change
+- the original family and parent frame do not need to be mutated
+- the focus can be temporary, much like a read used for resolution alignment
 
-So there are likely three important operation modes:
+In that sense, the focused member still remains a child of the original parent
+frame, even while it is temporarily acting as the local frame for a new derived
+operation family.
+
+This gives three important operation modes without introducing extra primitive
+types:
 
 1. Frame-focused
    The frame compares against each member and receives the interpretation.
 
 2. Member-focused
-   One member is primary and the others modify it.
+   One member is temporarily lifted into frame role and the others are compared
+   against it.
 
 3. Family-self-contained
    The family is treated as one unordered occupancy set and the result usually
    wants a new carrier or a frame-derived carrier.
 
-This focused-member idea is not yet explicit in the current runtime shape, but
-it fits well with the existing frame/family/result structure.
+So the current recommendation is:
+
+- do not add a special focused-member ontology yet
+- allow focused-member behavior to be expressed as a convenience over existing
+  frame/family/reference structure
+- only introduce a more explicit focused-member object later if repeated use
+  shows that the temporary-frame reading is insufficient
 
 ## Present Core3 Recommendation
 
@@ -142,8 +154,8 @@ For now:
 - treat family-wide boolean as symmetric occupancy predicates rather than trying
   to stretch all 16 into unordered form
 - keep occupancy law separate from carrier inheritance
-- leave focused-member operation as a later refinement rather than forcing it
-  into the current API too early
+- let focused-member operation be expressed by temporarily promoting a chosen
+  member into frame role rather than by inventing a new primitive structure
 
 This should give Core3 a cleaner long-term path for:
 
