@@ -75,6 +75,18 @@ In the current API direction, the intended flow is:
 3. inspect the resulting element and its provenance
 4. optionally use that result as the basis of a new context
 
+The current helper surface on `EngineOperationContext` is intentionally small.
+It exposes a few significant derived-context operations such as:
+
+- ordered / unordered view changes
+- focus into temporary frame role
+- collapse back to parent frame
+- sort by frame-read slot
+- shuffled unordered copies
+
+More convenience helpers can be added later without changing the underlying
+runtime pattern.
+
 ## Operation Layer
 
 The operation layer applies concrete laws to runtime contexts.

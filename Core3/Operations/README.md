@@ -250,3 +250,6 @@ This should give Core3 a cleaner long-term path for:
 - multiply / all-to-all products
 - boundary overflow and continuation analysis
 - later equation and syntax layers
+
+The next execution-oriented proposal for accumulated folds, branching, and
+equation traversal is captured in [Traversal.md](/Users/Robin/source/repos/ResoEngine/Core3/Operations/Traversal.md).

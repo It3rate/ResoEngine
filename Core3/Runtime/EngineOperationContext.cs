@@ -1,4 +1,5 @@
 using Core3.Engine;
+using Core3.Operations;
 
 namespace Core3.Runtime;
 
@@ -47,6 +48,8 @@ public sealed record EngineOperationContext
 
     public int Count => Members.Count;
 
+    public EngineFamily ToFamily() => new(this);
+
     public EngineOperationContext AsOrdered() =>
         IsOrdered
             ? this
@@ -56,4 +59,64 @@ public sealed record EngineOperationContext
         !IsOrdered
             ? this
             : new EngineOperationContext(Frame, Members, false, ParentContext, ParentFocusIndex);
+
+    public EngineOperationContext CreateShuffledCopy(int? seed = null) =>
+        ToFamily().CreateShuffledCopy(seed).CreateContext();
+
+    public bool TryFocusMember(int index, out EngineOperationContext? focusedContext)
+    {
+        if (ToFamily().TryFocusMember(index, out var focusedFamily) &&
+            focusedFamily is not null)
+        {
+            focusedContext = focusedFamily.CreateContext();
+            return true;
+        }
+
+        focusedContext = null;
+        return false;
+    }
+
+    public bool TryFocusMember(GradedElement member, out EngineOperationContext? focusedContext)
+    {
+        ArgumentNullException.ThrowIfNull(member);
+
+        if (ToFamily().TryFocusMember(member, out var focusedFamily) &&
+            focusedFamily is not null)
+        {
+            focusedContext = focusedFamily.CreateContext();
+            return true;
+        }
+
+        focusedContext = null;
+        return false;
+    }
+
+    public bool TrySortByFrameSlot(
+        int slotIndex,
+        bool descending,
+        out EngineOperationContext? sortedContext)
+    {
+        if (ToFamily().TrySortByFrameSlot(slotIndex, descending, out var sortedFamily) &&
+            sortedFamily is not null)
+        {
+            sortedContext = sortedFamily.CreateContext();
+            return true;
+        }
+
+        sortedContext = null;
+        return false;
+    }
+
+    public bool TryCollapseToParentFrame(out EngineOperationContext? collapsedContext)
+    {
+        if (ToFamily().TryCollapseToParentFrame(out var collapsedFamily) &&
+            collapsedFamily is not null)
+        {
+            collapsedContext = collapsedFamily.CreateContext();
+            return true;
+        }
+
+        collapsedContext = null;
+        return false;
+    }
 }
