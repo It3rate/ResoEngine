@@ -1,6 +1,7 @@
 using Core3.Elements;
 using Core3.Engine;
 using Core3.Operations;
+using Core3.Runtime;
 using System.Numerics;
 
 namespace Tests.Core3;
@@ -631,6 +632,21 @@ public sealed class Core3ElementTests
     }
 
     [Fact]
+    public void EngineOperations_TryAdd_CanRunDirectlyFromRuntimeContext()
+    {
+        var context = EngineOperationContext.Create(
+            new AtomicElement(0, 4),
+            [
+                new AtomicElement(1, 2),
+                new AtomicElement(1, 4),
+                new AtomicElement(1, 4)
+            ]);
+
+        Assert.True(EngineOperations.TryAdd(context, out var sum));
+        Assert.Equal(new AtomicElement(4, 4), Assert.IsType<AtomicElement>(sum));
+    }
+
+    [Fact]
     public void EngineOperations_TryAdd_CanReturnResultWithBoundaryAxisAndProvenance()
     {
         var frame = new AtomicElement(4, 4);
@@ -651,6 +667,26 @@ public sealed class Core3ElementTests
         Assert.Equal(
             new CompositeElement(new AtomicElement(0, 4), new AtomicElement(1, 4)),
             operationResult.GetResultBoundaryAxis());
+    }
+
+    [Fact]
+    public void EngineOperations_TryAddWithProvenance_PreservesRuntimeContext()
+    {
+        var context = EngineOperationContext.Create(
+            new AtomicElement(4, 4),
+            [
+                new AtomicElement(1, 2),
+                new AtomicElement(1, 4),
+                new AtomicElement(1, 2)
+            ],
+            isOrdered: false);
+
+        Assert.True(EngineOperations.TryAddWithProvenance(context, out var result));
+
+        var operationResult = Assert.IsType<EngineOperationResult>(result);
+        Assert.Equal(context.Frame, operationResult.Context.Frame);
+        Assert.Equal(context.IsOrdered, operationResult.Context.IsOrdered);
+        Assert.Equal(context.Members, operationResult.Context.Members);
     }
 
     [Fact]
@@ -831,6 +867,29 @@ public sealed class Core3ElementTests
         Assert.Equal(CreateSegmentFrame(5, 10, 10), pairwise[0].Pieces[1].Result);
         Assert.Equal(CreateSegmentFrame(3, 5, 10), pairwise[1].Pieces[0].Result);
         Assert.Equal(CreateSegmentFrame(6, 8, 10), pairwise[1].Pieces[1].Result);
+    }
+
+    [Fact]
+    public void EngineOperations_TryOccupancyBoolean_CanRunDirectlyFromRuntimeContext()
+    {
+        var context = EngineOperationContext.Create(
+            CreateSegmentFrame(0, 10, 10),
+            [
+                CreateSegmentFrame(0, 10, 10),
+                CreateSegmentFrame(3, 5, 10),
+                CreateSegmentFrame(6, 8, 10)
+            ],
+            isOrdered: false);
+
+        Assert.True(EngineOperations.TryOccupancyBoolean(
+            context,
+            EngineOccupancyOperation.ExactlyOne,
+            out var result));
+
+        var occupancyResult = Assert.IsType<EngineFamilyBooleanResult>(result);
+        Assert.Equal(context.Frame, occupancyResult.Context.Frame);
+        Assert.Equal(context.IsOrdered, occupancyResult.Context.IsOrdered);
+        Assert.Equal(3, occupancyResult.Pieces.Count);
     }
 
     [Fact]

@@ -12,6 +12,21 @@ public sealed class EngineFamily
 {
     private readonly List<GradedElement> _members = [];
 
+    public EngineFamily(EngineOperationContext context)
+        : this(
+            context?.Frame ?? throw new ArgumentNullException(nameof(context)),
+            context.IsOrdered,
+            context.ParentContext is not null
+                ? new EngineFamily(context.ParentContext)
+                : null,
+            context.ParentFocusIndex)
+    {
+        foreach (var member in context.Members)
+        {
+            AddMember(member);
+        }
+    }
+
     public EngineFamily(GradedElement frame, bool isOrdered = true)
         : this(frame, isOrdered, null, null)
     {

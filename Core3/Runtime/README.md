@@ -68,6 +68,13 @@ But it is not the right place for replacing the engine's actual element space.
 A runtime result should still remain an ordinary `GradedElement` whenever
 possible.
 
+In the current API direction, the intended flow is:
+
+1. build or derive an `EngineOperationContext`
+2. run an operation against that context
+3. inspect the resulting element and its provenance
+4. optionally use that result as the basis of a new context
+
 ## Operation Layer
 
 The operation layer applies concrete laws to runtime contexts.

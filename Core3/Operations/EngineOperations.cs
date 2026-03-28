@@ -1,4 +1,5 @@
 using Core3.Engine;
+using Core3.Runtime;
 
 namespace Core3.Operations;
 
@@ -9,21 +10,27 @@ namespace Core3.Operations;
 public static class EngineOperations
 {
     public static bool TryAdd(
+        EngineOperationContext context,
+        out GradedElement? sum)
+    {
+        ArgumentNullException.ThrowIfNull(context);
+        return new EngineFamily(context).TryAddAll(out sum);
+    }
+
+    public static bool TryAdd(
         GradedElement frame,
         IEnumerable<GradedElement> members,
         out GradedElement? sum)
     {
-        ArgumentNullException.ThrowIfNull(frame);
-        ArgumentNullException.ThrowIfNull(members);
+        return TryAdd(EngineOperationContext.Create(frame, members), out sum);
+    }
 
-        var family = new EngineFamily(frame);
-
-        foreach (var member in members)
-        {
-            family.AddMember(member);
-        }
-
-        return family.TryAddAll(out sum);
+    public static bool TryAddWithProvenance(
+        EngineOperationContext context,
+        out EngineOperationResult? result)
+    {
+        ArgumentNullException.ThrowIfNull(context);
+        return new EngineFamily(context).TryAddAllWithProvenance(out result);
     }
 
     public static bool TryAddWithProvenance(
@@ -31,17 +38,15 @@ public static class EngineOperations
         IEnumerable<GradedElement> members,
         out EngineOperationResult? result)
     {
-        ArgumentNullException.ThrowIfNull(frame);
-        ArgumentNullException.ThrowIfNull(members);
+        return TryAddWithProvenance(EngineOperationContext.Create(frame, members), out result);
+    }
 
-        var family = new EngineFamily(frame);
-
-        foreach (var member in members)
-        {
-            family.AddMember(member);
-        }
-
-        return family.TryAddAllWithProvenance(out result);
+    public static bool TryMultiply(
+        EngineOperationContext context,
+        out GradedElement? product)
+    {
+        ArgumentNullException.ThrowIfNull(context);
+        return new EngineFamily(context).TryMultiplyAll(out product);
     }
 
     public static bool TryMultiply(
@@ -49,17 +54,15 @@ public static class EngineOperations
         IEnumerable<GradedElement> members,
         out GradedElement? product)
     {
-        ArgumentNullException.ThrowIfNull(frame);
-        ArgumentNullException.ThrowIfNull(members);
+        return TryMultiply(EngineOperationContext.Create(frame, members), out product);
+    }
 
-        var family = new EngineFamily(frame);
-
-        foreach (var member in members)
-        {
-            family.AddMember(member);
-        }
-
-        return family.TryMultiplyAll(out product);
+    public static bool TryMultiplyWithProvenance(
+        EngineOperationContext context,
+        out EngineOperationResult? result)
+    {
+        ArgumentNullException.ThrowIfNull(context);
+        return new EngineFamily(context).TryMultiplyAllWithProvenance(out result);
     }
 
     public static bool TryMultiplyWithProvenance(
@@ -67,17 +70,23 @@ public static class EngineOperations
         IEnumerable<GradedElement> members,
         out EngineOperationResult? result)
     {
-        ArgumentNullException.ThrowIfNull(frame);
-        ArgumentNullException.ThrowIfNull(members);
+        return TryMultiplyWithProvenance(EngineOperationContext.Create(frame, members), out result);
+    }
 
-        var family = new EngineFamily(frame);
+    public static bool TryBoolean(
+        EngineOperationContext context,
+        EngineBooleanOperation operation,
+        out EngineBooleanResult? result)
+    {
+        ArgumentNullException.ThrowIfNull(context);
 
-        foreach (var member in members)
+        if (context.Frame is not CompositeElement)
         {
-            family.AddMember(member);
+            result = null;
+            return false;
         }
 
-        return family.TryMultiplyAllWithProvenance(out result);
+        return new EngineFamily(context).TryBoolean(operation, out result);
     }
 
     public static bool TryBoolean(
@@ -86,17 +95,23 @@ public static class EngineOperations
         EngineBooleanOperation operation,
         out EngineBooleanResult? result)
     {
-        ArgumentNullException.ThrowIfNull(frame);
-        ArgumentNullException.ThrowIfNull(members);
+        return TryBoolean(EngineOperationContext.Create(frame, members), operation, out result);
+    }
 
-        var family = new EngineFamily(frame);
+    public static bool TryOccupancyBoolean(
+        EngineOperationContext context,
+        EngineOccupancyOperation operation,
+        out EngineFamilyBooleanResult? result)
+    {
+        ArgumentNullException.ThrowIfNull(context);
 
-        foreach (var member in members)
+        if (context.Frame is not CompositeElement)
         {
-            family.AddMember(member);
+            result = null;
+            return false;
         }
 
-        return family.TryBoolean(operation, out result);
+        return new EngineFamily(context).TryOccupancyBoolean(operation, out result);
     }
 
     public static bool TryOccupancyBoolean(
@@ -106,17 +121,26 @@ public static class EngineOperations
         out EngineFamilyBooleanResult? result,
         bool isOrdered = false)
     {
-        ArgumentNullException.ThrowIfNull(frame);
-        ArgumentNullException.ThrowIfNull(members);
+        return TryOccupancyBoolean(
+            EngineOperationContext.Create(frame, members, isOrdered),
+            operation,
+            out result);
+    }
 
-        var family = new EngineFamily(frame, isOrdered);
+    public static bool TryBooleanAdjacentPairs(
+        EngineOperationContext context,
+        EngineBooleanOperation operation,
+        out IReadOnlyList<EngineBooleanResult>? results)
+    {
+        ArgumentNullException.ThrowIfNull(context);
 
-        foreach (var member in members)
+        if (context.Frame is not CompositeElement)
         {
-            family.AddMember(member);
+            results = null;
+            return false;
         }
 
-        return family.TryOccupancyBoolean(operation, out result);
+        return new EngineFamily(context).TryBooleanAdjacentPairs(operation, out results);
     }
 
     public static bool TryBooleanAdjacentPairs(
@@ -125,16 +149,9 @@ public static class EngineOperations
         EngineBooleanOperation operation,
         out IReadOnlyList<EngineBooleanResult>? results)
     {
-        ArgumentNullException.ThrowIfNull(frame);
-        ArgumentNullException.ThrowIfNull(members);
-
-        var family = new EngineFamily(frame, isOrdered: true);
-
-        foreach (var member in members)
-        {
-            family.AddMember(member);
-        }
-
-        return family.TryBooleanAdjacentPairs(operation, out results);
+        return TryBooleanAdjacentPairs(
+            EngineOperationContext.Create(frame, members, isOrdered: true),
+            operation,
+            out results);
     }
 }

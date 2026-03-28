@@ -8,6 +8,20 @@ namespace Core3.Runtime;
 /// </summary>
 public sealed record EngineOperationContext
 {
+    public static EngineOperationContext Create(
+        GradedElement frame,
+        IEnumerable<GradedElement> members,
+        bool isOrdered = true)
+    {
+        ArgumentNullException.ThrowIfNull(frame);
+        ArgumentNullException.ThrowIfNull(members);
+
+        return new EngineOperationContext(
+            frame,
+            members.ToArray(),
+            isOrdered);
+    }
+
     public EngineOperationContext(
         GradedElement frame,
         IReadOnlyList<GradedElement> members,
@@ -32,4 +46,14 @@ public sealed record EngineOperationContext
     public int? ParentFocusIndex { get; }
 
     public int Count => Members.Count;
+
+    public EngineOperationContext AsOrdered() =>
+        IsOrdered
+            ? this
+            : new EngineOperationContext(Frame, Members, true, ParentContext, ParentFocusIndex);
+
+    public EngineOperationContext AsUnordered() =>
+        !IsOrdered
+            ? this
+            : new EngineOperationContext(Frame, Members, false, ParentContext, ParentFocusIndex);
 }
