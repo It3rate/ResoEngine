@@ -23,4 +23,22 @@ public static class EngineOperations
 
         return family.TryAddAll(out sum);
     }
+
+    public static bool TryAddWithProvenance(
+        GradedElement frame,
+        IEnumerable<GradedElement> members,
+        out EngineOperationResult? result)
+    {
+        ArgumentNullException.ThrowIfNull(frame);
+        ArgumentNullException.ThrowIfNull(members);
+
+        var family = new EngineFamily(frame);
+
+        foreach (var member in members)
+        {
+            family.AddMember(member);
+        }
+
+        return family.TryAddAllWithProvenance(out result);
+    }
 }

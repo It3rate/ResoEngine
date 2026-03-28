@@ -416,6 +416,26 @@ public sealed class Core3ElementTests
     }
 
     [Fact]
+    public void EngineReference_BoundaryAxis_UsesCalibrationAsRangeContext()
+    {
+        var frame = new CompositeElement(
+            new AtomicElement(4, 4),
+            new AtomicElement(0, 4));
+        var inside = new EngineReference(frame, new AtomicElement(3, 4));
+        var outside = new EngineReference(frame, new AtomicElement(7, 4));
+
+        var insideAxis = inside.GetBoundaryAxis();
+        var outsideAxis = outside.GetBoundaryAxis();
+
+        Assert.Equal(
+            new CompositeElement(new AtomicElement(0, 4), new AtomicElement(0, 4)),
+            insideAxis);
+        Assert.Equal(
+            new CompositeElement(new AtomicElement(0, 4), new AtomicElement(3, 4)),
+            outsideAxis);
+    }
+
+    [Fact]
     public void EngineFamily_CanAddRemoveAndClearMembers()
     {
         var family = new EngineFamily(new AtomicElement(0, 4));
@@ -432,6 +452,24 @@ public sealed class Core3ElementTests
         family.ClearMembers();
 
         Assert.Equal(0, family.Count);
+    }
+
+    [Fact]
+    public void EngineFamily_CanReportMemberBoundaryAxis()
+    {
+        var family = new EngineFamily(new AtomicElement(4, 4));
+        var insideCandidate = new AtomicElement(3, 4);
+        var outsideCandidate = new AtomicElement(6, 4);
+
+        var insideAxis = family.GetMemberBoundaryAxis(insideCandidate);
+        var outsideAxis = family.GetMemberBoundaryAxis(outsideCandidate);
+
+        Assert.Equal(
+            new CompositeElement(new AtomicElement(0, 4), new AtomicElement(0, 4)),
+            insideAxis);
+        Assert.Equal(
+            new CompositeElement(new AtomicElement(0, 4), new AtomicElement(2, 4)),
+            outsideAxis);
     }
 
     [Fact]
@@ -458,6 +496,29 @@ public sealed class Core3ElementTests
 
         Assert.True(EngineOperations.TryAdd(frame, members, out var sum));
         Assert.Equal(new AtomicElement(4, 4), Assert.IsType<AtomicElement>(sum));
+    }
+
+    [Fact]
+    public void EngineOperations_TryAdd_CanReturnResultWithBoundaryAxisAndProvenance()
+    {
+        var frame = new AtomicElement(4, 4);
+        var members = new GradedElement[]
+        {
+            new AtomicElement(1, 2),
+            new AtomicElement(1, 4),
+            new AtomicElement(1, 2)
+        };
+
+        Assert.True(EngineOperations.TryAddWithProvenance(frame, members, out var result));
+
+        var operationResult = Assert.IsType<EngineOperationResult>(result);
+        Assert.Equal("Add", operationResult.OperationName);
+        Assert.Equal(frame, operationResult.SourceFrame);
+        Assert.Equal(3, operationResult.SourceMembers.Count);
+        Assert.Equal(new AtomicElement(5, 4), operationResult.Result);
+        Assert.Equal(
+            new CompositeElement(new AtomicElement(0, 4), new AtomicElement(1, 4)),
+            operationResult.GetResultBoundaryAxis());
     }
 
     [Fact]

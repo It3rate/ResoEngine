@@ -32,6 +32,11 @@ public sealed record EngineReference
 
     public bool TryRead(out GradedElement? read) => Subject.TryReferenceToFrame(Calibration, out read);
 
+    public CompositeElement GetBoundaryAxis() =>
+        TryRead(out var read) && read is not null
+            ? EngineBoundary.GetAxis(Calibration, read)
+            : EngineBoundary.CreateUnknownAxis(Calibration);
+
     public bool TryMeasureOnCalibration(out CompositeElement? measured)
     {
         if (Calibration.Grade == Subject.Grade &&

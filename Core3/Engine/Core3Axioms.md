@@ -491,6 +491,22 @@ species of element.
 - some operations may instead build a one-shot family, run the fold, and then
   discard the grouping immediately
 
+The same frame relation should also carry boundary meaning.
+
+- a frame is not only a calibration choice
+- it also states the active bounded span or range of the current read
+- a referenced read may therefore be in-bounds, below-bounds, above-bounds, or
+  mixed across a higher-grade structure
+- this boundary relation should be derived from the frame and read, not stored
+  as a separate permanent flag
+- one useful read is a boundary axis: lower overflow on one side, upper
+  overflow on the other
+- `0` and `0` mean fully in-bounds
+- positive overflow means out-of-bounds in that direction
+- `0/0` is the current unknown or unreadable boundary read
+- operation results may preserve the frame relation as provenance even when the
+  result itself remains an ordinary graded element
+
 ## Relationship To Existing Core3 Elements
 
 `Core3.Elements` remains the practical semantic reference.

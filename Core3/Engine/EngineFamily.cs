@@ -39,6 +39,15 @@ public sealed class EngineFamily
         return member.TryReferenceToFrame(Frame, out read);
     }
 
+    public CompositeElement GetMemberBoundaryAxis(GradedElement member)
+    {
+        ArgumentNullException.ThrowIfNull(member);
+
+        return TryReadMember(member, out var read) && read is not null
+            ? EngineBoundary.GetAxis(Frame, read)
+            : EngineBoundary.CreateUnknownAxis(Frame);
+    }
+
     public bool TryReadAll(out IReadOnlyList<GradedElement>? reads)
     {
         var resolvedReads = new List<GradedElement>(_members.Count);
@@ -83,5 +92,20 @@ public sealed class EngineFamily
 
         sum = current;
         return true;
+    }
+
+    public bool TryAddAllWithProvenance(out EngineOperationResult? result)
+    {
+        GradedElement? sum;
+
+        if (TryAddAll(out sum) &&
+            sum is not null)
+        {
+            result = new EngineOperationResult("Add", Frame, _members.ToArray(), sum, Frame);
+            return true;
+        }
+
+        result = null;
+        return false;
     }
 }
