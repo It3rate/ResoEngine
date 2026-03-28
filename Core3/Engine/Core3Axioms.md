@@ -490,6 +490,10 @@ species of element.
 - some families may persist for reuse
 - some operations may instead build a one-shot family, run the fold, and then
   discard the grouping immediately
+- multiplication can use this same frame/family pipeline
+- when a provenance-preserving multiplication is requested, the result may also
+  carry a derived multiplication-shaped result frame so later boundary reads can
+  inspect the product in a comparable frame rather than only in the source one
 
 The same frame relation should also carry boundary meaning.
 

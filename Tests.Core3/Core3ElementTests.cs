@@ -1,5 +1,6 @@
 using Core3.Elements;
 using Core3.Engine;
+using System.Numerics;
 
 namespace Tests.Core3;
 
@@ -522,6 +523,54 @@ public sealed class Core3ElementTests
     }
 
     [Fact]
+    public void EngineFamily_TryMultiplyAll_UsesFrameReadouts()
+    {
+        var family = new EngineFamily(new AtomicElement(4, 4));
+        family.AddMember(new AtomicElement(1, 2));
+        family.AddMember(new AtomicElement(3, 4));
+
+        Assert.True(family.TryMultiplyAll(out var product));
+        Assert.Equal(new AtomicElement(6, 16), Assert.IsType<AtomicElement>(product));
+    }
+
+    [Fact]
+    public void EngineOperations_TryMultiply_SupportsOneShotFramedMultiplication()
+    {
+        var frame = new AtomicElement(4, 4);
+        var members = new GradedElement[]
+        {
+            new AtomicElement(1, 2),
+            new AtomicElement(3, 4)
+        };
+
+        Assert.True(EngineOperations.TryMultiply(frame, members, out var product));
+        Assert.Equal(new AtomicElement(6, 16), Assert.IsType<AtomicElement>(product));
+    }
+
+    [Fact]
+    public void EngineOperations_TryMultiply_CanReturnResultWithDerivedFrameProvenance()
+    {
+        var frame = new AtomicElement(4, 4);
+        var members = new GradedElement[]
+        {
+            new AtomicElement(1, 2),
+            new AtomicElement(3, 4)
+        };
+
+        Assert.True(EngineOperations.TryMultiplyWithProvenance(frame, members, out var result));
+
+        var operationResult = Assert.IsType<EngineOperationResult>(result);
+        Assert.Equal("Multiply", operationResult.OperationName);
+        Assert.Equal(frame, operationResult.SourceFrame);
+        Assert.Equal(2, operationResult.SourceMembers.Count);
+        Assert.Equal(new AtomicElement(6, 16), operationResult.Result);
+        Assert.Equal(new AtomicElement(16, 16), Assert.IsType<AtomicElement>(operationResult.ResultFrame));
+        Assert.Equal(
+            new CompositeElement(new AtomicElement(0, 16), new AtomicElement(0, 16)),
+            operationResult.GetResultBoundaryAxis());
+    }
+
+    [Fact]
     public void AtomicScale_PreservesExactWorkingSupportWithoutReducing()
     {
         var whole = new AtomicElement(10, 1);
@@ -645,6 +694,49 @@ public sealed class Core3ElementTests
         Assert.Equal(new AtomicElement(12, -1), cross.Dominant);
     }
 
+    [Theory]
+    [InlineData(2, 1, 3, 1, 4, 1, 5, 1)]
+    [InlineData(3, 2, 5, 2, 7, 2, 1, 2)]
+    [InlineData(-1, 4, 3, 4, 5, 4, -1, 4)]
+    public void GradeTwoAlignedMultiply_MatchesCSharpComplexNumbers(
+        long leftRecessiveValue,
+        long leftRecessiveResolution,
+        long leftDominantValue,
+        long leftDominantResolution,
+        long rightRecessiveValue,
+        long rightRecessiveResolution,
+        long rightDominantValue,
+        long rightDominantResolution)
+    {
+        var left = CreateAxisLikeNumber(
+            leftRecessiveValue,
+            leftRecessiveResolution,
+            leftDominantValue,
+            leftDominantResolution);
+        var right = CreateAxisLikeNumber(
+            rightRecessiveValue,
+            rightRecessiveResolution,
+            rightDominantValue,
+            rightDominantResolution);
+        var expected = new Complex(
+            (double)leftRecessiveValue / leftRecessiveResolution,
+            (double)leftDominantValue / leftDominantResolution) *
+            new Complex(
+                (double)rightRecessiveValue / rightRecessiveResolution,
+                (double)rightDominantValue / rightDominantResolution);
+
+        Assert.True(left.TryMultiply(right, out var product));
+
+        var reduced = Assert.IsType<CompositeElement>(product);
+        Assert.Equal(1, reduced.Grade);
+
+        var recessive = Assert.IsType<AtomicElement>(reduced.Recessive);
+        var dominant = Assert.IsType<AtomicElement>(reduced.Dominant);
+
+        Assert.Equal(expected.Real, ToDouble(recessive), 12);
+        Assert.Equal(expected.Imaginary, ToDouble(dominant), 12);
+    }
+
     [Fact]
     public void EnginePin_Multiply_IsNaturalOnlyForContrastSpace()
     {
@@ -662,4 +754,21 @@ public sealed class Core3ElementTests
         Assert.Null(sameSpaceProduct);
         Assert.True(sameSpacePin.MultiplyRequiresLift());
     }
+
+    private static CompositeElement CreateAxisLikeNumber(
+        long recessiveValue,
+        long recessiveResolution,
+        long dominantValue,
+        long dominantResolution) =>
+        new(
+            CreateExactScalar(recessiveValue, recessiveResolution),
+            CreateExactScalar(dominantValue, dominantResolution));
+
+    private static CompositeElement CreateExactScalar(long value, long resolution) =>
+        new(
+            new AtomicElement(resolution, 1),
+            new AtomicElement(value, 1));
+
+    private static double ToDouble(AtomicElement atomic) =>
+        (double)atomic.Value / atomic.Unit;
 }

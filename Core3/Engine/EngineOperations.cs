@@ -41,4 +41,40 @@ public static class EngineOperations
 
         return family.TryAddAllWithProvenance(out result);
     }
+
+    public static bool TryMultiply(
+        GradedElement frame,
+        IEnumerable<GradedElement> members,
+        out GradedElement? product)
+    {
+        ArgumentNullException.ThrowIfNull(frame);
+        ArgumentNullException.ThrowIfNull(members);
+
+        var family = new EngineFamily(frame);
+
+        foreach (var member in members)
+        {
+            family.AddMember(member);
+        }
+
+        return family.TryMultiplyAll(out product);
+    }
+
+    public static bool TryMultiplyWithProvenance(
+        GradedElement frame,
+        IEnumerable<GradedElement> members,
+        out EngineOperationResult? result)
+    {
+        ArgumentNullException.ThrowIfNull(frame);
+        ArgumentNullException.ThrowIfNull(members);
+
+        var family = new EngineFamily(frame);
+
+        foreach (var member in members)
+        {
+            family.AddMember(member);
+        }
+
+        return family.TryMultiplyAllWithProvenance(out result);
+    }
 }

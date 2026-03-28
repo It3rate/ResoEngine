@@ -94,6 +94,33 @@ public sealed class EngineFamily
         return true;
     }
 
+    public bool TryMultiplyAll(out GradedElement? product)
+    {
+        if (!TryReadAll(out var reads) ||
+            reads is null ||
+            reads.Count == 0)
+        {
+            product = null;
+            return false;
+        }
+
+        var current = reads[0];
+
+        for (var index = 1; index < reads.Count; index++)
+        {
+            if (!current.TryMultiply(reads[index], out var next) || next is null)
+            {
+                product = null;
+                return false;
+            }
+
+            current = next;
+        }
+
+        product = current;
+        return true;
+    }
+
     public bool TryAddAllWithProvenance(out EngineOperationResult? result)
     {
         GradedElement? sum;
@@ -107,5 +134,52 @@ public sealed class EngineFamily
 
         result = null;
         return false;
+    }
+
+    public bool TryMultiplyAllWithProvenance(out EngineOperationResult? result)
+    {
+        GradedElement? product;
+
+        if (TryMultiplyAll(out product) &&
+            product is not null)
+        {
+            result = new EngineOperationResult(
+                "Multiply",
+                Frame,
+                _members.ToArray(),
+                product,
+                TryDeriveMultiplyResultFrame(out var resultFrame) && resultFrame is not null
+                    ? resultFrame
+                    : Frame);
+            return true;
+        }
+
+        result = null;
+        return false;
+    }
+
+    private bool TryDeriveMultiplyResultFrame(out GradedElement? resultFrame)
+    {
+        if (_members.Count == 0)
+        {
+            resultFrame = null;
+            return false;
+        }
+
+        var current = Frame;
+
+        for (var index = 1; index < _members.Count; index++)
+        {
+            if (!current.TryMultiply(Frame, out var next) || next is null)
+            {
+                resultFrame = null;
+                return false;
+            }
+
+            current = next;
+        }
+
+        resultFrame = current;
+        return true;
     }
 }
