@@ -457,6 +457,27 @@ public sealed class Core3ElementTests
     }
 
     [Fact]
+    public void EngineFamily_CanCreateOrderedAndUnorderedViews()
+    {
+        var family = new EngineFamily(new AtomicElement(4, 4));
+        var first = new AtomicElement(1, 4);
+        var second = new AtomicElement(2, 4);
+        family.AddMember(first);
+        family.AddMember(second);
+
+        var unordered = family.CreateUnorderedCopy();
+        var reordered = unordered.CreateOrderedCopy();
+
+        Assert.False(unordered.IsOrdered);
+        Assert.Same(family, unordered.ParentFamily);
+        Assert.Equal(family.Members, unordered.Members);
+
+        Assert.True(reordered.IsOrdered);
+        Assert.Same(unordered, reordered.ParentFamily);
+        Assert.Equal(unordered.Members, reordered.Members);
+    }
+
+    [Fact]
     public void EngineFamily_CanTemporarilyFocusMemberIntoFrameRole()
     {
         var family = new EngineFamily(new AtomicElement(4, 4), isOrdered: false);
@@ -507,6 +528,62 @@ public sealed class Core3ElementTests
         Assert.Equal(first, collapsed.Members[0]);
         Assert.Equal(reframed.Frame, collapsed.Members[1]);
         Assert.Equal(third, collapsed.Members[2]);
+    }
+
+    [Fact]
+    public void EngineFamily_CanSortMembersByFrameSlot()
+    {
+        var frame = new CompositeElement(
+            new AtomicElement(0, 10),
+            new AtomicElement(0, 10));
+        var left = new CompositeElement(
+            new AtomicElement(8, 10),
+            new AtomicElement(1, 10));
+        var middle = new CompositeElement(
+            new AtomicElement(5, 10),
+            new AtomicElement(5, 10));
+        var right = new CompositeElement(
+            new AtomicElement(2, 10),
+            new AtomicElement(9, 10));
+        var family = new EngineFamily(frame, isOrdered: false);
+        family.AddMember(middle);
+        family.AddMember(left);
+        family.AddMember(right);
+
+        Assert.True(family.TrySortByFrameSlot(0, descending: false, out var xSorted));
+        Assert.True(family.TrySortByFrameSlot(1, descending: true, out var ySorted));
+
+        var xAscending = Assert.IsType<EngineFamily>(xSorted);
+        var yDescending = Assert.IsType<EngineFamily>(ySorted);
+
+        Assert.True(xAscending.IsOrdered);
+        Assert.Same(family, xAscending.ParentFamily);
+        Assert.Equal([right, middle, left], xAscending.Members);
+
+        Assert.True(yDescending.IsOrdered);
+        Assert.Same(family, yDescending.ParentFamily);
+        Assert.Equal([right, middle, left], yDescending.Members);
+    }
+
+    [Fact]
+    public void EngineFamily_CanCreateDeterministicUnorderedShuffle()
+    {
+        var family = new EngineFamily(new AtomicElement(4, 4));
+        var first = new AtomicElement(1, 4);
+        var second = new AtomicElement(2, 4);
+        var third = new AtomicElement(3, 4);
+        var fourth = new AtomicElement(4, 4);
+        family.AddMember(first);
+        family.AddMember(second);
+        family.AddMember(third);
+        family.AddMember(fourth);
+
+        var shuffled = family.CreateShuffledCopy(seed: 7);
+
+        Assert.False(shuffled.IsOrdered);
+        Assert.Same(family, shuffled.ParentFamily);
+        Assert.Equal(4, shuffled.Count);
+        Assert.Equal([first, fourth, third, second], shuffled.Members);
     }
 
     [Fact]

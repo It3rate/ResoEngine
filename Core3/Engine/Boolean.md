@@ -164,6 +164,17 @@ The family can still be stored in one list structure for now. The important
 point is that "this order has meaning" and "this order is only storage" are not
 the same statement.
 
+Families should also be able to derive new orderings without mutating the
+underlying members:
+
+- sorting by one structural slot read in the current frame
+- reversing or descending that same order
+- shuffling into an explicitly unordered view
+
+This fits the larger Core3 idea that many operational changes are better
+understood as temporary reads or derived views than as overwriting the source
+structure.
+
 So the current recommendation is:
 
 - do not add a special focused-member ontology yet

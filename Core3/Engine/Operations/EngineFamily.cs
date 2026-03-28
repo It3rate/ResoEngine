@@ -50,6 +50,52 @@ public sealed class EngineFamily
 
     public void ClearMembers() => _members.Clear();
 
+    public EngineFamily CreateOrderedCopy()
+    {
+        var orderedFamily = CreateDerivedFamily(Frame, isOrdered: true);
+
+        foreach (var member in _members)
+        {
+            orderedFamily.AddMember(member);
+        }
+
+        return orderedFamily;
+    }
+
+    public EngineFamily CreateUnorderedCopy()
+    {
+        var unorderedFamily = CreateDerivedFamily(Frame, isOrdered: false);
+
+        foreach (var member in _members)
+        {
+            unorderedFamily.AddMember(member);
+        }
+
+        return unorderedFamily;
+    }
+
+    public EngineFamily CreateShuffledCopy(int? seed = null)
+    {
+        var random = seed is int fixedSeed ? new Random(fixedSeed) : Random.Shared;
+        var shuffledMembers = _members.ToList();
+
+        for (var index = shuffledMembers.Count - 1; index > 0; index--)
+        {
+            var swapIndex = random.Next(index + 1);
+            (shuffledMembers[index], shuffledMembers[swapIndex]) =
+                (shuffledMembers[swapIndex], shuffledMembers[index]);
+        }
+
+        var shuffledFamily = CreateDerivedFamily(Frame, isOrdered: false);
+
+        foreach (var member in shuffledMembers)
+        {
+            shuffledFamily.AddMember(member);
+        }
+
+        return shuffledFamily;
+    }
+
     public bool TryFocusMember(int index, out EngineFamily? focusedFamily)
     {
         if (index < 0 || index >= _members.Count)
@@ -67,10 +113,9 @@ public sealed class EngineFamily
             return false;
         }
 
-        focusedFamily = new EngineFamily(
+        focusedFamily = CreateDerivedFamily(
             focusedFrame,
             IsOrdered,
-            this,
             index);
 
         for (var memberIndex = 0; memberIndex < _members.Count; memberIndex++)
@@ -92,6 +137,65 @@ public sealed class EngineFamily
         return TryFocusMember(_members.IndexOf(member), out focusedFamily);
     }
 
+    public bool TrySortByFrameSlot(
+        int slotIndex,
+        bool descending,
+        out EngineFamily? sortedFamily)
+    {
+        if (slotIndex < 0)
+        {
+            sortedFamily = null;
+            return false;
+        }
+
+        var sortableMembers = new List<SortableMember>(_members.Count);
+
+        for (var memberIndex = 0; memberIndex < _members.Count; memberIndex++)
+        {
+            var member = _members[memberIndex];
+
+            if (!TryReadMember(member, out var read) ||
+                read is null ||
+                !TryGetAtomicSlot(read, slotIndex, out var slot) ||
+                slot is null)
+            {
+                sortedFamily = null;
+                return false;
+            }
+
+            sortableMembers.Add(new SortableMember(memberIndex, member, slot));
+        }
+
+        if (!AreMutuallyComparable(sortableMembers))
+        {
+            sortedFamily = null;
+            return false;
+        }
+
+        sortableMembers.Sort((left, right) =>
+        {
+            var comparison = CompareAtomicSlots(left.Slot, right.Slot);
+
+            if (descending)
+            {
+                comparison = -comparison;
+            }
+
+            return comparison != 0
+                ? comparison
+                : left.OriginalIndex.CompareTo(right.OriginalIndex);
+        });
+
+        sortedFamily = CreateDerivedFamily(Frame, isOrdered: true);
+
+        foreach (var sortableMember in sortableMembers)
+        {
+            sortedFamily.AddMember(sortableMember.Member);
+        }
+
+        return true;
+    }
+
     public bool TryCollapseToParentFrame(out EngineFamily? collapsedFamily)
     {
         if (ParentFamily is null ||
@@ -108,11 +212,12 @@ public sealed class EngineFamily
             return false;
         }
 
-        collapsedFamily = new EngineFamily(
-            ParentFamily.Frame,
-            ParentFamily.IsOrdered,
-            ParentFamily.ParentFamily,
-            ParentFamily.ParentFocusIndex);
+        collapsedFamily = ParentFamily.ParentFamily is null
+            ? new EngineFamily(ParentFamily.Frame, ParentFamily.IsOrdered)
+            : ParentFamily.ParentFamily.CreateDerivedFamily(
+                ParentFamily.Frame,
+                ParentFamily.IsOrdered,
+                ParentFamily.ParentFocusIndex);
 
         for (var memberIndex = 0; memberIndex <= _members.Count; memberIndex++)
         {
@@ -300,4 +405,85 @@ public sealed class EngineFamily
         resultFrame = current;
         return true;
     }
+
+    private EngineFamily CreateDerivedFamily(
+        GradedElement frame,
+        bool isOrdered,
+        int? parentFocusIndex = null) =>
+        new(frame, isOrdered, this, parentFocusIndex);
+
+    private static bool AreMutuallyComparable(IReadOnlyList<SortableMember> sortableMembers)
+    {
+        for (var leftIndex = 0; leftIndex < sortableMembers.Count; leftIndex++)
+        {
+            for (var rightIndex = leftIndex + 1; rightIndex < sortableMembers.Count; rightIndex++)
+            {
+                if (!sortableMembers[leftIndex].Slot.TryAlignExact(
+                        sortableMembers[rightIndex].Slot,
+                        out _,
+                        out _))
+                {
+                    return false;
+                }
+            }
+        }
+
+        return true;
+    }
+
+    private static int CompareAtomicSlots(AtomicElement left, AtomicElement right)
+    {
+        if (!left.TryAlignExact(right, out var leftAligned, out var rightAligned) ||
+            leftAligned is null ||
+            rightAligned is null)
+        {
+            throw new InvalidOperationException("Family slot comparison requires aligned atomic reads.");
+        }
+
+        return leftAligned.Value.CompareTo(rightAligned.Value);
+    }
+
+    private static bool TryGetAtomicSlot(
+        GradedElement element,
+        int slotIndex,
+        out AtomicElement? slot)
+    {
+        var currentIndex = 0;
+        return TryGetAtomicSlot(element, slotIndex, ref currentIndex, out slot);
+    }
+
+    private static bool TryGetAtomicSlot(
+        GradedElement element,
+        int slotIndex,
+        ref int currentIndex,
+        out AtomicElement? slot)
+    {
+        switch (element)
+        {
+            case AtomicElement atomic:
+                if (currentIndex == slotIndex)
+                {
+                    slot = atomic;
+                    return true;
+                }
+
+                currentIndex++;
+                slot = null;
+                return false;
+
+            case CompositeElement composite:
+                if (TryGetAtomicSlot(composite.Recessive, slotIndex, ref currentIndex, out slot))
+                {
+                    return true;
+                }
+
+                return TryGetAtomicSlot(composite.Dominant, slotIndex, ref currentIndex, out slot);
+
+            default:
+                slot = null;
+                return false;
+        }
+    }
+
+    private sealed record SortableMember(int OriginalIndex, GradedElement Member, AtomicElement Slot);
 }
