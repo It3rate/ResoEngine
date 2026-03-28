@@ -138,11 +138,41 @@ types:
    The family is treated as one unordered occupancy set and the result usually
    wants a new carrier or a frame-derived carrier.
 
+The structural dual also matters:
+
+- a derived focused family can later be collapsed back into its parent frame
+- the temporarily elevated frame is reattached there as one member among the
+  others
+- this is another read or reframing step, not a mutation of the underlying
+  elements
+
+So temporary focusing and later collapse should be understood as two directions
+of the same family-derivation mechanism.
+
+## Ordered And Unordered Families
+
+Families also need a small distinction between:
+
+- ordered families, where member order is meaningful
+- unordered families, where member collection matters but order does not
+
+This matters because some operations, such as sequential pairwise comparison or
+folds that preserve adjacency, care about ordering, while symmetric occupancy
+predicates do not.
+
+The family can still be stored in one list structure for now. The important
+point is that "this order has meaning" and "this order is only storage" are not
+the same statement.
+
 So the current recommendation is:
 
 - do not add a special focused-member ontology yet
 - allow focused-member behavior to be expressed as a convenience over existing
   frame/family/reference structure
+- allow derived families to collapse back into their parent frame when that
+  temporary reframing is complete
+- let families carry an ordered/unordered hint rather than splitting into
+  separate collection species too early
 - only introduce a more explicit focused-member object later if repeated use
   shows that the temporary-frame reading is insufficient
 

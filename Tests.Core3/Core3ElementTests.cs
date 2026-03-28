@@ -459,6 +459,32 @@ public sealed class Core3ElementTests
     [Fact]
     public void EngineFamily_CanTemporarilyFocusMemberIntoFrameRole()
     {
+        var family = new EngineFamily(new AtomicElement(4, 4), isOrdered: false);
+        var first = new AtomicElement(1, 2);
+        var focused = new AtomicElement(3, 4);
+        var third = new AtomicElement(1, 4);
+        family.AddMember(first);
+        family.AddMember(focused);
+        family.AddMember(third);
+
+        Assert.True(family.TryFocusMember(focused, out var focusedFamily));
+
+        var reframed = Assert.IsType<EngineFamily>(focusedFamily);
+        Assert.False(reframed.IsOrdered);
+        Assert.Same(family, reframed.ParentFamily);
+        Assert.Equal(1, reframed.ParentFocusIndex);
+        Assert.Equal(new AtomicElement(3, 4), Assert.IsType<AtomicElement>(reframed.Frame));
+        Assert.Equal(2, reframed.Count);
+        Assert.Equal(first, reframed.Members[0]);
+        Assert.Equal(third, reframed.Members[1]);
+
+        Assert.True(reframed.TryAddAll(out var sum));
+        Assert.Equal(new AtomicElement(3, 4), Assert.IsType<AtomicElement>(sum));
+    }
+
+    [Fact]
+    public void EngineFamily_CanCollapseFocusedFamilyBackToParentFrame()
+    {
         var family = new EngineFamily(new AtomicElement(4, 4));
         var first = new AtomicElement(1, 2);
         var focused = new AtomicElement(3, 4);
@@ -470,13 +496,17 @@ public sealed class Core3ElementTests
         Assert.True(family.TryFocusMember(focused, out var focusedFamily));
 
         var reframed = Assert.IsType<EngineFamily>(focusedFamily);
-        Assert.Equal(new AtomicElement(3, 4), Assert.IsType<AtomicElement>(reframed.Frame));
-        Assert.Equal(2, reframed.Count);
-        Assert.Equal(first, reframed.Members[0]);
-        Assert.Equal(third, reframed.Members[1]);
+        Assert.True(reframed.TryCollapseToParentFrame(out var collapsedFamily));
 
-        Assert.True(reframed.TryAddAll(out var sum));
-        Assert.Equal(new AtomicElement(3, 4), Assert.IsType<AtomicElement>(sum));
+        var collapsed = Assert.IsType<EngineFamily>(collapsedFamily);
+        Assert.Equal(family.Frame, collapsed.Frame);
+        Assert.True(collapsed.IsOrdered);
+        Assert.Null(collapsed.ParentFamily);
+        Assert.Null(collapsed.ParentFocusIndex);
+        Assert.Equal(3, collapsed.Count);
+        Assert.Equal(first, collapsed.Members[0]);
+        Assert.Equal(reframed.Frame, collapsed.Members[1]);
+        Assert.Equal(third, collapsed.Members[2]);
     }
 
     [Fact]

@@ -11,15 +11,30 @@ public sealed class EngineFamily
 {
     private readonly List<GradedElement> _members = [];
 
-    public EngineFamily(GradedElement frame)
+    public EngineFamily(GradedElement frame, bool isOrdered = true)
+        : this(frame, isOrdered, null, null)
+    {
+    }
+
+    private EngineFamily(
+        GradedElement frame,
+        bool isOrdered,
+        EngineFamily? parentFamily,
+        int? parentFocusIndex)
     {
         ArgumentNullException.ThrowIfNull(frame);
         Frame = frame;
+        IsOrdered = isOrdered;
+        ParentFamily = parentFamily;
+        ParentFocusIndex = parentFocusIndex;
     }
 
     public GradedElement Frame { get; }
+    public bool IsOrdered { get; }
     public IReadOnlyList<GradedElement> Members => _members;
     public int Count => _members.Count;
+    public EngineFamily? ParentFamily { get; }
+    public int? ParentFocusIndex { get; }
 
     public void AddMember(GradedElement member)
     {
@@ -52,7 +67,11 @@ public sealed class EngineFamily
             return false;
         }
 
-        focusedFamily = new EngineFamily(focusedFrame);
+        focusedFamily = new EngineFamily(
+            focusedFrame,
+            IsOrdered,
+            this,
+            index);
 
         for (var memberIndex = 0; memberIndex < _members.Count; memberIndex++)
         {
@@ -71,6 +90,44 @@ public sealed class EngineFamily
     {
         ArgumentNullException.ThrowIfNull(member);
         return TryFocusMember(_members.IndexOf(member), out focusedFamily);
+    }
+
+    public bool TryCollapseToParentFrame(out EngineFamily? collapsedFamily)
+    {
+        if (ParentFamily is null ||
+            ParentFocusIndex is null)
+        {
+            collapsedFamily = null;
+            return false;
+        }
+
+        if (!Frame.TryReferenceToFrame(ParentFamily.Frame, out var collapsedFrameMember) ||
+            collapsedFrameMember is null)
+        {
+            collapsedFamily = null;
+            return false;
+        }
+
+        collapsedFamily = new EngineFamily(
+            ParentFamily.Frame,
+            ParentFamily.IsOrdered,
+            ParentFamily.ParentFamily,
+            ParentFamily.ParentFocusIndex);
+
+        for (var memberIndex = 0; memberIndex <= _members.Count; memberIndex++)
+        {
+            if (memberIndex == ParentFocusIndex.Value)
+            {
+                collapsedFamily.AddMember(collapsedFrameMember);
+            }
+
+            if (memberIndex < _members.Count)
+            {
+                collapsedFamily.AddMember(_members[memberIndex]);
+            }
+        }
+
+        return true;
     }
 
     public bool TryReadMember(GradedElement member, out GradedElement? read)
