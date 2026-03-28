@@ -158,6 +158,27 @@ public sealed class EngineFamily
         return false;
     }
 
+    public bool TryBoolean(EngineBooleanOperation operation, out EngineBooleanResult? result)
+    {
+        if (_members.Count != 2)
+        {
+            result = null;
+            return false;
+        }
+
+        if (!TryReadAll(out var reads) ||
+            reads is null ||
+            Frame is not CompositeElement frame ||
+            reads[0] is not CompositeElement primary ||
+            reads[1] is not CompositeElement secondary)
+        {
+            result = null;
+            return false;
+        }
+
+        return EngineBooleanProjection.TryResolve(frame, primary, secondary, operation, out result);
+    }
+
     private bool TryDeriveMultiplyResultFrame(out GradedElement? resultFrame)
     {
         if (_members.Count == 0)

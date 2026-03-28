@@ -494,6 +494,13 @@ species of element.
 - when a provenance-preserving multiplication is requested, the result may also
   carry a derived multiplication-shaped result frame so later boundary reads can
   inspect the product in a comparable frame rather than only in the source one
+- boolean can also use this same frame/family pipeline
+- the current boolean pass is binary because the 16 classical truth-table
+  operations are intrinsically two-input operations unless a later n-ary rule
+  is chosen explicitly
+- boolean evaluates referenced members inside an explicit frame, partitions that
+  frame at all relevant boundaries, and preserves the surviving pieces as a
+  co-present family rather than forcing one collapsed segment
 
 The same frame relation should also carry boundary meaning.
 

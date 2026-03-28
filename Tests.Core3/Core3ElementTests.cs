@@ -571,6 +571,81 @@ public sealed class Core3ElementTests
     }
 
     [Fact]
+    public void EngineOperations_TryBoolean_And_UsesSharedFrameOverlap()
+    {
+        var frame = CreateSegmentFrame(0, 10, 10);
+        var primary = CreateSegmentFrame(0, 10, 10);
+        var secondary = CreateSegmentFrame(3, 5, 10);
+
+        Assert.True(EngineOperations.TryBoolean(
+            frame,
+            [primary, secondary],
+            EngineBooleanOperation.And,
+            out var result));
+
+        var booleanResult = Assert.IsType<EngineBooleanResult>(result);
+        Assert.Single(booleanResult.Pieces);
+        Assert.Equal(
+            CreateSegmentFrame(3, 5, 10),
+            booleanResult.Pieces[0].Segment);
+        Assert.Equal(primary, booleanResult.Pieces[0].Carrier);
+        Assert.True(booleanResult.Pieces[0].InPrimary);
+        Assert.True(booleanResult.Pieces[0].InSecondary);
+    }
+
+    [Fact]
+    public void EngineOperations_TryBoolean_Xor_PreservesTwoPieces()
+    {
+        var frame = CreateSegmentFrame(0, 10, 10);
+        var primary = CreateSegmentFrame(0, 10, 10);
+        var secondary = CreateSegmentFrame(3, 5, 10);
+
+        Assert.True(EngineOperations.TryBoolean(
+            frame,
+            [primary, secondary],
+            EngineBooleanOperation.Xor,
+            out var result));
+
+        var booleanResult = Assert.IsType<EngineBooleanResult>(result);
+        Assert.Equal(2, booleanResult.Pieces.Count);
+        Assert.Equal(CreateSegmentFrame(0, 3, 10), booleanResult.Pieces[0].Segment);
+        Assert.Equal(CreateSegmentFrame(5, 10, 10), booleanResult.Pieces[1].Segment);
+    }
+
+    [Fact]
+    public void EngineOperations_TryBoolean_NotSecondary_UsesFrameAsNegationCarrier()
+    {
+        var frame = CreateSegmentFrame(0, 10, 10);
+        var primary = CreateSegmentFrame(0, 10, 10);
+        var secondary = CreateSegmentFrame(3, 5, 10);
+
+        Assert.True(EngineOperations.TryBoolean(
+            frame,
+            [primary, secondary],
+            EngineBooleanOperation.NotSecondary,
+            out var result));
+
+        var booleanResult = Assert.IsType<EngineBooleanResult>(result);
+        Assert.Equal(2, booleanResult.Pieces.Count);
+        Assert.Equal(frame, booleanResult.Pieces[0].Carrier);
+        Assert.Equal(frame, booleanResult.Pieces[1].Carrier);
+        Assert.Equal(CreateSegmentFrame(0, 3, 10), booleanResult.Pieces[0].Segment);
+        Assert.Equal(CreateSegmentFrame(5, 10, 10), booleanResult.Pieces[1].Segment);
+    }
+
+    [Fact]
+    public void EngineFamily_TryBoolean_CurrentlyRequiresExactlyTwoMembers()
+    {
+        var frame = CreateSegmentFrame(0, 10, 10);
+        var family = new EngineFamily(frame);
+        family.AddMember(CreateSegmentFrame(0, 10, 10));
+        family.AddMember(CreateSegmentFrame(3, 5, 10));
+        family.AddMember(CreateSegmentFrame(6, 8, 10));
+
+        Assert.False(family.TryBoolean(EngineBooleanOperation.Or, out _));
+    }
+
+    [Fact]
     public void AtomicScale_PreservesExactWorkingSupportWithoutReducing()
     {
         var whole = new AtomicElement(10, 1);
@@ -768,6 +843,11 @@ public sealed class Core3ElementTests
         new(
             new AtomicElement(resolution, 1),
             new AtomicElement(value, 1));
+
+    private static CompositeElement CreateSegmentFrame(long start, long end, long resolution) =>
+        new(
+            new AtomicElement(start, resolution),
+            new AtomicElement(end, resolution));
 
     private static double ToDouble(AtomicElement atomic) =>
         (double)atomic.Value / atomic.Unit;

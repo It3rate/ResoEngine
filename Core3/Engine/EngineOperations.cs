@@ -77,4 +77,23 @@ public static class EngineOperations
 
         return family.TryMultiplyAllWithProvenance(out result);
     }
+
+    public static bool TryBoolean(
+        CompositeElement frame,
+        IEnumerable<GradedElement> members,
+        EngineBooleanOperation operation,
+        out EngineBooleanResult? result)
+    {
+        ArgumentNullException.ThrowIfNull(frame);
+        ArgumentNullException.ThrowIfNull(members);
+
+        var family = new EngineFamily(frame);
+
+        foreach (var member in members)
+        {
+            family.AddMember(member);
+        }
+
+        return family.TryBoolean(operation, out result);
+    }
 }
