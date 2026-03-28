@@ -1,4 +1,5 @@
 using Core3.Engine;
+using Core3.Engine.Runtime;
 
 namespace Core3.Engine.Operations;
 
@@ -10,29 +11,32 @@ namespace Core3.Engine.Operations;
 public sealed record EngineBooleanResult
 {
     public EngineBooleanResult(
-        CompositeElement frame,
-        CompositeElement primary,
-        CompositeElement secondary,
+        EngineOperationContext context,
         EngineBooleanOperation operation,
-        IReadOnlyList<EngineBooleanPiece> pieces)
+        IReadOnlyList<EngineOperationPiece> pieces)
     {
-        ArgumentNullException.ThrowIfNull(frame);
-        ArgumentNullException.ThrowIfNull(primary);
-        ArgumentNullException.ThrowIfNull(secondary);
+        ArgumentNullException.ThrowIfNull(context);
         ArgumentNullException.ThrowIfNull(pieces);
 
-        Frame = frame;
-        Primary = primary;
-        Secondary = secondary;
+        if (context.Count != 2 ||
+            context.Frame is not CompositeElement ||
+            context.Members[0] is not CompositeElement ||
+            context.Members[1] is not CompositeElement)
+        {
+            throw new InvalidOperationException("Binary boolean results require a composite frame and two composite members.");
+        }
+
+        Context = context;
         Operation = operation;
         Pieces = pieces;
     }
 
-    public CompositeElement Frame { get; }
-    public CompositeElement Primary { get; }
-    public CompositeElement Secondary { get; }
+    public EngineOperationContext Context { get; }
+    public CompositeElement Frame => (CompositeElement)Context.Frame;
+    public CompositeElement Primary => (CompositeElement)Context.Members[0];
+    public CompositeElement Secondary => (CompositeElement)Context.Members[1];
     public EngineBooleanOperation Operation { get; }
-    public IReadOnlyList<EngineBooleanPiece> Pieces { get; }
+    public IReadOnlyList<EngineOperationPiece> Pieces { get; }
     public bool HasAny => Pieces.Count > 0;
-    public IReadOnlyList<CompositeElement> Segments => Pieces.Select(piece => piece.Segment).ToArray();
+    public IReadOnlyList<CompositeElement> Segments => Pieces.Select(piece => (CompositeElement)piece.Result).ToArray();
 }

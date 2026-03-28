@@ -1,4 +1,5 @@
 using Core3.Engine;
+using Core3.Engine.Runtime;
 
 namespace Core3.Engine.Operations;
 
@@ -25,17 +26,20 @@ internal static class EngineBooleanProjection
 
         if (frameSegment.End <= frameSegment.Start)
         {
-            result = new EngineBooleanResult(frame, primary, secondary, operation, []);
+            result = new EngineBooleanResult(
+                new EngineOperationContext(frame, [primary, secondary], isOrdered: true),
+                operation,
+                []);
             return true;
         }
 
+        var context = new EngineOperationContext(frame, [primary, secondary], isOrdered: true);
         var boundaries = CollectBoundaries(frameSegment, primarySegment, secondarySegment);
-        var pieces = new List<EngineBooleanPiece>();
+        var pieces = new List<EngineOperationPiece>();
         decimal? currentLeft = null;
         decimal? currentRight = null;
         CompositeElement? currentCarrier = null;
-        bool currentInPrimary = false;
-        bool currentInSecondary = false;
+        List<int>? currentPresentMembers = null;
 
         foreach (var (left, right) in boundaries.Zip(boundaries.Skip(1)))
         {
@@ -58,11 +62,11 @@ internal static class EngineBooleanProjection
 
             if (currentCarrier is not null &&
                 currentRight == left &&
-                AreCompatibleCarriers(currentCarrier, carrier))
+                AreCompatibleCarriers(currentCarrier, carrier) &&
+                currentPresentMembers is not null &&
+                currentPresentMembers.SequenceEqual(ToPresentMemberIndices(inPrimary, inSecondary)))
             {
                 currentRight = right;
-                currentInPrimary |= inPrimary;
-                currentInSecondary |= inSecondary;
                 continue;
             }
 
@@ -70,39 +74,36 @@ internal static class EngineBooleanProjection
             currentLeft = left;
             currentRight = right;
             currentCarrier = carrier;
-            currentInPrimary = inPrimary;
-            currentInSecondary = inSecondary;
+            currentPresentMembers = ToPresentMemberIndices(inPrimary, inSecondary);
         }
 
         Flush();
-        result = new EngineBooleanResult(frame, primary, secondary, operation, pieces);
+        result = new EngineBooleanResult(context, operation, pieces);
         return true;
 
         void Flush()
         {
             if (currentLeft is null ||
                 currentRight is null ||
-                currentCarrier is null)
+                currentCarrier is null ||
+                currentPresentMembers is null)
             {
                 currentLeft = null;
                 currentRight = null;
                 currentCarrier = null;
-                currentInPrimary = false;
-                currentInSecondary = false;
+                currentPresentMembers = null;
                 return;
             }
 
-            pieces.Add(new EngineBooleanPiece(
+            pieces.Add(new EngineOperationPiece(
                 CreateSegmentLike(currentCarrier, currentLeft.Value, currentRight.Value),
                 currentCarrier,
-                currentInPrimary,
-                currentInSecondary));
+                currentPresentMembers.ToArray()));
 
             currentLeft = null;
             currentRight = null;
             currentCarrier = null;
-            currentInPrimary = false;
-            currentInSecondary = false;
+            currentPresentMembers = null;
         }
     }
 
@@ -137,12 +138,19 @@ internal static class EngineBooleanProjection
 
         if (frameSegment.End <= frameSegment.Start)
         {
-            result = new EngineFamilyBooleanResult(frame, members, isOrdered, operation, []);
+            result = new EngineFamilyBooleanResult(
+                new EngineOperationContext(frame, members.Cast<GradedElement>().ToArray(), isOrdered),
+                operation,
+                []);
             return true;
         }
 
+        var context = new EngineOperationContext(
+            frame,
+            members.Cast<GradedElement>().ToArray(),
+            isOrdered);
         var boundaries = CollectBoundaries(frameSegment, memberSegments);
-        var pieces = new List<EngineFamilyBooleanPiece>();
+        var pieces = new List<EngineOperationPiece>();
         decimal? currentLeft = null;
         decimal? currentRight = null;
         CompositeElement? currentCarrier = null;
@@ -184,7 +192,7 @@ internal static class EngineBooleanProjection
         }
 
         Flush();
-        result = new EngineFamilyBooleanResult(frame, members, isOrdered, operation, pieces);
+        result = new EngineFamilyBooleanResult(context, operation, pieces);
         return true;
 
         void Flush()
@@ -201,7 +209,7 @@ internal static class EngineBooleanProjection
                 return;
             }
 
-            pieces.Add(new EngineFamilyBooleanPiece(
+            pieces.Add(new EngineOperationPiece(
                 CreateSegmentLike(currentCarrier, currentLeft.Value, currentRight.Value),
                 currentCarrier,
                 currentPresentMembers.ToArray()));
@@ -290,6 +298,23 @@ internal static class EngineBooleanProjection
         }
 
         return frame;
+    }
+
+    private static List<int> ToPresentMemberIndices(bool inPrimary, bool inSecondary)
+    {
+        var indices = new List<int>(2);
+
+        if (inPrimary)
+        {
+            indices.Add(0);
+        }
+
+        if (inSecondary)
+        {
+            indices.Add(1);
+        }
+
+        return indices;
     }
 
     private static CompositeElement SelectFamilyCarrier(

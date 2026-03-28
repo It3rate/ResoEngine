@@ -718,10 +718,9 @@ public sealed class Core3ElementTests
         Assert.Single(booleanResult.Pieces);
         Assert.Equal(
             CreateSegmentFrame(3, 5, 10),
-            booleanResult.Pieces[0].Segment);
+            booleanResult.Pieces[0].Result);
         Assert.Equal(primary, booleanResult.Pieces[0].Carrier);
-        Assert.True(booleanResult.Pieces[0].InPrimary);
-        Assert.True(booleanResult.Pieces[0].InSecondary);
+        Assert.Equal([0, 1], booleanResult.Pieces[0].SourceMemberIndices);
     }
 
     [Fact]
@@ -739,8 +738,8 @@ public sealed class Core3ElementTests
 
         var booleanResult = Assert.IsType<EngineBooleanResult>(result);
         Assert.Equal(2, booleanResult.Pieces.Count);
-        Assert.Equal(CreateSegmentFrame(0, 3, 10), booleanResult.Pieces[0].Segment);
-        Assert.Equal(CreateSegmentFrame(5, 10, 10), booleanResult.Pieces[1].Segment);
+        Assert.Equal(CreateSegmentFrame(0, 3, 10), booleanResult.Pieces[0].Result);
+        Assert.Equal(CreateSegmentFrame(5, 10, 10), booleanResult.Pieces[1].Result);
     }
 
     [Fact]
@@ -760,8 +759,8 @@ public sealed class Core3ElementTests
         Assert.Equal(2, booleanResult.Pieces.Count);
         Assert.Equal(frame, booleanResult.Pieces[0].Carrier);
         Assert.Equal(frame, booleanResult.Pieces[1].Carrier);
-        Assert.Equal(CreateSegmentFrame(0, 3, 10), booleanResult.Pieces[0].Segment);
-        Assert.Equal(CreateSegmentFrame(5, 10, 10), booleanResult.Pieces[1].Segment);
+        Assert.Equal(CreateSegmentFrame(0, 3, 10), booleanResult.Pieces[0].Result);
+        Assert.Equal(CreateSegmentFrame(5, 10, 10), booleanResult.Pieces[1].Result);
     }
 
     [Fact]
@@ -781,12 +780,12 @@ public sealed class Core3ElementTests
         var occupancyResult = Assert.IsType<EngineFamilyBooleanResult>(result);
         Assert.False(occupancyResult.IsOrdered);
         Assert.Equal(3, occupancyResult.Pieces.Count);
-        Assert.Equal(CreateSegmentFrame(0, 3, 10), occupancyResult.Pieces[0].Segment);
-        Assert.Equal(CreateSegmentFrame(5, 6, 10), occupancyResult.Pieces[1].Segment);
-        Assert.Equal(CreateSegmentFrame(8, 10, 10), occupancyResult.Pieces[2].Segment);
-        Assert.Equal([0], occupancyResult.Pieces[0].PresentMemberIndices);
-        Assert.Equal([0], occupancyResult.Pieces[1].PresentMemberIndices);
-        Assert.Equal([0], occupancyResult.Pieces[2].PresentMemberIndices);
+        Assert.Equal(CreateSegmentFrame(0, 3, 10), occupancyResult.Pieces[0].Result);
+        Assert.Equal(CreateSegmentFrame(5, 6, 10), occupancyResult.Pieces[1].Result);
+        Assert.Equal(CreateSegmentFrame(8, 10, 10), occupancyResult.Pieces[2].Result);
+        Assert.Equal([0], occupancyResult.Pieces[0].SourceMemberIndices);
+        Assert.Equal([0], occupancyResult.Pieces[1].SourceMemberIndices);
+        Assert.Equal([0], occupancyResult.Pieces[2].SourceMemberIndices);
         Assert.Equal(first, occupancyResult.Pieces[0].Carrier);
     }
 
@@ -807,8 +806,8 @@ public sealed class Core3ElementTests
         var occupancyResult = Assert.IsType<EngineFamilyBooleanResult>(result);
         Assert.Single(occupancyResult.Pieces);
         Assert.Equal(frame, occupancyResult.Pieces[0].Carrier);
-        Assert.Equal(CreateSegmentFrame(3, 5, 10), occupancyResult.Pieces[0].Segment);
-        Assert.Equal([0, 1, 2], occupancyResult.Pieces[0].PresentMemberIndices);
+        Assert.Equal(CreateSegmentFrame(3, 5, 10), occupancyResult.Pieces[0].Result);
+        Assert.Equal([0, 1, 2], occupancyResult.Pieces[0].SourceMemberIndices);
     }
 
     [Fact]
@@ -828,10 +827,10 @@ public sealed class Core3ElementTests
         var pairwise = Assert.IsAssignableFrom<IReadOnlyList<EngineBooleanResult>>(results);
         Assert.Equal(2, pairwise.Count);
 
-        Assert.Equal(CreateSegmentFrame(0, 3, 10), pairwise[0].Pieces[0].Segment);
-        Assert.Equal(CreateSegmentFrame(5, 10, 10), pairwise[0].Pieces[1].Segment);
-        Assert.Equal(CreateSegmentFrame(3, 5, 10), pairwise[1].Pieces[0].Segment);
-        Assert.Equal(CreateSegmentFrame(6, 8, 10), pairwise[1].Pieces[1].Segment);
+        Assert.Equal(CreateSegmentFrame(0, 3, 10), pairwise[0].Pieces[0].Result);
+        Assert.Equal(CreateSegmentFrame(5, 10, 10), pairwise[0].Pieces[1].Result);
+        Assert.Equal(CreateSegmentFrame(3, 5, 10), pairwise[1].Pieces[0].Result);
+        Assert.Equal(CreateSegmentFrame(6, 8, 10), pairwise[1].Pieces[1].Result);
     }
 
     [Fact]

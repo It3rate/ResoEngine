@@ -1,4 +1,5 @@
 using Core3.Engine;
+using Core3.Engine.Runtime;
 
 namespace Core3.Engine.Operations;
 
@@ -11,26 +12,39 @@ public sealed record EngineOperationResult
 {
     public EngineOperationResult(
         string operationName,
-        GradedElement sourceFrame,
-        IReadOnlyList<GradedElement> sourceMembers,
+        EngineOperationContext context,
         GradedElement result,
         GradedElement? resultFrame = null)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(operationName);
-        ArgumentNullException.ThrowIfNull(sourceFrame);
-        ArgumentNullException.ThrowIfNull(sourceMembers);
+        ArgumentNullException.ThrowIfNull(context);
         ArgumentNullException.ThrowIfNull(result);
 
         OperationName = operationName;
-        SourceFrame = sourceFrame;
-        SourceMembers = sourceMembers;
+        Context = context;
         Result = result;
-        ResultFrame = resultFrame ?? sourceFrame;
+        ResultFrame = resultFrame ?? context.Frame;
+    }
+
+    public EngineOperationResult(
+        string operationName,
+        GradedElement sourceFrame,
+        IReadOnlyList<GradedElement> sourceMembers,
+        GradedElement result,
+        GradedElement? resultFrame = null)
+        : this(
+            operationName,
+            new EngineOperationContext(sourceFrame, sourceMembers, isOrdered: true),
+            result,
+            resultFrame)
+    {
     }
 
     public string OperationName { get; }
-    public GradedElement SourceFrame { get; }
-    public IReadOnlyList<GradedElement> SourceMembers { get; }
+    public EngineOperationContext Context { get; }
+    public GradedElement SourceFrame => Context.Frame;
+    public IReadOnlyList<GradedElement> SourceMembers => Context.Members;
+    public bool IsOrdered => Context.IsOrdered;
     public GradedElement Result { get; }
     public GradedElement ResultFrame { get; }
 

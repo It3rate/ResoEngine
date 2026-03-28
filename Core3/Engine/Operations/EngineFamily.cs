@@ -1,4 +1,5 @@
 using Core3.Engine;
+using Core3.Engine.Runtime;
 
 namespace Core3.Engine.Operations;
 
@@ -49,6 +50,13 @@ public sealed class EngineFamily
     }
 
     public void ClearMembers() => _members.Clear();
+
+    public EngineOperationContext CreateContext() => new(
+        Frame,
+        _members.ToArray(),
+        IsOrdered,
+        ParentFamily?.CreateContext(),
+        ParentFocusIndex);
 
     public EngineFamily CreateOrderedCopy()
     {
@@ -330,7 +338,7 @@ public sealed class EngineFamily
         if (TryAddAll(out sum) &&
             sum is not null)
         {
-            result = new EngineOperationResult("Add", Frame, _members.ToArray(), sum, Frame);
+            result = new EngineOperationResult("Add", CreateContext(), sum, Frame);
             return true;
         }
 
@@ -347,8 +355,7 @@ public sealed class EngineFamily
         {
             result = new EngineOperationResult(
                 "Multiply",
-                Frame,
-                _members.ToArray(),
+                CreateContext(),
                 product,
                 TryDeriveMultiplyResultFrame(out var resultFrame) && resultFrame is not null
                     ? resultFrame

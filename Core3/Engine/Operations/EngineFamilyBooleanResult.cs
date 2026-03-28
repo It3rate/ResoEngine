@@ -1,4 +1,5 @@
 using Core3.Engine;
+using Core3.Engine.Runtime;
 
 namespace Core3.Engine.Operations;
 
@@ -10,28 +11,24 @@ namespace Core3.Engine.Operations;
 public sealed record EngineFamilyBooleanResult
 {
     public EngineFamilyBooleanResult(
-        CompositeElement frame,
-        IReadOnlyList<CompositeElement> members,
-        bool isOrdered,
+        EngineOperationContext context,
         EngineOccupancyOperation operation,
-        IReadOnlyList<EngineFamilyBooleanPiece> pieces)
+        IReadOnlyList<EngineOperationPiece> pieces)
     {
-        ArgumentNullException.ThrowIfNull(frame);
-        ArgumentNullException.ThrowIfNull(members);
+        ArgumentNullException.ThrowIfNull(context);
         ArgumentNullException.ThrowIfNull(pieces);
 
-        Frame = frame;
-        Members = members;
-        IsOrdered = isOrdered;
+        Context = context;
         Operation = operation;
         Pieces = pieces;
     }
 
-    public CompositeElement Frame { get; }
-    public IReadOnlyList<CompositeElement> Members { get; }
-    public bool IsOrdered { get; }
+    public EngineOperationContext Context { get; }
+    public CompositeElement Frame => (CompositeElement)Context.Frame;
+    public IReadOnlyList<CompositeElement> Members => Context.Members.Cast<CompositeElement>().ToArray();
+    public bool IsOrdered => Context.IsOrdered;
     public EngineOccupancyOperation Operation { get; }
-    public IReadOnlyList<EngineFamilyBooleanPiece> Pieces { get; }
+    public IReadOnlyList<EngineOperationPiece> Pieces { get; }
     public bool HasAny => Pieces.Count > 0;
-    public IReadOnlyList<CompositeElement> Segments => Pieces.Select(piece => piece.Segment).ToArray();
+    public IReadOnlyList<CompositeElement> Segments => Pieces.Select(piece => (CompositeElement)piece.Result).ToArray();
 }

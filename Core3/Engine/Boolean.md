@@ -211,9 +211,10 @@ But the surviving pieces themselves remain ordinary `GradedElement` /
 `CompositeElement` values. The wrappers are there to preserve read provenance,
 not to create a second result ontology beside the engine elements.
 
-The same broader pattern already appears elsewhere in the engine with generic
-operation provenance wrappers, so this should likely be consolidated further as
-the operation layer stabilizes.
+The same broader pattern now also appears in generic runtime context and piece
+types, so boolean no longer needs to own frame/family/provenance structure by
+itself. That should give the operation layer a cleaner path toward later
+addition, multiplication, equations, and serialization-facing tooling.
 
 ## Current Recommendation
 
