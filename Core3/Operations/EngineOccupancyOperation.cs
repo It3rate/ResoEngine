@@ -1,4 +1,4 @@
-namespace Core3.Engine.Operations;
+namespace Core3.Operations;
 
 /// <summary>
 /// Symmetric family-wide occupancy predicates over one local partition of a

@@ -1,7 +1,7 @@
 # Core3 Boolean Notes
 
 This note captures the current direction of boolean and boolean-like operations
-in the `Core3.Engine` model.
+in the `Core3` model.
 
 Even though the file is named `Boolean`, the deeper pattern described here is
 broader than boolean alone:
@@ -15,7 +15,7 @@ broader than boolean alone:
 
 Boolean is simply the place where this pattern has been explored first.
 
-It is intentionally lighter and more exploratory than `Core3Axioms.md`.
+It is intentionally lighter and more exploratory than the engine axioms.
 
 ## Core Split
 

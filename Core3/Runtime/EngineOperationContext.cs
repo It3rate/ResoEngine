@@ -1,6 +1,6 @@
 using Core3.Engine;
 
-namespace Core3.Engine.Runtime;
+namespace Core3.Runtime;
 
 /// <summary>
 /// Generic runtime context for framed operations. This is runtime/API

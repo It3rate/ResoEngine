@@ -1,7 +1,7 @@
 using Core3.Engine;
-using Core3.Engine.Runtime;
+using Core3.Runtime;
 
-namespace Core3.Engine.Operations;
+namespace Core3.Operations;
 
 /// <summary>
 /// Carries an operation result together with the frame context that produced it.

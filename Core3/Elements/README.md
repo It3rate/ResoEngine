@@ -2,6 +2,11 @@
 
 This folder will hold the core primitives of `Core3`.
 
+At the moment it should be read as the named-structure layer over the engine
+direction, not as a synchronized mirror of the current engine internals. The
+engine is evolving toward the deeper generic model; these named elements are
+still the older public shapes and are not yet fully backed by that engine.
+
 For now it is intentionally sparse. The aim is to keep only the most single-minded foundational elements here, and push richer interpretation and higher-level structure outward until the primitive layer is settled.
 
 The current shape is:

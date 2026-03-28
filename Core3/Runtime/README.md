@@ -103,4 +103,4 @@ In short:
 - runtime layer says how it is being used right now
 - operation layer says what law is being applied to that runtime situation
 
-That is the current intended fit of `Core3.Engine.Runtime`.
+That is the current intended fit of `Core3.Runtime`.

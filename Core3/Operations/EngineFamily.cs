@@ -1,7 +1,7 @@
 using Core3.Engine;
-using Core3.Engine.Runtime;
+using Core3.Runtime;
 
-namespace Core3.Engine.Operations;
+namespace Core3.Operations;
 
 /// <summary>
 /// Operation-scoped grouping of subjects read in one frame.
