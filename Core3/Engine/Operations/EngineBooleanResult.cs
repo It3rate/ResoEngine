@@ -2,6 +2,11 @@ using Core3.Engine;
 
 namespace Core3.Engine.Operations;
 
+/// <summary>
+/// Binary boolean result metadata. The actual result pieces remain ordinary
+/// composite elements; this record only preserves the frame, operand roles,
+/// and surviving piece family for this boolean read.
+/// </summary>
 public sealed record EngineBooleanResult
 {
     public EngineBooleanResult(

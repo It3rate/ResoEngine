@@ -3,6 +3,18 @@
 This note captures the current direction of boolean and boolean-like operations
 in the `Core3.Engine` model.
 
+Even though the file is named `Boolean`, the deeper pattern described here is
+broader than boolean alone:
+
+- a frame
+- a family read in that frame
+- optional temporary reframing by promoting one member
+- an operation over that framed family
+- a result that remains in element space, with any extra provenance carried
+  separately
+
+Boolean is simply the place where this pattern has been explored first.
+
 It is intentionally lighter and more exploratory than `Core3Axioms.md`.
 
 ## Core Split
@@ -65,8 +77,7 @@ So the binary 16 and the unordered family operators are not competing systems.
 They are two different occupancy grammars for two different structural
 situations.
 
-At the implementation level, this now suggests two corresponding execution
-modes:
+At the implementation level, this suggests two corresponding execution modes:
 
 - ordered families may run binary boolean work pair by pair in family order
 - unordered families may run one symmetric occupancy predicate across the whole
@@ -185,6 +196,27 @@ This fits the larger Core3 idea that many operational changes are better
 understood as temporary reads or derived views than as overwriting the source
 structure.
 
+## Wrapper Types Are Metadata, Not Ontology
+
+Current boolean result wrappers are only operation-time holders.
+
+They preserve things like:
+
+- which frame was active
+- which members were compared
+- which carrier carried a surviving piece
+- which members were present on that piece
+
+But the surviving pieces themselves remain ordinary `GradedElement` /
+`CompositeElement` values. The wrappers are there to preserve read provenance,
+not to create a second result ontology beside the engine elements.
+
+The same broader pattern already appears elsewhere in the engine with generic
+operation provenance wrappers, so this should likely be consolidated further as
+the operation layer stabilizes.
+
+## Current Recommendation
+
 So the current recommendation is:
 
 - do not add a special focused-member ontology yet
@@ -207,6 +239,8 @@ For now:
 - keep occupancy law separate from carrier inheritance
 - let focused-member operation be expressed by temporarily promoting a chosen
   member into frame role rather than by inventing a new primitive structure
+- treat the frame/family pattern as broader than boolean, even when the current
+  concrete wrappers still carry boolean names
 
 This should give Core3 a cleaner long-term path for:
 

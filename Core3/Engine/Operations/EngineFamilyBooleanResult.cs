@@ -2,6 +2,11 @@ using Core3.Engine;
 
 namespace Core3.Engine.Operations;
 
+/// <summary>
+/// Family-wide boolean result metadata. The result segments remain ordinary
+/// composite elements; this record preserves the frame, family, ordering hint,
+/// and piece provenance for the occupancy read.
+/// </summary>
 public sealed record EngineFamilyBooleanResult
 {
     public EngineFamilyBooleanResult(
