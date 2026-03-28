@@ -402,6 +402,65 @@ public sealed class Core3ElementTests
     }
 
     [Fact]
+    public void EngineReference_CanReadSubjectIntoFrameWithoutBuildingMeasuredPair()
+    {
+        var frame = new CompositeElement(
+            new AtomicElement(10, 10),
+            new AtomicElement(3, 10));
+        var subject = new AtomicElement(7, 1);
+
+        var reference = new EngineReference(frame, subject);
+
+        Assert.True(reference.TryRead(out var read));
+        Assert.Equal(new AtomicElement(70, 10), Assert.IsType<AtomicElement>(read));
+    }
+
+    [Fact]
+    public void EngineFamily_CanAddRemoveAndClearMembers()
+    {
+        var family = new EngineFamily(new AtomicElement(0, 4));
+        var first = new AtomicElement(1, 2);
+        var second = new AtomicElement(1, 4);
+
+        family.AddMember(first);
+        family.AddMember(second);
+
+        Assert.Equal(2, family.Count);
+        Assert.True(family.RemoveMember(first));
+        Assert.Equal(1, family.Count);
+
+        family.ClearMembers();
+
+        Assert.Equal(0, family.Count);
+    }
+
+    [Fact]
+    public void EngineFamily_TryAddAll_UsesFrameReadouts()
+    {
+        var family = new EngineFamily(new AtomicElement(0, 4));
+        family.AddMember(new AtomicElement(1, 2));
+        family.AddMember(new AtomicElement(1, 4));
+
+        Assert.True(family.TryAddAll(out var sum));
+        Assert.Equal(new AtomicElement(3, 4), Assert.IsType<AtomicElement>(sum));
+    }
+
+    [Fact]
+    public void EngineOperations_TryAdd_SupportsOneShotFramedAddition()
+    {
+        var frame = new AtomicElement(0, 4);
+        var members = new GradedElement[]
+        {
+            new AtomicElement(1, 2),
+            new AtomicElement(1, 4),
+            new AtomicElement(1, 4)
+        };
+
+        Assert.True(EngineOperations.TryAdd(frame, members, out var sum));
+        Assert.Equal(new AtomicElement(4, 4), Assert.IsType<AtomicElement>(sum));
+    }
+
+    [Fact]
     public void AtomicScale_PreservesExactWorkingSupportWithoutReducing()
     {
         var whole = new AtomicElement(10, 1);

@@ -481,6 +481,16 @@ Shared calibration should also be treated as a first-class relation.
 - this relation should stay close to existing Core3 math by reusing hosted
   pinning and child composition rather than inventing an unrelated storage model
 
+Operation frames and families should be treated as roles rather than as new
+species of element.
+
+- any graded element may act as a frame
+- any graded element may be referenced into that frame
+- a family is the operation-time grouping of subjects being read in one frame
+- some families may persist for reuse
+- some operations may instead build a one-shot family, run the fold, and then
+  discard the grouping immediately
+
 ## Relationship To Existing Core3 Elements
 
 `Core3.Elements` remains the practical semantic reference.

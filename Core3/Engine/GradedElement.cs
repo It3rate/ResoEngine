@@ -24,6 +24,9 @@ public abstract record GradedElement
     public bool TryAlignExact(GradedElement other, out GradedElement? leftAligned, out GradedElement? rightAligned) =>
         TryAlignExact(other, ResolutionPolicy.ExactCommonFrame, out leftAligned, out rightAligned);
 
+    public bool TryReferenceToFrame(GradedElement frame, out GradedElement? read) =>
+        TryCommitToCalibration(frame, out read);
+
     public bool CanAdd(GradedElement other) => TryAdd(other, out _);
     public bool CanSubtract(GradedElement other) => TrySubtract(other, out _);
     public bool CanMultiply(GradedElement other) => TryMultiply(other, out _);

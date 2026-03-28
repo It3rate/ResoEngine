@@ -30,10 +30,12 @@ public sealed record EngineReference
     /// </summary>
     public GradedElement ExistingReadout => Frame.Dominant;
 
+    public bool TryRead(out GradedElement? read) => Subject.TryReferenceToFrame(Calibration, out read);
+
     public bool TryMeasureOnCalibration(out CompositeElement? measured)
     {
         if (Calibration.Grade == Subject.Grade &&
-            Subject.TryCommitToCalibration(Calibration, out var alignedSubject) &&
+            TryRead(out var alignedSubject) &&
             alignedSubject is not null)
         {
             measured = new CompositeElement(Calibration, alignedSubject);
