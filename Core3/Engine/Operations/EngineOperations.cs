@@ -98,4 +98,43 @@ public static class EngineOperations
 
         return family.TryBoolean(operation, out result);
     }
+
+    public static bool TryOccupancyBoolean(
+        CompositeElement frame,
+        IEnumerable<GradedElement> members,
+        EngineOccupancyOperation operation,
+        out EngineFamilyBooleanResult? result,
+        bool isOrdered = false)
+    {
+        ArgumentNullException.ThrowIfNull(frame);
+        ArgumentNullException.ThrowIfNull(members);
+
+        var family = new EngineFamily(frame, isOrdered);
+
+        foreach (var member in members)
+        {
+            family.AddMember(member);
+        }
+
+        return family.TryOccupancyBoolean(operation, out result);
+    }
+
+    public static bool TryBooleanAdjacentPairs(
+        CompositeElement frame,
+        IEnumerable<GradedElement> members,
+        EngineBooleanOperation operation,
+        out IReadOnlyList<EngineBooleanResult>? results)
+    {
+        ArgumentNullException.ThrowIfNull(frame);
+        ArgumentNullException.ThrowIfNull(members);
+
+        var family = new EngineFamily(frame, isOrdered: true);
+
+        foreach (var member in members)
+        {
+            family.AddMember(member);
+        }
+
+        return family.TryBooleanAdjacentPairs(operation, out results);
+    }
 }

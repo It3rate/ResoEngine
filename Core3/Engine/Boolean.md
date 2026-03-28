@@ -65,6 +65,16 @@ So the binary 16 and the unordered family operators are not competing systems.
 They are two different occupancy grammars for two different structural
 situations.
 
+At the implementation level, this now suggests two corresponding execution
+modes:
+
+- ordered families may run binary boolean work pair by pair in family order
+- unordered families may run one symmetric occupancy predicate across the whole
+  family at each local partition
+
+That keeps the engine step itself binary where appropriate, while still
+allowing family-wide unordered truth when order is not part of the meaning.
+
 ## Symmetric Occupancy And Numeric Operations
 
 Symmetric occupancy rules suggest a broader unification with arithmetic-like

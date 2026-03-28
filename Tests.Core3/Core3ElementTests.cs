@@ -765,6 +765,86 @@ public sealed class Core3ElementTests
     }
 
     [Fact]
+    public void EngineOperations_TryOccupancyBoolean_ExactlyOne_UsesSymmetricFamilyOccupancy()
+    {
+        var frame = CreateSegmentFrame(0, 10, 10);
+        var first = CreateSegmentFrame(0, 10, 10);
+        var second = CreateSegmentFrame(3, 5, 10);
+        var third = CreateSegmentFrame(6, 8, 10);
+
+        Assert.True(EngineOperations.TryOccupancyBoolean(
+            frame,
+            [first, second, third],
+            EngineOccupancyOperation.ExactlyOne,
+            out var result));
+
+        var occupancyResult = Assert.IsType<EngineFamilyBooleanResult>(result);
+        Assert.False(occupancyResult.IsOrdered);
+        Assert.Equal(3, occupancyResult.Pieces.Count);
+        Assert.Equal(CreateSegmentFrame(0, 3, 10), occupancyResult.Pieces[0].Segment);
+        Assert.Equal(CreateSegmentFrame(5, 6, 10), occupancyResult.Pieces[1].Segment);
+        Assert.Equal(CreateSegmentFrame(8, 10, 10), occupancyResult.Pieces[2].Segment);
+        Assert.Equal([0], occupancyResult.Pieces[0].PresentMemberIndices);
+        Assert.Equal([0], occupancyResult.Pieces[1].PresentMemberIndices);
+        Assert.Equal([0], occupancyResult.Pieces[2].PresentMemberIndices);
+        Assert.Equal(first, occupancyResult.Pieces[0].Carrier);
+    }
+
+    [Fact]
+    public void EngineOperations_TryOccupancyBoolean_All_UsesFrameCarrierForCoPresentTruth()
+    {
+        var frame = CreateSegmentFrame(0, 10, 10);
+        var first = CreateSegmentFrame(0, 10, 10);
+        var second = CreateSegmentFrame(0, 10, 10);
+        var third = CreateSegmentFrame(3, 5, 10);
+
+        Assert.True(EngineOperations.TryOccupancyBoolean(
+            frame,
+            [first, second, third],
+            EngineOccupancyOperation.All,
+            out var result));
+
+        var occupancyResult = Assert.IsType<EngineFamilyBooleanResult>(result);
+        Assert.Single(occupancyResult.Pieces);
+        Assert.Equal(frame, occupancyResult.Pieces[0].Carrier);
+        Assert.Equal(CreateSegmentFrame(3, 5, 10), occupancyResult.Pieces[0].Segment);
+        Assert.Equal([0, 1, 2], occupancyResult.Pieces[0].PresentMemberIndices);
+    }
+
+    [Fact]
+    public void EngineOperations_TryBooleanAdjacentPairs_UsesOrderedFamilyTraversal()
+    {
+        var frame = CreateSegmentFrame(0, 10, 10);
+        var first = CreateSegmentFrame(0, 10, 10);
+        var second = CreateSegmentFrame(3, 5, 10);
+        var third = CreateSegmentFrame(6, 8, 10);
+
+        Assert.True(EngineOperations.TryBooleanAdjacentPairs(
+            frame,
+            [first, second, third],
+            EngineBooleanOperation.Xor,
+            out var results));
+
+        var pairwise = Assert.IsAssignableFrom<IReadOnlyList<EngineBooleanResult>>(results);
+        Assert.Equal(2, pairwise.Count);
+
+        Assert.Equal(CreateSegmentFrame(0, 3, 10), pairwise[0].Pieces[0].Segment);
+        Assert.Equal(CreateSegmentFrame(5, 10, 10), pairwise[0].Pieces[1].Segment);
+        Assert.Equal(CreateSegmentFrame(3, 5, 10), pairwise[1].Pieces[0].Segment);
+        Assert.Equal(CreateSegmentFrame(6, 8, 10), pairwise[1].Pieces[1].Segment);
+    }
+
+    [Fact]
+    public void EngineFamily_TryBooleanAdjacentPairs_RequiresOrderedFamily()
+    {
+        var family = new EngineFamily(CreateSegmentFrame(0, 10, 10), isOrdered: false);
+        family.AddMember(CreateSegmentFrame(0, 10, 10));
+        family.AddMember(CreateSegmentFrame(3, 5, 10));
+
+        Assert.False(family.TryBooleanAdjacentPairs(EngineBooleanOperation.And, out _));
+    }
+
+    [Fact]
     public void EngineFamily_TryBoolean_CurrentlyRequiresExactlyTwoMembers()
     {
         var frame = CreateSegmentFrame(0, 10, 10);

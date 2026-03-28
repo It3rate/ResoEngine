@@ -381,6 +381,71 @@ public sealed class EngineFamily
         return EngineBooleanProjection.TryResolve(frame, primary, secondary, operation, out result);
     }
 
+    public bool TryOccupancyBoolean(
+        EngineOccupancyOperation operation,
+        out EngineFamilyBooleanResult? result)
+    {
+        if (!TryReadAll(out var reads) ||
+            reads is null ||
+            Frame is not CompositeElement frame)
+        {
+            result = null;
+            return false;
+        }
+
+        var members = new List<CompositeElement>(reads.Count);
+
+        foreach (var read in reads)
+        {
+            if (read is not CompositeElement composite)
+            {
+                result = null;
+                return false;
+            }
+
+            members.Add(composite);
+        }
+
+        return EngineBooleanProjection.TryResolveFamily(
+            frame,
+            members,
+            IsOrdered,
+            operation,
+            out result);
+    }
+
+    public bool TryBooleanAdjacentPairs(
+        EngineBooleanOperation operation,
+        out IReadOnlyList<EngineBooleanResult>? results)
+    {
+        if (!IsOrdered || _members.Count < 2 || Frame is not CompositeElement frame)
+        {
+            results = null;
+            return false;
+        }
+
+        var pairwiseResults = new List<EngineBooleanResult>(_members.Count - 1);
+
+        for (var index = 0; index < _members.Count - 1; index++)
+        {
+            if (!TryReadMember(_members[index], out var leftRead) ||
+                leftRead is not CompositeElement left ||
+                !TryReadMember(_members[index + 1], out var rightRead) ||
+                rightRead is not CompositeElement right ||
+                !EngineBooleanProjection.TryResolve(frame, left, right, operation, out var pairResult) ||
+                pairResult is null)
+            {
+                results = null;
+                return false;
+            }
+
+            pairwiseResults.Add(pairResult);
+        }
+
+        results = pairwiseResults;
+        return true;
+    }
+
     private bool TryDeriveMultiplyResultFrame(out GradedElement? resultFrame)
     {
         if (_members.Count == 0)

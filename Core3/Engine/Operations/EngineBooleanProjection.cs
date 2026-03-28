@@ -106,6 +106,113 @@ internal static class EngineBooleanProjection
         }
     }
 
+    internal static bool TryResolveFamily(
+        CompositeElement frame,
+        IReadOnlyList<CompositeElement> members,
+        bool isOrdered,
+        EngineOccupancyOperation operation,
+        out EngineFamilyBooleanResult? result)
+    {
+        ArgumentNullException.ThrowIfNull(frame);
+        ArgumentNullException.ThrowIfNull(members);
+
+        if (!TryReadAtomicSegment(frame, frame, out var frameSegment))
+        {
+            result = null;
+            return false;
+        }
+
+        var memberSegments = new List<AtomicSegment>(members.Count);
+
+        foreach (var member in members)
+        {
+            if (!TryReadAtomicSegment(frame, member, out var memberSegment))
+            {
+                result = null;
+                return false;
+            }
+
+            memberSegments.Add(memberSegment);
+        }
+
+        if (frameSegment.End <= frameSegment.Start)
+        {
+            result = new EngineFamilyBooleanResult(frame, members, isOrdered, operation, []);
+            return true;
+        }
+
+        var boundaries = CollectBoundaries(frameSegment, memberSegments);
+        var pieces = new List<EngineFamilyBooleanPiece>();
+        decimal? currentLeft = null;
+        decimal? currentRight = null;
+        CompositeElement? currentCarrier = null;
+        List<int>? currentPresentMembers = null;
+
+        foreach (var (left, right) in boundaries.Zip(boundaries.Skip(1)))
+        {
+            if (right <= left)
+            {
+                continue;
+            }
+
+            var midpoint = (left + right) / 2m;
+            var presentMembers = GetPresentMemberIndices(midpoint, memberSegments);
+
+            if (!EvaluateFamily(operation, presentMembers.Count, members.Count))
+            {
+                Flush();
+                continue;
+            }
+
+            var carrier = SelectFamilyCarrier(presentMembers, frame, members);
+
+            if (currentCarrier is not null &&
+                currentPresentMembers is not null &&
+                currentRight == left &&
+                AreCompatibleCarriers(currentCarrier, carrier) &&
+                currentPresentMembers.SequenceEqual(presentMembers))
+            {
+                currentRight = right;
+                continue;
+            }
+
+            Flush();
+            currentLeft = left;
+            currentRight = right;
+            currentCarrier = carrier;
+            currentPresentMembers = presentMembers;
+        }
+
+        Flush();
+        result = new EngineFamilyBooleanResult(frame, members, isOrdered, operation, pieces);
+        return true;
+
+        void Flush()
+        {
+            if (currentLeft is null ||
+                currentRight is null ||
+                currentCarrier is null ||
+                currentPresentMembers is null)
+            {
+                currentLeft = null;
+                currentRight = null;
+                currentCarrier = null;
+                currentPresentMembers = null;
+                return;
+            }
+
+            pieces.Add(new EngineFamilyBooleanPiece(
+                CreateSegmentLike(currentCarrier, currentLeft.Value, currentRight.Value),
+                currentCarrier,
+                currentPresentMembers.ToArray()));
+
+            currentLeft = null;
+            currentRight = null;
+            currentCarrier = null;
+            currentPresentMembers = null;
+        }
+    }
+
     private static bool TryReadAtomicSegment(
         CompositeElement frame,
         CompositeElement segment,
@@ -136,6 +243,21 @@ internal static class EngineBooleanProjection
         AddIfWithin(boundaries, primary.End, frame);
         AddIfWithin(boundaries, secondary.Start, frame);
         AddIfWithin(boundaries, secondary.End, frame);
+        return boundaries;
+    }
+
+    private static SortedSet<decimal> CollectBoundaries(
+        AtomicSegment frame,
+        IReadOnlyList<AtomicSegment> members)
+    {
+        var boundaries = new SortedSet<decimal> { frame.Start, frame.End };
+
+        foreach (var member in members)
+        {
+            AddIfWithin(boundaries, member.Start, frame);
+            AddIfWithin(boundaries, member.End, frame);
+        }
+
         return boundaries;
     }
 
@@ -170,8 +292,54 @@ internal static class EngineBooleanProjection
         return frame;
     }
 
+    private static CompositeElement SelectFamilyCarrier(
+        IReadOnlyList<int> presentMemberIndices,
+        CompositeElement frame,
+        IReadOnlyList<CompositeElement> members)
+    {
+        if (presentMemberIndices.Count == 1)
+        {
+            return members[presentMemberIndices[0]];
+        }
+
+        return frame;
+    }
+
     private static bool AreCompatibleCarriers(CompositeElement left, CompositeElement right) =>
         left.Equals(right);
+
+    private static List<int> GetPresentMemberIndices(
+        decimal value,
+        IReadOnlyList<AtomicSegment> memberSegments)
+    {
+        var presentMembers = new List<int>();
+
+        for (var index = 0; index < memberSegments.Count; index++)
+        {
+            if (IsWithin(value, memberSegments[index]))
+            {
+                presentMembers.Add(index);
+            }
+        }
+
+        return presentMembers;
+    }
+
+    private static bool EvaluateFamily(
+        EngineOccupancyOperation operation,
+        int presenceCount,
+        int memberCount) =>
+        operation switch
+        {
+            EngineOccupancyOperation.None => presenceCount == 0,
+            EngineOccupancyOperation.Any => presenceCount >= 1,
+            EngineOccupancyOperation.All => presenceCount == memberCount,
+            EngineOccupancyOperation.NotAll => presenceCount < memberCount,
+            EngineOccupancyOperation.ExactlyOne => presenceCount == 1,
+            EngineOccupancyOperation.Odd => (presenceCount & 1) == 1,
+            EngineOccupancyOperation.Even => (presenceCount & 1) == 0,
+            _ => false
+        };
 
     private static CompositeElement CreateSegmentLike(
         CompositeElement template,
