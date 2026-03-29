@@ -10,50 +10,9 @@ public enum BindingDomain
     Family,
     Token,
     Site,
+    Context,
     History,
-    Result,
-    Constant
-}
-
-/// <summary>
-/// The local extraction mode once a domain and address have selected a source.
-/// </summary>
-public enum BindingExtraction
-{
-    Whole,
-    ValueSlot,
-    UnitSlot,
-    Recessive,
-    Dominant,
-    Inbound,
-    Outbound,
-    BoundaryAxis,
-    FoldedRead
-}
-
-/// <summary>
-/// The fallback policy when a selector cannot resolve a value cleanly in the
-/// current context.
-/// </summary>
-public enum BindingMissPolicy
-{
-    Fail,
-    UseDefault,
-    PreserveUnknown,
-    SelectNearest,
-    BranchAlternatives
-}
-
-/// <summary>
-/// Where a selected or computed value should be retained for later use.
-/// </summary>
-public enum BindingStorageLocation
-{
-    TokenSlot,
-    ContextSlot,
-    ResultSlot,
-    History,
-    Transient
+    Result
 }
 
 /// <summary>
@@ -92,27 +51,25 @@ public abstract record BindingAddress
 /// binding wants to retain the read for later steps.
 /// </summary>
 public sealed record BindingStorageTarget(
-    BindingStorageLocation Location,
+    BindingDomain Domain,
     string? Name = null,
     int? Index = null);
 
 /// <summary>
 /// The full contextual selector used by bindings and operation attachments.
-/// Selection is intentionally decomposed into domain, address, extraction, and
-/// miss policy so later execution can stay explicit about why a value was
-/// chosen.
+/// Selection is intentionally decomposed into domain, address, and projection.
+/// The current pass assumes nearest-or-fail resolution behavior and leaves
+/// richer attention-style fallback policy for a later layer.
 /// </summary>
 public sealed record BindingSelector(
     BindingDomain Domain,
     BindingAddress Address,
-    BindingExtraction Extraction = BindingExtraction.Whole,
-    BindingMissPolicy MissPolicy = BindingMissPolicy.Fail,
+    BindingProjection Projection,
     BindingStorageTarget? StoreTarget = null)
 {
     public static BindingSelector Current(
         BindingDomain domain,
-        BindingExtraction extraction = BindingExtraction.Whole,
-        BindingMissPolicy missPolicy = BindingMissPolicy.Fail,
+        BindingProjection? projection = null,
         BindingStorageTarget? storeTarget = null) =>
-        new(domain, new BindingAddress.Current(), extraction, missPolicy, storeTarget);
+        new(domain, new BindingAddress.Current(), projection ?? BindingProjection.Whole, storeTarget);
 }

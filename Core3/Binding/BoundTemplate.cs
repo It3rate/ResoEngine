@@ -28,18 +28,30 @@ public abstract record BoundTemplate
 }
 
 /// <summary>
+/// One partially specified slot inside a bound template. The slot may carry a
+/// literal, a contextual binding, or both, together with one numeric transform
+/// signal that can later be tension-adjusted without replacing the shape with
+/// word-derived branching.
+/// </summary>
+public sealed record BoundSlot<T>
+    where T : struct
+{
+    public static BoundSlot<T> Unspecified { get; } = new();
+
+    public T? Literal { get; init; }
+    public BindingSelector? Binding { get; init; }
+    public BindingTransform Transform { get; init; } = BindingTransform.Identity;
+}
+
+/// <summary>
 /// Grade-0 bound literal. Null means "not specified here" and may be supplied
 /// by context binding; it does not mean the same thing as an explicit zero unit
 /// inside engine ontology.
 /// </summary>
 public sealed record BoundScalarTemplate : BoundTemplate
 {
-    public long? Value { get; init; }
-    public long? Unit { get; init; }
-    public BindingSelector? ValueBinding { get; init; }
-    public BindingSelector? UnitBinding { get; init; }
-    public BindingTransform ValueTransform { get; init; } = BindingTransform.Identity;
-    public BindingTransform UnitTransform { get; init; } = BindingTransform.Identity;
+    public BoundSlot<long> Value { get; init; } = BoundSlot<long>.Unspecified;
+    public BoundSlot<long> Unit { get; init; } = BoundSlot<long>.Unspecified;
 }
 
 /// <summary>

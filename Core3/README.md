@@ -149,3 +149,7 @@ richer conceptual behavior can all grow from the same small foundation.
 An experimental `Core3.Binding` namespace is also being used to explore bound
 literals, contextual defaults, slot coupling, and site-attached operation
 metadata without pushing those concerns into the engine core too early.
+
+The current direction there is to prefer small navigable Core3 value spaces for
+descriptor meaning, so later adjustment and exploration can happen through
+structure rather than only through opaque enum choices.

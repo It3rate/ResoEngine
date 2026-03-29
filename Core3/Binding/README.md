@@ -21,6 +21,16 @@ Selection is then one case of binding:
 
 That makes `Binding` the broader and more useful namespace name.
 
+Another important current aim is that binding descriptors should live in a
+**navigable Core3 value space** rather than only in opaque enum space.
+
+That means the long-term preference is:
+
+- serialize descriptor meaning as Core3-shaped numeric structure
+- keep named enum-like labels as convenience views where helpful
+- allow nearby variants to be explored by adjustment rather than only by code
+  branching
+
 ## Scope
 
 `Core3.Binding` is not intended to replace:
@@ -86,6 +96,21 @@ This pattern is broad enough to cover:
 - later routing and continuation metadata
 
 without claiming that all such cases are one concrete type.
+
+### B4a. Descriptor meaning should prefer numeric Core3 structure.
+
+Where practical, selector and transform descriptors should be represented by
+small Core3-shaped numeric values rather than only by enum ordinals.
+
+The reason is not aesthetics alone. A numeric descriptor:
+
+- can be serialized as actual structure
+- can be traversed and perturbed
+- can admit nearby nonstandard variants
+- can later participate in tension-style adjustment
+
+Enums may still exist as convenience aliases, but they should not be the only
+canonical meaning carrier when a small Core3 value can do that job.
 
 ### B5. Coupling is real structure reduction.
 
@@ -160,10 +185,11 @@ This is the current recommended selection grammar.
   Which pool are we reading from?
 - address
   Where inside that pool?
-- extraction
+- projection
   What aspect do we take?
-- miss policy
-  What happens if the read is missing or ambiguous?
+
+The current pass assumes nearest-or-fail behavior and leaves richer
+attention-style miss handling for a later layer.
 
 An optional storage target can retain the selected value for later use.
 
@@ -219,9 +245,11 @@ Describes how a value is chosen from context:
 
 - `BindingDomain`
 - `BindingAddress`
-- `BindingExtraction`
-- `BindingMissPolicy`
+- `BindingProjection`
 - optional `BindingStorageTarget`
+
+Common projections may still be given friendly names, but the current direction
+is that the projection's underlying meaning should be a Core3 numeric signal.
 
 ### `BoundTemplate`
 
@@ -234,6 +262,10 @@ Current forms:
 - `BoundCompositeTemplate`
 
 These are templates, not serialized engine elements.
+
+Slots inside these templates are represented by `BoundSlot<T>` so literal value,
+context binding, and transform signal can all be adjusted within one repeated
+shape rather than being split into unrelated properties.
 
 ### `BindingConstraint`
 
@@ -255,6 +287,25 @@ Describes one law attached to one site together with:
 
 This keeps structure, data, and executable law separate while still making
 their contact points explicit.
+
+## Numeric Descriptor Direction
+
+The current experiment uses small axis-like numeric signals for:
+
+- `BindingTransform`
+- `BindingProjection`
+
+These signals are currently stored as grade-2 axis-like engine values rather
+than enum ordinals.
+
+This is the current preferred direction because it keeps descriptor meaning:
+
+- serializable as Core3 structure
+- adjustable by nearby numeric variation
+- open to nonstandard but still lawful cases
+
+and therefore more compatible with later tension-driven exploration than a
+closed enum list would be.
 
 ## Examples
 
@@ -306,6 +357,8 @@ For now:
 - let bound literals and coupling live in the binding layer
 - use `null` for missing binding-time slots rather than overloading engine
   zero-unit meaning
+- prefer small Core3 numeric descriptor values over enum ordinals where that
+  meaning can be expressed structurally
 - keep operation laws attached to sites, not embedded in the structural objects
 - let the binding layer describe how context is read and where results are
   retained

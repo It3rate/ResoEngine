@@ -960,11 +960,17 @@ public sealed class Core3ElementTests
     {
         var template = new BoundScalarTemplate
         {
-            Value = 25,
-            UnitBinding = BindingSelector.Current(
+            Value = new BoundSlot<long>
+            {
+                Literal = 25
+            },
+            Unit = new BoundSlot<long>
+            {
+                Binding = BindingSelector.Current(
                 BindingDomain.Frame,
-                BindingExtraction.UnitSlot),
-            UnitTransform = new BindingTransform(BindingTransformKind.OppositeOrientation),
+                BindingProjection.Unit),
+                Transform = BindingTransform.OppositeOrientation
+            },
             Constraints =
             [
                 new BindingConstraint(
@@ -972,17 +978,17 @@ public sealed class Core3ElementTests
                     new BindingSelector(
                         BindingDomain.Token,
                         new BindingAddress.Name("accumulator"),
-                        BindingExtraction.UnitSlot),
-                    new BindingTransform(BindingTransformKind.PreserveMagnitude))
+                        BindingProjection.Unit),
+                    BindingTransform.Identity)
             ]
         };
 
-        Assert.Equal(25, template.Value);
-        Assert.Null(template.Unit);
-        Assert.NotNull(template.UnitBinding);
-        Assert.Equal(BindingDomain.Frame, template.UnitBinding!.Domain);
-        Assert.Equal(BindingExtraction.UnitSlot, template.UnitBinding.Extraction);
-        Assert.Equal(BindingTransformKind.OppositeOrientation, template.UnitTransform.Kind);
+        Assert.Equal(25, template.Value.Literal);
+        Assert.Null(template.Unit.Literal);
+        Assert.NotNull(template.Unit.Binding);
+        Assert.Equal(BindingDomain.Frame, template.Unit.Binding!.Domain);
+        Assert.Equal(BindingProjection.Unit, template.Unit.Binding.Projection);
+        Assert.Equal(BindingTransform.OppositeOrientation, template.Unit.Transform);
         Assert.Single(template.Constraints);
     }
 
@@ -1000,20 +1006,20 @@ public sealed class Core3ElementTests
                     "left",
                     new BindingSelector(
                         BindingDomain.Token,
-                        new BindingAddress.Name("accumulator"))),
+                        new BindingAddress.Name("accumulator"),
+                        BindingProjection.Whole)),
                 new OperationInputBinding(
                     "right",
                     new BindingSelector(
                         BindingDomain.Family,
                         new BindingAddress.Current(),
-                        BindingExtraction.Whole,
-                        BindingMissPolicy.Fail,
-                        new BindingStorageTarget(BindingStorageLocation.ContextSlot, "currentItem")))
+                        BindingProjection.Whole,
+                        new BindingStorageTarget(BindingDomain.Context, "currentItem")))
             ],
             [
                 new OperationOutputBinding(
                     "sum",
-                    new BindingStorageTarget(BindingStorageLocation.TokenSlot, "accumulator"),
+                    new BindingStorageTarget(BindingDomain.Token, "accumulator"),
                     BindingTransform.Identity)
             ]);
 
@@ -1022,7 +1028,16 @@ public sealed class Core3ElementTests
         Assert.Equal("Add", attachment.Law.Name);
         Assert.Equal(2, attachment.Inputs.Count);
         Assert.Single(attachment.Outputs);
-        Assert.Equal(BindingStorageLocation.TokenSlot, attachment.Outputs[0].Target.Location);
+        Assert.Equal(BindingDomain.Token, attachment.Outputs[0].Target.Domain);
+    }
+
+    [Fact]
+    public void BindingSignal_CanComposeAxisLikeTransforms()
+    {
+        Assert.True(BindingSignal.Orthogonal.TryCompose(BindingSignal.Negate, out var composed));
+
+        Assert.NotNull(composed);
+        Assert.Equal(BindingSignal.OppositeOrthogonal.Value, composed!.Value);
     }
 
     [Fact]
