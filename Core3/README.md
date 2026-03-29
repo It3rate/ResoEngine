@@ -153,3 +153,7 @@ metadata without pushing those concerns into the engine core too early.
 The current direction there is to prefer small navigable Core3 value spaces for
 descriptor meaning, so later adjustment and exploration can happen through
 structure rather than only through opaque enum choices.
+
+`Core3.Serialization` now also provides a manual JSON writer so the current
+engine, runtime, binding, and operation shapes can be inspected on the wire
+without committing the codebase to serializer attributes too early.

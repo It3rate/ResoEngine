@@ -3,7 +3,9 @@ using Core3.Elements;
 using Core3.Engine;
 using Core3.Operations;
 using Core3.Runtime;
+using Core3.Serialization;
 using System.Numerics;
+using System.Text.Json;
 
 namespace Tests.Core3;
 
@@ -1038,6 +1040,177 @@ public sealed class Core3ElementTests
 
         Assert.NotNull(composed);
         Assert.Equal(BindingSignal.OppositeOrthogonal.Value, composed!.Value);
+    }
+
+    [Fact]
+    public void BindingSchema_CanDescribeAccumulatorLoopMachine()
+    {
+        var accumulate = new OperationAttachment(
+            new OperationSite(
+                OperationSiteKind.Carrier,
+                "accumulate",
+                new BindingAddress.Normalized(0.5m)),
+            new OperationLawReference("Add"),
+            [
+                new OperationInputBinding(
+                    "accumulator",
+                    new BindingSelector(
+                        BindingDomain.Token,
+                        new BindingAddress.Name("accumulator"),
+                        BindingProjection.Whole)),
+                new OperationInputBinding(
+                    "currentItem",
+                    new BindingSelector(
+                        BindingDomain.Family,
+                        new BindingAddress.Current(),
+                        BindingProjection.Whole))
+            ],
+            [
+                new OperationOutputBinding(
+                    "sum",
+                    new BindingStorageTarget(BindingDomain.Token, "accumulator"),
+                    BindingTransform.Identity)
+            ]);
+
+        var continueLoop = new OperationAttachment(
+            new OperationSite(OperationSiteKind.Boundary, "continue"),
+            new OperationLawReference("ContinueWhileMoreMembers"),
+            [
+                new OperationInputBinding(
+                    "position",
+                    new BindingSelector(
+                        BindingDomain.Context,
+                        new BindingAddress.Name("memberIndex"),
+                        BindingProjection.Whole))
+            ],
+            [
+                new OperationOutputBinding(
+                    "route",
+                    new BindingStorageTarget(BindingDomain.Result, "route"),
+                    BindingTransform.Identity)
+            ]);
+
+        Assert.Equal("accumulate", accumulate.Site.Name);
+        Assert.Equal("ContinueWhileMoreMembers", continueLoop.Law.Name);
+        Assert.Equal(OperationSiteKind.Boundary, continueLoop.Site.Kind);
+    }
+
+    [Fact]
+    public void BindingSchema_CanDescribeFibonacciRegisterUpdate()
+    {
+        var fibonacci = new OperationAttachment(
+            new OperationSite(OperationSiteKind.Carrier, "fib-step"),
+            new OperationLawReference("FibonacciStep"),
+            [
+                new OperationInputBinding(
+                    "a",
+                    new BindingSelector(
+                        BindingDomain.Token,
+                        new BindingAddress.Name("a"),
+                        BindingProjection.Whole)),
+                new OperationInputBinding(
+                    "b",
+                    new BindingSelector(
+                        BindingDomain.Token,
+                        new BindingAddress.Name("b"),
+                        BindingProjection.Whole))
+            ],
+            [
+                new OperationOutputBinding(
+                    "nextA",
+                    new BindingStorageTarget(BindingDomain.Token, "a"),
+                    BindingTransform.Identity),
+                new OperationOutputBinding(
+                    "nextB",
+                    new BindingStorageTarget(BindingDomain.Token, "b"),
+                    BindingTransform.Identity)
+            ]);
+
+        Assert.Equal("FibonacciStep", fibonacci.Law.Name);
+        Assert.Equal(2, fibonacci.Inputs.Count);
+        Assert.Equal(2, fibonacci.Outputs.Count);
+        Assert.Equal("a", fibonacci.Outputs[0].Target.Name);
+        Assert.Equal("b", fibonacci.Outputs[1].Target.Name);
+    }
+
+    [Fact]
+    public void Core3JsonSerializer_SerializesGradedElementsAndContexts()
+    {
+        var context = EngineOperationContext.Create(
+            new AtomicElement(4, 4),
+            [
+                new AtomicElement(1, 2),
+                new AtomicElement(3, 4)
+            ],
+            isOrdered: true);
+
+        var json = Core3JsonSerializer.Serialize(context);
+        using var document = JsonDocument.Parse(json);
+        var root = document.RootElement;
+
+        Assert.Equal("operationContext", root.GetProperty("kind").GetString());
+        Assert.True(root.GetProperty("isOrdered").GetBoolean());
+        Assert.Equal("atomic", root.GetProperty("frame").GetProperty("kind").GetString());
+        Assert.Equal(2, root.GetProperty("members").GetArrayLength());
+    }
+
+    [Fact]
+    public void Core3JsonSerializer_CanIncludeDerivedReferenceReads()
+    {
+        var frame = new CompositeElement(
+            new AtomicElement(10, 10),
+            new AtomicElement(3, 10));
+        var reference = new EngineReference(frame, new AtomicElement(7, 1));
+
+        var json = Core3JsonSerializer.Serialize(
+            reference,
+            new Core3JsonSerializerOptions
+            {
+                IncludeDerived = true
+            });
+
+        using var document = JsonDocument.Parse(json);
+        var root = document.RootElement;
+
+        Assert.Equal("reference", root.GetProperty("kind").GetString());
+        Assert.True(root.TryGetProperty("calibration", out _));
+        Assert.True(root.TryGetProperty("existingReadout", out _));
+        Assert.True(root.TryGetProperty("read", out var read));
+        Assert.Equal("atomic", read.GetProperty("kind").GetString());
+    }
+
+    [Fact]
+    public void Core3JsonSerializer_SerializesOperationAttachmentsWithSignals()
+    {
+        var attachment = new OperationAttachment(
+            new OperationSite(OperationSiteKind.Carrier, "accumulate"),
+            new OperationLawReference("Add"),
+            [
+                new OperationInputBinding(
+                    "left",
+                    new BindingSelector(
+                        BindingDomain.Token,
+                        new BindingAddress.Name("accumulator"),
+                        BindingProjection.Whole))
+            ],
+            [
+                new OperationOutputBinding(
+                    "sum",
+                    new BindingStorageTarget(BindingDomain.Token, "accumulator"),
+                    BindingTransform.Identity)
+            ]);
+
+        var json = Core3JsonSerializer.Serialize(attachment);
+        using var document = JsonDocument.Parse(json);
+        var root = document.RootElement;
+        var transformSignal = root.GetProperty("outputs")[0]
+            .GetProperty("transform")
+            .GetProperty("signal")
+            .GetProperty("value");
+
+        Assert.Equal("operationAttachment", root.GetProperty("kind").GetString());
+        Assert.Equal("Add", root.GetProperty("law").GetProperty("name").GetString());
+        Assert.Equal("composite", transformSignal.GetProperty("kind").GetString());
     }
 
     [Fact]
