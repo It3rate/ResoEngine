@@ -1,0 +1,132 @@
+using Core3.Engine;
+using Core3.Operations;
+using Core3.Serialization;
+
+namespace Tests.Core3;
+
+public sealed class SerializationMinimalTests
+{
+    [Fact]
+    public void Core3JsonSerializer_SerializesReference_MinimallyByDefault()
+    {
+        // Serializes a reference relation without any derived readout fields.
+        // Approximate math: keep the instruction "read 7 through the frame (10, 3)"
+        // without serializing the computed 70/10 read yet.
+        var expectedJson = """
+{
+  "kind": "reference",
+  "frame": {
+    "kind": "composite",
+    "grade": 1,
+    "recessive": {
+      "kind": "atomic",
+      "grade": 0,
+      "value": 10,
+      "unit": 10
+    },
+    "dominant": {
+      "kind": "atomic",
+      "grade": 0,
+      "value": 3,
+      "unit": 10
+    }
+  },
+  "subject": {
+    "kind": "atomic",
+    "grade": 0,
+    "value": 7,
+    "unit": 1
+  }
+}
+""";
+
+        var frame = new CompositeElement(
+            new AtomicElement(10, 10),
+            new AtomicElement(3, 10));
+        var reference = new EngineReference(frame, new AtomicElement(7, 1));
+
+        var json = Core3JsonSerializer.Serialize(reference);
+
+        AssertJsonEqual(expectedJson, json);
+    }
+
+    [Fact]
+    public void Core3JsonSerializer_SerializesMultiplyOperationAndFoldedResult_Minimally()
+    {
+        // First serialization: the operation result for 3 * 4 in a unit frame.
+        // Second serialization: the folded scalar result 12.
+        var expectedOperationJson = """
+{
+  "kind": "operationResult",
+  "operationName": "Multiply",
+  "context": {
+    "kind": "operationContext",
+    "isOrdered": true,
+    "frame": {
+      "kind": "atomic",
+      "grade": 0,
+      "value": 1,
+      "unit": 1
+    },
+    "members": [
+      {
+        "kind": "atomic",
+        "grade": 0,
+        "value": 3,
+        "unit": 1
+      },
+      {
+        "kind": "atomic",
+        "grade": 0,
+        "value": 4,
+        "unit": 1
+      }
+    ]
+  },
+  "result": {
+    "kind": "atomic",
+    "grade": 0,
+    "value": 12,
+    "unit": 1
+  },
+  "resultFrame": {
+    "kind": "atomic",
+    "grade": 0,
+    "value": 1,
+    "unit": 1
+  }
+}
+""";
+
+        var expectedFoldedResultJson = """
+{
+  "kind": "atomic",
+  "grade": 0,
+  "value": 12,
+  "unit": 1
+}
+""";
+
+        var frame = new AtomicElement(1, 1);
+        var members = new GradedElement[]
+        {
+            new AtomicElement(3, 1),
+            new AtomicElement(4, 1)
+        };
+
+        Assert.True(EngineOperations.TryMultiplyWithProvenance(frame, members, out var operationResult));
+
+        var finalizedResult = Assert.IsType<EngineOperationResult>(operationResult);
+        var operationJson = Core3JsonSerializer.Serialize(finalizedResult);
+        var foldedResultJson = Core3JsonSerializer.Serialize(finalizedResult.Result);
+
+        AssertJsonEqual(expectedOperationJson, operationJson);
+        AssertJsonEqual(expectedFoldedResultJson, foldedResultJson);
+    }
+
+    private static void AssertJsonEqual(string expectedJson, string actualJson) =>
+        Assert.Equal(Normalize(expectedJson), Normalize(actualJson));
+
+    private static string Normalize(string json) =>
+        json.Trim().ReplaceLineEndings("\n");
+}

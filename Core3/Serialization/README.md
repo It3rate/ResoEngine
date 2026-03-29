@@ -28,7 +28,8 @@ The JSON writer currently handles:
 - operation results
 - boolean piece results
 - bound templates
-- binding selectors and signals
+- direct binding primitives such as addresses, storage targets, selectors,
+  projections, transforms, signals, and sites
 - operation attachments
 
 ## Minimal Versus Derived

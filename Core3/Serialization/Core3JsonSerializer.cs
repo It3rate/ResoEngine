@@ -46,6 +46,27 @@ public static class Core3JsonSerializer
     public static string Serialize(OperationAttachment attachment, Core3JsonSerializerOptions? options = null) =>
         Serialize(writer => Write(writer, attachment, Resolve(options)), options);
 
+    public static string Serialize(BindingSelector selector, Core3JsonSerializerOptions? options = null) =>
+        Serialize(writer => Write(writer, selector, Resolve(options)), options);
+
+    public static string Serialize(BindingProjection projection, Core3JsonSerializerOptions? options = null) =>
+        Serialize(writer => Write(writer, projection, Resolve(options)), options);
+
+    public static string Serialize(BindingTransform transform, Core3JsonSerializerOptions? options = null) =>
+        Serialize(writer => Write(writer, transform, Resolve(options)), options);
+
+    public static string Serialize(BindingSignal signal, Core3JsonSerializerOptions? options = null) =>
+        Serialize(writer => Write(writer, signal, Resolve(options)), options);
+
+    public static string Serialize(BindingAddress address) =>
+        Serialize(writer => Write(writer, address), Core3JsonSerializerOptions.Default);
+
+    public static string Serialize(BindingStorageTarget target) =>
+        Serialize(writer => Write(writer, target), Core3JsonSerializerOptions.Default);
+
+    public static string Serialize(OperationSite site, Core3JsonSerializerOptions? options = null) =>
+        Serialize(writer => Write(writer, site, Resolve(options)), options);
+
     public static void Write(Utf8JsonWriter writer, GradedElement element, Core3JsonSerializerOptions? options = null)
     {
         ArgumentNullException.ThrowIfNull(writer);
