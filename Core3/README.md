@@ -145,3 +145,7 @@ to also run, evalutate, and predict.
 The goal is not to define every category early. The goal is to get the
 primitive moves clear enough that richer mathematics, richer geometry, and
 richer conceptual behavior can all grow from the same small foundation.
+
+An experimental `Core3.Binding` namespace is also being used to explore bound
+literals, contextual defaults, slot coupling, and site-attached operation
+metadata without pushing those concerns into the engine core too early.

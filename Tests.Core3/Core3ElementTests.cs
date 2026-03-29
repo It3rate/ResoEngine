@@ -1,3 +1,4 @@
+using Core3.Binding;
 using Core3.Elements;
 using Core3.Engine;
 using Core3.Operations;
@@ -952,6 +953,76 @@ public sealed class Core3ElementTests
         Assert.Equal(ordered.Frame, unordered.Frame);
         Assert.Equal(ordered.Members, unordered.Members);
         Assert.Equal(unordered.Members, reordered.Members);
+    }
+
+    [Fact]
+    public void BoundScalarTemplate_CanDescribeInheritedAndCoupledSlots()
+    {
+        var template = new BoundScalarTemplate
+        {
+            Value = 25,
+            UnitBinding = BindingSelector.Current(
+                BindingDomain.Frame,
+                BindingExtraction.UnitSlot),
+            UnitTransform = new BindingTransform(BindingTransformKind.OppositeOrientation),
+            Constraints =
+            [
+                new BindingConstraint(
+                    "unit",
+                    new BindingSelector(
+                        BindingDomain.Token,
+                        new BindingAddress.Name("accumulator"),
+                        BindingExtraction.UnitSlot),
+                    new BindingTransform(BindingTransformKind.PreserveMagnitude))
+            ]
+        };
+
+        Assert.Equal(25, template.Value);
+        Assert.Null(template.Unit);
+        Assert.NotNull(template.UnitBinding);
+        Assert.Equal(BindingDomain.Frame, template.UnitBinding!.Domain);
+        Assert.Equal(BindingExtraction.UnitSlot, template.UnitBinding.Extraction);
+        Assert.Equal(BindingTransformKind.OppositeOrientation, template.UnitTransform.Kind);
+        Assert.Single(template.Constraints);
+    }
+
+    [Fact]
+    public void OperationAttachment_CanDescribeSiteInputsAndOutputs()
+    {
+        var attachment = new OperationAttachment(
+            new OperationSite(
+                OperationSiteKind.Carrier,
+                "accumulate",
+                new BindingAddress.Normalized(0.5m)),
+            new OperationLawReference("Add"),
+            [
+                new OperationInputBinding(
+                    "left",
+                    new BindingSelector(
+                        BindingDomain.Token,
+                        new BindingAddress.Name("accumulator"))),
+                new OperationInputBinding(
+                    "right",
+                    new BindingSelector(
+                        BindingDomain.Family,
+                        new BindingAddress.Current(),
+                        BindingExtraction.Whole,
+                        BindingMissPolicy.Fail,
+                        new BindingStorageTarget(BindingStorageLocation.ContextSlot, "currentItem")))
+            ],
+            [
+                new OperationOutputBinding(
+                    "sum",
+                    new BindingStorageTarget(BindingStorageLocation.TokenSlot, "accumulator"),
+                    BindingTransform.Identity)
+            ]);
+
+        Assert.Equal(OperationSiteKind.Carrier, attachment.Site.Kind);
+        Assert.Equal("accumulate", attachment.Site.Name);
+        Assert.Equal("Add", attachment.Law.Name);
+        Assert.Equal(2, attachment.Inputs.Count);
+        Assert.Single(attachment.Outputs);
+        Assert.Equal(BindingStorageLocation.TokenSlot, attachment.Outputs[0].Target.Location);
     }
 
     [Fact]
