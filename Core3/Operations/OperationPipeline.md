@@ -17,6 +17,39 @@ The central idea is:
 should all eventually be understood as readings of one shared operation
 pipeline rather than as unrelated execution systems.
 
+## Operation As Directed Arc
+
+Every operation should also be readable as a small directed arc:
+
+- inbound carrier
+- origin law
+- outbound carrier
+
+In the current simple cases:
+
+- inbound means the input frame, members, grades, supports, and resolutions
+- origin means the local law being enacted
+- outbound means the resulting element, piece family, or updated runtime state
+
+This is deliberately close to the directed-segment metaphor already used
+elsewhere in Core3:
+
+- inbound traversal prepares the law by consolidating grades, calibration,
+  correspondence, and local carrier relation
+- origin is the local site of enactment
+- outbound traversal carries the surviving results onward
+
+This scales upward.
+A binary add is a very small arc.
+A partitioning boolean read is a slightly richer arc with several outbound
+pieces.
+A larger equation is a route of such arcs with branching, merging, looping,
+and repeated continuation.
+
+So a primitive operation is not a different kind of thing from a larger
+equation.
+It is a small, optimized instance of the same inbound-origin-outbound pattern.
+
 ## Family As Current Data Area
 
 For now, `EngineFamily` should be treated pragmatically as the current data
@@ -130,6 +163,13 @@ An operation is:
 - an optional reduction rule
 - an optional continuation rule
 
+These are current descriptive slots, not a commitment to a permanent enum
+surface.
+Where possible, Core3 should keep pushing these distinctions downward into
+native structure so that topology, retention, reduction, and continuation can
+eventually be explored by changing lawful values, tensions, carriers, branch
+families, or pinned structure rather than by inspecting code-only switches.
+
 ## Current Operations In This Lens
 
 ### Fold
@@ -229,6 +269,32 @@ Traversal runtime is the same pattern with explicit continuation:
 So traversal is not "other than operations."
 It is operations with explicit continuation and site encounter.
 
+## Core3-Native Bias
+
+The implementation should keep resisting helper explosion.
+
+The first instinct should be:
+
+- express the behavior in native Core3 elements
+- reuse existing route, site, mover, family, pin, branch, and tension patterns
+- only add wrapper structure when provenance or temporary runtime bookkeeping
+  truly needs it
+
+Friendly names and convenience helpers are fine.
+But the deeper mechanism should prefer Core3 structure over fixed code trees.
+
+This is especially important for:
+
+- retention
+- reduction
+- continuation
+- branch preservation
+- merge / rejoin
+
+If the current implementation temporarily uses a specialized subsystem, it
+should leave a note that this wants later consolidation into the shared
+operation/branch runtime.
+
 ## Why Boolean Feels Parallel Now
 
 Boolean currently lives in a separate subsystem mainly because it already
@@ -283,6 +349,11 @@ For the next implementation pass:
    structure.
 5. Treat boolean as the first explicit multi-piece preset, not as a permanent
    separate subsystem.
+
+That descriptor does not need to become a large new class family.
+It may begin as a very small internal shape, or as shared helpers over the
+existing operation context and result types, as long as the deeper pattern is
+kept visible.
 
 ## Long-Term Direction
 

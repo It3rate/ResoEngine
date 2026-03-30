@@ -4,8 +4,10 @@ using Core3.Operations;
 namespace Core3.Runtime;
 
 /// <summary>
-/// Generic runtime context for framed operations. This is runtime/API
-/// assistance structure, not serialized engine ontology.
+/// Generic inbound context for framed operations. This is runtime/API
+/// assistance structure, not serialized engine ontology. In the broader
+/// operation-arc reading, this record is the inbound side: active frame,
+/// participating members, ordering, and temporary parent/focus provenance.
 /// </summary>
 public sealed record EngineOperationContext(
     GradedElement Frame,
@@ -14,6 +16,9 @@ public sealed record EngineOperationContext(
     EngineOperationContext? ParentContext = null,
     int? ParentFocusIndex = null)
 {
+    public GradedElement InboundFrame => Frame;
+    public IReadOnlyList<GradedElement> InboundMembers => Members;
+
     public static EngineOperationContext Create(
         GradedElement frame,
         IEnumerable<GradedElement> members,

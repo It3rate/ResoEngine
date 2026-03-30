@@ -34,6 +34,21 @@ P5. Prefer physically interpretable structure over hidden virtual state.
 P6. The long-term aim is machine pattern recognition over Core3 structure, so
 reused patterns are a strength, not a weakness.
 
+P7. Operations should also be read as directed arcs:
+
+- inbound carrier state
+- origin law
+- outbound carrier/result
+
+This same pattern should scale from simple arithmetic to boolean partitioning,
+route traversal, larger equations, branching flows, and conceptual domains
+such as narrative or language structure.
+
+P8. If a current implementation detail is only expressible through a code-side
+enum or branch tree, first ask whether the meaning should instead live in
+native Core3 structure, tensions, branch families, or pinned route/site
+relations.
+
 ## Part II. Engine Ontology
 
 E1. `GradedElement` is the engine union.
@@ -325,6 +340,21 @@ Simple arithmetic, boolean partitioning, traversal-time site laws, branch
 families, and later equations should be different presets of that larger
 pipeline rather than unrelated execution systems.
 
+L7. The operation pipeline should also preserve the inbound-origin-outbound
+reading:
+
+- inbound setup or traversal
+- local law enactment
+- outbound result or survivor family
+
+This should remain true whether the output is one result, many co-present
+pieces, a branch family, or a continued runtime state.
+
+L8. Retention, reduction, and continuation should not be treated as permanent
+enum-only code categories if Core3 can eventually carry them more natively
+through lawful values, tensions, carriers, branch structure, or pinned route
+relations.
+
 ## Part XII. Binding
 
 B1. Binding is contextual, not core ontology.
@@ -372,6 +402,10 @@ X3. The system should increasingly support exploration by:
 X4. If a meaning can only be changed by editing code words or enum branches,
 that is usually a signal that the meaning is not yet expressed deeply enough in
 Core3 terms.
+
+X5. When temporary helper layers are necessary, they should stay thin and point
+back toward native Core3 structure rather than becoming a second deep
+mechanism.
 
 ## Part XIV. Coding Guidance
 

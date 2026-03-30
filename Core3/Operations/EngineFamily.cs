@@ -288,31 +288,12 @@ public sealed class EngineFamily
             static item => item.Result,
             out sum);
 
-    public bool TryAddAllWithTension(out EngineOperationResult? result)
-    {
-        if (!TryReadAllWithTension(out var readResult) ||
-            readResult is null ||
-            readResult.Reads.Count == 0)
-        {
-            result = null;
-            return false;
-        }
-
-        var current = readResult.Reads[0];
-        var tension = readResult.Tension;
-        var note = readResult.Note;
-
-        for (var index = 1; index < readResult.Reads.Count; index++)
-        {
-            var stepOutcome = current.AddWithTension(readResult.Reads[index]);
-            current = stepOutcome.Result;
-            tension = EngineTension.CombineTension(tension, stepOutcome.Tension);
-            note = EngineTension.CombineNotes(note, stepOutcome.Note);
-        }
-
-        result = new EngineOperationResult("Add", CreateContext(), current, Frame, tension, note);
-        return true;
-    }
+    public bool TryAddAllWithTension(out EngineOperationResult? result) =>
+        TryAccumulateAll(
+            "Add",
+            static (left, right) => left.AddWithTension(right),
+            static family => family.Frame,
+            out result);
 
     public bool TryMultiplyAll(out GradedElement? product)
         => EngineExactness.TryProjectExact(
@@ -321,39 +302,16 @@ public sealed class EngineFamily
             static item => item.Result,
             out product);
 
-    public bool TryMultiplyAllWithTension(out EngineOperationResult? result)
-    {
-        if (!TryReadAllWithTension(out var readResult) ||
-            readResult is null ||
-            readResult.Reads.Count == 0)
-        {
-            result = null;
-            return false;
-        }
-
-        var current = readResult.Reads[0];
-        var tension = readResult.Tension;
-        var note = readResult.Note;
-
-        for (var index = 1; index < readResult.Reads.Count; index++)
-        {
-            var stepOutcome = current.MultiplyWithTension(readResult.Reads[index]);
-            current = stepOutcome.Result;
-            tension = EngineTension.CombineTension(tension, stepOutcome.Tension);
-            note = EngineTension.CombineNotes(note, stepOutcome.Note);
-        }
-
-        result = new EngineOperationResult(
+    public bool TryMultiplyAllWithTension(out EngineOperationResult? result) =>
+        TryAccumulateAll(
             "Multiply",
-            CreateContext(),
-            current,
-            TryDeriveMultiplyResultFrame(out var resultFrame) && resultFrame is not null
-                ? resultFrame
-                : Frame,
-            tension,
-            note);
-        return true;
-    }
+            static (left, right) => left.MultiplyWithTension(right),
+            static family =>
+                family.TryDeriveMultiplyResultFrame(out var resultFrame) &&
+                resultFrame is not null
+                    ? resultFrame
+                    : family.Frame,
+            out result);
 
     public bool TryAddAllWithProvenance(out EngineOperationResult? result)
         => EngineExactness.TryGetExact(
@@ -522,6 +480,42 @@ public sealed class EngineFamily
         }
 
         resultFrame = current;
+        return true;
+    }
+
+    private bool TryAccumulateAll(
+        string operationName,
+        Func<GradedElement, GradedElement, EngineElementOutcome> localLaw,
+        Func<EngineFamily, GradedElement> resultFrameSelector,
+        out EngineOperationResult? result)
+    {
+        if (!TryReadAllWithTension(out var readResult) ||
+            readResult is null ||
+            readResult.Reads.Count == 0)
+        {
+            result = null;
+            return false;
+        }
+
+        var current = readResult.Reads[0];
+        var tension = readResult.Tension;
+        var note = readResult.Note;
+
+        for (var index = 1; index < readResult.Reads.Count; index++)
+        {
+            var stepOutcome = localLaw(current, readResult.Reads[index]);
+            current = stepOutcome.Result;
+            tension = EngineTension.CombineTension(tension, stepOutcome.Tension);
+            note = EngineTension.CombineNotes(note, stepOutcome.Note);
+        }
+
+        result = new EngineOperationResult(
+            operationName,
+            CreateContext(),
+            current,
+            resultFrameSelector(this),
+            tension,
+            note);
         return true;
     }
 

@@ -4,9 +4,10 @@ using Core3.Runtime;
 namespace Core3.Operations;
 
 /// <summary>
-/// Binary boolean result metadata. The actual result pieces remain ordinary
-/// composite elements; this record only preserves the frame, operand roles,
-/// and surviving piece family for this boolean read.
+/// Binary boolean result metadata. In the broader operation-arc reading, the
+/// context is the inbound side, the boolean operator is the origin law, and
+/// the surviving pieces are the outbound family. The actual pieces remain
+/// ordinary composite elements.
 /// </summary>
 public sealed record EngineBooleanResult : IExactResult
 {
@@ -33,11 +34,14 @@ public sealed record EngineBooleanResult : IExactResult
     }
 
     public EngineOperationContext Context { get; }
+    public EngineOperationContext Inbound => Context;
     public CompositeElement Frame => (CompositeElement)Context.Frame;
     public CompositeElement Primary => (CompositeElement)Context.Members[0];
     public CompositeElement Secondary => (CompositeElement)Context.Members[1];
     public EngineBooleanOperation Operation { get; }
+    public EngineBooleanOperation OriginLaw => Operation;
     public IReadOnlyList<EngineOperationPiece> Pieces { get; }
+    public IReadOnlyList<EngineOperationPiece> OutboundPieces => Pieces;
     public GradedElement? Tension { get; }
     public string? Note { get; }
     public bool IsExact => Tension is null;

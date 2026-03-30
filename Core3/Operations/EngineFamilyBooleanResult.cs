@@ -4,9 +4,10 @@ using Core3.Runtime;
 namespace Core3.Operations;
 
 /// <summary>
-/// Family-wide boolean result metadata. The result segments remain ordinary
-/// composite elements; this record preserves the frame, family, ordering hint,
-/// and piece provenance for the occupancy read.
+/// Family-wide boolean result metadata. In the broader operation-arc reading,
+/// the context is the inbound side, the occupancy predicate is the origin law,
+/// and the surviving pieces are the outbound family. The result segments
+/// remain ordinary composite elements.
 /// </summary>
 public sealed record EngineFamilyBooleanResult : IExactResult
 {
@@ -25,11 +26,14 @@ public sealed record EngineFamilyBooleanResult : IExactResult
     }
 
     public EngineOperationContext Context { get; }
+    public EngineOperationContext Inbound => Context;
     public CompositeElement Frame => (CompositeElement)Context.Frame;
     public IReadOnlyList<CompositeElement> Members => Context.Members.Cast<CompositeElement>().ToArray();
     public bool IsOrdered => Context.IsOrdered;
     public EngineOccupancyOperation Operation { get; }
+    public EngineOccupancyOperation OriginLaw => Operation;
     public IReadOnlyList<EngineOperationPiece> Pieces { get; }
+    public IReadOnlyList<EngineOperationPiece> OutboundPieces => Pieces;
     public GradedElement? Tension { get; }
     public string? Note { get; }
     public bool IsExact => Tension is null;
