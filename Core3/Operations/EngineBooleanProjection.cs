@@ -5,6 +5,9 @@ namespace Core3.Operations;
 
 internal static class EngineBooleanProjection
 {
+    // TODO: Fold boolean projection into the same generic operation pipeline as
+    // add/multiply/fold/alignment/resolution so the engine only sees laws over
+    // structure and does not need a separate boolean-special execution path.
     internal static bool TryResolve(
         CompositeElement frame,
         CompositeElement primary,
