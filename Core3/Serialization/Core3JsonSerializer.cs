@@ -28,6 +28,9 @@ public static class Core3JsonSerializer
     public static string Serialize(EnginePin pin, Core3JsonSerializerOptions? options = null) =>
         Serialize(writer => Write(writer, pin, Resolve(options)), options);
 
+    public static string Serialize(EngineHostedPinResult result, Core3JsonSerializerOptions? options = null) =>
+        Serialize(writer => Write(writer, result, Resolve(options)), options);
+
     public static string Serialize(EngineReference reference, Core3JsonSerializerOptions? options = null) =>
         Serialize(writer => Write(writer, reference, Resolve(options)), options);
 
@@ -220,6 +223,41 @@ public static class Core3JsonSerializer
         writer.WriteEndObject();
     }
 
+    public static void Write(Utf8JsonWriter writer, EngineHostedPinResult result, Core3JsonSerializerOptions? options = null)
+    {
+        var actual = Resolve(options);
+
+        writer.WriteStartObject();
+        writer.WriteString("kind", "hostedPinResult");
+        if (!result.IsExact)
+        {
+            writer.WriteBoolean("isExact", false);
+        }
+        writer.WritePropertyName("host");
+        Write(writer, result.Host, actual);
+        writer.WritePropertyName("requestedPosition");
+        Write(writer, result.RequestedPosition, actual);
+        writer.WritePropertyName("resolvedPosition");
+        Write(writer, result.ResolvedPosition, actual);
+        writer.WritePropertyName("inbound");
+        Write(writer, result.Inbound, actual);
+        writer.WritePropertyName("outbound");
+        Write(writer, result.Outbound, actual);
+
+        if (result.Tension is not null)
+        {
+            writer.WritePropertyName("tension");
+            Write(writer, result.Tension, actual);
+        }
+
+        if (!string.IsNullOrWhiteSpace(result.Note))
+        {
+            writer.WriteString("note", result.Note);
+        }
+
+        writer.WriteEndObject();
+    }
+
     public static void Write(Utf8JsonWriter writer, EngineReference reference, Core3JsonSerializerOptions? options = null)
     {
         var actual = Resolve(options);
@@ -238,11 +276,17 @@ public static class Core3JsonSerializer
             writer.WritePropertyName("existingReadout");
             Write(writer, reference.ExistingReadout, actual);
 
-            if (reference.TryRead(out var read) &&
-                read is not null)
+            var readOutcome = reference.ReadWithTension();
+
+            if (readOutcome.IsExact)
             {
                 writer.WritePropertyName("read");
-                Write(writer, read, actual);
+                Write(writer, readOutcome.Result, actual);
+            }
+            else
+            {
+                writer.WritePropertyName("readOutcome");
+                Write(writer, readOutcome, actual);
             }
         }
 
@@ -701,6 +745,11 @@ public static class Core3JsonSerializer
     public static void Write(TextWriter writer, EnginePin pin, Core3JsonSerializerOptions? options = null)
     {
         writer.Write(Serialize(pin, options));
+    }
+
+    public static void Write(TextWriter writer, EngineHostedPinResult result, Core3JsonSerializerOptions? options = null)
+    {
+        writer.Write(Serialize(result, options));
     }
 
     public static void Write(TextWriter writer, EngineReference reference, Core3JsonSerializerOptions? options = null)

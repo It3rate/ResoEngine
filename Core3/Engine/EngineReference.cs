@@ -21,26 +21,57 @@ public sealed record EngineReference(
     /// </summary>
     public GradedElement ExistingReadout => Frame.Dominant;
 
-    public bool TryRead(out GradedElement? read) => Subject.TryReferenceToFrame(Calibration, out read);
+    public EngineElementOutcome ReadWithTension() =>
+        Subject.CommitToCalibrationWithTension(Calibration);
+
+    public bool TryRead(out GradedElement? read)
+    {
+        var outcome = ReadWithTension();
+
+        if (outcome.IsExact)
+        {
+            read = outcome.Result;
+            return true;
+        }
+
+        read = null;
+        return false;
+    }
 
     public CompositeElement GetBoundaryAxis() =>
         TryRead(out var read) && read is not null
             ? EngineBoundary.GetAxis(Calibration, read)
             : EngineBoundary.CreateUnknownAxis(Calibration);
 
-    public bool TryMeasureOnCalibration(out CompositeElement? measured)
+    public EngineElementOutcome MeasureOnCalibrationWithTension()
     {
-        if (Calibration.Grade == Subject.Grade &&
-            TryRead(out var alignedSubject) &&
-            alignedSubject is not null)
-        {
-            measured = new CompositeElement(Calibration, alignedSubject);
-            return true;
-        }
+        var readOutcome = ReadWithTension();
 
         if (Calibration.Grade == Subject.Grade)
         {
-            measured = new CompositeElement(Calibration, Subject);
+            var measured = new CompositeElement(Calibration, readOutcome.Result);
+            return readOutcome.IsExact
+                ? EngineElementOutcome.Exact(measured)
+                : EngineElementOutcome.WithTension(
+                    measured,
+                    readOutcome.Tension ?? Subject,
+                    readOutcome.Note ?? "Reference measurement preserved unresolved borrowed read.");
+        }
+
+        return EngineElementOutcome.WithTension(
+            Subject,
+            Frame,
+            "Reference measurement preserved unresolved structure because calibration and subject grades differed.");
+    }
+
+    public bool TryMeasureOnCalibration(out CompositeElement? measured)
+    {
+        var outcome = MeasureOnCalibrationWithTension();
+
+        if (outcome.IsExact &&
+            outcome.Result is CompositeElement measuredComposite)
+        {
+            measured = measuredComposite;
             return true;
         }
 

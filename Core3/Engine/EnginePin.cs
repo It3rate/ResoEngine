@@ -90,6 +90,36 @@ public sealed record EnginePin
 
     public override string ToString() => $"pin(in {Inbound}, out {Outbound})";
 
+    public static EngineHostedPinResult ResolveHostedWithTension(
+        CompositeElement host,
+        GradedElement pinPosition)
+    {
+        if (TryResolveHostedPin(host, pinPosition, out var resolvedPosition, out var inbound, out var outbound) &&
+            resolvedPosition is not null)
+        {
+            return new EngineHostedPinResult(
+                host,
+                pinPosition,
+                resolvedPosition,
+                inbound,
+                outbound);
+        }
+
+        var positionOutcome = ResolvePositionWithTension(host, pinPosition);
+        var inboundOutcome = positionOutcome.Result.SubtractWithTension(host.Recessive);
+        var outboundOutcome = host.Dominant.SubtractWithTension(positionOutcome.Result);
+        var note = CombineNotes(positionOutcome.Note, inboundOutcome.Note, outboundOutcome.Note);
+
+        return new EngineHostedPinResult(
+            host,
+            pinPosition,
+            positionOutcome.Result,
+            inboundOutcome.Result,
+            outboundOutcome.Result,
+            positionOutcome.Tension ?? inboundOutcome.Tension ?? outboundOutcome.Tension ?? pinPosition,
+            note ?? "Hosted pin preserved unresolved placement.");
+    }
+
     private bool TryGetDeclaredSpan(out GradedElement? declaredSpan)
     {
         if (Host is not null &&
@@ -165,6 +195,46 @@ public sealed record EnginePin
         return false;
     }
 
+    private static EngineElementOutcome ResolvePositionWithTension(
+        CompositeElement host,
+        GradedElement pinPosition)
+    {
+        if (pinPosition.Grade == host.Recessive.Grade)
+        {
+            return EngineElementOutcome.Exact(pinPosition);
+        }
+
+        var folded = pinPosition.FoldWithTension();
+
+        if (folded.Result is not AtomicElement ratio)
+        {
+            return EngineElementOutcome.WithTension(
+                pinPosition,
+                pinPosition,
+                "Hosted pin preserved the requested position because it could not be folded to an atomic ratio.");
+        }
+
+        if (!ratio.IsAlignedUnit)
+        {
+            return EngineElementOutcome.WithTension(
+                ratio,
+                folded.Tension ?? pinPosition,
+                "Hosted pin preserved a contrastive or unresolved ratio position.");
+        }
+
+        var declaredSpan = host.Dominant.SubtractWithTension(host.Recessive);
+        var offset = declaredSpan.Result.ScaleWithTension(ratio);
+        var positioned = host.Recessive.AddWithTension(offset.Result);
+        var note = CombineNotes(folded.Note, declaredSpan.Note, offset.Note, positioned.Note);
+
+        return positioned.IsExact && folded.IsExact && declaredSpan.IsExact && offset.IsExact
+            ? EngineElementOutcome.Exact(positioned.Result)
+            : EngineElementOutcome.WithTension(
+                positioned.Result,
+                folded.Tension ?? declaredSpan.Tension ?? offset.Tension ?? positioned.Tension ?? pinPosition,
+                note ?? "Hosted pin preserved unresolved position from ratio scaling.");
+    }
+
     private static bool TryResolvePositionFromRatio(
         CompositeElement host,
         GradedElement pinPosition,
@@ -198,5 +268,20 @@ public sealed record EnginePin
         {
             throw new InvalidOperationException("Pins require children of the same grade.");
         }
+    }
+
+    private static string? CombineNotes(params string?[] notes)
+    {
+        var present = notes
+            .Where(note => !string.IsNullOrWhiteSpace(note))
+            .Distinct()
+            .ToArray();
+
+        return present.Length switch
+        {
+            0 => null,
+            1 => present[0],
+            _ => string.Join(" | ", present)
+        };
     }
 }

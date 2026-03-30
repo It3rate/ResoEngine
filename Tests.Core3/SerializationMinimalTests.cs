@@ -51,6 +51,98 @@ public sealed class SerializationMinimalTests
     }
 
     [Fact]
+    public void Core3JsonSerializer_SerializesHostedPinResultWithTension_Minimally()
+    {
+        // Serializes a hosted pin request that cannot settle onto one exact route
+        // position, preserving the unresolved placement and local sides.
+        var expectedJson = """
+{
+  "kind": "hostedPinResult",
+  "isExact": false,
+  "host": {
+    "kind": "composite",
+    "grade": 1,
+    "recessive": {
+      "kind": "atomic",
+      "grade": 0,
+      "value": 0,
+      "unit": 1
+    },
+    "dominant": {
+      "kind": "atomic",
+      "grade": 0,
+      "value": 10,
+      "unit": 1
+    }
+  },
+  "requestedPosition": {
+    "kind": "composite",
+    "grade": 1,
+    "recessive": {
+      "kind": "atomic",
+      "grade": 0,
+      "value": 2,
+      "unit": 1
+    },
+    "dominant": {
+      "kind": "atomic",
+      "grade": 0,
+      "value": 3,
+      "unit": -1
+    }
+  },
+  "resolvedPosition": {
+    "kind": "atomic",
+    "grade": 0,
+    "value": 3,
+    "unit": 0
+  },
+  "inbound": {
+    "kind": "atomic",
+    "grade": 0,
+    "value": 3,
+    "unit": 0
+  },
+  "outbound": {
+    "kind": "atomic",
+    "grade": 0,
+    "value": 7,
+    "unit": 0
+  },
+  "tension": {
+    "kind": "composite",
+    "grade": 1,
+    "recessive": {
+      "kind": "atomic",
+      "grade": 0,
+      "value": 2,
+      "unit": 1
+    },
+    "dominant": {
+      "kind": "atomic",
+      "grade": 0,
+      "value": 3,
+      "unit": -1
+    }
+  },
+  "note": "Hosted pin preserved a contrastive or unresolved ratio position. | Subtraction preserved unresolved support from the aligned pair."
+}
+""";
+
+        var host = new CompositeElement(
+            new AtomicElement(0, 1),
+            new AtomicElement(10, 1));
+        var contrastiveRatio = new CompositeElement(
+            new AtomicElement(2, 1),
+            new AtomicElement(3, -1));
+
+        var json = Core3JsonSerializer.Serialize(
+            EnginePin.ResolveHostedWithTension(host, contrastiveRatio));
+
+        AssertJsonEqual(expectedJson, json);
+    }
+
+    [Fact]
     public void Core3JsonSerializer_SerializesMultiplyOperationAndFoldedResult_Minimally()
     {
         // First serialization: the operation result for 3 * 4 in a unit frame.
@@ -198,6 +290,90 @@ public sealed class SerializationMinimalTests
         Assert.True(family.TryReadAllWithTension(out var readResult));
 
         var json = Core3JsonSerializer.Serialize(Assert.IsType<EngineReadResult>(readResult));
+
+        AssertJsonEqual(expectedJson, json);
+    }
+
+    [Fact]
+    public void Core3JsonSerializer_SerializesDerivedReferenceOutcome_WhenReadIsNotExact()
+    {
+        // Serializes a reference with derived view enabled when the borrowed read
+        // remains unresolved under the frame calibration.
+        var expectedJson = """
+{
+  "kind": "reference",
+  "frame": {
+    "kind": "composite",
+    "grade": 1,
+    "recessive": {
+      "kind": "atomic",
+      "grade": 0,
+      "value": 10,
+      "unit": 10
+    },
+    "dominant": {
+      "kind": "atomic",
+      "grade": 0,
+      "value": 3,
+      "unit": 10
+    }
+  },
+  "subject": {
+    "kind": "atomic",
+    "grade": 0,
+    "value": 7,
+    "unit": 0
+  },
+  "calibration": {
+    "kind": "atomic",
+    "grade": 0,
+    "value": 10,
+    "unit": 10
+  },
+  "existingReadout": {
+    "kind": "atomic",
+    "grade": 0,
+    "value": 3,
+    "unit": 10
+  },
+  "readOutcome": {
+    "kind": "elementOutcome",
+    "isExact": false,
+    "result": {
+      "kind": "atomic",
+      "grade": 0,
+      "value": 70,
+      "unit": 0
+    },
+    "tension": {
+      "kind": "composite",
+      "grade": 1,
+      "recessive": {
+        "kind": "atomic",
+        "grade": 0,
+        "value": 7,
+        "unit": 0
+      },
+      "dominant": {
+        "kind": "atomic",
+        "grade": 0,
+        "value": 10,
+        "unit": 10
+      }
+    },
+    "note": "Calibration preserved unresolved support because one or both unit slots were unresolved."
+  }
+}
+""";
+
+        var frame = new CompositeElement(
+            new AtomicElement(10, 10),
+            new AtomicElement(3, 10));
+        var reference = new EngineReference(frame, new AtomicElement(7, 0));
+
+        var json = Core3JsonSerializer.Serialize(
+            reference,
+            new Core3JsonSerializerOptions { IncludeDerived = true });
 
         AssertJsonEqual(expectedJson, json);
     }

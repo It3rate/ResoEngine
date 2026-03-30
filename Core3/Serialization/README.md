@@ -26,6 +26,7 @@ The JSON writer currently handles:
 - element pair outcomes
 - read results
 - pins
+- hosted pin results
 - references
 - operation contexts and families
 - operation results

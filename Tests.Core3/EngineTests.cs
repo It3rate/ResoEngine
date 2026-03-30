@@ -141,6 +141,25 @@ public sealed class EngineTests
     }
 
     [Fact]
+    public void EnginePin_ResolveHostedWithTension_PreservesUnresolvedHostedPlacement()
+    {
+        var host = new CompositeElement(
+            new AtomicElement(0, 1),
+            new AtomicElement(10, 1));
+        var contrastiveRatio = new CompositeElement(
+            new AtomicElement(2, 1),
+            new AtomicElement(3, -1));
+
+        var outcome = EnginePin.ResolveHostedWithTension(host, contrastiveRatio);
+
+        Assert.False(outcome.IsExact);
+        Assert.Equal(new AtomicElement(3, 0), Assert.IsType<AtomicElement>(outcome.ResolvedPosition));
+        Assert.Equal(new AtomicElement(3, 0), Assert.IsType<AtomicElement>(outcome.Inbound));
+        Assert.Equal(new AtomicElement(7, 0), Assert.IsType<AtomicElement>(outcome.Outbound));
+        Assert.Equal(contrastiveRatio, outcome.Tension);
+    }
+
+    [Fact]
     public void EngineReference_CanReuseExistingCalibrationWithoutCopyingFrameOwnership()
     {
         var frame = new CompositeElement(
@@ -155,6 +174,41 @@ public sealed class EngineTests
         var calibrated = Assert.IsType<CompositeElement>(measured);
         Assert.Equal(frame.Recessive, calibrated.Recessive);
         Assert.Equal(new AtomicElement(70, 10), calibrated.Dominant);
+    }
+
+    [Fact]
+    public void EngineReference_ReadWithTension_PreservesUnresolvedBorrowedRead()
+    {
+        var frame = new CompositeElement(
+            new AtomicElement(10, 10),
+            new AtomicElement(3, 10));
+        var subject = new AtomicElement(7, 0);
+
+        var reference = new EngineReference(frame, subject);
+        var outcome = reference.ReadWithTension();
+
+        Assert.False(outcome.IsExact);
+        Assert.Equal(new AtomicElement(70, 0), Assert.IsType<AtomicElement>(outcome.Result));
+        Assert.Equal(new CompositeElement(subject, frame.Recessive), outcome.Tension);
+    }
+
+    [Fact]
+    public void EngineReference_MeasureOnCalibrationWithTension_PreservesUnresolvedBorrowedRead()
+    {
+        var frame = new CompositeElement(
+            new AtomicElement(10, 10),
+            new AtomicElement(3, 10));
+        var subject = new AtomicElement(7, 0);
+
+        var reference = new EngineReference(frame, subject);
+        var outcome = reference.MeasureOnCalibrationWithTension();
+
+        Assert.False(outcome.IsExact);
+
+        var measured = Assert.IsType<CompositeElement>(outcome.Result);
+        Assert.Equal(frame.Recessive, measured.Recessive);
+        Assert.Equal(new AtomicElement(70, 0), measured.Dominant);
+        Assert.Equal(new CompositeElement(subject, frame.Recessive), outcome.Tension);
     }
 
     [Fact]
