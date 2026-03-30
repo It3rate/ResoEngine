@@ -219,6 +219,50 @@ public sealed class SerializationMinimalTests
         AssertJsonEqual(expectedJson, json);
     }
 
+    [Fact]
+    public void Core3JsonSerializer_SerializesTensionBearingAdditionOutcome_Minimally()
+    {
+        // Serializes an addition that cannot settle onto one resolved carrier.
+        // Approximate math: add 1/2 and 1/-4, preserving the unresolved sum 8/0
+        // and the original pair as held tension.
+        var expectedJson = """
+{
+  "kind": "elementOutcome",
+  "isExact": false,
+  "result": {
+    "kind": "atomic",
+    "grade": 0,
+    "value": 8,
+    "unit": 0
+  },
+  "tension": {
+    "kind": "composite",
+    "grade": 1,
+    "recessive": {
+      "kind": "atomic",
+      "grade": 0,
+      "value": 1,
+      "unit": 2
+    },
+    "dominant": {
+      "kind": "atomic",
+      "grade": 0,
+      "value": 1,
+      "unit": -4
+    }
+  },
+  "note": "Addition preserved unresolved support from the aligned pair."
+}
+""";
+
+        var left = new AtomicElement(1, 2);
+        var right = new AtomicElement(1, -4);
+
+        var json = Core3JsonSerializer.Serialize(left.AddWithTension(right));
+
+        AssertJsonEqual(expectedJson, json);
+    }
+
     private static void AssertJsonEqual(string expectedJson, string actualJson) =>
         Assert.Equal(Normalize(expectedJson), Normalize(actualJson));
 

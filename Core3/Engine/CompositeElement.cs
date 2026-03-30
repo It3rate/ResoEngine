@@ -144,6 +144,60 @@ public sealed record CompositeElement : GradedElement
             "Composite alignment preserved child tension.");
     }
 
+    public override EngineElementOutcome AddWithTension(GradedElement other)
+    {
+        if (other is not CompositeElement composite ||
+            Grade != composite.Grade)
+        {
+            return EngineElementOutcome.WithTension(
+                this,
+                this,
+                "Addition preserved the composite unchanged because the compared shape was incompatible.");
+        }
+
+        var recessiveOutcome = Recessive.AddWithTension(composite.Recessive);
+        var dominantOutcome = Dominant.AddWithTension(composite.Dominant);
+        var sum = new CompositeElement(recessiveOutcome.Result, dominantOutcome.Result);
+
+        if (recessiveOutcome.IsExact &&
+            dominantOutcome.IsExact)
+        {
+            return EngineElementOutcome.Exact(sum);
+        }
+
+        return EngineElementOutcome.WithTension(
+            sum,
+            new CompositeElement(this, composite),
+            "Composite addition preserved child tension.");
+    }
+
+    public override EngineElementOutcome SubtractWithTension(GradedElement other)
+    {
+        if (other is not CompositeElement composite ||
+            Grade != composite.Grade)
+        {
+            return EngineElementOutcome.WithTension(
+                this,
+                this,
+                "Subtraction preserved the composite unchanged because the compared shape was incompatible.");
+        }
+
+        var recessiveOutcome = Recessive.SubtractWithTension(composite.Recessive);
+        var dominantOutcome = Dominant.SubtractWithTension(composite.Dominant);
+        var difference = new CompositeElement(recessiveOutcome.Result, dominantOutcome.Result);
+
+        if (recessiveOutcome.IsExact &&
+            dominantOutcome.IsExact)
+        {
+            return EngineElementOutcome.Exact(difference);
+        }
+
+        return EngineElementOutcome.WithTension(
+            difference,
+            new CompositeElement(this, composite),
+            "Composite subtraction preserved child tension.");
+    }
+
     public override bool TryAlignExact(
         GradedElement other,
         ResolutionPolicy policy,
@@ -210,13 +264,11 @@ public sealed record CompositeElement : GradedElement
 
     public override bool TryAdd(GradedElement other, out GradedElement? sum)
     {
-        if (other is CompositeElement composite &&
-            Recessive.TryAdd(composite.Recessive, out var recessiveSum) &&
-            Dominant.TryAdd(composite.Dominant, out var dominantSum) &&
-            recessiveSum is not null &&
-            dominantSum is not null)
+        var outcome = AddWithTension(other);
+
+        if (outcome.IsExact)
         {
-            sum = new CompositeElement(recessiveSum, dominantSum);
+            sum = outcome.Result;
             return true;
         }
 
@@ -226,13 +278,11 @@ public sealed record CompositeElement : GradedElement
 
     public override bool TrySubtract(GradedElement other, out GradedElement? difference)
     {
-        if (other is CompositeElement composite &&
-            Recessive.TrySubtract(composite.Recessive, out var recessiveDifference) &&
-            Dominant.TrySubtract(composite.Dominant, out var dominantDifference) &&
-            recessiveDifference is not null &&
-            dominantDifference is not null)
+        var outcome = SubtractWithTension(other);
+
+        if (outcome.IsExact)
         {
-            difference = new CompositeElement(recessiveDifference, dominantDifference);
+            difference = outcome.Result;
             return true;
         }
 

@@ -23,4 +23,8 @@ public sealed record EngineElementPairOutcome(
         GradedElement tension,
         string? note = null) =>
         new(left, right, tension, note);
+
+    // TODO: Collapse this temporary shell into a real higher-grade Core3
+    // element once tension can be represented natively as graded structure
+    // rather than sidecar bookkeeping.
 }

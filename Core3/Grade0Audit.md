@@ -20,10 +20,6 @@ The third is where most of the remaining cleanup pressure currently sits.
 These paths still use `Try...` plus `false` / `null` as their main language for
 non-ideal outcomes:
 
-- `AtomicElement.TryReexpressToSupport`
-- `AtomicElement.TryCommitToSupport`
-- `AtomicElement.TryCommitToCalibration`
-- `AtomicElement.TryAlignExact`
 - `AtomicElement.TryAdd`
 - `AtomicElement.TrySubtract`
 - `AtomicElement.TryScale`
@@ -43,7 +39,10 @@ The first migrated paths are:
 - `AtomicElement.ReexpressToSupportWithTension`
 - `AtomicElement.CommitToCalibrationWithTension`
 - `AtomicElement.AlignWithTension`
+- `AtomicElement.AddWithTension`
+- `AtomicElement.SubtractWithTension`
 - recursive composite calibration/alignment outcome surfaces
+- recursive composite add/subtract outcome surfaces
 
 This now distinguishes two layers:
 
@@ -66,8 +65,12 @@ Under this first pass:
 - inexact support re-expression no longer disappears into failure
 - incompatible calibration no longer disappears into failure
 - incompatible alignment no longer disappears into failure
+- incompatible addition no longer disappears into failure
+- incompatible subtraction no longer disappears into failure
 - those calibration/alignment cases preserve unresolved outputs together with
   the originating pair as held tension
+- those add/subtract cases preserve unresolved outputs together with the
+  originating pair as held tension
 
 ## Present Working Law
 
@@ -75,6 +78,7 @@ The current first-pass law is conservative:
 
 - if the ratio can fold exactly, do so
 - if support, calibration, or alignment can settle exactly, do so
+- if addition or subtraction can settle exactly, do so
 - otherwise preserve unresolved atomic results with `Unit == 0`
 - keep the originating source pair or structure as tension provenance
 
@@ -85,11 +89,11 @@ It is the first step away from silent non-result.
 
 The next best places to move are:
 
-1. add / subtract
-2. multiply where unresolved unit relations matter
-3. family-wide operation surfaces so tension can travel with provenance
-4. reference reads and frame borrowing
-5. hosted pin positioning and route encounter logic
+1. scale and multiply where unresolved unit relations matter
+2. family-wide operation surfaces so tension can travel with provenance
+3. reference reads and frame borrowing
+4. hosted pin positioning and route encounter logic
+5. route/site encounter execution
 
 ## Intent
 

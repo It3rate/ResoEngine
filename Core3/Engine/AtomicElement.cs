@@ -154,6 +154,56 @@ public sealed record AtomicElement(long Value, long Unit) : GradedElement
             "Alignment preserved an unresolved atomic read because the compared element was not atomic.");
     }
 
+    public override EngineElementOutcome AddWithTension(GradedElement other)
+    {
+        var alignment = AlignWithTension(other);
+
+        if (alignment.Left is AtomicElement left &&
+            alignment.Right is AtomicElement right)
+        {
+            var sum = new AtomicElement(
+                checked(left.Value + right.Value),
+                alignment.IsExact ? left.Unit : 0);
+
+            return alignment.IsExact
+                ? EngineElementOutcome.Exact(sum)
+                : EngineElementOutcome.WithTension(
+                    sum,
+                    alignment.Tension ?? new CompositeElement(this, other),
+                    "Addition preserved unresolved support from the aligned pair.");
+        }
+
+        return EngineElementOutcome.WithTension(
+            CreateUnresolvedProjection(0),
+            this,
+            "Addition preserved an unresolved atomic result because the compared element was not atomic.");
+    }
+
+    public override EngineElementOutcome SubtractWithTension(GradedElement other)
+    {
+        var alignment = AlignWithTension(other);
+
+        if (alignment.Left is AtomicElement left &&
+            alignment.Right is AtomicElement right)
+        {
+            var difference = new AtomicElement(
+                checked(left.Value - right.Value),
+                alignment.IsExact ? left.Unit : 0);
+
+            return alignment.IsExact
+                ? EngineElementOutcome.Exact(difference)
+                : EngineElementOutcome.WithTension(
+                    difference,
+                    alignment.Tension ?? new CompositeElement(this, other),
+                    "Subtraction preserved unresolved support from the aligned pair.");
+        }
+
+        return EngineElementOutcome.WithTension(
+            CreateUnresolvedProjection(0),
+            this,
+            "Subtraction preserved an unresolved atomic result because the compared element was not atomic.");
+    }
+
     public override bool TryAlignExact(
         GradedElement other,
         ResolutionPolicy policy,
@@ -192,13 +242,11 @@ public sealed record AtomicElement(long Value, long Unit) : GradedElement
 
     public override bool TryAdd(GradedElement other, out GradedElement? sum)
     {
-        if (TryAlignExact(other, ResolutionPolicy.ExactCommonFrame, out var leftAligned, out var rightAligned) &&
-            leftAligned is AtomicElement leftAtomic &&
-            rightAligned is AtomicElement rightAtomic)
+        var outcome = AddWithTension(other);
+
+        if (outcome.IsExact)
         {
-            sum = new AtomicElement(
-                checked(leftAtomic.Value + rightAtomic.Value),
-                leftAtomic.Unit);
+            sum = outcome.Result;
             return true;
         }
 
@@ -208,13 +256,11 @@ public sealed record AtomicElement(long Value, long Unit) : GradedElement
 
     public override bool TrySubtract(GradedElement other, out GradedElement? difference)
     {
-        if (TryAlignExact(other, ResolutionPolicy.ExactCommonFrame, out var leftAligned, out var rightAligned) &&
-            leftAligned is AtomicElement leftAtomic &&
-            rightAligned is AtomicElement rightAtomic)
+        var outcome = SubtractWithTension(other);
+
+        if (outcome.IsExact)
         {
-            difference = new AtomicElement(
-                checked(leftAtomic.Value - rightAtomic.Value),
-                leftAtomic.Unit);
+            difference = outcome.Result;
             return true;
         }
 

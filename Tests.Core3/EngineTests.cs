@@ -382,6 +382,32 @@ public sealed class EngineTests
     }
 
     [Fact]
+    public void AtomicAddWithTension_PreservesUnresolvedSupportWhenCarrierSpaceDiffers()
+    {
+        var left = new AtomicElement(1, 2);
+        var right = new AtomicElement(1, -4);
+
+        var outcome = left.AddWithTension(right);
+
+        Assert.False(outcome.IsExact);
+        Assert.Equal(new AtomicElement(8, 0), Assert.IsType<AtomicElement>(outcome.Result));
+        Assert.Equal(new CompositeElement(left, right), outcome.Tension);
+    }
+
+    [Fact]
+    public void AtomicSubtractWithTension_PreservesUnresolvedSupportWhenCarrierSpaceDiffers()
+    {
+        var left = new AtomicElement(3, 2);
+        var right = new AtomicElement(1, -4);
+
+        var outcome = left.SubtractWithTension(right);
+
+        Assert.False(outcome.IsExact);
+        Assert.Equal(new AtomicElement(8, 0), Assert.IsType<AtomicElement>(outcome.Result));
+        Assert.Equal(new CompositeElement(left, right), outcome.Tension);
+    }
+
+    [Fact]
     public void AtomicCommitToSupport_ReexpressesExactlyWithoutChangingFoldedValue()
     {
         var ratio = new AtomicElement(3, 10);
@@ -393,6 +419,46 @@ public sealed class EngineTests
         Assert.Equal(new AtomicElement(30, 100), committed);
         Assert.Equal(new AtomicElement(15, 50), refined);
         Assert.Equal(new AtomicElement(3, 10), ratio);
+    }
+
+    [Fact]
+    public void CompositeAddWithTension_CarriesChildTensionForward()
+    {
+        var left = new CompositeElement(
+            new AtomicElement(1, 2),
+            new AtomicElement(3, 1));
+        var right = new CompositeElement(
+            new AtomicElement(2, 4),
+            new AtomicElement(4, -4));
+
+        var outcome = left.AddWithTension(right);
+
+        Assert.False(outcome.IsExact);
+
+        var sum = Assert.IsType<CompositeElement>(outcome.Result);
+        Assert.Equal(new AtomicElement(4, 4), sum.Recessive);
+        Assert.Equal(new AtomicElement(28, 0), sum.Dominant);
+        Assert.Equal(new CompositeElement(left, right), outcome.Tension);
+    }
+
+    [Fact]
+    public void CompositeSubtractWithTension_CarriesChildTensionForward()
+    {
+        var left = new CompositeElement(
+            new AtomicElement(3, 2),
+            new AtomicElement(3, 1));
+        var right = new CompositeElement(
+            new AtomicElement(2, 4),
+            new AtomicElement(4, -4));
+
+        var outcome = left.SubtractWithTension(right);
+
+        Assert.False(outcome.IsExact);
+
+        var difference = Assert.IsType<CompositeElement>(outcome.Result);
+        Assert.Equal(new AtomicElement(4, 4), difference.Recessive);
+        Assert.Equal(new AtomicElement(-4, 0), difference.Dominant);
+        Assert.Equal(new CompositeElement(left, right), outcome.Tension);
     }
 
     [Fact]

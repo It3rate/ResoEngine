@@ -265,6 +265,8 @@ The same first-pass law now also applies to:
 - inexact support re-expression
 - calibration that cannot settle onto one resolved support
 - alignment that cannot settle onto one resolved support
+- addition that cannot settle onto one resolved support
+- subtraction that cannot settle onto one resolved support
 
 In those cases the current behavior is again:
 
