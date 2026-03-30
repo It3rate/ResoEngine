@@ -15,7 +15,7 @@ public sealed record TraversalRuntimeState(
     IReadOnlyDictionary<string, GradedElement> Context,
     IReadOnlyDictionary<string, GradedElement> Result,
     GradedElement? Tension = null,
-    string? Note = null)
+    string? Note = null) : IExactResult
 {
     public bool IsExact => Tension is null;
 }

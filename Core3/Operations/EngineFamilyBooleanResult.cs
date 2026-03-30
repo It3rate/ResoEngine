@@ -8,7 +8,7 @@ namespace Core3.Operations;
 /// composite elements; this record preserves the frame, family, ordering hint,
 /// and piece provenance for the occupancy read.
 /// </summary>
-public sealed record EngineFamilyBooleanResult
+public sealed record EngineFamilyBooleanResult : IExactResult
 {
     public EngineFamilyBooleanResult(
         EngineOperationContext context,

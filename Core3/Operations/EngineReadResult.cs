@@ -11,7 +11,7 @@ public sealed record EngineReadResult(
     EngineOperationContext Context,
     IReadOnlyList<GradedElement> Reads,
     GradedElement? Tension = null,
-    string? Note = null)
+    string? Note = null) : IExactResult
 {
     public GradedElement Frame => Context.Frame;
     public bool IsOrdered => Context.IsOrdered;

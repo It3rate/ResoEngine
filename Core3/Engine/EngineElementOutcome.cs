@@ -7,7 +7,7 @@ namespace Core3.Engine;
 public sealed record EngineElementOutcome(
     GradedElement Result,
     GradedElement? Tension = null,
-    string? Note = null)
+    string? Note = null) : IExactResult
 {
     public bool IsExact => Tension is null;
 

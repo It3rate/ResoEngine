@@ -8,7 +8,7 @@ namespace Core3.Operations;
 /// The result element remains a normal graded element; the frame relation is
 /// preserved separately as provenance.
 /// </summary>
-public sealed record EngineOperationResult
+public sealed record EngineOperationResult : IExactResult
 {
     public EngineOperationResult(
         string operationName,

@@ -11,7 +11,7 @@ public sealed record EngineHostedPinResult(
     GradedElement Inbound,
     GradedElement Outbound,
     GradedElement? Tension = null,
-    string? Note = null)
+    string? Note = null) : IExactResult
 {
     public bool IsExact => Tension is null;
 }

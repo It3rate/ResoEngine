@@ -8,7 +8,7 @@ namespace Core3.Operations;
 /// composite elements; this record only preserves the frame, operand roles,
 /// and surviving piece family for this boolean read.
 /// </summary>
-public sealed record EngineBooleanResult
+public sealed record EngineBooleanResult : IExactResult
 {
     public EngineBooleanResult(
         EngineOperationContext context,

@@ -8,7 +8,7 @@ public sealed record EngineElementPairOutcome(
     GradedElement Left,
     GradedElement Right,
     GradedElement? Tension = null,
-    string? Note = null)
+    string? Note = null) : IExactResult
 {
     public bool IsExact => Tension is null;
 

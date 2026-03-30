@@ -273,32 +273,18 @@ public sealed class EngineFamily
             : EngineBoundary.CreateUnknownAxis(Frame);
 
     public bool TryReadAll(out IReadOnlyList<GradedElement>? reads)
-    {
-        if (TryReadAllWithTension(out var result) &&
-            result is not null &&
-            result.IsExact)
-        {
-            reads = result.Reads;
-            return true;
-        }
-
-        reads = null;
-        return false;
-    }
+        => EngineExactness.TryProjectExact(
+            TryReadAllWithTension(out var result),
+            result,
+            static item => item.Reads,
+            out reads);
 
     public bool TryAddAll(out GradedElement? sum)
-    {
-        if (TryAddAllWithTension(out var result) &&
-            result is not null &&
-            result.IsExact)
-        {
-            sum = result.Result;
-            return true;
-        }
-
-        sum = null;
-        return false;
-    }
+        => EngineExactness.TryProjectExact(
+            TryAddAllWithTension(out var result),
+            result,
+            static item => item.Result,
+            out sum);
 
     public bool TryAddAllWithTension(out EngineOperationResult? result)
     {
@@ -327,18 +313,11 @@ public sealed class EngineFamily
     }
 
     public bool TryMultiplyAll(out GradedElement? product)
-    {
-        if (TryMultiplyAllWithTension(out var result) &&
-            result is not null &&
-            result.IsExact)
-        {
-            product = result.Result;
-            return true;
-        }
-
-        product = null;
-        return false;
-    }
+        => EngineExactness.TryProjectExact(
+            TryMultiplyAllWithTension(out var result),
+            result,
+            static item => item.Result,
+            out product);
 
     public bool TryMultiplyAllWithTension(out EngineOperationResult? result)
     {
@@ -375,43 +354,22 @@ public sealed class EngineFamily
     }
 
     public bool TryAddAllWithProvenance(out EngineOperationResult? result)
-    {
-        if (TryAddAllWithTension(out result) &&
-            result is not null &&
-            result.IsExact)
-        {
-            return true;
-        }
-
-        result = null;
-        return false;
-    }
+        => EngineExactness.TryGetExact(
+            TryAddAllWithTension(out var candidate),
+            candidate,
+            out result);
 
     public bool TryMultiplyAllWithProvenance(out EngineOperationResult? result)
-    {
-        if (TryMultiplyAllWithTension(out result) &&
-            result is not null &&
-            result.IsExact)
-        {
-            return true;
-        }
-
-        result = null;
-        return false;
-    }
+        => EngineExactness.TryGetExact(
+            TryMultiplyAllWithTension(out var candidate),
+            candidate,
+            out result);
 
     public bool TryBoolean(EngineBooleanOperation operation, out EngineBooleanResult? result)
-    {
-        if (TryBooleanWithTension(operation, out result) &&
-            result is not null &&
-            result.IsExact)
-        {
-            return true;
-        }
-
-        result = null;
-        return false;
-    }
+        => EngineExactness.TryGetExact(
+            TryBooleanWithTension(operation, out var candidate),
+            candidate,
+            out result);
 
     public bool TryBooleanWithTension(
         EngineBooleanOperation operation,
@@ -445,18 +403,11 @@ public sealed class EngineFamily
 
     public bool TryOccupancyBoolean(
         EngineOccupancyOperation operation,
-        out EngineFamilyBooleanResult? result)
-    {
-        if (TryOccupancyBooleanWithTension(operation, out result) &&
-            result is not null &&
-            result.IsExact)
-        {
-            return true;
-        }
-
-        result = null;
-        return false;
-    }
+        out EngineFamilyBooleanResult? result) =>
+        EngineExactness.TryGetExact(
+            TryOccupancyBooleanWithTension(operation, out var candidate),
+            candidate,
+            out result);
 
     public bool TryOccupancyBooleanWithTension(
         EngineOccupancyOperation operation,
@@ -538,8 +489,7 @@ public sealed class EngineFamily
         out IReadOnlyList<EngineBooleanResult>? results)
     {
         if (TryBooleanAdjacentPairsWithTension(operation, out results) &&
-            results is not null &&
-            results.All(result => result.IsExact))
+            EngineExactness.AreAllExact(results))
         {
             return true;
         }
