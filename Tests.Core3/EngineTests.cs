@@ -891,6 +891,35 @@ public sealed class EngineTests
     }
 
     [Fact]
+    public void SparseAreaReference_ToFullArea_CanLowerToHorizontalSnapshot()
+    {
+        var horizontalAxis = new CompositeElement(
+            new CompositeElement(
+                new AtomicElement(10, 1),
+                new AtomicElement(3, 1)),
+            new CompositeElement(
+                new AtomicElement(10, 1),
+                new AtomicElement(7, 1)));
+        var verticalAxis = new CompositeElement(
+            new CompositeElement(
+                new AtomicElement(10, -1),
+                new AtomicElement(2, -1)),
+            new CompositeElement(
+                new AtomicElement(10, -1),
+                new AtomicElement(5, -1)));
+        var fullArea = horizontalAxis.Lift(verticalAxis).Result;
+        var sparseArea = horizontalAxis.Lift(horizontalAxis.CreateZeroLikePeer()).Result;
+
+        var reference = new EngineReference(
+            Assert.IsType<CompositeElement>(fullArea),
+            sparseArea);
+        var readOutcome = reference.ReadWithTension();
+        var loweredOutcome = readOutcome.Result.Lower();
+
+        Assert.Equal(horizontalAxis, loweredOutcome.Result);
+    }
+
+    [Fact]
     public void EngineChain_CanBeBuiltManuallyFromProportionToVolume()
     {
         var proportionA = new CompositeElement(
