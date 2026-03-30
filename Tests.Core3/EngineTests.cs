@@ -182,6 +182,55 @@ public sealed class EngineTests
     }
 
     [Fact]
+    public void AtomicReexpressToSupportWithTension_PreservesUnresolvedProjectionWhenSupportDoesNotDivide()
+    {
+        var ratio = new AtomicElement(3, 10);
+
+        var outcome = ratio.ReexpressToSupportWithTension(6);
+
+        Assert.False(outcome.IsExact);
+        Assert.Equal(
+            new AtomicElement(30, 0),
+            Assert.IsType<AtomicElement>(outcome.Result));
+        Assert.Equal(
+            new CompositeElement(
+                new AtomicElement(3, 10),
+                new AtomicElement(6, 1)),
+            outcome.Tension);
+    }
+
+    [Fact]
+    public void AtomicCommitToCalibrationWithTension_PreservesCarrierContrastAsUnresolvedRead()
+    {
+        var subject = new AtomicElement(3, 1);
+        var calibration = new AtomicElement(4, -4);
+
+        var outcome = subject.CommitToCalibrationWithTension(calibration);
+
+        Assert.False(outcome.IsExact);
+        Assert.Equal(
+            new AtomicElement(12, 0),
+            Assert.IsType<AtomicElement>(outcome.Result));
+        Assert.Equal(
+            new CompositeElement(subject, calibration),
+            outcome.Tension);
+    }
+
+    [Fact]
+    public void AtomicAlignWithTension_PreservesUnresolvedPairWhenCarrierSpaceDiffers()
+    {
+        var left = new AtomicElement(1, 2);
+        var right = new AtomicElement(1, -4);
+
+        var outcome = left.AlignWithTension(right);
+
+        Assert.False(outcome.IsExact);
+        Assert.Equal(new AtomicElement(4, 0), Assert.IsType<AtomicElement>(outcome.Left));
+        Assert.Equal(new AtomicElement(4, 0), Assert.IsType<AtomicElement>(outcome.Right));
+        Assert.Equal(new CompositeElement(left, right), outcome.Tension);
+    }
+
+    [Fact]
     public void CompositeCommitToCalibration_RecursesChildwise()
     {
         var subject = new CompositeElement(
@@ -196,6 +245,50 @@ public sealed class EngineTests
         var aligned = Assert.IsType<CompositeElement>(committed);
         Assert.Equal(new AtomicElement(2, 4), aligned.Recessive);
         Assert.Equal(new AtomicElement(10, 40), aligned.Dominant);
+    }
+
+    [Fact]
+    public void CompositeCommitToCalibrationWithTension_CarriesChildTensionForward()
+    {
+        var subject = new CompositeElement(
+            new AtomicElement(1, 2),
+            new AtomicElement(3, 1));
+        var calibration = new CompositeElement(
+            new AtomicElement(2, 4),
+            new AtomicElement(4, -4));
+
+        var outcome = subject.CommitToCalibrationWithTension(calibration);
+
+        Assert.False(outcome.IsExact);
+
+        var committed = Assert.IsType<CompositeElement>(outcome.Result);
+        Assert.Equal(new AtomicElement(2, 4), committed.Recessive);
+        Assert.Equal(new AtomicElement(12, 0), committed.Dominant);
+        Assert.Equal(new CompositeElement(subject, calibration), outcome.Tension);
+    }
+
+    [Fact]
+    public void CompositeAlignWithTension_CarriesChildTensionForward()
+    {
+        var left = new CompositeElement(
+            new AtomicElement(1, 2),
+            new AtomicElement(3, 1));
+        var right = new CompositeElement(
+            new AtomicElement(2, 4),
+            new AtomicElement(4, -4));
+
+        var outcome = left.AlignWithTension(right);
+
+        Assert.False(outcome.IsExact);
+
+        var alignedLeft = Assert.IsType<CompositeElement>(outcome.Left);
+        var alignedRight = Assert.IsType<CompositeElement>(outcome.Right);
+
+        Assert.Equal(new AtomicElement(2, 4), alignedLeft.Recessive);
+        Assert.Equal(new AtomicElement(12, 0), alignedLeft.Dominant);
+        Assert.Equal(new AtomicElement(2, 4), alignedRight.Recessive);
+        Assert.Equal(new AtomicElement(16, 0), alignedRight.Dominant);
+        Assert.Equal(new CompositeElement(left, right), outcome.Tension);
     }
 
     [Fact]

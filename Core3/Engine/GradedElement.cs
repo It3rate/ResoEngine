@@ -13,6 +13,8 @@ public abstract record GradedElement
     public abstract GradedElement SwapOrder();
     public abstract GradedElement FlipPerspective();
     public abstract EngineElementOutcome FoldWithTension();
+    public abstract EngineElementOutcome CommitToCalibrationWithTension(GradedElement calibration);
+    public abstract EngineElementPairOutcome AlignWithTension(GradedElement other, ResolutionPolicy policy);
     public abstract bool TryFold(out GradedElement? folded);
     public abstract bool TryCommitToCalibration(GradedElement calibration, out GradedElement? committed);
     public abstract bool TryAlignExact(GradedElement other, ResolutionPolicy policy, out GradedElement? leftAligned, out GradedElement? rightAligned);
@@ -24,6 +26,9 @@ public abstract record GradedElement
 
     public bool TryAlignExact(GradedElement other, out GradedElement? leftAligned, out GradedElement? rightAligned) =>
         TryAlignExact(other, ResolutionPolicy.ExactCommonFrame, out leftAligned, out rightAligned);
+
+    public EngineElementPairOutcome AlignWithTension(GradedElement other) =>
+        AlignWithTension(other, ResolutionPolicy.ExactCommonFrame);
 
     public bool TryReferenceToFrame(GradedElement frame, out GradedElement? read) =>
         TryCommitToCalibration(frame, out read);

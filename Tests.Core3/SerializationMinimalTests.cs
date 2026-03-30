@@ -169,6 +169,56 @@ public sealed class SerializationMinimalTests
         AssertJsonEqual(expectedJson, json);
     }
 
+    [Fact]
+    public void Core3JsonSerializer_SerializesTensionBearingAlignmentOutcome_Minimally()
+    {
+        // Serializes an alignment request that cannot stay on one resolved carrier.
+        // Approximate math: align 1/2 with 1/-4, preserving both projected reads at
+        // quarter-like support while keeping the original pair as held tension.
+        var expectedJson = """
+{
+  "kind": "elementPairOutcome",
+  "isExact": false,
+  "left": {
+    "kind": "atomic",
+    "grade": 0,
+    "value": 4,
+    "unit": 0
+  },
+  "right": {
+    "kind": "atomic",
+    "grade": 0,
+    "value": 4,
+    "unit": 0
+  },
+  "tension": {
+    "kind": "composite",
+    "grade": 1,
+    "recessive": {
+      "kind": "atomic",
+      "grade": 0,
+      "value": 1,
+      "unit": 2
+    },
+    "dominant": {
+      "kind": "atomic",
+      "grade": 0,
+      "value": 1,
+      "unit": -4
+    }
+  },
+  "note": "Alignment preserved carrier contrast as unresolved support."
+}
+""";
+
+        var left = new AtomicElement(1, 2);
+        var right = new AtomicElement(1, -4);
+
+        var json = Core3JsonSerializer.Serialize(left.AlignWithTension(right));
+
+        AssertJsonEqual(expectedJson, json);
+    }
+
     private static void AssertJsonEqual(string expectedJson, string actualJson) =>
         Assert.Equal(Normalize(expectedJson), Normalize(actualJson));
 

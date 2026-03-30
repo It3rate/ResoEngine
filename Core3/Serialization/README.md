@@ -23,6 +23,7 @@ The JSON writer currently handles:
 
 - core graded elements
 - element outcomes
+- element pair outcomes
 - pins
 - references
 - operation contexts and families

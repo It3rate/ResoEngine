@@ -240,7 +240,12 @@ For current Core3 work:
 
 ## First Migration Slice
 
-The first concrete migration now lives in grade-1 ratio folding.
+The first concrete migration now lives in:
+
+- grade-1 ratio folding
+- support re-expression
+- calibration
+- exact alignment
 
 That path now has two layers:
 
@@ -254,6 +259,20 @@ contains information, the current first-pass behavior is:
 - preserve the original ratio structure as tension provenance
 - keep the old exact-only `Try...` surface available where callers still want a
   strict settled-result test
+
+The same first-pass law now also applies to:
+
+- inexact support re-expression
+- calibration that cannot settle onto one resolved support
+- alignment that cannot settle onto one resolved support
+
+In those cases the current behavior is again:
+
+- preserve an unresolved atomic projection with `Unit == 0`
+- preserve the original compared pair or source structure as tension
+  provenance
+- keep the old exact-only `Try...` surfaces available alongside the newer
+  lawful-outcome surfaces
 
 This is intentionally conservative.
 It is not the final law for all zero-like or under-resolution behavior.

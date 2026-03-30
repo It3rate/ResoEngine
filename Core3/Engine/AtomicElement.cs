@@ -25,6 +25,20 @@ public sealed record AtomicElement(long Value, long Unit) : GradedElement
 
     public override EngineElementOutcome FoldWithTension() => EngineElementOutcome.Exact(this);
 
+    public EngineElementOutcome ReexpressToSupportWithTension(long targetResolution)
+    {
+        if (TryReexpressToSupport(targetResolution, out var reexpressed) &&
+            reexpressed is not null)
+        {
+            return EngineElementOutcome.Exact(reexpressed);
+        }
+
+        return EngineElementOutcome.WithTension(
+            CreateUnresolvedProjection(targetResolution),
+            new CompositeElement(this, new AtomicElement(targetResolution, 1)),
+            CreateReexpressionNote(targetResolution));
+    }
+
     public override bool TryFold(out GradedElement? folded)
     {
         folded = this;
@@ -59,6 +73,28 @@ public sealed record AtomicElement(long Value, long Unit) : GradedElement
     public bool TryCommitToSupport(long targetResolution, out AtomicElement? committed) =>
         TryReexpressToSupport(targetResolution, out committed);
 
+    public override EngineElementOutcome CommitToCalibrationWithTension(GradedElement calibration)
+    {
+        if (calibration is AtomicElement atomicCalibration)
+        {
+            if (TryCommitToCalibration(atomicCalibration, out var committed) &&
+                committed is not null)
+            {
+                return EngineElementOutcome.Exact(committed);
+            }
+
+            return EngineElementOutcome.WithTension(
+                CreateUnresolvedProjection(atomicCalibration.Resolution),
+                new CompositeElement(this, atomicCalibration),
+                CreateCalibrationNote(atomicCalibration));
+        }
+
+        return EngineElementOutcome.WithTension(
+            CreateUnresolvedProjection(0),
+            calibration,
+            "Calibration preserved an unresolved atomic read because the calibration grade was incompatible.");
+    }
+
     public override bool TryCommitToCalibration(GradedElement calibration, out GradedElement? committed)
     {
         if (calibration is AtomicElement atomicCalibration &&
@@ -88,6 +124,34 @@ public sealed record AtomicElement(long Value, long Unit) : GradedElement
         leftAligned = null;
         rightAligned = null;
         return false;
+    }
+
+    public override EngineElementPairOutcome AlignWithTension(
+        GradedElement other,
+        ResolutionPolicy policy)
+    {
+        if (other is AtomicElement atomic)
+        {
+            if (TryAlignExact(atomic, policy, out var leftAligned, out var rightAligned) &&
+                leftAligned is not null &&
+                rightAligned is not null)
+            {
+                return EngineElementPairOutcome.Exact(leftAligned, rightAligned);
+            }
+
+            var targetResolution = ResolveSuggestedAlignmentResolution(atomic, policy);
+            return EngineElementPairOutcome.WithTension(
+                CreateUnresolvedProjection(targetResolution),
+                atomic.CreateUnresolvedProjection(targetResolution),
+                new CompositeElement(this, atomic),
+                CreateAlignmentNote(atomic, policy));
+        }
+
+        return EngineElementPairOutcome.WithTension(
+            CreateUnresolvedProjection(0),
+            other,
+            this,
+            "Alignment preserved an unresolved atomic read because the compared element was not atomic.");
     }
 
     public override bool TryAlignExact(
@@ -186,6 +250,54 @@ public sealed record AtomicElement(long Value, long Unit) : GradedElement
     }
 
     public override string ToString() => $"{Value}/{Unit}";
+
+    private AtomicElement CreateUnresolvedProjection(long targetResolution)
+    {
+        var preservedSupport = Math.Max(
+            1L,
+            Math.Max(Resolution, Math.Abs(targetResolution)));
+        return new AtomicElement(
+            checked(Value * preservedSupport),
+            0);
+    }
+
+    private string CreateReexpressionNote(long targetResolution) =>
+        !HasResolvedUnits
+            ? "Support re-expression preserved unresolved support because the source unit slot was unresolved."
+            : targetResolution <= 0
+                ? "Support re-expression preserved unresolved support because the requested support was zero-like or negative."
+                : "Support re-expression preserved unresolved support because the requested support did not divide exactly.";
+
+    private string CreateCalibrationNote(AtomicElement calibration) =>
+        !HasResolvedUnits || !calibration.HasResolvedUnits
+            ? "Calibration preserved unresolved support because one or both unit slots were unresolved."
+            : Math.Sign(Unit) != Math.Sign(calibration.Unit)
+                ? "Calibration preserved carrier contrast as unresolved support."
+                : "Calibration preserved unresolved support because the requested calibration did not divide exactly.";
+
+    private string CreateAlignmentNote(AtomicElement other, ResolutionPolicy policy) =>
+        !HasResolvedUnits || !other.HasResolvedUnits
+            ? "Alignment preserved unresolved support because one or both unit slots were unresolved."
+            : Math.Sign(Unit) != Math.Sign(other.Unit)
+                ? "Alignment preserved carrier contrast as unresolved support."
+                : policy == ResolutionPolicy.ComposeSupport
+                    ? "Alignment preserved unresolved support under composed support."
+                    : "Alignment preserved unresolved support because the compared values did not align exactly under the requested policy.";
+
+    private long ResolveSuggestedAlignmentResolution(AtomicElement other, ResolutionPolicy policy)
+    {
+        var leftResolution = Math.Max(1L, Resolution);
+        var rightResolution = Math.Max(1L, other.Resolution);
+
+        return policy switch
+        {
+            ResolutionPolicy.PreserveHost => leftResolution,
+            ResolutionPolicy.PreserveApplied => rightResolution,
+            ResolutionPolicy.ComposeSupport => checked(leftResolution * rightResolution),
+            ResolutionPolicy.ExactCommonFrame => checked((leftResolution / GreatestCommonDivisor(leftResolution, rightResolution)) * rightResolution),
+            _ => Math.Max(leftResolution, rightResolution)
+        };
+    }
 
     private bool TryResolveAlignmentResolution(
         AtomicElement other,

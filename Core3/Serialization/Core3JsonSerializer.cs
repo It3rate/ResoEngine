@@ -22,6 +22,9 @@ public static class Core3JsonSerializer
     public static string Serialize(EngineElementOutcome outcome, Core3JsonSerializerOptions? options = null) =>
         Serialize(writer => Write(writer, outcome, Resolve(options)), options);
 
+    public static string Serialize(EngineElementPairOutcome outcome, Core3JsonSerializerOptions? options = null) =>
+        Serialize(writer => Write(writer, outcome, Resolve(options)), options);
+
     public static string Serialize(EnginePin pin, Core3JsonSerializerOptions? options = null) =>
         Serialize(writer => Write(writer, pin, Resolve(options)), options);
 
@@ -114,6 +117,32 @@ public static class Core3JsonSerializer
         writer.WriteBoolean("isExact", outcome.IsExact);
         writer.WritePropertyName("result");
         Write(writer, outcome.Result, actual);
+
+        if (outcome.Tension is not null)
+        {
+            writer.WritePropertyName("tension");
+            Write(writer, outcome.Tension, actual);
+        }
+
+        if (!string.IsNullOrWhiteSpace(outcome.Note))
+        {
+            writer.WriteString("note", outcome.Note);
+        }
+
+        writer.WriteEndObject();
+    }
+
+    public static void Write(Utf8JsonWriter writer, EngineElementPairOutcome outcome, Core3JsonSerializerOptions? options = null)
+    {
+        var actual = Resolve(options);
+
+        writer.WriteStartObject();
+        writer.WriteString("kind", "elementPairOutcome");
+        writer.WriteBoolean("isExact", outcome.IsExact);
+        writer.WritePropertyName("left");
+        Write(writer, outcome.Left, actual);
+        writer.WritePropertyName("right");
+        Write(writer, outcome.Right, actual);
 
         if (outcome.Tension is not null)
         {
@@ -603,6 +632,11 @@ public static class Core3JsonSerializer
     }
 
     public static void Write(TextWriter writer, EngineElementOutcome outcome, Core3JsonSerializerOptions? options = null)
+    {
+        writer.Write(Serialize(outcome, options));
+    }
+
+    public static void Write(TextWriter writer, EngineElementPairOutcome outcome, Core3JsonSerializerOptions? options = null)
     {
         writer.Write(Serialize(outcome, options));
     }

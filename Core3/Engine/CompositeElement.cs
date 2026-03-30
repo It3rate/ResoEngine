@@ -62,6 +62,33 @@ public sealed record CompositeElement : GradedElement
             "Composite fold preserved child tension.");
     }
 
+    public override EngineElementOutcome CommitToCalibrationWithTension(GradedElement calibration)
+    {
+        if (calibration is not CompositeElement compositeCalibration ||
+            Grade != compositeCalibration.Grade)
+        {
+            return EngineElementOutcome.WithTension(
+                this,
+                this,
+                "Calibration preserved the composite unchanged because the calibration shape was incompatible.");
+        }
+
+        var recessiveOutcome = Recessive.CommitToCalibrationWithTension(compositeCalibration.Recessive);
+        var dominantOutcome = Dominant.CommitToCalibrationWithTension(compositeCalibration.Dominant);
+        var committed = new CompositeElement(recessiveOutcome.Result, dominantOutcome.Result);
+
+        if (recessiveOutcome.IsExact &&
+            dominantOutcome.IsExact)
+        {
+            return EngineElementOutcome.Exact(committed);
+        }
+
+        return EngineElementOutcome.WithTension(
+            committed,
+            new CompositeElement(this, compositeCalibration),
+            "Composite calibration preserved child tension.");
+    }
+
     public override bool TryFold(out GradedElement? folded)
     {
         folded = FoldWithTension().Result;
@@ -83,6 +110,38 @@ public sealed record CompositeElement : GradedElement
 
         committed = null;
         return false;
+    }
+
+    public override EngineElementPairOutcome AlignWithTension(
+        GradedElement other,
+        ResolutionPolicy policy)
+    {
+        if (other is not CompositeElement composite ||
+            Grade != composite.Grade)
+        {
+            return EngineElementPairOutcome.WithTension(
+                this,
+                other,
+                this,
+                "Alignment preserved the composites unchanged because their shapes were incompatible.");
+        }
+
+        var recessiveOutcome = Recessive.AlignWithTension(composite.Recessive, policy);
+        var dominantOutcome = Dominant.AlignWithTension(composite.Dominant, policy);
+        var left = new CompositeElement(recessiveOutcome.Left, dominantOutcome.Left);
+        var right = new CompositeElement(recessiveOutcome.Right, dominantOutcome.Right);
+
+        if (recessiveOutcome.IsExact &&
+            dominantOutcome.IsExact)
+        {
+            return EngineElementPairOutcome.Exact(left, right);
+        }
+
+        return EngineElementPairOutcome.WithTension(
+            left,
+            right,
+            new CompositeElement(this, composite),
+            "Composite alignment preserved child tension.");
     }
 
     public override bool TryAlignExact(

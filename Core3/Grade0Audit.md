@@ -34,12 +34,16 @@ That does not make them wrong.
 It means they are still expressing "exactly settled under the current law" more
 than "always produce a lawful Core3 output."
 
-## First Migrated Path
+## First Migrated Paths
 
-The first migrated path is the grade-1 ratio-like fold:
+The first migrated paths are:
 
 - `CompositeElement.FoldWithTension`
 - `EngineEvaluation.ComposeRatio`
+- `AtomicElement.ReexpressToSupportWithTension`
+- `AtomicElement.CommitToCalibrationWithTension`
+- `AtomicElement.AlignWithTension`
+- recursive composite calibration/alignment outcome surfaces
 
 This now distinguishes two layers:
 
@@ -47,6 +51,10 @@ This now distinguishes two layers:
   exact-only compatibility surface
 - `ComposeRatio`
   lawful result surface returning `EngineElementOutcome`
+- exact-only `TryCommit...` / `TryAlign...`
+  compatibility surfaces
+- lawful `...WithTension(...)` outcome surfaces
+  preserving unresolved results and provenance
 
 Under this first pass:
 
@@ -55,14 +63,20 @@ Under this first pass:
 - carrier-contrast fold no longer disappears into failure
 - these non-ideal cases produce an unresolved atomic result with `Unit == 0`
 - the original ratio structure is preserved as the held tension source
+- inexact support re-expression no longer disappears into failure
+- incompatible calibration no longer disappears into failure
+- incompatible alignment no longer disappears into failure
+- those calibration/alignment cases preserve unresolved outputs together with
+  the originating pair as held tension
 
 ## Present Working Law
 
 The current first-pass law is conservative:
 
 - if the ratio can fold exactly, do so
-- otherwise preserve an unresolved atomic result
-- keep the originating ratio as tension provenance
+- if support, calibration, or alignment can settle exactly, do so
+- otherwise preserve unresolved atomic results with `Unit == 0`
+- keep the originating source pair or structure as tension provenance
 
 This is not the final law for all under-resolution or inverse-support behavior.
 It is the first step away from silent non-result.
@@ -71,11 +85,11 @@ It is the first step away from silent non-result.
 
 The next best places to move are:
 
-1. support re-expression and calibration
-2. exact alignment
-3. add / subtract
-4. multiply where unresolved unit relations matter
-5. family-wide operation surfaces so tension can travel with provenance
+1. add / subtract
+2. multiply where unresolved unit relations matter
+3. family-wide operation surfaces so tension can travel with provenance
+4. reference reads and frame borrowing
+5. hosted pin positioning and route encounter logic
 
 ## Intent
 
