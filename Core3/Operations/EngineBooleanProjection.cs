@@ -76,92 +76,15 @@ internal static class EngineBooleanProjection
             return true;
         }
 
-        var boundaries = CollectBoundaries(frameSegment, primarySegment, secondarySegment);
-        var pieces = new List<EngineOperationPiece>();
-        decimal? currentLeft = null;
-        decimal? currentRight = null;
-        CompositeElement? currentCarrier = null;
-        List<int>? currentPresentMembers = null;
-
-        foreach (var (left, right) in boundaries.Zip(boundaries.Skip(1)))
-        {
-            if (right <= left)
-            {
-                continue;
-            }
-
-            var midpoint = (left + right) / 2m;
-            var inPrimary = IsWithin(midpoint, primarySegment);
-            var inSecondary = IsWithin(midpoint, secondarySegment);
-
-            if (!operation.Evaluate(inPrimary, inSecondary))
-            {
-                Flush();
-                continue;
-            }
-
-            var carrier = SelectCarrier(inPrimary, inSecondary, frame, primary, secondary);
-
-            if (currentCarrier is not null &&
-                currentRight == left &&
-                AreCompatibleCarriers(currentCarrier, carrier) &&
-                currentPresentMembers is not null &&
-                currentPresentMembers.SequenceEqual(ToPresentMemberIndices(inPrimary, inSecondary)))
-            {
-                currentRight = right;
-                continue;
-            }
-
-            Flush();
-            currentLeft = left;
-            currentRight = right;
-            currentCarrier = carrier;
-            currentPresentMembers = ToPresentMemberIndices(inPrimary, inSecondary);
-        }
-
-        Flush();
+        var pieces = CollectPieces(
+            CollectBoundaries(frameSegment, primarySegment, secondarySegment),
+            midpoint => GetPresentMemberIndices(midpoint, primarySegment, secondarySegment),
+            presentMembers => EvaluateBinary(operation, presentMembers),
+            presentMembers => SelectBinaryCarrier(presentMembers, frame, primary, secondary),
+            ref tension,
+            ref note);
         result = new EngineBooleanResult(context, operation, pieces, tension, note);
         return true;
-
-        void Flush()
-        {
-            if (currentLeft is null ||
-                currentRight is null ||
-                currentCarrier is null ||
-                currentPresentMembers is null)
-            {
-                currentLeft = null;
-                currentRight = null;
-                currentCarrier = null;
-                currentPresentMembers = null;
-                return;
-            }
-
-            if (TryCreateSegmentLike(
-                    currentCarrier,
-                    currentLeft.Value,
-                    currentRight.Value,
-                    out var piece,
-                    out var pieceTension,
-                    out var pieceNote) &&
-                piece is not null)
-            {
-                pieces.Add(new EngineOperationPiece(
-                    piece,
-                    currentCarrier,
-                    currentPresentMembers.ToArray()));
-            }
-            else
-            {
-                tension = EngineTension.CombineTension(tension, pieceTension, currentCarrier);
-                note = EngineTension.CombineNotes(note, pieceNote);
-            }
-
-            currentLeft = null;
-            currentRight = null;
-            currentCarrier = null;
-            currentPresentMembers = null;
-        }
     }
 
     internal static bool TryResolveFamily(
@@ -236,8 +159,28 @@ internal static class EngineBooleanProjection
             return true;
         }
 
-        var boundaries = CollectBoundaries(frameSegment, memberSegments);
+        var pieces = CollectPieces(
+            CollectBoundaries(frameSegment, memberSegments),
+            midpoint => GetPresentMemberIndices(midpoint, memberSegments),
+            presentMembers => EvaluateFamily(operation, presentMembers.Count, members.Count),
+            presentMembers => SelectFamilyCarrier(presentMembers, frame, members),
+            ref tension,
+            ref note);
+        result = new EngineFamilyBooleanResult(context, operation, pieces, tension, note);
+        return true;
+    }
+
+    private static List<EngineOperationPiece> CollectPieces(
+        SortedSet<decimal> boundaries,
+        Func<decimal, List<int>> presentMemberSelector,
+        Func<IReadOnlyList<int>, bool> shouldKeep,
+        Func<IReadOnlyList<int>, CompositeElement> carrierSelector,
+        ref GradedElement? tension,
+        ref string? note)
+    {
         var pieces = new List<EngineOperationPiece>();
+        var updatedTension = tension;
+        var updatedNote = note;
         decimal? currentLeft = null;
         decimal? currentRight = null;
         CompositeElement? currentCarrier = null;
@@ -250,16 +193,15 @@ internal static class EngineBooleanProjection
                 continue;
             }
 
-            var midpoint = (left + right) / 2m;
-            var presentMembers = GetPresentMemberIndices(midpoint, memberSegments);
+            var presentMembers = presentMemberSelector((left + right) / 2m);
 
-            if (!EvaluateFamily(operation, presentMembers.Count, members.Count))
+            if (!shouldKeep(presentMembers))
             {
                 Flush();
                 continue;
             }
 
-            var carrier = SelectFamilyCarrier(presentMembers, frame, members);
+            var carrier = carrierSelector(presentMembers);
 
             if (currentCarrier is not null &&
                 currentPresentMembers is not null &&
@@ -279,8 +221,9 @@ internal static class EngineBooleanProjection
         }
 
         Flush();
-        result = new EngineFamilyBooleanResult(context, operation, pieces, tension, note);
-        return true;
+        tension = updatedTension;
+        note = updatedNote;
+        return pieces;
 
         void Flush()
         {
@@ -312,8 +255,8 @@ internal static class EngineBooleanProjection
             }
             else
             {
-                tension = EngineTension.CombineTension(tension, pieceTension, currentCarrier);
-                note = EngineTension.CombineNotes(note, pieceNote);
+                updatedTension = EngineTension.CombineTension(updatedTension, pieceTension, currentCarrier);
+                updatedNote = EngineTension.CombineNotes(updatedNote, pieceNote);
             }
 
             currentLeft = null;
@@ -394,19 +337,33 @@ internal static class EngineBooleanProjection
     private static bool IsWithin(decimal value, AtomicSegment segment) =>
         value > segment.Start && value < segment.End;
 
-    private static CompositeElement SelectCarrier(
-        bool inPrimary,
-        bool inSecondary,
+    private static List<int> GetPresentMemberIndices(
+        decimal value,
+        AtomicSegment primary,
+        AtomicSegment secondary) =>
+        ToPresentMemberIndices(
+            IsWithin(value, primary),
+            IsWithin(value, secondary));
+
+    private static bool EvaluateBinary(
+        EngineBooleanOperation operation,
+        IReadOnlyList<int> presentMembers) =>
+        operation.Evaluate(
+            presentMembers.Contains(0),
+            presentMembers.Contains(1));
+
+    private static CompositeElement SelectBinaryCarrier(
+        IReadOnlyList<int> presentMembers,
         CompositeElement frame,
         CompositeElement primary,
         CompositeElement secondary)
     {
-        if (inPrimary)
+        if (presentMembers.Contains(0))
         {
             return primary;
         }
 
-        if (inSecondary)
+        if (presentMembers.Contains(1))
         {
             return secondary;
         }
