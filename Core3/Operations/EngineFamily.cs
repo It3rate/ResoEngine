@@ -335,17 +335,12 @@ public sealed class EngineFamily
         EngineBooleanOperation operation,
         out EngineBooleanResult? result)
     {
-        if (_members.Count != 2 ||
-            Frame is not CompositeElement frame)
-        {
-            result = null;
-            return false;
-        }
-
-        if (!TryReadAllWithTension(out var readResult) ||
-            readResult is null ||
-            readResult.Reads[0] is not CompositeElement primary ||
-            readResult.Reads[1] is not CompositeElement secondary)
+        if (!TryReadBinaryCompositeFamily(
+                out var frame,
+                out var primary,
+                out var secondary,
+                out var tension,
+                out var note))
         {
             result = null;
             return false;
@@ -356,8 +351,8 @@ public sealed class EngineFamily
             primary,
             secondary,
             operation,
-            readResult.Tension,
-            readResult.Note,
+            tension,
+            note,
             out result);
     }
 
@@ -373,25 +368,14 @@ public sealed class EngineFamily
         EngineOccupancyOperation operation,
         out EngineFamilyBooleanResult? result)
     {
-        if (Frame is not CompositeElement frame ||
-            !TryReadAllWithTension(out var readResult) ||
-            readResult is null)
+        if (!TryReadCompositeFamily(
+                out var frame,
+                out var members,
+                out var tension,
+                out var note))
         {
             result = null;
             return false;
-        }
-
-        var members = new List<CompositeElement>(readResult.Reads.Count);
-
-        foreach (var read in readResult.Reads)
-        {
-            if (read is not CompositeElement composite)
-            {
-                result = null;
-                return false;
-            }
-
-            members.Add(composite);
         }
 
         return EngineBooleanProjection.TryResolveFamilyWithTension(
@@ -399,8 +383,8 @@ public sealed class EngineFamily
             members,
             IsOrdered,
             operation,
-            readResult.Tension,
-            readResult.Note,
+            tension,
+            note,
             out result);
     }
 
@@ -418,18 +402,20 @@ public sealed class EngineFamily
 
         for (var index = 0; index < _members.Count - 1; index++)
         {
-            var leftOutcome = _members[index].CommitToCalibrationWithTension(Frame);
-            var rightOutcome = _members[index + 1].CommitToCalibrationWithTension(Frame);
-
-            if (leftOutcome.Result is not CompositeElement left ||
-                rightOutcome.Result is not CompositeElement right ||
+            if (!TryReadAdjacentCompositePair(
+                    index,
+                    out _,
+                    out var left,
+                    out var right,
+                    out var tension,
+                    out var note) ||
                 !EngineBooleanProjection.TryResolveWithTension(
                     frame,
                     left,
                     right,
                     operation,
-                    EngineTension.CombineTension(leftOutcome.Tension, rightOutcome.Tension),
-                    EngineTension.CombineNotes(leftOutcome.Note, rightOutcome.Note),
+                    tension,
+                    note,
                     out var pairResult) ||
                 pairResult is null)
             {
@@ -483,6 +469,97 @@ public sealed class EngineFamily
         return true;
     }
 
+    private bool TryReadBinaryCompositeFamily(
+        out CompositeElement frame,
+        out CompositeElement primary,
+        out CompositeElement secondary,
+        out GradedElement? tension,
+        out string? note)
+    {
+        frame = default!;
+        primary = default!;
+        secondary = default!;
+        tension = null;
+        note = null;
+
+        if (_members.Count != 2 ||
+            !TryReadCompositeFamily(out frame, out var members, out tension, out note))
+        {
+            return false;
+        }
+
+        primary = members[0];
+        secondary = members[1];
+        return true;
+    }
+
+    private bool TryReadCompositeFamily(
+        out CompositeElement frame,
+        out IReadOnlyList<CompositeElement> members,
+        out GradedElement? tension,
+        out string? note)
+    {
+        if (Frame is not CompositeElement compositeFrame ||
+            !TryReadAllWithTension(out var readResult) ||
+            readResult is null ||
+            !TryAsCompositeReads(readResult.Reads, out var compositeMembers))
+        {
+            frame = default!;
+            members = [];
+            tension = null;
+            note = null;
+            return false;
+        }
+
+        frame = compositeFrame;
+        members = compositeMembers;
+        tension = readResult.Tension;
+        note = readResult.Note;
+        return true;
+    }
+
+    private bool TryReadAdjacentCompositePair(
+        int leftIndex,
+        out CompositeElement frame,
+        out CompositeElement left,
+        out CompositeElement right,
+        out GradedElement? tension,
+        out string? note)
+    {
+        if (Frame is not CompositeElement compositeFrame ||
+            leftIndex < 0 ||
+            leftIndex + 1 >= _members.Count)
+        {
+            frame = default!;
+            left = default!;
+            right = default!;
+            tension = null;
+            note = null;
+            return false;
+        }
+
+        var leftOutcome = _members[leftIndex].CommitToCalibrationWithTension(Frame);
+        var rightOutcome = _members[leftIndex + 1].CommitToCalibrationWithTension(Frame);
+
+        if (leftOutcome.Result is not CompositeElement leftComposite ||
+            rightOutcome.Result is not CompositeElement rightComposite)
+        {
+            frame = default!;
+            left = default!;
+            right = default!;
+            tension = null;
+            note = null;
+            return false;
+        }
+
+        frame = compositeFrame;
+        left = leftComposite;
+        right = rightComposite;
+        tension = EngineTension.CombineTension(leftOutcome.Tension, rightOutcome.Tension);
+        note = EngineTension.CombineNotes(leftOutcome.Note, rightOutcome.Note);
+        return true;
+    }
+
     private bool TryAccumulateAll(
         string operationName,
         Func<GradedElement, GradedElement, EngineElementOutcome> localLaw,
@@ -516,6 +593,26 @@ public sealed class EngineFamily
             resultFrameSelector(this),
             tension,
             note);
+        return true;
+    }
+
+    private static bool TryAsCompositeReads(
+        IReadOnlyList<GradedElement> reads,
+        out List<CompositeElement> composites)
+    {
+        composites = new List<CompositeElement>(reads.Count);
+
+        foreach (var read in reads)
+        {
+            if (read is not CompositeElement composite)
+            {
+                composites = [];
+                return false;
+            }
+
+            composites.Add(composite);
+        }
+
         return true;
     }
 
