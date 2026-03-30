@@ -115,6 +115,44 @@ from dominant-side or recessive-side structure.
 O8. New dimensions are therefore not arbitrary add-ons.
 They are one lawful way tension becomes preserved structure.
 
+O9. Orthogonal pressure alone does not automatically justify a full lift.
+There is a difference between:
+
+- a real distinction that the current carrier cannot hold
+- a coherent higher relation whose interior positions are meaningful
+
+O10. A route with orthogonal pressure may still remain only a route-like
+structure with several rays or directed segments.
+Without a successful lift it does not yet gain the lawful interior of a higher
+space.
+
+O11. Lift should be treated as successful when the new orthogonal relation is
+coherent enough to support meaningful ordered traversal or measurement in the
+new interior.
+
+O12. So lift is not only "another direction exists."
+It is also:
+
+- the new direction forms a meaningful relation with the old one
+- the resulting higher object can address more than the original rays
+- the new basis supports lawful interior positions
+
+O13. When lift does occur, the new basis units should become positive native
+units of the higher grade.
+They should not remain only as negative or unresolved remnants of the prior
+carrier.
+
+O14. Historical relation still matters.
+The higher-grade basis may preserve provenance from the lower-grade structure
+that generated it, but it should still be treated as a genuinely new unit
+family at the lifted grade.
+
+O15. A lifted unit family should remain usable beyond the particular mechanism
+that first generated it.
+For example, an area basis exposed through one rectangular x/y-style
+construction should still be able to measure circles, irregular regions, or
+relative area changes rather than remaining trapped inside that original grid.
+
 ## Part V. Null, Zero, And Tension
 
 N1. `null`, `0`, and unresolved tension are different.

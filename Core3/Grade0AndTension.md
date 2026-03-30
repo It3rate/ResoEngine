@@ -140,6 +140,98 @@ Core3 should still be able to say:
 So the emergence of new dimensions should be read as a lawful response to
 tension, not as an arbitrary extra geometric feature pasted on afterward.
 
+## Lift Requires A Coherent New Relation
+
+Orthogonal pressure alone does not automatically justify a full lift.
+
+There is an important difference between:
+
+- sensing that the current carrier cannot hold a distinction
+- knowing enough about that distinction to form a meaningful higher space
+
+So a route or axis may lawfully carry orthogonal pressure without yet being a
+plane.
+
+Geometrically:
+
+- one horizontal route plus upward/downward orthogonal pressure does not yet
+  guarantee an area
+- without lift, the structure can still only move along the available rays
+- it may support several directed lines or segments
+- but it cannot yet lawfully address the interior between them
+
+The lift becomes meaningful when the orthogonal content has consolidated into a
+coherent new category of relation.
+
+Examples:
+
+- horizontal and vertical displacement can form an area-like plane because the
+  two directions jointly support ordered interior positions
+- light and heat may form a meaningful lifted relation in one context, such as
+  the luminous body of a match
+- dripping-water sound and light do not automatically form such a plane merely
+  because both are real distinctions
+
+So Core3 should preserve this rule:
+
+- orthogonal pressure may be real before lift
+- lift is a further act or judgment
+- lift should only be treated as successful when the new orthogonal relation is
+  coherent enough that interior positions are meaningful
+
+This means lift is not just "there is another direction."
+It is also:
+
+- there is a meaningful ordered relation along that direction
+- the new basis supports lawful traversal or measurement
+- the resulting higher object can address more than the original rays alone
+
+## Lift Creates New Positive Basis Units
+
+When lift does occur, the new units should not remain merely as negative forms
+of the prior carrier.
+
+They become the native positive basis units of the higher grade.
+
+So:
+
+- a negative line-unit pressure may help generate an axis-like orthogonal
+  distinction
+- but once that distinction is lifted and stabilized, it should be treated as
+  its own positive axis basis
+- later negative pressure on that newer basis is what drives the next lift
+
+Likewise for area-like lift:
+
+- the new area quanta should be treated as genuine area units
+- not as unresolved products of prior x-like and y-like line units
+- even when they remain historically related to those generating axes
+
+That means the lifted unit family should also be usable independently of the
+particular constructive mechanism that first exposed it.
+
+For example:
+
+- an area unit generated through an x/y-style rectangular construction should
+  still be able to measure circles, irregular regions, or relative area
+  changes
+- it keeps provenance from that earlier grid-like construction
+- but it should not be trapped inside that construction as its only meaning
+
+This is part of why a lifted higher-grade object can again behave like a
+one-degree-of-freedom quantity in its own folded measure.
+
+For example:
+
+- an area-like object may still preserve two-sided provenance, growth span, or
+  constructive relation to generating axes
+- but its folded content is now area-measure, not merely "a pair of lines"
+
+So lift both:
+
+- increases structural dimension
+- creates a new native unit family at that higher grade
+
 ## Null, Zero, And Unresolved Are Different
 
 Core3 should keep these distinct.
