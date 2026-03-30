@@ -85,6 +85,12 @@ public static class Core3JsonSerializer
     public static string Serialize(TraversalMachineDefinition machine, Core3JsonSerializerOptions? options = null) =>
         Serialize(writer => Write(writer, machine, Resolve(options)), options);
 
+    public static string Serialize(TraversalRuntimeState state, Core3JsonSerializerOptions? options = null) =>
+        Serialize(writer => Write(writer, state, Resolve(options)), options);
+
+    public static string Serialize(TraversalStepResult result, Core3JsonSerializerOptions? options = null) =>
+        Serialize(writer => Write(writer, result, Resolve(options)), options);
+
     public static void Write(Utf8JsonWriter writer, GradedElement element, Core3JsonSerializerOptions? options = null)
     {
         switch (element)
@@ -587,6 +593,58 @@ public static class Core3JsonSerializer
         writer.WriteEndObject();
     }
 
+    public static void Write(Utf8JsonWriter writer, TraversalRuntimeState state, Core3JsonSerializerOptions? options = null)
+    {
+        var actual = Resolve(options);
+
+        writer.WriteStartObject();
+        writer.WriteString("kind", "traversalRuntimeState");
+        writer.WriteString("machineName", state.Machine.Name);
+        if (!state.IsExact)
+        {
+            writer.WriteBoolean("isExact", false);
+        }
+        writer.WritePropertyName("mover");
+        Write(writer, state.Mover, actual);
+        writer.WritePropertyName("token");
+        WriteNamedElements(writer, state.Token, actual);
+        writer.WritePropertyName("context");
+        WriteNamedElements(writer, state.Context, actual);
+        writer.WritePropertyName("result");
+        WriteNamedElements(writer, state.Result, actual);
+
+        if (state.Tension is not null)
+        {
+            writer.WritePropertyName("tension");
+            Write(writer, state.Tension, actual);
+        }
+
+        if (!string.IsNullOrWhiteSpace(state.Note))
+        {
+            writer.WriteString("note", state.Note);
+        }
+
+        writer.WriteEndObject();
+    }
+
+    public static void Write(Utf8JsonWriter writer, TraversalStepResult result, Core3JsonSerializerOptions? options = null)
+    {
+        var actual = Resolve(options);
+
+        writer.WriteStartObject();
+        writer.WriteString("kind", "traversalStepResult");
+        writer.WritePropertyName("state");
+        Write(writer, result.State, actual);
+        writer.WritePropertyName("encounters");
+        writer.WriteStartArray();
+        foreach (var encounter in result.Encounters)
+        {
+            Write(writer, encounter, actual);
+        }
+        writer.WriteEndArray();
+        writer.WriteEndObject();
+    }
+
     public static void Write(Utf8JsonWriter writer, BindingSelector selector, Core3JsonSerializerOptions? options = null)
     {
         var actual = Resolve(options);
@@ -713,6 +771,20 @@ public static class Core3JsonSerializer
         writer.WriteEndObject();
     }
 
+    public static void Write(Utf8JsonWriter writer, TraversalSiteEncounter encounter, Core3JsonSerializerOptions? options = null)
+    {
+        var actual = Resolve(options);
+
+        writer.WriteStartObject();
+        writer.WritePropertyName("site");
+        Write(writer, encounter.Attachment.Site, actual);
+        writer.WritePropertyName("law");
+        Write(writer, encounter.Attachment.Law);
+        writer.WritePropertyName("inputs");
+        WriteNamedElements(writer, encounter.Inputs, actual);
+        writer.WriteEndObject();
+    }
+
     public static void Write(Utf8JsonWriter writer, OperationLawReference law)
     {
         writer.WriteStartObject();
@@ -809,6 +881,16 @@ public static class Core3JsonSerializer
         writer.Write(Serialize(mover, options));
     }
 
+    public static void Write(TextWriter writer, TraversalRuntimeState state, Core3JsonSerializerOptions? options = null)
+    {
+        writer.Write(Serialize(state, options));
+    }
+
+    public static void Write(TextWriter writer, TraversalStepResult result, Core3JsonSerializerOptions? options = null)
+    {
+        writer.Write(Serialize(result, options));
+    }
+
     private static void Write(Utf8JsonWriter writer, EngineOperationPiece piece, Core3JsonSerializerOptions options)
     {
         writer.WriteStartObject();
@@ -887,6 +969,20 @@ public static class Core3JsonSerializer
             Write(writer, piece, options);
         }
         writer.WriteEndArray();
+    }
+
+    private static void WriteNamedElements(
+        Utf8JsonWriter writer,
+        IReadOnlyDictionary<string, GradedElement> values,
+        Core3JsonSerializerOptions options)
+    {
+        writer.WriteStartObject();
+        foreach (var pair in values)
+        {
+            writer.WritePropertyName(pair.Key);
+            Write(writer, pair.Value, options);
+        }
+        writer.WriteEndObject();
     }
 
     private static string Serialize(Action<Utf8JsonWriter> write, Core3JsonSerializerOptions? options)

@@ -37,6 +37,7 @@ The JSON writer currently handles:
   projections, transforms, signals, and sites
 - traversal movers
 - traversal machine definitions and registers
+- traversal runtime states and step results
 - operation attachments
 
 ## Minimal Versus Derived
