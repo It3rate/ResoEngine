@@ -414,6 +414,33 @@ public sealed class OperationsTests
     }
 
     [Fact]
+    public void EngineOperations_TryBooleanWithTension_PreservesUnresolvedSegmentProjection()
+    {
+        var frame = Core3TestHelpers.CreateSegmentFrame(0, 10, 10);
+        var primary = Core3TestHelpers.CreateSegmentFrame(0, 10, 10);
+        var secondary = new CompositeElement(
+            new AtomicElement(3, 10),
+            new AtomicElement(5, 0));
+
+        Assert.True(EngineOperations.TryBooleanWithTension(
+            frame,
+            [primary, secondary],
+            EngineBooleanOperation.And,
+            out var result));
+        Assert.False(EngineOperations.TryBoolean(
+            frame,
+            [primary, secondary],
+            EngineBooleanOperation.And,
+            out _));
+
+        var booleanResult = Assert.IsType<EngineBooleanResult>(result);
+        Assert.False(booleanResult.IsExact);
+        Assert.Empty(booleanResult.Pieces);
+        Assert.NotNull(booleanResult.Tension);
+        Assert.Contains("Boolean projection preserved unresolved support", booleanResult.Note);
+    }
+
+    [Fact]
     public void EngineOperations_TryBoolean_Xor_PreservesTwoPieces()
     {
         var frame = Core3TestHelpers.CreateSegmentFrame(0, 10, 10);
@@ -501,6 +528,34 @@ public sealed class OperationsTests
     }
 
     [Fact]
+    public void EngineOperations_TryOccupancyBooleanWithTension_PreservesUnresolvedFamilyProjection()
+    {
+        var frame = Core3TestHelpers.CreateSegmentFrame(0, 10, 10);
+        var first = Core3TestHelpers.CreateSegmentFrame(0, 10, 10);
+        var second = new CompositeElement(
+            new AtomicElement(3, 10),
+            new AtomicElement(5, 0));
+        var third = Core3TestHelpers.CreateSegmentFrame(6, 8, 10);
+
+        Assert.True(EngineOperations.TryOccupancyBooleanWithTension(
+            frame,
+            [first, second, third],
+            EngineOccupancyOperation.ExactlyOne,
+            out var result));
+        Assert.False(EngineOperations.TryOccupancyBoolean(
+            frame,
+            [first, second, third],
+            EngineOccupancyOperation.ExactlyOne,
+            out _));
+
+        var occupancyResult = Assert.IsType<EngineFamilyBooleanResult>(result);
+        Assert.False(occupancyResult.IsExact);
+        Assert.Empty(occupancyResult.Pieces);
+        Assert.NotNull(occupancyResult.Tension);
+        Assert.Contains("Boolean projection preserved unresolved support", occupancyResult.Note);
+    }
+
+    [Fact]
     public void EngineOperations_TryBooleanAdjacentPairs_UsesOrderedFamilyTraversal()
     {
         var frame = Core3TestHelpers.CreateSegmentFrame(0, 10, 10);
@@ -521,6 +576,34 @@ public sealed class OperationsTests
         Assert.Equal(Core3TestHelpers.CreateSegmentFrame(5, 10, 10), pairwise[0].Pieces[1].Result);
         Assert.Equal(Core3TestHelpers.CreateSegmentFrame(3, 5, 10), pairwise[1].Pieces[0].Result);
         Assert.Equal(Core3TestHelpers.CreateSegmentFrame(6, 8, 10), pairwise[1].Pieces[1].Result);
+    }
+
+    [Fact]
+    public void EngineOperations_TryBooleanAdjacentPairsWithTension_PreservesUnresolvedPairReads()
+    {
+        var frame = Core3TestHelpers.CreateSegmentFrame(0, 10, 10);
+        var first = Core3TestHelpers.CreateSegmentFrame(0, 10, 10);
+        var second = new CompositeElement(
+            new AtomicElement(3, 10),
+            new AtomicElement(5, 0));
+        var third = Core3TestHelpers.CreateSegmentFrame(6, 8, 10);
+
+        Assert.True(EngineOperations.TryBooleanAdjacentPairsWithTension(
+            frame,
+            [first, second, third],
+            EngineBooleanOperation.Xor,
+            out var results));
+        Assert.False(EngineOperations.TryBooleanAdjacentPairs(
+            frame,
+            [first, second, third],
+            EngineBooleanOperation.Xor,
+            out _));
+
+        var pairwise = Assert.IsAssignableFrom<IReadOnlyList<EngineBooleanResult>>(results);
+        Assert.Equal(2, pairwise.Count);
+        Assert.All(pairwise, result => Assert.False(result.IsExact));
+        Assert.All(pairwise, result => Assert.Empty(result.Pieces));
+        Assert.All(pairwise, result => Assert.Contains("Boolean projection preserved unresolved support", result.Note));
     }
 
     [Fact]

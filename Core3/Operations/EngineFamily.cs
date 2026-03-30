@@ -402,40 +402,77 @@ public sealed class EngineFamily
 
     public bool TryBoolean(EngineBooleanOperation operation, out EngineBooleanResult? result)
     {
-        if (_members.Count != 2)
+        if (TryBooleanWithTension(operation, out result) &&
+            result is not null &&
+            result.IsExact)
         {
-            result = null;
-            return false;
+            return true;
         }
 
-        if (!TryReadAll(out var reads) ||
-            reads is null ||
-            Frame is not CompositeElement frame ||
-            reads[0] is not CompositeElement primary ||
-            reads[1] is not CompositeElement secondary)
-        {
-            result = null;
-            return false;
-        }
-
-        return EngineBooleanProjection.TryResolve(frame, primary, secondary, operation, out result);
+        result = null;
+        return false;
     }
 
-    public bool TryOccupancyBoolean(
-        EngineOccupancyOperation operation,
-        out EngineFamilyBooleanResult? result)
+    public bool TryBooleanWithTension(
+        EngineBooleanOperation operation,
+        out EngineBooleanResult? result)
     {
-        if (!TryReadAll(out var reads) ||
-            reads is null ||
+        if (_members.Count != 2 ||
             Frame is not CompositeElement frame)
         {
             result = null;
             return false;
         }
 
-        var members = new List<CompositeElement>(reads.Count);
+        if (!TryReadAllWithTension(out var readResult) ||
+            readResult is null ||
+            readResult.Reads[0] is not CompositeElement primary ||
+            readResult.Reads[1] is not CompositeElement secondary)
+        {
+            result = null;
+            return false;
+        }
 
-        foreach (var read in reads)
+        return EngineBooleanProjection.TryResolveWithTension(
+            frame,
+            primary,
+            secondary,
+            operation,
+            readResult.Tension,
+            readResult.Note,
+            out result);
+    }
+
+    public bool TryOccupancyBoolean(
+        EngineOccupancyOperation operation,
+        out EngineFamilyBooleanResult? result)
+    {
+        if (TryOccupancyBooleanWithTension(operation, out result) &&
+            result is not null &&
+            result.IsExact)
+        {
+            return true;
+        }
+
+        result = null;
+        return false;
+    }
+
+    public bool TryOccupancyBooleanWithTension(
+        EngineOccupancyOperation operation,
+        out EngineFamilyBooleanResult? result)
+    {
+        if (Frame is not CompositeElement frame ||
+            !TryReadAllWithTension(out var readResult) ||
+            readResult is null)
+        {
+            result = null;
+            return false;
+        }
+
+        var members = new List<CompositeElement>(readResult.Reads.Count);
+
+        foreach (var read in readResult.Reads)
         {
             if (read is not CompositeElement composite)
             {
@@ -446,15 +483,17 @@ public sealed class EngineFamily
             members.Add(composite);
         }
 
-        return EngineBooleanProjection.TryResolveFamily(
+        return EngineBooleanProjection.TryResolveFamilyWithTension(
             frame,
             members,
             IsOrdered,
             operation,
+            readResult.Tension,
+            readResult.Note,
             out result);
     }
 
-    public bool TryBooleanAdjacentPairs(
+    public bool TryBooleanAdjacentPairsWithTension(
         EngineBooleanOperation operation,
         out IReadOnlyList<EngineBooleanResult>? results)
     {
@@ -468,11 +507,19 @@ public sealed class EngineFamily
 
         for (var index = 0; index < _members.Count - 1; index++)
         {
-            if (!TryReadMember(_members[index], out var leftRead) ||
-                leftRead is not CompositeElement left ||
-                !TryReadMember(_members[index + 1], out var rightRead) ||
-                rightRead is not CompositeElement right ||
-                !EngineBooleanProjection.TryResolve(frame, left, right, operation, out var pairResult) ||
+            var leftOutcome = _members[index].CommitToCalibrationWithTension(Frame);
+            var rightOutcome = _members[index + 1].CommitToCalibrationWithTension(Frame);
+
+            if (leftOutcome.Result is not CompositeElement left ||
+                rightOutcome.Result is not CompositeElement right ||
+                !EngineBooleanProjection.TryResolveWithTension(
+                    frame,
+                    left,
+                    right,
+                    operation,
+                    CombineTension(leftOutcome.Tension, rightOutcome.Tension),
+                    CombineNotes(leftOutcome.Note, rightOutcome.Note),
+                    out var pairResult) ||
                 pairResult is null)
             {
                 results = null;
@@ -484,6 +531,21 @@ public sealed class EngineFamily
 
         results = pairwiseResults;
         return true;
+    }
+
+    public bool TryBooleanAdjacentPairs(
+        EngineBooleanOperation operation,
+        out IReadOnlyList<EngineBooleanResult>? results)
+    {
+        if (TryBooleanAdjacentPairsWithTension(operation, out results) &&
+            results is not null &&
+            results.All(result => result.IsExact))
+        {
+            return true;
+        }
+
+        results = null;
+        return false;
     }
 
     private bool TryDeriveMultiplyResultFrame(out GradedElement? resultFrame)
@@ -608,4 +670,7 @@ public sealed class EngineFamily
             ? existing
             : $"{existing} | {next}";
     }
+
+    private static GradedElement? CombineTension(GradedElement? existing, GradedElement? next) =>
+        existing ?? next;
 }

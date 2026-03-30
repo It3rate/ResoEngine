@@ -13,11 +13,15 @@ public sealed record EngineFamilyBooleanResult
     public EngineFamilyBooleanResult(
         EngineOperationContext context,
         EngineOccupancyOperation operation,
-        IReadOnlyList<EngineOperationPiece> pieces)
+        IReadOnlyList<EngineOperationPiece> pieces,
+        GradedElement? tension = null,
+        string? note = null)
     {
         Context = context;
         Operation = operation;
         Pieces = pieces;
+        Tension = tension;
+        Note = note;
     }
 
     public EngineOperationContext Context { get; }
@@ -26,6 +30,9 @@ public sealed record EngineFamilyBooleanResult
     public bool IsOrdered => Context.IsOrdered;
     public EngineOccupancyOperation Operation { get; }
     public IReadOnlyList<EngineOperationPiece> Pieces { get; }
+    public GradedElement? Tension { get; }
+    public string? Note { get; }
+    public bool IsExact => Tension is null;
     public bool HasAny => Pieces.Count > 0;
     public IReadOnlyList<CompositeElement> Segments => Pieces.Select(piece => (CompositeElement)piece.Result).ToArray();
 }

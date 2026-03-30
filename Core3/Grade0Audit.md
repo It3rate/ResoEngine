@@ -47,6 +47,8 @@ The first migrated paths are:
 - recursive composite multiply/scale outcome surfaces
 - `EngineReadResult`
 - family-wide read / add / multiply outcome surfaces
+- binary and family boolean outcome surfaces
+- pairwise adjacent boolean traversal outcome surfaces
 - `EngineReference.ReadWithTension`
 - `EngineReference.MeasureOnCalibrationWithTension`
 - `EnginePin.ResolveHostedWithTension`
@@ -78,6 +80,9 @@ Under this first pass:
 - unresolved-unit scale no longer disappears into failure
 - family reads no longer disappear into failure
 - family add / multiply no longer disappear into failure
+- boolean and occupancy projection no longer silently collapse unresolved
+  segment endpoints into exact zero-like boundaries
+- adjacent-pair boolean traversal can now preserve unresolved pair reads
 - direct reference reads no longer disappear into failure
 - hosted pin placement no longer has to be inspected only through constructor failure
 - those calibration/alignment cases preserve unresolved outputs together with
@@ -106,9 +111,9 @@ It is the first step away from silent non-result.
 The next best places to move are:
 
 1. route/site encounter execution
-2. boolean and occupancy layers adopting the same lawful-outcome surface
-3. hosted pin positioning moving from result-shells toward native located-site elements
-4. reference and pin results collapsing into native higher-grade elements
+2. hosted pin positioning moving from result-shells toward native located-site elements
+3. reference and pin results collapsing into native higher-grade elements
+4. route and mover execution adopting the same lawful-outcome surface
 5. eventual collapse of all sidecar outcomes into native higher-grade elements
 
 ## Intent

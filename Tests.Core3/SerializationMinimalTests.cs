@@ -640,6 +640,131 @@ public sealed class SerializationMinimalTests
         AssertJsonEqual(expectedJson, json);
     }
 
+    [Fact]
+    public void Core3JsonSerializer_SerializesTensionBearingBooleanResult_Minimally()
+    {
+        // Serializes a binary boolean read when one compared segment endpoint
+        // cannot be placed exactly on the current carrier.
+        // Approximate math: compare [0,10] AND [3,5?] in frame [0,10], where the
+        // second segment's dominant endpoint is unresolved, so the result stays
+        // lawful but produces no settled pieces yet.
+        var expectedJson = """
+{
+  "kind": "booleanResult",
+  "isExact": false,
+  "operation": "And",
+  "context": {
+    "kind": "operationContext",
+    "isOrdered": true,
+    "frame": {
+      "kind": "composite",
+      "grade": 1,
+      "recessive": {
+        "kind": "atomic",
+        "grade": 0,
+        "value": 0,
+        "unit": 10
+      },
+      "dominant": {
+        "kind": "atomic",
+        "grade": 0,
+        "value": 10,
+        "unit": 10
+      }
+    },
+    "members": [
+      {
+        "kind": "composite",
+        "grade": 1,
+        "recessive": {
+          "kind": "atomic",
+          "grade": 0,
+          "value": 0,
+          "unit": 10
+        },
+        "dominant": {
+          "kind": "atomic",
+          "grade": 0,
+          "value": 10,
+          "unit": 10
+        }
+      },
+      {
+        "kind": "composite",
+        "grade": 1,
+        "recessive": {
+          "kind": "atomic",
+          "grade": 0,
+          "value": 3,
+          "unit": 10
+        },
+        "dominant": {
+          "kind": "atomic",
+          "grade": 0,
+          "value": 50,
+          "unit": 0
+        }
+      }
+    ]
+  },
+  "pieces": [],
+  "tension": {
+    "kind": "composite",
+    "grade": 2,
+    "recessive": {
+      "kind": "composite",
+      "grade": 1,
+      "recessive": {
+        "kind": "atomic",
+        "grade": 0,
+        "value": 3,
+        "unit": 10
+      },
+      "dominant": {
+        "kind": "atomic",
+        "grade": 0,
+        "value": 5,
+        "unit": 0
+      }
+    },
+    "dominant": {
+      "kind": "composite",
+      "grade": 1,
+      "recessive": {
+        "kind": "atomic",
+        "grade": 0,
+        "value": 0,
+        "unit": 10
+      },
+      "dominant": {
+        "kind": "atomic",
+        "grade": 0,
+        "value": 10,
+        "unit": 10
+      }
+    }
+  },
+  "note": "Composite calibration preserved child tension. | Boolean projection preserved unresolved support because one or more segment endpoints could not be placed exactly on the current carrier."
+}
+""";
+
+        var frame = Core3TestHelpers.CreateSegmentFrame(0, 10, 10);
+        var primary = Core3TestHelpers.CreateSegmentFrame(0, 10, 10);
+        var secondary = new CompositeElement(
+            new AtomicElement(3, 10),
+            new AtomicElement(5, 0));
+
+        Assert.True(EngineOperations.TryBooleanWithTension(
+            frame,
+            [primary, secondary],
+            EngineBooleanOperation.And,
+            out var result));
+
+        var json = Core3JsonSerializer.Serialize(Assert.IsType<EngineBooleanResult>(result));
+
+        AssertJsonEqual(expectedJson, json);
+    }
+
     private static void AssertJsonEqual(string expectedJson, string actualJson) =>
         Assert.Equal(Normalize(expectedJson), Normalize(actualJson));
 

@@ -422,11 +422,27 @@ public static class Core3JsonSerializer
 
         writer.WriteStartObject();
         writer.WriteString("kind", "booleanResult");
+        if (!result.IsExact)
+        {
+            writer.WriteBoolean("isExact", false);
+        }
         writer.WriteString("operation", result.Operation.ToString());
         writer.WritePropertyName("context");
         Write(writer, result.Context, actual);
         writer.WritePropertyName("pieces");
         WritePieces(writer, result.Pieces, actual);
+
+        if (result.Tension is not null)
+        {
+            writer.WritePropertyName("tension");
+            Write(writer, result.Tension, actual);
+        }
+
+        if (!string.IsNullOrWhiteSpace(result.Note))
+        {
+            writer.WriteString("note", result.Note);
+        }
+
         writer.WriteEndObject();
     }
 
@@ -436,11 +452,27 @@ public static class Core3JsonSerializer
 
         writer.WriteStartObject();
         writer.WriteString("kind", "familyBooleanResult");
+        if (!result.IsExact)
+        {
+            writer.WriteBoolean("isExact", false);
+        }
         writer.WriteString("operation", result.Operation.ToString());
         writer.WritePropertyName("context");
         Write(writer, result.Context, actual);
         writer.WritePropertyName("pieces");
         WritePieces(writer, result.Pieces, actual);
+
+        if (result.Tension is not null)
+        {
+            writer.WritePropertyName("tension");
+            Write(writer, result.Tension, actual);
+        }
+
+        if (!string.IsNullOrWhiteSpace(result.Note))
+        {
+            writer.WriteString("note", result.Note);
+        }
+
         writer.WriteEndObject();
     }
 

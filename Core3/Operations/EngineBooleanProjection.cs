@@ -12,24 +12,74 @@ internal static class EngineBooleanProjection
         EngineBooleanOperation operation,
         out EngineBooleanResult? result)
     {
-        if (!TryReadAtomicSegment(frame, frame, out var frameSegment) ||
-            !TryReadAtomicSegment(frame, primary, out var primarySegment) ||
-            !TryReadAtomicSegment(frame, secondary, out var secondarySegment))
+        if (TryResolveWithTension(
+                frame,
+                primary,
+                secondary,
+                operation,
+                null,
+                null,
+                out result) &&
+            result is not null &&
+            result.IsExact)
         {
-            result = null;
-            return false;
+            return true;
+        }
+
+        result = null;
+        return false;
+    }
+
+    internal static bool TryResolveWithTension(
+        CompositeElement frame,
+        CompositeElement primary,
+        CompositeElement secondary,
+        EngineBooleanOperation operation,
+        GradedElement? inheritedTension,
+        string? inheritedNote,
+        out EngineBooleanResult? result)
+    {
+        var context = new EngineOperationContext(frame, [primary, secondary], true);
+        var tension = inheritedTension;
+        var note = inheritedNote;
+        AtomicSegment frameSegment = default;
+        AtomicSegment primarySegment = default;
+        AtomicSegment secondarySegment = default;
+        GradedElement? frameTension = null;
+        GradedElement? primaryTension = null;
+        GradedElement? secondaryTension = null;
+        string? frameNote = null;
+        string? primaryNote = null;
+        string? secondaryNote = null;
+
+        if (!TryReadAtomicSegment(frame, out frameSegment, out frameTension, out frameNote) ||
+            !TryReadAtomicSegment(primary, out primarySegment, out primaryTension, out primaryNote) ||
+            !TryReadAtomicSegment(secondary, out secondarySegment, out secondaryTension, out secondaryNote))
+        {
+            result = new EngineBooleanResult(
+                context,
+                operation,
+                [],
+                CombineTension(
+                    tension,
+                    frameTension,
+                    primaryTension,
+                    secondaryTension,
+                    primary),
+                CombineNotes(
+                    note,
+                    frameNote,
+                    primaryNote,
+                    secondaryNote));
+            return true;
         }
 
         if (frameSegment.End <= frameSegment.Start)
         {
-            result = new EngineBooleanResult(
-                new EngineOperationContext(frame, [primary, secondary], true),
-                operation,
-                []);
+            result = new EngineBooleanResult(context, operation, [], tension, note);
             return true;
         }
 
-        var context = new EngineOperationContext(frame, [primary, secondary], true);
         var boundaries = CollectBoundaries(frameSegment, primarySegment, secondarySegment);
         var pieces = new List<EngineOperationPiece>();
         decimal? currentLeft = null;
@@ -74,7 +124,7 @@ internal static class EngineBooleanProjection
         }
 
         Flush();
-        result = new EngineBooleanResult(context, operation, pieces);
+        result = new EngineBooleanResult(context, operation, pieces, tension, note);
         return true;
 
         void Flush()
@@ -91,10 +141,25 @@ internal static class EngineBooleanProjection
                 return;
             }
 
-            pieces.Add(new EngineOperationPiece(
-                CreateSegmentLike(currentCarrier, currentLeft.Value, currentRight.Value),
-                currentCarrier,
-                currentPresentMembers.ToArray()));
+            if (TryCreateSegmentLike(
+                    currentCarrier,
+                    currentLeft.Value,
+                    currentRight.Value,
+                    out var piece,
+                    out var pieceTension,
+                    out var pieceNote) &&
+                piece is not null)
+            {
+                pieces.Add(new EngineOperationPiece(
+                    piece,
+                    currentCarrier,
+                    currentPresentMembers.ToArray()));
+            }
+            else
+            {
+                tension = CombineTension(tension, pieceTension, currentCarrier);
+                note = CombineNotes(note, pieceNote);
+            }
 
             currentLeft = null;
             currentRight = null;
@@ -110,20 +175,67 @@ internal static class EngineBooleanProjection
         EngineOccupancyOperation operation,
         out EngineFamilyBooleanResult? result)
     {
-        if (!TryReadAtomicSegment(frame, frame, out var frameSegment))
+        if (TryResolveFamilyWithTension(
+                frame,
+                members,
+                isOrdered,
+                operation,
+                null,
+                null,
+                out result) &&
+            result is not null &&
+            result.IsExact)
         {
-            result = null;
-            return false;
+            return true;
+        }
+
+        result = null;
+        return false;
+    }
+
+    internal static bool TryResolveFamilyWithTension(
+        CompositeElement frame,
+        IReadOnlyList<CompositeElement> members,
+        bool isOrdered,
+        EngineOccupancyOperation operation,
+        GradedElement? inheritedTension,
+        string? inheritedNote,
+        out EngineFamilyBooleanResult? result)
+    {
+        var context = new EngineOperationContext(
+            frame,
+            members.Cast<GradedElement>().ToArray(),
+            isOrdered);
+        var tension = inheritedTension;
+        var note = inheritedNote;
+        AtomicSegment frameSegment = default;
+        GradedElement? frameTension = null;
+        string? frameNote = null;
+
+        if (!TryReadAtomicSegment(frame, out frameSegment, out frameTension, out frameNote))
+        {
+            result = new EngineFamilyBooleanResult(
+                context,
+                operation,
+                [],
+                CombineTension(tension, frameTension, frame),
+                CombineNotes(note, frameNote));
+            return true;
         }
 
         var memberSegments = new List<AtomicSegment>(members.Count);
 
         foreach (var member in members)
         {
-            if (!TryReadAtomicSegment(frame, member, out var memberSegment))
+            if (!TryReadAtomicSegment(member, out var memberSegment, out var memberTension, out var memberNote))
             {
-                result = null;
-                return false;
+                result = new EngineFamilyBooleanResult(
+                    context,
+                    operation,
+                    [],
+                    CombineTension(tension, memberTension, member),
+                    CombineNotes(note, memberNote));
+                return true;
             }
 
             memberSegments.Add(memberSegment);
@@ -131,17 +243,10 @@ internal static class EngineBooleanProjection
 
         if (frameSegment.End <= frameSegment.Start)
         {
-            result = new EngineFamilyBooleanResult(
-                new EngineOperationContext(frame, members.Cast<GradedElement>().ToArray(), isOrdered),
-                operation,
-                []);
+            result = new EngineFamilyBooleanResult(context, operation, [], tension, note);
             return true;
         }
 
-        var context = new EngineOperationContext(
-            frame,
-            members.Cast<GradedElement>().ToArray(),
-            isOrdered);
         var boundaries = CollectBoundaries(frameSegment, memberSegments);
         var pieces = new List<EngineOperationPiece>();
         decimal? currentLeft = null;
@@ -185,7 +290,7 @@ internal static class EngineBooleanProjection
         }
 
         Flush();
-        result = new EngineFamilyBooleanResult(context, operation, pieces);
+        result = new EngineFamilyBooleanResult(context, operation, pieces, tension, note);
         return true;
 
         void Flush()
@@ -202,10 +307,25 @@ internal static class EngineBooleanProjection
                 return;
             }
 
-            pieces.Add(new EngineOperationPiece(
-                CreateSegmentLike(currentCarrier, currentLeft.Value, currentRight.Value),
-                currentCarrier,
-                currentPresentMembers.ToArray()));
+            if (TryCreateSegmentLike(
+                    currentCarrier,
+                    currentLeft.Value,
+                    currentRight.Value,
+                    out var piece,
+                    out var pieceTension,
+                    out var pieceNote) &&
+                piece is not null)
+            {
+                pieces.Add(new EngineOperationPiece(
+                    piece,
+                    currentCarrier,
+                    currentPresentMembers.ToArray()));
+            }
+            else
+            {
+                tension = CombineTension(tension, pieceTension, currentCarrier);
+                note = CombineNotes(note, pieceNote);
+            }
 
             currentLeft = null;
             currentRight = null;
@@ -215,22 +335,34 @@ internal static class EngineBooleanProjection
     }
 
     private static bool TryReadAtomicSegment(
-        CompositeElement frame,
         CompositeElement segment,
-        out AtomicSegment atomicSegment)
+        out AtomicSegment atomicSegment,
+        out GradedElement? tension,
+        out string? note)
     {
-        if (!segment.TryReferenceToFrame(frame, out var read) ||
-            read is not CompositeElement readComposite ||
-            readComposite.Recessive is not AtomicElement start ||
-            readComposite.Dominant is not AtomicElement end)
+        if (segment.Recessive is not AtomicElement start ||
+            segment.Dominant is not AtomicElement end)
         {
             atomicSegment = default;
+            tension = segment;
+            note = "Boolean projection currently requires atomic segment endpoints.";
+            return false;
+        }
+
+        if (!TryToDecimal(start, out var startValue) ||
+            !TryToDecimal(end, out var endValue))
+        {
+            atomicSegment = default;
+            tension = segment;
+            note = "Boolean projection preserved unresolved support because one or more segment endpoints could not be placed exactly on the current carrier.";
             return false;
         }
 
         atomicSegment = new AtomicSegment(
-            Math.Min(ToDecimal(start), ToDecimal(end)),
-            Math.Max(ToDecimal(start), ToDecimal(end)));
+            Math.Min(startValue, endValue),
+            Math.Max(startValue, endValue));
+        tension = null;
+        note = null;
         return true;
     }
 
@@ -359,44 +491,109 @@ internal static class EngineBooleanProjection
             _ => false
         };
 
-    private static CompositeElement CreateSegmentLike(
+    private static bool TryCreateSegmentLike(
         CompositeElement template,
         decimal left,
-        decimal right)
+        decimal right,
+        out CompositeElement? segment,
+        out GradedElement? tension,
+        out string? note)
     {
         if (template.Recessive is not AtomicElement start ||
             template.Dominant is not AtomicElement end)
         {
-            throw new InvalidOperationException("Boolean segment pieces currently require atomic endpoints.");
+            segment = null;
+            tension = template;
+            note = "Boolean projection currently requires atomic segment endpoints.";
+            return false;
         }
 
-        var forward = ToDecimal(start) <= ToDecimal(end);
-        var leftAtomic = FromDecimal(left, start.Unit);
-        var rightAtomic = FromDecimal(right, start.Unit);
+        if (!TryToDecimal(start, out var startValue) ||
+            !TryToDecimal(end, out var endValue) ||
+            start.Unit != end.Unit ||
+            !TryFromDecimal(left, start.Unit, out var leftAtomic) ||
+            !TryFromDecimal(right, start.Unit, out var rightAtomic))
+        {
+            segment = null;
+            tension = template;
+            note = "Boolean projection preserved unresolved support because one or more partition pieces could not be expressed exactly in the carrier resolution.";
+            return false;
+        }
 
-        return forward
+        var forward = startValue <= endValue;
+
+        segment = forward
             ? new CompositeElement(leftAtomic, rightAtomic)
             : new CompositeElement(rightAtomic, leftAtomic);
+        tension = null;
+        note = null;
+        return true;
     }
 
-    private static decimal ToDecimal(AtomicElement atomic) =>
-        atomic.Unit == 0 ? 0m : (decimal)atomic.Value / atomic.Unit;
-
-    private static AtomicElement FromDecimal(decimal value, long unit)
+    private static bool TryToDecimal(AtomicElement atomic, out decimal value)
     {
-        if (unit == 0)
+        if (atomic.Unit <= 0)
         {
-            return new AtomicElement(0, 0);
+            value = default;
+            return false;
+        }
+
+        value = (decimal)atomic.Value / atomic.Unit;
+        return true;
+    }
+
+    private static bool TryFromDecimal(decimal value, long unit, out AtomicElement atomic)
+    {
+        if (unit <= 0)
+        {
+            atomic = default!;
+            return false;
         }
 
         var scaled = value * unit;
         if (decimal.Truncate(scaled) != scaled)
         {
-            throw new InvalidOperationException("Boolean partition could not be expressed exactly in the carrier resolution.");
+            atomic = default!;
+            return false;
         }
 
-        return new AtomicElement((long)scaled, unit);
+        atomic = new AtomicElement((long)scaled, unit);
+        return true;
     }
 
     private readonly record struct AtomicSegment(decimal Start, decimal End);
+
+    private static GradedElement? CombineTension(params GradedElement?[] tensions)
+    {
+        foreach (var tension in tensions)
+        {
+            if (tension is not null)
+            {
+                return tension;
+            }
+        }
+
+        return null;
+    }
+
+    private static string? CombineNotes(params string?[] notes)
+    {
+        string? combined = null;
+
+        foreach (var note in notes)
+        {
+            if (string.IsNullOrWhiteSpace(note))
+            {
+                continue;
+            }
+
+            combined = string.IsNullOrWhiteSpace(combined)
+                ? note
+                : combined == note
+                    ? combined
+                    : $"{combined} | {note}";
+        }
+
+        return combined;
+    }
 }

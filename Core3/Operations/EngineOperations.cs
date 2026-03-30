@@ -101,6 +101,20 @@ public static class EngineOperations
         return new EngineFamily(context).TryBoolean(operation, out result);
     }
 
+    public static bool TryBooleanWithTension(
+        EngineOperationContext context,
+        EngineBooleanOperation operation,
+        out EngineBooleanResult? result)
+    {
+        if (context.Frame is not CompositeElement)
+        {
+            result = null;
+            return false;
+        }
+
+        return new EngineFamily(context).TryBooleanWithTension(operation, out result);
+    }
+
     public static bool TryBoolean(
         CompositeElement frame,
         IEnumerable<GradedElement> members,
@@ -108,6 +122,15 @@ public static class EngineOperations
         out EngineBooleanResult? result)
     {
         return TryBoolean(EngineOperationContext.Create(frame, members), operation, out result);
+    }
+
+    public static bool TryBooleanWithTension(
+        CompositeElement frame,
+        IEnumerable<GradedElement> members,
+        EngineBooleanOperation operation,
+        out EngineBooleanResult? result)
+    {
+        return TryBooleanWithTension(EngineOperationContext.Create(frame, members), operation, out result);
     }
 
     public static bool TryOccupancyBoolean(
@@ -124,6 +147,20 @@ public static class EngineOperations
         return new EngineFamily(context).TryOccupancyBoolean(operation, out result);
     }
 
+    public static bool TryOccupancyBooleanWithTension(
+        EngineOperationContext context,
+        EngineOccupancyOperation operation,
+        out EngineFamilyBooleanResult? result)
+    {
+        if (context.Frame is not CompositeElement)
+        {
+            result = null;
+            return false;
+        }
+
+        return new EngineFamily(context).TryOccupancyBooleanWithTension(operation, out result);
+    }
+
     public static bool TryOccupancyBoolean(
         CompositeElement frame,
         IEnumerable<GradedElement> members,
@@ -132,6 +169,19 @@ public static class EngineOperations
         bool isOrdered = false)
     {
         return TryOccupancyBoolean(
+            EngineOperationContext.Create(frame, members, isOrdered),
+            operation,
+            out result);
+    }
+
+    public static bool TryOccupancyBooleanWithTension(
+        CompositeElement frame,
+        IEnumerable<GradedElement> members,
+        EngineOccupancyOperation operation,
+        out EngineFamilyBooleanResult? result,
+        bool isOrdered = false)
+    {
+        return TryOccupancyBooleanWithTension(
             EngineOperationContext.Create(frame, members, isOrdered),
             operation,
             out result);
@@ -151,6 +201,20 @@ public static class EngineOperations
         return new EngineFamily(context).TryBooleanAdjacentPairs(operation, out results);
     }
 
+    public static bool TryBooleanAdjacentPairsWithTension(
+        EngineOperationContext context,
+        EngineBooleanOperation operation,
+        out IReadOnlyList<EngineBooleanResult>? results)
+    {
+        if (context.Frame is not CompositeElement)
+        {
+            results = null;
+            return false;
+        }
+
+        return new EngineFamily(context).TryBooleanAdjacentPairsWithTension(operation, out results);
+    }
+
     public static bool TryBooleanAdjacentPairs(
         CompositeElement frame,
         IEnumerable<GradedElement> members,
@@ -158,6 +222,18 @@ public static class EngineOperations
         out IReadOnlyList<EngineBooleanResult>? results)
     {
         return TryBooleanAdjacentPairs(
+            EngineOperationContext.Create(frame, members, isOrdered: true),
+            operation,
+            out results);
+    }
+
+    public static bool TryBooleanAdjacentPairsWithTension(
+        CompositeElement frame,
+        IEnumerable<GradedElement> members,
+        EngineBooleanOperation operation,
+        out IReadOnlyList<EngineBooleanResult>? results)
+    {
+        return TryBooleanAdjacentPairsWithTension(
             EngineOperationContext.Create(frame, members, isOrdered: true),
             operation,
             out results);

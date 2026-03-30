@@ -31,6 +31,7 @@ The JSON writer currently handles:
 - operation contexts and families
 - operation results
 - boolean piece results
+- tension-bearing boolean and occupancy results
 - bound templates
 - direct binding primitives such as addresses, storage targets, selectors,
   projections, transforms, signals, and sites

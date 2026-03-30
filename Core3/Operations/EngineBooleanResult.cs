@@ -13,7 +13,9 @@ public sealed record EngineBooleanResult
     public EngineBooleanResult(
         EngineOperationContext context,
         EngineBooleanOperation operation,
-        IReadOnlyList<EngineOperationPiece> pieces)
+        IReadOnlyList<EngineOperationPiece> pieces,
+        GradedElement? tension = null,
+        string? note = null)
     {
         if (context.Count != 2 ||
             context.Frame is not CompositeElement ||
@@ -26,6 +28,8 @@ public sealed record EngineBooleanResult
         Context = context;
         Operation = operation;
         Pieces = pieces;
+        Tension = tension;
+        Note = note;
     }
 
     public EngineOperationContext Context { get; }
@@ -34,6 +38,9 @@ public sealed record EngineBooleanResult
     public CompositeElement Secondary => (CompositeElement)Context.Members[1];
     public EngineBooleanOperation Operation { get; }
     public IReadOnlyList<EngineOperationPiece> Pieces { get; }
+    public GradedElement? Tension { get; }
+    public string? Note { get; }
+    public bool IsExact => Tension is null;
     public bool HasAny => Pieces.Count > 0;
     public IReadOnlyList<CompositeElement> Segments => Pieces.Select(piece => (CompositeElement)piece.Result).ToArray();
 }
