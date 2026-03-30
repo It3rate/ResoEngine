@@ -167,3 +167,10 @@ without committing the codebase to serializer attributes too early.
 A short implementation note for how we want Core3 code to feel and where we do
 and do not want heavy guard boilerplate now lives in
 [CodingStyle.md](CodingStyle.md).
+
+A focused note on grade-0 raw exact storage, `null` versus `0`, and
+tension-preserving non-failure semantics now lives in
+[Grade0AndTension.md](Grade0AndTension.md).
+
+A prompt-safe consolidation of the current Core3 notes into AI-readable axioms
+now lives in [SystemPrompt.md](SystemPrompt.md).
