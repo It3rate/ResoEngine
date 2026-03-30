@@ -137,6 +137,9 @@ public sealed record AtomicElement(long Value, long Unit) : GradedElement
     public override EngineElementOutcome AddWithTension(GradedElement other)
     {
         var alignment = AlignWithTension(other);
+        var liftCandidate = EngineEvaluation.TryCreateLiftCandidate(this, other, out var candidate)
+            ? candidate
+            : null;
 
         if (alignment.Left is AtomicElement left &&
             alignment.Right is AtomicElement right)
@@ -150,6 +153,7 @@ public sealed record AtomicElement(long Value, long Unit) : GradedElement
                 : EngineElementOutcome.WithTension(
                     sum,
                     alignment.Tension ?? new CompositeElement(this, other),
+                    liftCandidate,
                     "Addition preserved unresolved support from the aligned pair.");
         }
 
@@ -162,6 +166,9 @@ public sealed record AtomicElement(long Value, long Unit) : GradedElement
     public override EngineElementOutcome SubtractWithTension(GradedElement other)
     {
         var alignment = AlignWithTension(other);
+        var liftCandidate = EngineEvaluation.TryCreateLiftCandidate(this, other, out var candidate)
+            ? candidate
+            : null;
 
         if (alignment.Left is AtomicElement left &&
             alignment.Right is AtomicElement right)
@@ -175,6 +182,7 @@ public sealed record AtomicElement(long Value, long Unit) : GradedElement
                 : EngineElementOutcome.WithTension(
                     difference,
                     alignment.Tension ?? new CompositeElement(this, other),
+                    liftCandidate,
                     "Subtraction preserved unresolved support from the aligned pair.");
         }
 

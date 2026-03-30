@@ -478,7 +478,8 @@ public sealed class SerializationMinimalTests
     {
         // Serializes an addition that cannot settle onto one resolved carrier.
         // Approximate math: add 1/2 and 1/-4, preserving the unresolved sum 8/0
-        // and the original pair as held tension.
+        // and the original pair as held tension, while also exposing the valid
+        // lifted candidate <1/2 | 1/4>.
         var expectedJson = """
 {
   "kind": "elementOutcome",
@@ -503,6 +504,22 @@ public sealed class SerializationMinimalTests
       "grade": 0,
       "value": 1,
       "unit": -4
+    }
+  },
+  "liftCandidate": {
+    "kind": "composite",
+    "grade": 1,
+    "recessive": {
+      "kind": "atomic",
+      "grade": 0,
+      "value": 1,
+      "unit": 2
+    },
+    "dominant": {
+      "kind": "atomic",
+      "grade": 0,
+      "value": 1,
+      "unit": 4
     }
   },
   "note": "Addition preserved unresolved support from the aligned pair."

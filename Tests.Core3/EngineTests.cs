@@ -446,6 +446,12 @@ public sealed class EngineTests
         Assert.False(outcome.IsExact);
         Assert.Equal(new AtomicElement(8, 0), Assert.IsType<AtomicElement>(outcome.Result));
         Assert.Equal(new CompositeElement(left, right), outcome.Tension);
+        Assert.True(outcome.TryUseLiftCandidate(out var lifted));
+        Assert.Equal(
+            new CompositeElement(
+                new AtomicElement(1, 2),
+                new AtomicElement(1, 4)),
+            Assert.IsType<CompositeElement>(lifted));
     }
 
     [Fact]
@@ -459,6 +465,26 @@ public sealed class EngineTests
         Assert.False(outcome.IsExact);
         Assert.Equal(new AtomicElement(8, 0), Assert.IsType<AtomicElement>(outcome.Result));
         Assert.Equal(new CompositeElement(left, right), outcome.Tension);
+        Assert.True(outcome.TryUseLiftCandidate(out var lifted));
+        Assert.Equal(
+            new CompositeElement(
+                new AtomicElement(3, 2),
+                new AtomicElement(1, 4)),
+            Assert.IsType<CompositeElement>(lifted));
+    }
+
+    [Fact]
+    public void MixedCarrierAdd_EmitsLiftCandidateThatMatchesExplicitLift()
+    {
+        var aligned = new AtomicElement(3, 1);
+        var orthogonal = new AtomicElement(3, -1);
+
+        var addOutcome = aligned.AddWithTension(orthogonal);
+        var explicitLift = aligned.LiftOrthogonalWithTension(orthogonal);
+
+        Assert.False(addOutcome.IsExact);
+        Assert.True(addOutcome.TryUseLiftCandidate(out var lifted));
+        Assert.Equal(explicitLift.Result, lifted);
     }
 
     [Fact]

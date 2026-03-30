@@ -8,11 +8,16 @@ internal static class EngineEvaluation
     {
         var targetGrade = Math.Max(left.Grade, right.Grade) + 1;
 
+        // Preferred path: lawful operations emit lift candidates and callers
+        // choose whether to promote them. This direct lift shell remains useful
+        // for compatibility and tests, but the candidate path should become the
+        // ordinary way higher-grade promotion is requested.
         // TODO: This first pass only checks simple structural directional
         // coherence. Later, successful lift should also verify that the
         // orthogonal pressure has consolidated into a meaningful higher
         // relation rather than any arbitrary cross-carrier contrast.
-        if (!IsLiftCandidate(left, right))
+        if (!TryCreateLiftCandidate(left, right, out var lifted) ||
+            lifted is null)
         {
             return EngineElementOutcome.WithTension(
                 CreateZeroLikeElement(targetGrade),
@@ -20,10 +25,24 @@ internal static class EngineEvaluation
                 "Orthogonal lift preserved a zero-like lifted shell because the inputs were not a directionally coherent lift candidate.");
         }
 
-        return EngineElementOutcome.Exact(
-            new CompositeElement(
-                NormalizeLiftBasis(left),
-                NormalizeLiftBasis(right)));
+        return EngineElementOutcome.Exact(lifted);
+    }
+
+    internal static bool TryCreateLiftCandidate(
+        GradedElement left,
+        GradedElement right,
+        out GradedElement? candidate)
+    {
+        if (!IsLiftCandidate(left, right))
+        {
+            candidate = null;
+            return false;
+        }
+
+        candidate = new CompositeElement(
+            NormalizeLiftBasis(left),
+            NormalizeLiftBasis(right));
+        return true;
     }
 
     internal static EngineElementOutcome ComposeRatio(
