@@ -67,6 +67,9 @@ public static class Core3JsonSerializer
     public static string Serialize(OperationSite site, Core3JsonSerializerOptions? options = null) =>
         Serialize(writer => Write(writer, site, Resolve(options)), options);
 
+    public static string Serialize(TraversalMachineDefinition machine, Core3JsonSerializerOptions? options = null) =>
+        Serialize(writer => Write(writer, machine, Resolve(options)), options);
+
     public static void Write(Utf8JsonWriter writer, GradedElement element, Core3JsonSerializerOptions? options = null)
     {
         ArgumentNullException.ThrowIfNull(writer);
@@ -385,6 +388,34 @@ public static class Core3JsonSerializer
         writer.WriteEndObject();
     }
 
+    public static void Write(Utf8JsonWriter writer, TraversalMachineDefinition machine, Core3JsonSerializerOptions? options = null)
+    {
+        ArgumentNullException.ThrowIfNull(writer);
+        ArgumentNullException.ThrowIfNull(machine);
+
+        var actual = Resolve(options);
+
+        writer.WriteStartObject();
+        writer.WriteString("kind", "traversalMachine");
+        writer.WriteString("name", machine.Name);
+        writer.WriteString("entrySiteName", machine.EntrySiteName);
+        writer.WritePropertyName("registers");
+        writer.WriteStartArray();
+        foreach (var register in machine.Registers)
+        {
+            Write(writer, register, actual);
+        }
+        writer.WriteEndArray();
+        writer.WritePropertyName("attachments");
+        writer.WriteStartArray();
+        foreach (var attachment in machine.Attachments)
+        {
+            Write(writer, attachment, actual);
+        }
+        writer.WriteEndArray();
+        writer.WriteEndObject();
+    }
+
     public static void Write(Utf8JsonWriter writer, BindingSelector selector, Core3JsonSerializerOptions? options = null)
     {
         ArgumentNullException.ThrowIfNull(writer);
@@ -521,6 +552,20 @@ public static class Core3JsonSerializer
         writer.WriteEndObject();
     }
 
+    public static void Write(Utf8JsonWriter writer, TraversalRegister register, Core3JsonSerializerOptions? options = null)
+    {
+        ArgumentNullException.ThrowIfNull(writer);
+        ArgumentNullException.ThrowIfNull(register);
+
+        var actual = Resolve(options);
+
+        writer.WriteStartObject();
+        writer.WriteString("name", register.Name);
+        writer.WritePropertyName("template");
+        Write(writer, register.Template, actual);
+        writer.WriteEndObject();
+    }
+
     public static void Write(Utf8JsonWriter writer, OperationLawReference law)
     {
         ArgumentNullException.ThrowIfNull(writer);
@@ -600,6 +645,12 @@ public static class Core3JsonSerializer
     {
         ArgumentNullException.ThrowIfNull(writer);
         writer.Write(Serialize(attachment, options));
+    }
+
+    public static void Write(TextWriter writer, TraversalMachineDefinition machine, Core3JsonSerializerOptions? options = null)
+    {
+        ArgumentNullException.ThrowIfNull(writer);
+        writer.Write(Serialize(machine, options));
     }
 
     private static void Write(Utf8JsonWriter writer, EngineOperationPiece piece, Core3JsonSerializerOptions options)

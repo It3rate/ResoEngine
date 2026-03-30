@@ -180,4 +180,76 @@ public sealed class BindingTests
         Assert.Equal("a", fibonacci.Outputs[0].Target.Name);
         Assert.Equal("b", fibonacci.Outputs[1].Target.Name);
     }
+
+    [Fact]
+    public void TraversalMachineDefinition_CanDescribeAccumulatorLoop()
+    {
+        var machine = new TraversalMachineDefinition(
+            "sum-loop",
+            "accumulate",
+            [
+                new TraversalRegister(
+                    "accumulator",
+                    new BoundScalarTemplate
+                    {
+                        Value = new BoundSlot<long> { Literal = 0 },
+                        Unit = new BoundSlot<long> { Literal = 1 }
+                    })
+            ],
+            [
+                new OperationAttachment(
+                    new OperationSite(
+                        OperationSiteKind.Carrier,
+                        "accumulate",
+                        BindingAddress.At(1, 2)),
+                    new OperationLawReference("Add"),
+                    [
+                        new OperationInputBinding(
+                            "accumulator",
+                            BindingSelector.Named(
+                                BindingDomain.Token,
+                                "accumulator",
+                                BindingProjection.Whole)),
+                        new OperationInputBinding(
+                            "currentItem",
+                            BindingSelector.At(
+                                BindingDomain.Family,
+                                0,
+                                projection: BindingProjection.Whole,
+                                storeTarget: new BindingStorageTarget(BindingDomain.Context, "currentItem")))
+                    ],
+                    [
+                        new OperationOutputBinding(
+                            "sum",
+                            new BindingStorageTarget(BindingDomain.Token, "accumulator"),
+                            BindingTransform.Identity)
+                    ]),
+                new OperationAttachment(
+                    new OperationSite(OperationSiteKind.Boundary, "continue"),
+                    new OperationLawReference("ContinueWhileNextMemberExists"),
+                    [
+                        new OperationInputBinding(
+                            "nextItem",
+                            BindingSelector.At(
+                                BindingDomain.Family,
+                                1,
+                                projection: BindingProjection.Whole,
+                                storeTarget: new BindingStorageTarget(BindingDomain.Context, "nextItem")))
+                    ],
+                    [
+                        new OperationOutputBinding(
+                            "route",
+                            new BindingStorageTarget(BindingDomain.Result, "route"),
+                            BindingTransform.Identity)
+                    ])
+            ]);
+
+        Assert.Equal("sum-loop", machine.Name);
+        Assert.Equal("accumulate", machine.EntrySiteName);
+        Assert.Single(machine.Registers);
+        Assert.Equal("accumulator", machine.Registers[0].Name);
+        Assert.Equal(2, machine.Attachments.Count);
+        Assert.Equal("Add", machine.Attachments[0].Law.Name);
+        Assert.Equal("ContinueWhileNextMemberExists", machine.Attachments[1].Law.Name);
+    }
 }

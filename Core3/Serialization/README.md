@@ -30,6 +30,7 @@ The JSON writer currently handles:
 - bound templates
 - direct binding primitives such as addresses, storage targets, selectors,
   projections, transforms, signals, and sites
+- traversal machine definitions and registers
 - operation attachments
 
 ## Minimal Versus Derived

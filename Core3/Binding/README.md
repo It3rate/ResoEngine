@@ -315,6 +315,18 @@ Describes one law attached to one site together with:
 This keeps structure, data, and executable law separate while still making
 their contact points explicit.
 
+### `TraversalMachineDefinition`
+
+Represents one small declarative machine made from:
+
+- named traversal registers
+- one entry site name
+- a list of attached operation laws
+
+This is still definition-time structure rather than a full execution runtime,
+but it provides a convenient serializable bundle for inspecting loop shapes,
+branch shapes, and later visualizing flow.
+
 ## Numeric Descriptor Direction
 
 The current experiment uses small axis-like numeric signals for:
