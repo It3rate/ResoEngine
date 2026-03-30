@@ -9,12 +9,7 @@ public sealed record BindingConstraint(
     string TargetPath,
     BindingSelector Source,
     BindingTransform Transform,
-    BindingMaterialization Materialization = BindingMaterialization.OnBind)
-{
-    public string TargetPath { get; } = !string.IsNullOrWhiteSpace(TargetPath)
-        ? TargetPath
-        : throw new ArgumentException("A binding target path cannot be empty.", nameof(TargetPath));
-}
+    BindingMaterialization Materialization = BindingMaterialization.OnBind);
 
 /// <summary>
 /// Base type for partially specified runtime literals that are later bound into
@@ -59,14 +54,6 @@ public sealed record BoundScalarTemplate : BoundTemplate
 /// materialization can therefore proceed recursively without requiring the
 /// template itself to be a first-class engine element.
 /// </summary>
-public sealed record BoundCompositeTemplate : BoundTemplate
-{
-    public BoundCompositeTemplate(BoundTemplate recessive, BoundTemplate dominant)
-    {
-        Recessive = recessive ?? throw new ArgumentNullException(nameof(recessive));
-        Dominant = dominant ?? throw new ArgumentNullException(nameof(dominant));
-    }
-
-    public BoundTemplate Recessive { get; }
-    public BoundTemplate Dominant { get; }
-}
+public sealed record BoundCompositeTemplate(
+    BoundTemplate Recessive,
+    BoundTemplate Dominant) : BoundTemplate;

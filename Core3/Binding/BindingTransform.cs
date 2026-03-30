@@ -54,7 +54,11 @@ public sealed record BindingSignal
 
     public bool TryCompose(BindingSignal other, out BindingSignal? composed)
     {
-        ArgumentNullException.ThrowIfNull(other);
+        if (other is null)
+        {
+            composed = null;
+            return false;
+        }
 
         if (Value.TryMultiply(other.Value, out var product) &&
             product is not null)

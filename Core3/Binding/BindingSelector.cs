@@ -24,18 +24,9 @@ public enum BindingDomain
 /// </summary>
 public abstract record BindingAddress
 {
-    public sealed record Position(GradedElement Parameter) : BindingAddress
-    {
-        public GradedElement Parameter { get; } =
-            Parameter ?? throw new ArgumentNullException(nameof(Parameter));
-    }
+    public sealed record Position(GradedElement Parameter) : BindingAddress;
 
-    public sealed record Name(string Value) : BindingAddress
-    {
-        public string Value { get; } = !string.IsNullOrWhiteSpace(Value)
-            ? Value
-            : throw new ArgumentException("A binding name cannot be empty.", nameof(Value));
-    }
+    public sealed record Name(string Value) : BindingAddress;
 
     public static Position At(long value, long resolution = 1) =>
         new(new AtomicElement(value, resolution));
