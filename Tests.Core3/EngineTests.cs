@@ -446,12 +446,6 @@ public sealed class EngineTests
         Assert.False(outcome.IsExact);
         Assert.Equal(new AtomicElement(8, 0), Assert.IsType<AtomicElement>(outcome.Result));
         Assert.Equal(new CompositeElement(left, right), outcome.Tension);
-        Assert.True(outcome.TryUseLiftCandidate(out var lifted));
-        Assert.Equal(
-            new CompositeElement(
-                new AtomicElement(1, 2),
-                new AtomicElement(1, 4)),
-            Assert.IsType<CompositeElement>(lifted));
     }
 
     [Fact]
@@ -465,16 +459,10 @@ public sealed class EngineTests
         Assert.False(outcome.IsExact);
         Assert.Equal(new AtomicElement(8, 0), Assert.IsType<AtomicElement>(outcome.Result));
         Assert.Equal(new CompositeElement(left, right), outcome.Tension);
-        Assert.True(outcome.TryUseLiftCandidate(out var lifted));
-        Assert.Equal(
-            new CompositeElement(
-                new AtomicElement(3, 2),
-                new AtomicElement(1, 4)),
-            Assert.IsType<CompositeElement>(lifted));
     }
 
     [Fact]
-    public void MixedCarrierAdd_EmitsLiftCandidateThatMatchesExplicitLift()
+    public void DirectLift_RemainsAvailableAfterMixedCarrierAdd()
     {
         var aligned = new AtomicElement(3, 1);
         var orthogonal = new AtomicElement(3, -1);
@@ -483,8 +471,12 @@ public sealed class EngineTests
         var explicitLift = aligned.LiftOrthogonalWithTension(orthogonal);
 
         Assert.False(addOutcome.IsExact);
-        Assert.True(addOutcome.TryUseLiftCandidate(out var lifted));
-        Assert.Equal(explicitLift.Result, lifted);
+        Assert.True(explicitLift.IsExact);
+        Assert.Equal(
+            new CompositeElement(
+                new AtomicElement(3, 1),
+                new AtomicElement(3, 1)),
+            Assert.IsType<CompositeElement>(explicitLift.Result));
     }
 
     [Fact]
@@ -761,24 +753,23 @@ public sealed class EngineTests
     }
 
     [Fact]
-    public void OrthogonalLift_InvalidCandidate_ReturnsZeroLikeLiftShell()
+    public void OrthogonalLift_AllowsParallelSameGradeLift()
     {
         var left = new AtomicElement(3, 1);
         var right = new AtomicElement(2, 1);
 
         var outcome = left.LiftOrthogonalWithTension(right);
 
-        Assert.False(outcome.IsExact);
+        Assert.True(outcome.IsExact);
 
         var lifted = Assert.IsType<CompositeElement>(outcome.Result);
         Assert.Equal(1, lifted.Grade);
-        Assert.Equal(new AtomicElement(0, 0), Assert.IsType<AtomicElement>(lifted.Recessive));
-        Assert.Equal(new AtomicElement(0, 0), Assert.IsType<AtomicElement>(lifted.Dominant));
-        Assert.Equal(new CompositeElement(left, right), outcome.Tension);
+        Assert.Equal(new AtomicElement(3, 1), Assert.IsType<AtomicElement>(lifted.Recessive));
+        Assert.Equal(new AtomicElement(2, 1), Assert.IsType<AtomicElement>(lifted.Dominant));
     }
 
     [Fact]
-    public void CompositeOrthogonalLift_RequiresCollinearAxesAndNormalizesLiftedBasis()
+    public void CompositeOrthogonalLift_NormalizesLiftedBasis()
     {
         var horizontal = new CompositeElement(
             new AtomicElement(-3, 1),
@@ -801,6 +792,32 @@ public sealed class EngineTests
         Assert.Equal(new AtomicElement(5, 1), recessive.Dominant);
         Assert.Equal(new AtomicElement(2, 1), dominant.Recessive);
         Assert.Equal(new AtomicElement(7, 1), dominant.Dominant);
+    }
+
+    [Fact]
+    public void AxisCanPromoteIntoSparseAreaByLiftingAgainstZeroLikePeer()
+    {
+        var horizontalAxis = new CompositeElement(
+            new CompositeElement(
+                new AtomicElement(10, 1),
+                new AtomicElement(3, 1)),
+            new CompositeElement(
+                new AtomicElement(10, 1),
+                new AtomicElement(7, 1)));
+
+        var outcome = horizontalAxis.LiftOrthogonalWithTension(horizontalAxis.CreateZeroLikePeer());
+
+        Assert.True(outcome.IsExact);
+
+        var areaLike = Assert.IsType<CompositeElement>(outcome.Result);
+        Assert.Equal(3, areaLike.Grade);
+        Assert.Equal(horizontalAxis, areaLike.Recessive);
+
+        var zeroAxis = Assert.IsType<CompositeElement>(areaLike.Dominant);
+        Assert.Equal(new AtomicElement(0, 0), Assert.IsType<AtomicElement>(Assert.IsType<CompositeElement>(zeroAxis.Recessive).Recessive));
+        Assert.Equal(new AtomicElement(0, 0), Assert.IsType<AtomicElement>(Assert.IsType<CompositeElement>(zeroAxis.Recessive).Dominant));
+        Assert.Equal(new AtomicElement(0, 0), Assert.IsType<AtomicElement>(Assert.IsType<CompositeElement>(zeroAxis.Dominant).Recessive));
+        Assert.Equal(new AtomicElement(0, 0), Assert.IsType<AtomicElement>(Assert.IsType<CompositeElement>(zeroAxis.Dominant).Dominant));
     }
 
     [Fact]

@@ -7,11 +7,9 @@ namespace Core3.Engine;
 public sealed record EngineElementOutcome(
     GradedElement Result,
     GradedElement? Tension = null,
-    GradedElement? LiftCandidate = null,
     string? Note = null) : IExactResult
 {
     public bool IsExact => Tension is null;
-    public bool HasLiftCandidate => LiftCandidate is not null;
 
     public static EngineElementOutcome Exact(GradedElement result) => new(result);
 
@@ -19,18 +17,5 @@ public sealed record EngineElementOutcome(
         GradedElement result,
         GradedElement tension,
         string? note = null) =>
-        new(result, tension, null, note);
-
-    public static EngineElementOutcome WithTension(
-        GradedElement result,
-        GradedElement tension,
-        GradedElement? liftCandidate = null,
-        string? note = null) =>
-        new(result, tension, liftCandidate, note);
-
-    public bool TryUseLiftCandidate(out GradedElement? lifted)
-    {
-        lifted = LiftCandidate;
-        return lifted is not null;
-    }
+        new(result, tension, note);
 }

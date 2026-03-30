@@ -8,41 +8,24 @@ internal static class EngineEvaluation
     {
         var targetGrade = Math.Max(left.Grade, right.Grade) + 1;
 
-        // Preferred path: lawful operations emit lift candidates and callers
-        // choose whether to promote them. This direct lift shell remains useful
-        // for compatibility and tests, but the candidate path should become the
-        // ordinary way higher-grade promotion is requested.
-        // TODO: This first pass only checks simple structural directional
-        // coherence. Later, successful lift should also verify that the
-        // orthogonal pressure has consolidated into a meaningful higher
-        // relation rather than any arbitrary cross-carrier contrast.
-        if (!TryCreateLiftCandidate(left, right, out var lifted) ||
-            lifted is null)
+        // TODO: The first sparse-lift pass accepts any same-grade pair and
+        // normalizes the lifted basis. Later this can broaden to mixed-grade
+        // promotion by zero-filling the missing intermediate structure and can
+        // optionally validate stronger coherence rules when a caller wants a
+        // more meaningful lifted interior rather than just a lawful higher
+        // shell.
+        if (left.Grade != right.Grade)
         {
             return EngineElementOutcome.WithTension(
                 CreateZeroLikeElement(targetGrade),
                 CreateLiftProvenance(left, right),
-                "Orthogonal lift preserved a zero-like lifted shell because the inputs were not a directionally coherent lift candidate.");
+                "Orthogonal lift preserved a zero-like lifted shell because the inputs were not the same grade.");
         }
 
-        return EngineElementOutcome.Exact(lifted);
-    }
-
-    internal static bool TryCreateLiftCandidate(
-        GradedElement left,
-        GradedElement right,
-        out GradedElement? candidate)
-    {
-        if (!IsLiftCandidate(left, right))
-        {
-            candidate = null;
-            return false;
-        }
-
-        candidate = new CompositeElement(
-            NormalizeLiftBasis(left),
-            NormalizeLiftBasis(right));
-        return true;
+        return EngineElementOutcome.Exact(
+            new CompositeElement(
+                NormalizeLiftBasis(left),
+                NormalizeLiftBasis(right)));
     }
 
     internal static EngineElementOutcome ComposeRatio(
@@ -167,23 +150,6 @@ internal static class EngineEvaluation
         return true;
     }
 
-    private static bool IsLiftCandidate(GradedElement left, GradedElement right) =>
-        left.Grade == right.Grade &&
-        !left.SharesUnitSpace(right) &&
-        IsCollinear(left) &&
-        IsCollinear(right);
-
-    private static bool IsCollinear(GradedElement element) =>
-        element switch
-        {
-            AtomicElement atomic => atomic.HasResolvedUnits,
-            CompositeElement composite =>
-                composite.Recessive.SharesUnitSpace(composite.Dominant) &&
-                IsCollinear(composite.Recessive) &&
-                IsCollinear(composite.Dominant),
-            _ => false
-        };
-
     private static GradedElement NormalizeLiftBasis(GradedElement element) =>
         element switch
         {
@@ -194,7 +160,7 @@ internal static class EngineEvaluation
             _ => element
         };
 
-    private static GradedElement CreateZeroLikeElement(int grade) =>
+    internal static GradedElement CreateZeroLikeElement(int grade) =>
         grade <= 0
             ? new AtomicElement(0, 0)
             : new CompositeElement(

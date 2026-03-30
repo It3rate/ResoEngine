@@ -136,12 +136,6 @@ public static class Core3JsonSerializer
             Write(writer, outcome.Tension, actual);
         }
 
-        if (outcome.LiftCandidate is not null)
-        {
-            writer.WritePropertyName("liftCandidate");
-            Write(writer, outcome.LiftCandidate, actual);
-        }
-
         if (!string.IsNullOrWhiteSpace(outcome.Note))
         {
             writer.WriteString("note", outcome.Note);

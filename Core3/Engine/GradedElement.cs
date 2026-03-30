@@ -21,6 +21,8 @@ public abstract record GradedElement
     public abstract EngineElementOutcome ScaleWithTension(AtomicElement factor);
     public EngineElementOutcome LiftOrthogonalWithTension(GradedElement other) =>
         EngineEvaluation.LiftOrthogonal(this, other);
+    public GradedElement CreateZeroLikePeer() =>
+        EngineEvaluation.CreateZeroLikeElement(Grade);
 
     public virtual bool TryFold(out GradedElement? folded)
     {
