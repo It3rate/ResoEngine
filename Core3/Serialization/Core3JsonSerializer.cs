@@ -19,6 +19,9 @@ public static class Core3JsonSerializer
     public static string Serialize(GradedElement element, Core3JsonSerializerOptions? options = null) =>
         Serialize(writer => Write(writer, element, Resolve(options)), options);
 
+    public static string Serialize(EngineElementOutcome outcome, Core3JsonSerializerOptions? options = null) =>
+        Serialize(writer => Write(writer, outcome, Resolve(options)), options);
+
     public static string Serialize(EnginePin pin, Core3JsonSerializerOptions? options = null) =>
         Serialize(writer => Write(writer, pin, Resolve(options)), options);
 
@@ -100,6 +103,30 @@ public static class Core3JsonSerializer
             default:
                 throw new InvalidOperationException($"Unsupported graded element type: {element.GetType().Name}.");
         }
+    }
+
+    public static void Write(Utf8JsonWriter writer, EngineElementOutcome outcome, Core3JsonSerializerOptions? options = null)
+    {
+        var actual = Resolve(options);
+
+        writer.WriteStartObject();
+        writer.WriteString("kind", "elementOutcome");
+        writer.WriteBoolean("isExact", outcome.IsExact);
+        writer.WritePropertyName("result");
+        Write(writer, outcome.Result, actual);
+
+        if (outcome.Tension is not null)
+        {
+            writer.WritePropertyName("tension");
+            Write(writer, outcome.Tension, actual);
+        }
+
+        if (!string.IsNullOrWhiteSpace(outcome.Note))
+        {
+            writer.WriteString("note", outcome.Note);
+        }
+
+        writer.WriteEndObject();
     }
 
     public static void Write(Utf8JsonWriter writer, EnginePin pin, Core3JsonSerializerOptions? options = null)
@@ -573,6 +600,11 @@ public static class Core3JsonSerializer
     public static void Write(TextWriter writer, GradedElement element, Core3JsonSerializerOptions? options = null)
     {
         writer.Write(Serialize(element, options));
+    }
+
+    public static void Write(TextWriter writer, EngineElementOutcome outcome, Core3JsonSerializerOptions? options = null)
+    {
+        writer.Write(Serialize(outcome, options));
     }
 
     public static void Write(TextWriter writer, EngineOperationContext context, Core3JsonSerializerOptions? options = null)

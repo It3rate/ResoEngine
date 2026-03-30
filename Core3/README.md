@@ -172,6 +172,10 @@ A focused note on grade-0 raw exact storage, `null` versus `0`, and
 tension-preserving non-failure semantics now lives in
 [Grade0AndTension.md](Grade0AndTension.md).
 
+A short working audit of which grade-0 paths are still exact-only and which
+first tension-preserving migration has already landed now lives in
+[Grade0Audit.md](Grade0Audit.md).
+
 A prompt-safe consolidation of the current Core3 notes into AI-readable axioms
 now lives in [SystemPrompt.md](SystemPrompt.md).
 

@@ -124,6 +124,51 @@ public sealed class SerializationMinimalTests
         AssertJsonEqual(expectedFoldedResultJson, foldedResultJson);
     }
 
+    [Fact]
+    public void Core3JsonSerializer_SerializesTensionBearingFoldOutcome_Minimally()
+    {
+        // Serializes a grade-1 ratio fold that cannot stay on one resolved carrier.
+        // Approximate math: fold (3 / -1) over (2 / 1), preserving the unresolved
+        // result 3/0 together with the original ratio as the held tension source.
+        var expectedJson = """
+{
+  "kind": "elementOutcome",
+  "isExact": false,
+  "result": {
+    "kind": "atomic",
+    "grade": 0,
+    "value": 3,
+    "unit": 0
+  },
+  "tension": {
+    "kind": "composite",
+    "grade": 1,
+    "recessive": {
+      "kind": "atomic",
+      "grade": 0,
+      "value": 2,
+      "unit": 1
+    },
+    "dominant": {
+      "kind": "atomic",
+      "grade": 0,
+      "value": 3,
+      "unit": -1
+    }
+  },
+  "note": "Ratio fold preserved carrier contrast as unresolved support."
+}
+""";
+
+        var contrastive = new CompositeElement(
+            new AtomicElement(2, 1),
+            new AtomicElement(3, -1));
+
+        var json = Core3JsonSerializer.Serialize(contrastive.FoldWithTension());
+
+        AssertJsonEqual(expectedJson, json);
+    }
+
     private static void AssertJsonEqual(string expectedJson, string actualJson) =>
         Assert.Equal(Normalize(expectedJson), Normalize(actualJson));
 

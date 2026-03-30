@@ -238,6 +238,27 @@ For current Core3 work:
   mathematically meaningful
 - reserve exceptions for malformed structure, not ordinary structural stress
 
+## First Migration Slice
+
+The first concrete migration now lives in grade-1 ratio folding.
+
+That path now has two layers:
+
+- exact-only `TryComposeRatio`
+- lawful `ComposeRatio` returning `EngineElementOutcome`
+
+When a ratio cannot fold honestly onto one resolved support yet still clearly
+contains information, the current first-pass behavior is:
+
+- preserve an unresolved atomic result with `Unit == 0`
+- preserve the original ratio structure as tension provenance
+- keep the old exact-only `Try...` surface available where callers still want a
+  strict settled-result test
+
+This is intentionally conservative.
+It is not the final law for all zero-like or under-resolution behavior.
+It is the first concrete step away from crash-shaped or null-shaped outcomes.
+
 This should help Core3 evolve toward:
 
 - lower-level execution backends

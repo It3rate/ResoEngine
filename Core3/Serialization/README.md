@@ -22,6 +22,7 @@ So the present direction is:
 The JSON writer currently handles:
 
 - core graded elements
+- element outcomes
 - pins
 - references
 - operation contexts and families

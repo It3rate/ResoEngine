@@ -12,6 +12,7 @@ public abstract record GradedElement
     public abstract GradedElement Negate();
     public abstract GradedElement SwapOrder();
     public abstract GradedElement FlipPerspective();
+    public abstract EngineElementOutcome FoldWithTension();
     public abstract bool TryFold(out GradedElement? folded);
     public abstract bool TryCommitToCalibration(GradedElement calibration, out GradedElement? committed);
     public abstract bool TryAlignExact(GradedElement other, ResolutionPolicy policy, out GradedElement? leftAligned, out GradedElement? rightAligned);

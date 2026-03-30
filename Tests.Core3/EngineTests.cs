@@ -43,13 +43,43 @@ public sealed class EngineTests
     }
 
     [Fact]
-    public void CompositeFold_RejectsContrastCarrierChildren()
+    public void CompositeFold_PreservesContrastCarrierAsUnresolvedAtomicResult()
     {
         var contrastive = new CompositeElement(
             new AtomicElement(2, 1),
             new AtomicElement(3, -1));
 
-        Assert.False(contrastive.TryFold(out _));
+        var outcome = contrastive.FoldWithTension();
+
+        Assert.True(contrastive.TryFold(out var folded));
+        Assert.False(outcome.IsExact);
+        Assert.Equal(
+            new CompositeElement(
+                new AtomicElement(2, 1),
+                new AtomicElement(3, -1)),
+            outcome.Tension);
+
+        var atomic = Assert.IsType<AtomicElement>(folded);
+        Assert.Equal(new AtomicElement(3, 0), atomic);
+        Assert.True(atomic.IsUnresolvedUnit);
+    }
+
+    [Fact]
+    public void CompositeFold_PreservesZeroDenominatorAsUnresolvedAtomicResult()
+    {
+        var zeroLikeRatio = new CompositeElement(
+            new AtomicElement(0, 10),
+            new AtomicElement(3, 10));
+
+        var outcome = zeroLikeRatio.FoldWithTension();
+
+        Assert.True(zeroLikeRatio.TryFold(out var folded));
+        Assert.False(outcome.IsExact);
+        Assert.Equal(zeroLikeRatio, outcome.Tension);
+
+        var atomic = Assert.IsType<AtomicElement>(folded);
+        Assert.Equal(new AtomicElement(30, 0), atomic);
+        Assert.True(atomic.IsUnresolvedUnit);
     }
 
     [Fact]
@@ -69,6 +99,28 @@ public sealed class EngineTests
         Assert.Equal(1, lowered.Grade);
         Assert.Equal(new AtomicElement(3, 10), lowered.Recessive);
         Assert.Equal(new AtomicElement(2, 8), lowered.Dominant);
+    }
+
+    [Fact]
+    public void HigherGradeFold_CarriesChildTensionForwardWhileStillLoweringGrade()
+    {
+        var gradeTwo = new CompositeElement(
+            new CompositeElement(
+                new AtomicElement(2, 1),
+                new AtomicElement(3, -1)),
+            new CompositeElement(
+                new AtomicElement(8, 1),
+                new AtomicElement(2, 1)));
+
+        var outcome = gradeTwo.FoldWithTension();
+
+        Assert.False(outcome.IsExact);
+
+        var lowered = Assert.IsType<CompositeElement>(outcome.Result);
+        Assert.Equal(1, lowered.Grade);
+        Assert.Equal(new AtomicElement(3, 0), lowered.Recessive);
+        Assert.Equal(new AtomicElement(2, 8), lowered.Dominant);
+        Assert.Equal(gradeTwo, outcome.Tension);
     }
 
     [Fact]

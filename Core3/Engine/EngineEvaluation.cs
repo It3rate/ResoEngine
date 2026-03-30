@@ -2,6 +2,47 @@ namespace Core3.Engine;
 
 internal static class EngineEvaluation
 {
+    internal static EngineElementOutcome ComposeRatio(
+        AtomicElement numerator,
+        AtomicElement denominator)
+    {
+        var ratio = new CompositeElement(denominator, numerator);
+
+        if (!numerator.HasResolvedUnits || !denominator.HasResolvedUnits)
+        {
+            return EngineElementOutcome.WithTension(
+                CreateUnresolvedRatioResult(numerator, denominator),
+                ratio,
+                "Ratio fold preserved unresolved support because one or both unit slots were unresolved.");
+        }
+
+        if (Math.Sign(numerator.Unit) != Math.Sign(denominator.Unit))
+        {
+            return EngineElementOutcome.WithTension(
+                CreateUnresolvedRatioResult(numerator, denominator),
+                ratio,
+                "Ratio fold preserved carrier contrast as unresolved support.");
+        }
+
+        if (denominator.Value == 0)
+        {
+            return EngineElementOutcome.WithTension(
+                CreateUnresolvedRatioResult(numerator, denominator),
+                ratio,
+                "Ratio fold preserved a zero-like denominator as unresolved support.");
+        }
+
+        var value = checked(numerator.Value * Math.Abs(denominator.Unit));
+
+        if (denominator.Value < 0)
+        {
+            value = checked(-value);
+        }
+
+        var unit = checked(Math.Sign(numerator.Unit) * Math.Abs(numerator.Unit) * Math.Abs(denominator.Value));
+        return EngineElementOutcome.Exact(new AtomicElement(value, unit));
+    }
+
     internal static bool TryFoldToAtomic(GradedElement element, out AtomicElement? folded)
     {
         var current = element;
@@ -26,24 +67,15 @@ internal static class EngineEvaluation
         AtomicElement denominator,
         out GradedElement? folded)
     {
-        if (!numerator.HasResolvedUnits ||
-            !denominator.HasResolvedUnits ||
-            denominator.Value == 0 ||
-            Math.Sign(numerator.Unit) != Math.Sign(denominator.Unit))
+        var outcome = ComposeRatio(numerator, denominator);
+
+        if (!outcome.IsExact)
         {
             folded = null;
             return false;
         }
 
-        var value = checked(numerator.Value * Math.Abs(denominator.Unit));
-
-        if (denominator.Value < 0)
-        {
-            value = checked(-value);
-        }
-
-        var unit = checked(Math.Sign(numerator.Unit) * Math.Abs(numerator.Unit) * Math.Abs(denominator.Value));
-        folded = new AtomicElement(value, unit);
+        folded = outcome.Result;
         return true;
     }
 
@@ -98,5 +130,22 @@ internal static class EngineEvaluation
             new CompositeElement(rr, dd),
             new CompositeElement(rd, dr));
         return true;
+    }
+
+    private static AtomicElement CreateUnresolvedRatioResult(
+        AtomicElement numerator,
+        AtomicElement denominator)
+    {
+        var preservedSupport = Math.Max(
+            1L,
+            Math.Max(Math.Abs(numerator.Unit), Math.Abs(denominator.Unit)));
+        var value = checked(numerator.Value * preservedSupport);
+
+        if (denominator.Value < 0)
+        {
+            value = checked(-value);
+        }
+
+        return new AtomicElement(value, 0);
     }
 }

@@ -38,25 +38,34 @@ public sealed record CompositeElement : GradedElement
         Dominant.FlipPerspective(),
         Recessive.FlipPerspective());
 
-    public override bool TryFold(out GradedElement? folded)
+    public override EngineElementOutcome FoldWithTension()
     {
         if (Recessive is AtomicElement denominator &&
             Dominant is AtomicElement numerator)
         {
-            return EngineEvaluation.TryComposeRatio(numerator, denominator, out folded);
+            return EngineEvaluation.ComposeRatio(numerator, denominator);
         }
 
-        if (Recessive.TryFold(out var foldedRecessive) &&
-            Dominant.TryFold(out var foldedDominant) &&
-            foldedRecessive is not null &&
-            foldedDominant is not null)
+        var recessiveOutcome = Recessive.FoldWithTension();
+        var dominantOutcome = Dominant.FoldWithTension();
+        var folded = new CompositeElement(recessiveOutcome.Result, dominantOutcome.Result);
+
+        if (recessiveOutcome.IsExact &&
+            dominantOutcome.IsExact)
         {
-            folded = new CompositeElement(foldedRecessive, foldedDominant);
-            return true;
+            return EngineElementOutcome.Exact(folded);
         }
 
-        folded = null;
-        return false;
+        return EngineElementOutcome.WithTension(
+            folded,
+            this,
+            "Composite fold preserved child tension.");
+    }
+
+    public override bool TryFold(out GradedElement? folded)
+    {
+        folded = FoldWithTension().Result;
+        return true;
     }
 
     public override bool TryCommitToCalibration(GradedElement calibration, out GradedElement? committed)
