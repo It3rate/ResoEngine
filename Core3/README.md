@@ -174,3 +174,7 @@ tension-preserving non-failure semantics now lives in
 
 A prompt-safe consolidation of the current Core3 notes into AI-readable axioms
 now lives in [SystemPrompt.md](SystemPrompt.md).
+
+A separate continuity note for the larger Core2 directions we still want to
+grow into, such as inverse continuation, branch families, and dynamic
+execution, now lives in [Core2Continuities.md](Core2Continuities.md).

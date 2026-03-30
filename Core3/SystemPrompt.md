@@ -371,3 +371,48 @@ desirable.
 PR6. Keep pushing meaning downward into native Core3 elements and relations so
 future machines can discover patterns in the structure itself rather than only
 in surrounding code.
+
+## Part XVII. Core2 Continuities In Scope
+
+K1. Preserve the Core2 duality intuition:
+
+- encode versus act
+- dominant versus recessive
+- same versus opposite
+- local description versus later placement
+
+when those distinctions still map cleanly onto current Core3 structure.
+
+K2. Preserve the Core2 rule that structure comes first and later folds or
+readings interpret that structure afterward.
+
+K3. Preserve the Core2 rule that repetition is general.
+Traversal, iteration, continuation, looping, equation stepping, and boundary
+behavior should be read as one family of continuation structure.
+
+K4. Preserve the Core2 rule that traversal is stateful.
+Current position, facing, continuation law, and seed/history should remain part
+of the lawful state rather than being treated as display-only setup.
+
+K5. Preserve the Core2 rule that boundary labels are usually summaries of
+encountered structure rather than the deepest primitive laws.
+
+K6. Preserve the Core2 rule that pinning is fundamental and folding is later.
+
+K7. Preserve the Core2 boolean/frame insight:
+evaluate inside a frame, partition by relevant boundaries, preserve co-present
+pieces, and carry provenance separately from the elements themselves.
+
+K8. Preserve the Core2 tension rule:
+when a distinction cannot settle honestly in the current representation, prefer
+tension or lift over premature collapse.
+
+K9. Preserve the Core2 pattern that temporary operational roles do not require
+a second ontology.
+Promotion into frame role, temporary focusing, temporary derived ordering, and
+similar runtime acts should prefer role change over substance change.
+
+K10. Preserve the Core2 reuse principle:
+if the same structural pattern can explain number stepping, route traversal,
+equation traversal, ornament, glyph formation, or language branching, that is
+preferable to introducing unrelated mechanisms.
