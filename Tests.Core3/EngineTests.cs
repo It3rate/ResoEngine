@@ -49,7 +49,7 @@ public sealed class EngineTests
             new AtomicElement(2, 1),
             new AtomicElement(3, -1));
 
-        var outcome = contrastive.FoldWithTension();
+        var outcome = contrastive.Fold();
 
         Assert.True(contrastive.TryFold(out var folded));
         Assert.False(outcome.IsExact);
@@ -71,7 +71,7 @@ public sealed class EngineTests
             new AtomicElement(0, 10),
             new AtomicElement(3, 10));
 
-        var outcome = zeroLikeRatio.FoldWithTension();
+        var outcome = zeroLikeRatio.Fold();
 
         Assert.True(zeroLikeRatio.TryFold(out var folded));
         Assert.False(outcome.IsExact);
@@ -112,7 +112,7 @@ public sealed class EngineTests
                 new AtomicElement(8, 1),
                 new AtomicElement(2, 1)));
 
-        var outcome = gradeTwo.FoldWithTension();
+        var outcome = gradeTwo.Fold();
 
         Assert.False(outcome.IsExact);
 

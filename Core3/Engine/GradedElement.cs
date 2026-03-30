@@ -12,8 +12,7 @@ public abstract record GradedElement
     public abstract GradedElement Negate();
     public abstract GradedElement SwapOrder();
     public abstract GradedElement FlipPerspective();
-    public EngineElementOutcome Fold() => FoldWithTension();
-    public abstract EngineElementOutcome FoldWithTension();
+    public abstract EngineElementOutcome Fold();
     public EngineElementOutcome Lower() => EngineEvaluation.Lower(this);
     public abstract EngineElementOutcome CommitToCalibrationWithTension(GradedElement calibration);
     public abstract EngineElementPairOutcome AlignWithTension(GradedElement other, ResolutionPolicy policy);
@@ -22,9 +21,7 @@ public abstract record GradedElement
     public abstract EngineElementOutcome MultiplyWithTension(GradedElement other);
     public abstract EngineElementOutcome ScaleWithTension(AtomicElement factor);
     public EngineElementOutcome Lift(GradedElement other) =>
-        LiftOrthogonalWithTension(other);
-    public EngineElementOutcome LiftOrthogonalWithTension(GradedElement other) =>
-        EngineEvaluation.LiftOrthogonal(this, other);
+        EngineEvaluation.Lift(this, other);
     public GradedElement CreateZeroLikePeer() =>
         EngineEvaluation.CreateZeroLikeElement(Grade);
 
@@ -70,7 +67,7 @@ public abstract record GradedElement
             static outcome => outcome.Result,
             out scaled);
 
-    public bool TryLiftOrthogonal(GradedElement other, out GradedElement? lifted) =>
+    public bool TryLift(GradedElement other, out GradedElement? lifted) =>
         EngineExactness.TryProjectExact(
             Lift(other),
             static outcome => outcome.Result,

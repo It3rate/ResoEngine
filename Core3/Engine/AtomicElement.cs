@@ -23,7 +23,7 @@ public sealed record AtomicElement(long Value, long Unit) : GradedElement
 
     public override GradedElement FlipPerspective() => Negate();
 
-    public override EngineElementOutcome FoldWithTension() => EngineElementOutcome.Exact(this);
+    public override EngineElementOutcome Fold() => EngineElementOutcome.Exact(this);
 
     public EngineElementOutcome ReexpressToSupportWithTension(long targetResolution)
     {

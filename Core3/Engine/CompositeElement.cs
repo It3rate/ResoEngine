@@ -45,7 +45,7 @@ public sealed record CompositeElement : GradedElement
         Dominant.FlipPerspective(),
         Recessive.FlipPerspective());
 
-    public override EngineElementOutcome FoldWithTension()
+    public override EngineElementOutcome Fold()
     {
         if (Recessive is AtomicElement denominator &&
             Dominant is AtomicElement numerator)

@@ -418,7 +418,7 @@ public sealed class SerializationMinimalTests
             new AtomicElement(2, 1),
             new AtomicElement(3, -1));
 
-        var json = Core3JsonSerializer.Serialize(contrastive.FoldWithTension());
+        var json = Core3JsonSerializer.Serialize(contrastive.Fold());
 
         AssertJsonEqual(expectedJson, json);
     }

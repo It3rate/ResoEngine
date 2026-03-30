@@ -33,7 +33,7 @@ lawful-outcome surface now exists beside it.
 
 The first migrated paths are:
 
-- `CompositeElement.FoldWithTension`
+- `CompositeElement.Fold`
 - `EngineEvaluation.ComposeRatio`
 - `AtomicElement.ReexpressToSupportWithTension`
 - `AtomicElement.CommitToCalibrationWithTension`

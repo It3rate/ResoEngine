@@ -10,7 +10,7 @@ internal static class EngineEvaluation
             _ => EngineElementOutcome.Exact(element)
         };
 
-    internal static EngineElementOutcome LiftOrthogonal(
+    internal static EngineElementOutcome Lift(
         GradedElement left,
         GradedElement right)
     {
