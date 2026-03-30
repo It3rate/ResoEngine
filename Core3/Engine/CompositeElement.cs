@@ -6,6 +6,13 @@ namespace Core3.Engine;
 /// </summary>
 public sealed record CompositeElement : GradedElement
 {
+    // TODO: Long term, treat composite formation as an implicit origin-pinned
+    // relation rather than only as a free recursive pair. Conceptually the
+    // recessive and dominant children already meet at a virtual local origin.
+    // The current engine stores them directly because grade-0 still bootstraps
+    // from raw exact slots rather than from pin-owned child elements. When
+    // pinning can lawfully span every grade, revisit composite construction so
+    // higher-grade elements and pinned encounter structure converge.
     public CompositeElement(GradedElement recessive, GradedElement dominant)
     {
         ArgumentNullException.ThrowIfNull(recessive);

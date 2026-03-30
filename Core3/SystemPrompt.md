@@ -137,6 +137,12 @@ It is also:
 - the resulting higher object can address more than the original rays
 - the new basis supports lawful interior positions
 
+O12a. In practice, a first meaningful lift will often require a relation that
+already carries both same-carrier and orthogonal contributions rather than a
+lone orthogonal component by itself.
+A lone orthogonal component may remain ray-like until it participates in a
+richer relation that genuinely spans a higher interior.
+
 O13. When lift does occur, the new basis units should become positive native
 units of the higher grade.
 They should not remain only as negative or unresolved remnants of the prior

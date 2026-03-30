@@ -179,6 +179,28 @@ So Core3 should preserve this rule:
 - lift should only be treated as successful when the new orthogonal relation is
   coherent enough that interior positions are meaningful
 
+In practice, the first meaningful lift will often require a relation that
+already carries both:
+
+- a same-carrier contribution
+- an orthogonal contribution
+
+rather than a lone orthogonal component by itself.
+
+Geometrically:
+
+- one orthogonal ray by itself does not yet span a plane
+- a mixed relation such as aligned-plus-orthogonal structure is a more natural
+  seed for axis-like or area-like lift
+
+This means a future first-pass implementation may allow attempted lift before
+full coherence is provable, but the longer-term goal should still be:
+
+- preserve lone orthogonal content as route-like or ray-like structure when it
+  does not yet span a meaningful interior
+- promote to a lifted higher basis when the relation is rich enough to support
+  lawful interior positions
+
 This means lift is not just "there is another direction."
 It is also:
 
