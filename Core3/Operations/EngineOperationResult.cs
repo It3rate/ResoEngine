@@ -16,10 +16,6 @@ public sealed record EngineOperationResult
         GradedElement result,
         GradedElement? resultFrame = null)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(operationName);
-        ArgumentNullException.ThrowIfNull(context);
-        ArgumentNullException.ThrowIfNull(result);
-
         OperationName = operationName;
         Context = context;
         Result = result;
@@ -34,7 +30,7 @@ public sealed record EngineOperationResult
         GradedElement? resultFrame = null)
         : this(
             operationName,
-            new EngineOperationContext(sourceFrame, sourceMembers, isOrdered: true),
+            new EngineOperationContext(sourceFrame, sourceMembers, true),
             result,
             resultFrame)
     {

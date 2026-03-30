@@ -11,11 +11,8 @@ public static class EngineOperations
 {
     public static bool TryAdd(
         EngineOperationContext context,
-        out GradedElement? sum)
-    {
-        ArgumentNullException.ThrowIfNull(context);
-        return new EngineFamily(context).TryAddAll(out sum);
-    }
+        out GradedElement? sum) =>
+        new EngineFamily(context).TryAddAll(out sum);
 
     public static bool TryAdd(
         GradedElement frame,
@@ -27,11 +24,8 @@ public static class EngineOperations
 
     public static bool TryAddWithProvenance(
         EngineOperationContext context,
-        out EngineOperationResult? result)
-    {
-        ArgumentNullException.ThrowIfNull(context);
-        return new EngineFamily(context).TryAddAllWithProvenance(out result);
-    }
+        out EngineOperationResult? result) =>
+        new EngineFamily(context).TryAddAllWithProvenance(out result);
 
     public static bool TryAddWithProvenance(
         GradedElement frame,
@@ -43,11 +37,8 @@ public static class EngineOperations
 
     public static bool TryMultiply(
         EngineOperationContext context,
-        out GradedElement? product)
-    {
-        ArgumentNullException.ThrowIfNull(context);
-        return new EngineFamily(context).TryMultiplyAll(out product);
-    }
+        out GradedElement? product) =>
+        new EngineFamily(context).TryMultiplyAll(out product);
 
     public static bool TryMultiply(
         GradedElement frame,
@@ -59,11 +50,8 @@ public static class EngineOperations
 
     public static bool TryMultiplyWithProvenance(
         EngineOperationContext context,
-        out EngineOperationResult? result)
-    {
-        ArgumentNullException.ThrowIfNull(context);
-        return new EngineFamily(context).TryMultiplyAllWithProvenance(out result);
-    }
+        out EngineOperationResult? result) =>
+        new EngineFamily(context).TryMultiplyAllWithProvenance(out result);
 
     public static bool TryMultiplyWithProvenance(
         GradedElement frame,
@@ -78,8 +66,6 @@ public static class EngineOperations
         EngineBooleanOperation operation,
         out EngineBooleanResult? result)
     {
-        ArgumentNullException.ThrowIfNull(context);
-
         if (context.Frame is not CompositeElement)
         {
             result = null;
@@ -103,8 +89,6 @@ public static class EngineOperations
         EngineOccupancyOperation operation,
         out EngineFamilyBooleanResult? result)
     {
-        ArgumentNullException.ThrowIfNull(context);
-
         if (context.Frame is not CompositeElement)
         {
             result = null;
@@ -132,8 +116,6 @@ public static class EngineOperations
         EngineBooleanOperation operation,
         out IReadOnlyList<EngineBooleanResult>? results)
     {
-        ArgumentNullException.ThrowIfNull(context);
-
         if (context.Frame is not CompositeElement)
         {
             results = null;

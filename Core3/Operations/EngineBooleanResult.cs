@@ -15,9 +15,6 @@ public sealed record EngineBooleanResult
         EngineBooleanOperation operation,
         IReadOnlyList<EngineOperationPiece> pieces)
     {
-        ArgumentNullException.ThrowIfNull(context);
-        ArgumentNullException.ThrowIfNull(pieces);
-
         if (context.Count != 2 ||
             context.Frame is not CompositeElement ||
             context.Members[0] is not CompositeElement ||

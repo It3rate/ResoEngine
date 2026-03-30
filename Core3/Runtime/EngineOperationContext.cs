@@ -7,44 +7,18 @@ namespace Core3.Runtime;
 /// Generic runtime context for framed operations. This is runtime/API
 /// assistance structure, not serialized engine ontology.
 /// </summary>
-public sealed record EngineOperationContext
+public sealed record EngineOperationContext(
+    GradedElement Frame,
+    IReadOnlyList<GradedElement> Members,
+    bool IsOrdered,
+    EngineOperationContext? ParentContext = null,
+    int? ParentFocusIndex = null)
 {
     public static EngineOperationContext Create(
         GradedElement frame,
         IEnumerable<GradedElement> members,
-        bool isOrdered = true)
-    {
-        ArgumentNullException.ThrowIfNull(frame);
-        ArgumentNullException.ThrowIfNull(members);
-
-        return new EngineOperationContext(
-            frame,
-            members.ToArray(),
-            isOrdered);
-    }
-
-    public EngineOperationContext(
-        GradedElement frame,
-        IReadOnlyList<GradedElement> members,
-        bool isOrdered,
-        EngineOperationContext? parentContext = null,
-        int? parentFocusIndex = null)
-    {
-        ArgumentNullException.ThrowIfNull(frame);
-        ArgumentNullException.ThrowIfNull(members);
-
-        Frame = frame;
-        Members = members;
-        IsOrdered = isOrdered;
-        ParentContext = parentContext;
-        ParentFocusIndex = parentFocusIndex;
-    }
-
-    public GradedElement Frame { get; }
-    public IReadOnlyList<GradedElement> Members { get; }
-    public bool IsOrdered { get; }
-    public EngineOperationContext? ParentContext { get; }
-    public int? ParentFocusIndex { get; }
+        bool isOrdered = true) =>
+        new(frame, members.ToArray(), isOrdered);
 
     public int Count => Members.Count;
 
@@ -78,8 +52,6 @@ public sealed record EngineOperationContext
 
     public bool TryFocusMember(GradedElement member, out EngineOperationContext? focusedContext)
     {
-        ArgumentNullException.ThrowIfNull(member);
-
         if (ToFamily().TryFocusMember(member, out var focusedFamily) &&
             focusedFamily is not null)
         {

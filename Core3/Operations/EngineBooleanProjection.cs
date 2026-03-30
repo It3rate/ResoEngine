@@ -12,10 +12,6 @@ internal static class EngineBooleanProjection
         EngineBooleanOperation operation,
         out EngineBooleanResult? result)
     {
-        ArgumentNullException.ThrowIfNull(frame);
-        ArgumentNullException.ThrowIfNull(primary);
-        ArgumentNullException.ThrowIfNull(secondary);
-
         if (!TryReadAtomicSegment(frame, frame, out var frameSegment) ||
             !TryReadAtomicSegment(frame, primary, out var primarySegment) ||
             !TryReadAtomicSegment(frame, secondary, out var secondarySegment))
@@ -27,13 +23,13 @@ internal static class EngineBooleanProjection
         if (frameSegment.End <= frameSegment.Start)
         {
             result = new EngineBooleanResult(
-                new EngineOperationContext(frame, [primary, secondary], isOrdered: true),
+                new EngineOperationContext(frame, [primary, secondary], true),
                 operation,
                 []);
             return true;
         }
 
-        var context = new EngineOperationContext(frame, [primary, secondary], isOrdered: true);
+        var context = new EngineOperationContext(frame, [primary, secondary], true);
         var boundaries = CollectBoundaries(frameSegment, primarySegment, secondarySegment);
         var pieces = new List<EngineOperationPiece>();
         decimal? currentLeft = null;
@@ -114,9 +110,6 @@ internal static class EngineBooleanProjection
         EngineOccupancyOperation operation,
         out EngineFamilyBooleanResult? result)
     {
-        ArgumentNullException.ThrowIfNull(frame);
-        ArgumentNullException.ThrowIfNull(members);
-
         if (!TryReadAtomicSegment(frame, frame, out var frameSegment))
         {
             result = null;

@@ -15,9 +15,6 @@ public sealed record EngineFamilyBooleanResult
         EngineOccupancyOperation operation,
         IReadOnlyList<EngineOperationPiece> pieces)
     {
-        ArgumentNullException.ThrowIfNull(context);
-        ArgumentNullException.ThrowIfNull(pieces);
-
         Context = context;
         Operation = operation;
         Pieces = pieces;

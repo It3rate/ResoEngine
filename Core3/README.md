@@ -163,3 +163,7 @@ rather than becoming hidden iterator bookkeeping.
 `Core3.Serialization` now also provides a manual JSON writer so the current
 engine, runtime, binding, and operation shapes can be inspected on the wire
 without committing the codebase to serializer attributes too early.
+
+A short implementation note for how we want Core3 code to feel and where we do
+and do not want heavy guard boilerplate now lives in
+[CodingStyle.md](CodingStyle.md).

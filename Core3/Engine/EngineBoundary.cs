@@ -4,9 +4,6 @@ internal static class EngineBoundary
 {
     internal static CompositeElement GetAxis(GradedElement frame, GradedElement read)
     {
-        ArgumentNullException.ThrowIfNull(frame);
-        ArgumentNullException.ThrowIfNull(read);
-
         if (frame.Grade != read.Grade)
         {
             return CreateUnknownAxis(frame);
@@ -31,8 +28,6 @@ internal static class EngineBoundary
 
     internal static CompositeElement CreateUnknownAxis(GradedElement frame)
     {
-        ArgumentNullException.ThrowIfNull(frame);
-
         if (frame is AtomicElement)
         {
             return new CompositeElement(

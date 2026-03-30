@@ -14,7 +14,7 @@ public sealed class EngineFamily
 
     public EngineFamily(EngineOperationContext context)
         : this(
-            context?.Frame ?? throw new ArgumentNullException(nameof(context)),
+            context.Frame,
             context.IsOrdered,
             context.ParentContext is not null
                 ? new EngineFamily(context.ParentContext)
@@ -38,7 +38,6 @@ public sealed class EngineFamily
         EngineFamily? parentFamily,
         int? parentFocusIndex)
     {
-        ArgumentNullException.ThrowIfNull(frame);
         Frame = frame;
         IsOrdered = isOrdered;
         ParentFamily = parentFamily;
@@ -52,17 +51,9 @@ public sealed class EngineFamily
     public EngineFamily? ParentFamily { get; }
     public int? ParentFocusIndex { get; }
 
-    public void AddMember(GradedElement member)
-    {
-        ArgumentNullException.ThrowIfNull(member);
-        _members.Add(member);
-    }
+    public void AddMember(GradedElement member) => _members.Add(member);
 
-    public bool RemoveMember(GradedElement member)
-    {
-        ArgumentNullException.ThrowIfNull(member);
-        return _members.Remove(member);
-    }
+    public bool RemoveMember(GradedElement member) => _members.Remove(member);
 
     public void ClearMembers() => _members.Clear();
 
@@ -155,10 +146,7 @@ public sealed class EngineFamily
     }
 
     public bool TryFocusMember(GradedElement member, out EngineFamily? focusedFamily)
-    {
-        ArgumentNullException.ThrowIfNull(member);
-        return TryFocusMember(_members.IndexOf(member), out focusedFamily);
-    }
+        => TryFocusMember(_members.IndexOf(member), out focusedFamily);
 
     public bool TrySortByFrameSlot(
         int slotIndex,
@@ -259,19 +247,12 @@ public sealed class EngineFamily
     }
 
     public bool TryReadMember(GradedElement member, out GradedElement? read)
-    {
-        ArgumentNullException.ThrowIfNull(member);
-        return member.TryReferenceToFrame(Frame, out read);
-    }
+        => member.TryReferenceToFrame(Frame, out read);
 
     public CompositeElement GetMemberBoundaryAxis(GradedElement member)
-    {
-        ArgumentNullException.ThrowIfNull(member);
-
-        return TryReadMember(member, out var read) && read is not null
+        => TryReadMember(member, out var read) && read is not null
             ? EngineBoundary.GetAxis(Frame, read)
             : EngineBoundary.CreateUnknownAxis(Frame);
-    }
 
     public bool TryReadAll(out IReadOnlyList<GradedElement>? reads)
     {

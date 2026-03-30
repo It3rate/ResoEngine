@@ -4,8 +4,6 @@ internal static class EngineEvaluation
 {
     internal static bool TryFoldToAtomic(GradedElement element, out AtomicElement? folded)
     {
-        ArgumentNullException.ThrowIfNull(element);
-
         var current = element;
 
         while (current is not AtomicElement atomic)
@@ -28,9 +26,6 @@ internal static class EngineEvaluation
         AtomicElement denominator,
         out GradedElement? folded)
     {
-        ArgumentNullException.ThrowIfNull(numerator);
-        ArgumentNullException.ThrowIfNull(denominator);
-
         if (!numerator.HasResolvedUnits ||
             !denominator.HasResolvedUnits ||
             denominator.Value == 0 ||
@@ -57,9 +52,6 @@ internal static class EngineEvaluation
         AtomicElement right,
         out GradedElement? product)
     {
-        ArgumentNullException.ThrowIfNull(left);
-        ArgumentNullException.ThrowIfNull(right);
-
         if (!left.HasResolvedUnits || !right.HasResolvedUnits)
         {
             product = null;
@@ -79,9 +71,6 @@ internal static class EngineEvaluation
         CompositeElement right,
         out GradedElement? product)
     {
-        ArgumentNullException.ThrowIfNull(left);
-        ArgumentNullException.ThrowIfNull(right);
-
         if (!left.Recessive.TryMultiply(right.Recessive, out var rr) ||
             rr is null ||
             !left.Recessive.TryMultiply(right.Dominant, out var rd) ||

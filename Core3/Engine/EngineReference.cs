@@ -5,19 +5,10 @@ namespace Core3.Engine;
 /// calibration without being copied into the subject as owned structure.
 /// This is closer to measurement or inscription than to containment.
 /// </summary>
-public sealed record EngineReference
+public sealed record EngineReference(
+    CompositeElement Frame,
+    GradedElement Subject)
 {
-    public EngineReference(CompositeElement frame, GradedElement subject)
-    {
-        ArgumentNullException.ThrowIfNull(frame);
-        ArgumentNullException.ThrowIfNull(subject);
-
-        Frame = frame;
-        Subject = subject;
-    }
-
-    public CompositeElement Frame { get; }
-    public GradedElement Subject { get; }
 
     /// <summary>
     /// The frame child whose support is available for reuse.

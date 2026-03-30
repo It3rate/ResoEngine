@@ -75,9 +75,6 @@ public static class Core3JsonSerializer
 
     public static void Write(Utf8JsonWriter writer, GradedElement element, Core3JsonSerializerOptions? options = null)
     {
-        ArgumentNullException.ThrowIfNull(writer);
-        ArgumentNullException.ThrowIfNull(element);
-
         switch (element)
         {
             case AtomicElement atomic:
@@ -107,9 +104,6 @@ public static class Core3JsonSerializer
 
     public static void Write(Utf8JsonWriter writer, EnginePin pin, Core3JsonSerializerOptions? options = null)
     {
-        ArgumentNullException.ThrowIfNull(writer);
-        ArgumentNullException.ThrowIfNull(pin);
-
         var actual = Resolve(options);
 
         writer.WriteStartObject();
@@ -169,9 +163,6 @@ public static class Core3JsonSerializer
 
     public static void Write(Utf8JsonWriter writer, EngineReference reference, Core3JsonSerializerOptions? options = null)
     {
-        ArgumentNullException.ThrowIfNull(writer);
-        ArgumentNullException.ThrowIfNull(reference);
-
         var actual = Resolve(options);
 
         writer.WriteStartObject();
@@ -201,9 +192,6 @@ public static class Core3JsonSerializer
 
     public static void Write(Utf8JsonWriter writer, EngineOperationContext context, Core3JsonSerializerOptions? options = null)
     {
-        ArgumentNullException.ThrowIfNull(writer);
-        ArgumentNullException.ThrowIfNull(context);
-
         var actual = Resolve(options);
 
         writer.WriteStartObject();
@@ -230,9 +218,6 @@ public static class Core3JsonSerializer
 
     public static void Write(Utf8JsonWriter writer, EngineFamily family, Core3JsonSerializerOptions? options = null)
     {
-        ArgumentNullException.ThrowIfNull(writer);
-        ArgumentNullException.ThrowIfNull(family);
-
         var actual = Resolve(options);
 
         writer.WriteStartObject();
@@ -259,9 +244,6 @@ public static class Core3JsonSerializer
 
     public static void Write(Utf8JsonWriter writer, EngineOperationResult result, Core3JsonSerializerOptions? options = null)
     {
-        ArgumentNullException.ThrowIfNull(writer);
-        ArgumentNullException.ThrowIfNull(result);
-
         var actual = Resolve(options);
 
         writer.WriteStartObject();
@@ -289,9 +271,6 @@ public static class Core3JsonSerializer
 
     public static void Write(Utf8JsonWriter writer, EngineBooleanResult result, Core3JsonSerializerOptions? options = null)
     {
-        ArgumentNullException.ThrowIfNull(writer);
-        ArgumentNullException.ThrowIfNull(result);
-
         var actual = Resolve(options);
 
         writer.WriteStartObject();
@@ -306,9 +285,6 @@ public static class Core3JsonSerializer
 
     public static void Write(Utf8JsonWriter writer, EngineFamilyBooleanResult result, Core3JsonSerializerOptions? options = null)
     {
-        ArgumentNullException.ThrowIfNull(writer);
-        ArgumentNullException.ThrowIfNull(result);
-
         var actual = Resolve(options);
 
         writer.WriteStartObject();
@@ -323,9 +299,6 @@ public static class Core3JsonSerializer
 
     public static void Write(Utf8JsonWriter writer, BoundTemplate template, Core3JsonSerializerOptions? options = null)
     {
-        ArgumentNullException.ThrowIfNull(writer);
-        ArgumentNullException.ThrowIfNull(template);
-
         var actual = Resolve(options);
 
         switch (template)
@@ -363,9 +336,6 @@ public static class Core3JsonSerializer
 
     public static void Write(Utf8JsonWriter writer, OperationAttachment attachment, Core3JsonSerializerOptions? options = null)
     {
-        ArgumentNullException.ThrowIfNull(writer);
-        ArgumentNullException.ThrowIfNull(attachment);
-
         var actual = Resolve(options);
 
         writer.WriteStartObject();
@@ -393,9 +363,6 @@ public static class Core3JsonSerializer
 
     public static void Write(Utf8JsonWriter writer, TraversalMachineDefinition machine, Core3JsonSerializerOptions? options = null)
     {
-        ArgumentNullException.ThrowIfNull(writer);
-        ArgumentNullException.ThrowIfNull(machine);
-
         var actual = Resolve(options);
 
         writer.WriteStartObject();
@@ -423,9 +390,6 @@ public static class Core3JsonSerializer
 
     public static void Write(Utf8JsonWriter writer, TraversalMover mover, Core3JsonSerializerOptions? options = null)
     {
-        ArgumentNullException.ThrowIfNull(writer);
-        ArgumentNullException.ThrowIfNull(mover);
-
         var actual = Resolve(options);
 
         writer.WriteStartObject();
@@ -446,9 +410,6 @@ public static class Core3JsonSerializer
 
     public static void Write(Utf8JsonWriter writer, BindingSelector selector, Core3JsonSerializerOptions? options = null)
     {
-        ArgumentNullException.ThrowIfNull(writer);
-        ArgumentNullException.ThrowIfNull(selector);
-
         var actual = Resolve(options);
 
         writer.WriteStartObject();
@@ -467,9 +428,6 @@ public static class Core3JsonSerializer
 
     public static void Write(Utf8JsonWriter writer, BindingProjection projection, Core3JsonSerializerOptions? options = null)
     {
-        ArgumentNullException.ThrowIfNull(writer);
-        ArgumentNullException.ThrowIfNull(projection);
-
         var actual = Resolve(options);
 
         writer.WriteStartObject();
@@ -484,9 +442,6 @@ public static class Core3JsonSerializer
 
     public static void Write(Utf8JsonWriter writer, BindingTransform transform, Core3JsonSerializerOptions? options = null)
     {
-        ArgumentNullException.ThrowIfNull(writer);
-        ArgumentNullException.ThrowIfNull(transform);
-
         var actual = Resolve(options);
 
         writer.WriteStartObject();
@@ -501,9 +456,6 @@ public static class Core3JsonSerializer
 
     public static void Write(Utf8JsonWriter writer, BindingSignal signal, Core3JsonSerializerOptions? options = null)
     {
-        ArgumentNullException.ThrowIfNull(writer);
-        ArgumentNullException.ThrowIfNull(signal);
-
         var actual = Resolve(options);
 
         writer.WriteStartObject();
@@ -518,9 +470,6 @@ public static class Core3JsonSerializer
 
     public static void Write(Utf8JsonWriter writer, BindingStorageTarget target)
     {
-        ArgumentNullException.ThrowIfNull(writer);
-        ArgumentNullException.ThrowIfNull(target);
-
         writer.WriteStartObject();
         writer.WriteString("domain", target.Domain.ToString());
         if (!string.IsNullOrWhiteSpace(target.Name))
@@ -536,9 +485,6 @@ public static class Core3JsonSerializer
 
     public static void Write(Utf8JsonWriter writer, BindingAddress address)
     {
-        ArgumentNullException.ThrowIfNull(writer);
-        ArgumentNullException.ThrowIfNull(address);
-
         writer.WriteStartObject();
 
         switch (address)
@@ -563,9 +509,6 @@ public static class Core3JsonSerializer
 
     public static void Write(Utf8JsonWriter writer, OperationSite site, Core3JsonSerializerOptions? options = null)
     {
-        ArgumentNullException.ThrowIfNull(writer);
-        ArgumentNullException.ThrowIfNull(site);
-
         writer.WriteStartObject();
         writer.WriteString("kind", site.Kind.ToString());
         if (!string.IsNullOrWhiteSpace(site.Name))
@@ -582,9 +525,6 @@ public static class Core3JsonSerializer
 
     public static void Write(Utf8JsonWriter writer, TraversalRegister register, Core3JsonSerializerOptions? options = null)
     {
-        ArgumentNullException.ThrowIfNull(writer);
-        ArgumentNullException.ThrowIfNull(register);
-
         var actual = Resolve(options);
 
         writer.WriteStartObject();
@@ -596,9 +536,6 @@ public static class Core3JsonSerializer
 
     public static void Write(Utf8JsonWriter writer, OperationLawReference law)
     {
-        ArgumentNullException.ThrowIfNull(writer);
-        ArgumentNullException.ThrowIfNull(law);
-
         writer.WriteStartObject();
         writer.WriteString("name", law.Name);
         if (!string.IsNullOrWhiteSpace(law.Variant))
@@ -610,9 +547,6 @@ public static class Core3JsonSerializer
 
     public static void Write(Utf8JsonWriter writer, OperationInputBinding input, Core3JsonSerializerOptions? options = null)
     {
-        ArgumentNullException.ThrowIfNull(writer);
-        ArgumentNullException.ThrowIfNull(input);
-
         var actual = Resolve(options);
 
         writer.WriteStartObject();
@@ -625,9 +559,6 @@ public static class Core3JsonSerializer
 
     public static void Write(Utf8JsonWriter writer, OperationOutputBinding output, Core3JsonSerializerOptions? options = null)
     {
-        ArgumentNullException.ThrowIfNull(writer);
-        ArgumentNullException.ThrowIfNull(output);
-
         var actual = Resolve(options);
 
         writer.WriteStartObject();
@@ -641,49 +572,41 @@ public static class Core3JsonSerializer
 
     public static void Write(TextWriter writer, GradedElement element, Core3JsonSerializerOptions? options = null)
     {
-        ArgumentNullException.ThrowIfNull(writer);
         writer.Write(Serialize(element, options));
     }
 
     public static void Write(TextWriter writer, EngineOperationContext context, Core3JsonSerializerOptions? options = null)
     {
-        ArgumentNullException.ThrowIfNull(writer);
         writer.Write(Serialize(context, options));
     }
 
     public static void Write(TextWriter writer, EnginePin pin, Core3JsonSerializerOptions? options = null)
     {
-        ArgumentNullException.ThrowIfNull(writer);
         writer.Write(Serialize(pin, options));
     }
 
     public static void Write(TextWriter writer, EngineReference reference, Core3JsonSerializerOptions? options = null)
     {
-        ArgumentNullException.ThrowIfNull(writer);
         writer.Write(Serialize(reference, options));
     }
 
     public static void Write(TextWriter writer, EngineOperationResult result, Core3JsonSerializerOptions? options = null)
     {
-        ArgumentNullException.ThrowIfNull(writer);
         writer.Write(Serialize(result, options));
     }
 
     public static void Write(TextWriter writer, OperationAttachment attachment, Core3JsonSerializerOptions? options = null)
     {
-        ArgumentNullException.ThrowIfNull(writer);
         writer.Write(Serialize(attachment, options));
     }
 
     public static void Write(TextWriter writer, TraversalMachineDefinition machine, Core3JsonSerializerOptions? options = null)
     {
-        ArgumentNullException.ThrowIfNull(writer);
         writer.Write(Serialize(machine, options));
     }
 
     public static void Write(TextWriter writer, TraversalMover mover, Core3JsonSerializerOptions? options = null)
     {
-        ArgumentNullException.ThrowIfNull(writer);
         writer.Write(Serialize(mover, options));
     }
 
