@@ -717,4 +717,63 @@ public sealed class EngineTests
         Assert.Null(sameSpaceProduct);
         Assert.True(sameSpacePin.MultiplyRequiresLift());
     }
+
+    [Fact]
+    public void AtomicOrthogonalLift_PromotesMixedCarrierPairIntoPositiveAxisBasis()
+    {
+        var aligned = new AtomicElement(3, 1);
+        var orthogonal = new AtomicElement(2, -1);
+
+        var outcome = aligned.LiftOrthogonalWithTension(orthogonal);
+
+        Assert.True(outcome.IsExact);
+
+        var lifted = Assert.IsType<CompositeElement>(outcome.Result);
+        Assert.Equal(1, lifted.Grade);
+        Assert.Equal(new AtomicElement(3, 1), lifted.Recessive);
+        Assert.Equal(new AtomicElement(2, 1), lifted.Dominant);
+    }
+
+    [Fact]
+    public void OrthogonalLift_InvalidCandidate_ReturnsZeroLikeLiftShell()
+    {
+        var left = new AtomicElement(3, 1);
+        var right = new AtomicElement(2, 1);
+
+        var outcome = left.LiftOrthogonalWithTension(right);
+
+        Assert.False(outcome.IsExact);
+
+        var lifted = Assert.IsType<CompositeElement>(outcome.Result);
+        Assert.Equal(1, lifted.Grade);
+        Assert.Equal(new AtomicElement(0, 0), Assert.IsType<AtomicElement>(lifted.Recessive));
+        Assert.Equal(new AtomicElement(0, 0), Assert.IsType<AtomicElement>(lifted.Dominant));
+        Assert.Equal(new CompositeElement(left, right), outcome.Tension);
+    }
+
+    [Fact]
+    public void CompositeOrthogonalLift_RequiresCollinearAxesAndNormalizesLiftedBasis()
+    {
+        var horizontal = new CompositeElement(
+            new AtomicElement(-3, 1),
+            new AtomicElement(5, 1));
+        var vertical = new CompositeElement(
+            new AtomicElement(2, -1),
+            new AtomicElement(7, -1));
+
+        var outcome = horizontal.LiftOrthogonalWithTension(vertical);
+
+        Assert.True(outcome.IsExact);
+
+        var lifted = Assert.IsType<CompositeElement>(outcome.Result);
+        Assert.Equal(2, lifted.Grade);
+
+        var recessive = Assert.IsType<CompositeElement>(lifted.Recessive);
+        var dominant = Assert.IsType<CompositeElement>(lifted.Dominant);
+
+        Assert.Equal(new AtomicElement(-3, 1), recessive.Recessive);
+        Assert.Equal(new AtomicElement(5, 1), recessive.Dominant);
+        Assert.Equal(new AtomicElement(2, 1), dominant.Recessive);
+        Assert.Equal(new AtomicElement(7, 1), dominant.Dominant);
+    }
 }

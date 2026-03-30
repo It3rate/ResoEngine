@@ -2,6 +2,30 @@ namespace Core3.Engine;
 
 internal static class EngineEvaluation
 {
+    internal static EngineElementOutcome LiftOrthogonal(
+        GradedElement left,
+        GradedElement right)
+    {
+        var targetGrade = Math.Max(left.Grade, right.Grade) + 1;
+
+        // TODO: This first pass only checks simple structural directional
+        // coherence. Later, successful lift should also verify that the
+        // orthogonal pressure has consolidated into a meaningful higher
+        // relation rather than any arbitrary cross-carrier contrast.
+        if (!IsLiftCandidate(left, right))
+        {
+            return EngineElementOutcome.WithTension(
+                CreateZeroLikeElement(targetGrade),
+                CreateLiftProvenance(left, right),
+                "Orthogonal lift preserved a zero-like lifted shell because the inputs were not a directionally coherent lift candidate.");
+        }
+
+        return EngineElementOutcome.Exact(
+            new CompositeElement(
+                NormalizeLiftBasis(left),
+                NormalizeLiftBasis(right)));
+    }
+
     internal static EngineElementOutcome ComposeRatio(
         AtomicElement numerator,
         AtomicElement denominator)
@@ -123,6 +147,45 @@ internal static class EngineEvaluation
             new CompositeElement(rd, dr));
         return true;
     }
+
+    private static bool IsLiftCandidate(GradedElement left, GradedElement right) =>
+        left.Grade == right.Grade &&
+        !left.SharesUnitSpace(right) &&
+        IsCollinear(left) &&
+        IsCollinear(right);
+
+    private static bool IsCollinear(GradedElement element) =>
+        element switch
+        {
+            AtomicElement atomic => atomic.HasResolvedUnits,
+            CompositeElement composite =>
+                composite.Recessive.SharesUnitSpace(composite.Dominant) &&
+                IsCollinear(composite.Recessive) &&
+                IsCollinear(composite.Dominant),
+            _ => false
+        };
+
+    private static GradedElement NormalizeLiftBasis(GradedElement element) =>
+        element switch
+        {
+            AtomicElement atomic => new AtomicElement(atomic.Value, atomic.HasResolvedUnits ? Math.Abs(atomic.Unit) : 0),
+            CompositeElement composite => new CompositeElement(
+                NormalizeLiftBasis(composite.Recessive),
+                NormalizeLiftBasis(composite.Dominant)),
+            _ => element
+        };
+
+    private static GradedElement CreateZeroLikeElement(int grade) =>
+        grade <= 0
+            ? new AtomicElement(0, 0)
+            : new CompositeElement(
+                CreateZeroLikeElement(grade - 1),
+                CreateZeroLikeElement(grade - 1));
+
+    private static GradedElement CreateLiftProvenance(GradedElement left, GradedElement right) =>
+        left.Grade == right.Grade
+            ? new CompositeElement(left, right)
+            : left;
 
     private static AtomicElement CreateUnresolvedRatioResult(
         AtomicElement numerator,

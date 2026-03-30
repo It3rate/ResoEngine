@@ -19,6 +19,9 @@ public abstract record GradedElement
     public abstract EngineElementOutcome SubtractWithTension(GradedElement other);
     public abstract EngineElementOutcome MultiplyWithTension(GradedElement other);
     public abstract EngineElementOutcome ScaleWithTension(AtomicElement factor);
+    public EngineElementOutcome LiftOrthogonalWithTension(GradedElement other) =>
+        EngineEvaluation.LiftOrthogonal(this, other);
+
     public virtual bool TryFold(out GradedElement? folded)
     {
         folded = FoldWithTension().Result;
@@ -55,6 +58,12 @@ public abstract record GradedElement
             ScaleWithTension(factor),
             static outcome => outcome.Result,
             out scaled);
+
+    public bool TryLiftOrthogonal(GradedElement other, out GradedElement? lifted) =>
+        EngineExactness.TryProjectExact(
+            LiftOrthogonalWithTension(other),
+            static outcome => outcome.Result,
+            out lifted);
 
     public bool TryAlignExact(GradedElement other, out GradedElement? leftAligned, out GradedElement? rightAligned) =>
         TryAlignExact(other, ResolutionPolicy.ExactCommonFrame, out leftAligned, out rightAligned);
