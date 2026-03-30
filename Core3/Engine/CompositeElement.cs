@@ -53,8 +53,8 @@ public sealed record CompositeElement : GradedElement
             return EngineEvaluation.ComposeRatio(numerator, denominator);
         }
 
-        var recessiveOutcome = Recessive.FoldWithTension();
-        var dominantOutcome = Dominant.FoldWithTension();
+        var recessiveOutcome = Recessive.Fold();
+        var dominantOutcome = Dominant.Fold();
         var folded = new CompositeElement(recessiveOutcome.Result, dominantOutcome.Result);
 
         if (recessiveOutcome.IsExact &&
@@ -259,8 +259,8 @@ public sealed record CompositeElement : GradedElement
 
         if (Grade == 1)
         {
-            var leftFold = FoldWithTension();
-            var rightFold = composite.FoldWithTension();
+            var leftFold = Fold();
+            var rightFold = composite.Fold();
 
             if (leftFold.Result is AtomicElement leftAtomic &&
                 rightFold.Result is AtomicElement rightAtomic)

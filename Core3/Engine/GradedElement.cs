@@ -12,13 +12,17 @@ public abstract record GradedElement
     public abstract GradedElement Negate();
     public abstract GradedElement SwapOrder();
     public abstract GradedElement FlipPerspective();
+    public EngineElementOutcome Fold() => FoldWithTension();
     public abstract EngineElementOutcome FoldWithTension();
+    public EngineElementOutcome Lower() => EngineEvaluation.Lower(this);
     public abstract EngineElementOutcome CommitToCalibrationWithTension(GradedElement calibration);
     public abstract EngineElementPairOutcome AlignWithTension(GradedElement other, ResolutionPolicy policy);
     public abstract EngineElementOutcome AddWithTension(GradedElement other);
     public abstract EngineElementOutcome SubtractWithTension(GradedElement other);
     public abstract EngineElementOutcome MultiplyWithTension(GradedElement other);
     public abstract EngineElementOutcome ScaleWithTension(AtomicElement factor);
+    public EngineElementOutcome Lift(GradedElement other) =>
+        LiftOrthogonalWithTension(other);
     public EngineElementOutcome LiftOrthogonalWithTension(GradedElement other) =>
         EngineEvaluation.LiftOrthogonal(this, other);
     public GradedElement CreateZeroLikePeer() =>
@@ -26,9 +30,14 @@ public abstract record GradedElement
 
     public virtual bool TryFold(out GradedElement? folded)
     {
-        folded = FoldWithTension().Result;
+        folded = Fold().Result;
         return true;
     }
+    public virtual bool TryLower(out GradedElement? lowered) =>
+        EngineExactness.TryProjectExact(
+            Lower(),
+            static outcome => outcome.Result,
+            out lowered);
     public virtual bool TryCommitToCalibration(GradedElement calibration, out GradedElement? committed) =>
         EngineExactness.TryProjectExact(
             CommitToCalibrationWithTension(calibration),
@@ -63,7 +72,7 @@ public abstract record GradedElement
 
     public bool TryLiftOrthogonal(GradedElement other, out GradedElement? lifted) =>
         EngineExactness.TryProjectExact(
-            LiftOrthogonalWithTension(other),
+            Lift(other),
             static outcome => outcome.Result,
             out lifted);
 

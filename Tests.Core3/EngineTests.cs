@@ -468,7 +468,7 @@ public sealed class EngineTests
         var orthogonal = new AtomicElement(3, -1);
 
         var addOutcome = aligned.AddWithTension(orthogonal);
-        var explicitLift = aligned.LiftOrthogonalWithTension(orthogonal);
+        var explicitLift = aligned.Lift(orthogonal);
 
         Assert.False(addOutcome.IsExact);
         Assert.True(explicitLift.IsExact);
@@ -742,7 +742,7 @@ public sealed class EngineTests
         var aligned = new AtomicElement(3, 1);
         var orthogonal = new AtomicElement(2, -1);
 
-        var outcome = aligned.LiftOrthogonalWithTension(orthogonal);
+        var outcome = aligned.Lift(orthogonal);
 
         Assert.True(outcome.IsExact);
 
@@ -758,7 +758,7 @@ public sealed class EngineTests
         var left = new AtomicElement(3, 1);
         var right = new AtomicElement(2, 1);
 
-        var outcome = left.LiftOrthogonalWithTension(right);
+        var outcome = left.Lift(right);
 
         Assert.True(outcome.IsExact);
 
@@ -778,7 +778,7 @@ public sealed class EngineTests
             new AtomicElement(2, -1),
             new AtomicElement(7, -1));
 
-        var outcome = horizontal.LiftOrthogonalWithTension(vertical);
+        var outcome = horizontal.Lift(vertical);
 
         Assert.True(outcome.IsExact);
 
@@ -805,7 +805,7 @@ public sealed class EngineTests
                 new AtomicElement(10, 1),
                 new AtomicElement(7, 1)));
 
-        var outcome = horizontalAxis.LiftOrthogonalWithTension(horizontalAxis.CreateZeroLikePeer());
+        var outcome = horizontalAxis.Lift(horizontalAxis.CreateZeroLikePeer());
 
         Assert.True(outcome.IsExact);
 
@@ -818,6 +818,76 @@ public sealed class EngineTests
         Assert.Equal(new AtomicElement(0, 0), Assert.IsType<AtomicElement>(Assert.IsType<CompositeElement>(zeroAxis.Recessive).Dominant));
         Assert.Equal(new AtomicElement(0, 0), Assert.IsType<AtomicElement>(Assert.IsType<CompositeElement>(zeroAxis.Dominant).Recessive));
         Assert.Equal(new AtomicElement(0, 0), Assert.IsType<AtomicElement>(Assert.IsType<CompositeElement>(zeroAxis.Dominant).Dominant));
+    }
+
+    [Fact]
+    public void SparseArea_LowersToItsActiveAxis()
+    {
+        var horizontalAxis = new CompositeElement(
+            new CompositeElement(
+                new AtomicElement(10, 1),
+                new AtomicElement(3, 1)),
+            new CompositeElement(
+                new AtomicElement(10, 1),
+                new AtomicElement(7, 1)));
+        var sparseArea = horizontalAxis.Lift(horizontalAxis.CreateZeroLikePeer()).Result;
+
+        var outcome = sparseArea.Lower();
+
+        Assert.True(outcome.IsExact);
+        Assert.Equal(horizontalAxis, outcome.Result);
+    }
+
+    [Fact]
+    public void FullArea_LowersOneGradeIntoCornerAxis()
+    {
+        var horizontalAxis = new CompositeElement(
+            new CompositeElement(
+                new AtomicElement(10, 1),
+                new AtomicElement(3, 1)),
+            new CompositeElement(
+                new AtomicElement(10, 1),
+                new AtomicElement(7, 1)));
+        var verticalAxis = new CompositeElement(
+            new CompositeElement(
+                new AtomicElement(10, -1),
+                new AtomicElement(2, -1)),
+            new CompositeElement(
+                new AtomicElement(10, -1),
+                new AtomicElement(5, -1)));
+        var area = horizontalAxis.Lift(verticalAxis).Result;
+
+        var outcome = area.Lower();
+
+        Assert.True(outcome.IsExact);
+        Assert.Equal(
+            new CompositeElement(
+                new CompositeElement(
+                    new AtomicElement(3, 10),
+                    new AtomicElement(7, 10)),
+                new CompositeElement(
+                    new AtomicElement(2, 10),
+                    new AtomicElement(5, 10))),
+            outcome.Result);
+    }
+
+    [Fact]
+    public void CarrierPreservingLower_CanTakeLonePositiveIToNegativeUnitAtomic()
+    {
+        var positiveI = new CompositeElement(
+            new AtomicElement(1, -1),
+            new AtomicElement(3, -1));
+        var sparseAxis = new CompositeElement(
+            positiveI,
+            positiveI.CreateZeroLikePeer());
+
+        var axisOutcome = sparseAxis.Lower();
+        var atomicOutcome = axisOutcome.Result.Lower();
+
+        Assert.True(axisOutcome.IsExact);
+        Assert.Equal(positiveI, axisOutcome.Result);
+        Assert.True(atomicOutcome.IsExact);
+        Assert.Equal(new AtomicElement(3, -1), atomicOutcome.Result);
     }
 
     [Fact]

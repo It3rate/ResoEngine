@@ -204,7 +204,7 @@ public sealed record EnginePin
             return EngineElementOutcome.Exact(pinPosition);
         }
 
-        var folded = pinPosition.FoldWithTension();
+        var folded = pinPosition.Fold();
 
         if (folded.Result is not AtomicElement ratio)
         {

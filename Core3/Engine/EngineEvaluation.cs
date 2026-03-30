@@ -2,6 +2,14 @@ namespace Core3.Engine;
 
 internal static class EngineEvaluation
 {
+    internal static EngineElementOutcome Lower(GradedElement element) =>
+        element switch
+        {
+            AtomicElement atomic => EngineElementOutcome.Exact(atomic),
+            CompositeElement composite => LowerComposite(composite),
+            _ => EngineElementOutcome.Exact(element)
+        };
+
     internal static EngineElementOutcome LiftOrthogonal(
         GradedElement left,
         GradedElement right)
@@ -150,6 +158,50 @@ internal static class EngineEvaluation
         return true;
     }
 
+    private static EngineElementOutcome LowerComposite(CompositeElement composite)
+    {
+        if (composite.Grade == 1)
+        {
+            return composite.Fold();
+        }
+
+        var recessiveZero = IsZeroLikeStructure(composite.Recessive);
+        var dominantZero = IsZeroLikeStructure(composite.Dominant);
+
+        if (recessiveZero && dominantZero)
+        {
+            return composite.Recessive.Lower();
+        }
+
+        if (recessiveZero)
+        {
+            return EngineElementOutcome.Exact(composite.Dominant);
+        }
+
+        if (dominantZero)
+        {
+            return EngineElementOutcome.Exact(composite.Recessive);
+        }
+
+        var recessiveOutcome = composite.Recessive.Lower();
+        var dominantOutcome = composite.Dominant.Lower();
+        var lowered = new CompositeElement(recessiveOutcome.Result, dominantOutcome.Result);
+        var tension = EngineTension.CombineTension(recessiveOutcome.Tension, dominantOutcome.Tension);
+
+        if (tension is null)
+        {
+            return EngineElementOutcome.Exact(lowered);
+        }
+
+        return EngineElementOutcome.WithTension(
+            lowered,
+            tension,
+            EngineTension.CombineNotes(
+                recessiveOutcome.Note,
+                dominantOutcome.Note,
+                "Composite lower preserved child tension."));
+    }
+
     private static GradedElement NormalizeLiftBasis(GradedElement element) =>
         element switch
         {
@@ -171,6 +223,16 @@ internal static class EngineEvaluation
         left.Grade == right.Grade
             ? new CompositeElement(left, right)
             : left;
+
+    private static bool IsZeroLikeStructure(GradedElement element) =>
+        element switch
+        {
+            AtomicElement atomic => atomic.Value == 0 && atomic.Unit == 0,
+            CompositeElement composite =>
+                IsZeroLikeStructure(composite.Recessive) &&
+                IsZeroLikeStructure(composite.Dominant),
+            _ => false
+        };
 
     private static AtomicElement CreateUnresolvedRatioResult(
         AtomicElement numerator,
