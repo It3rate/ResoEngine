@@ -340,6 +340,28 @@ The denominator is the current route end/resolution.
 The current pass uses a default continuation of `+1` on the numerator until the
 denominator is reached, then stops with clamp-like endpoint behavior.
 
+### `TraversalRuntimeState` and `TraversalRuntime`
+
+The current minimal runtime layer now adds:
+
+- `TraversalRuntimeState`
+- `TraversalSiteEncounter`
+- `TraversalStepResult`
+- `TraversalRuntime`
+
+This is intentionally still small.
+
+It currently supports:
+
+- literal register materialization into token state
+- mover-relative family reads
+- token/context/result storage by name
+- a tiny law surface for example machines
+
+This is not yet the final execution engine.
+It is the first compact place where route, mover, reads, laws, and carried
+data actually step together in one state.
+
 ## Numeric Descriptor Direction
 
 The current experiment uses small axis-like numeric signals for:

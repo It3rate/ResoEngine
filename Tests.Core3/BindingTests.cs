@@ -1,5 +1,6 @@
 using Core3.Binding;
 using Core3.Engine;
+using Core3.Operations;
 
 namespace Tests.Core3;
 
@@ -262,6 +263,53 @@ public sealed class BindingTests
     }
 
     [Fact]
+    public void TraversalRuntime_CanMaterializeLiteralRegistersIntoInitialTokenState()
+    {
+        var machine = CreateAccumulatorLoopMachine(endTick: 3);
+
+        var state = TraversalRuntime.CreateInitial(machine);
+
+        Assert.True(state.IsExact);
+        Assert.Equal(machine.Mover, state.Mover);
+        Assert.Equal(new AtomicElement(0, 1), Assert.IsType<AtomicElement>(state.Token["accumulator"]));
+        Assert.Empty(state.Context);
+        Assert.Empty(state.Result);
+    }
+
+    [Fact]
+    public void TraversalRuntime_CanStepAccumulatorLoopAcrossFamilyMembers()
+    {
+        var machine = CreateAccumulatorLoopMachine(endTick: 3);
+        var family = new EngineFamily(new AtomicElement(0, 1));
+        family.AddMember(new AtomicElement(1, 1));
+        family.AddMember(new AtomicElement(2, 1));
+        family.AddMember(new AtomicElement(3, 1));
+
+        var initial = TraversalRuntime.CreateInitial(machine);
+
+        Assert.True(TraversalRuntime.TryStep(initial, family, out var firstStep));
+
+        var first = Assert.IsType<TraversalStepResult>(firstStep);
+        Assert.Equal(new AtomicElement(1, 1), Assert.IsType<AtomicElement>(first.State.Token["accumulator"]));
+        Assert.Equal(new AtomicElement(1, 1), Assert.IsType<AtomicElement>(first.State.Context["currentItem"]));
+        Assert.Equal(new AtomicElement(2, 1), Assert.IsType<AtomicElement>(first.State.Context["nextItem"]));
+        Assert.Equal(new AtomicElement(1, 1), Assert.IsType<AtomicElement>(first.State.Result["route"]));
+        Assert.Equal(new AtomicElement(1, 3), first.State.Mover.Position);
+        Assert.Equal(2, first.Encounters.Count);
+        Assert.Equal("Add", first.Encounters[0].Attachment.Law.Name);
+        Assert.Equal("ContinueWhileNextMemberExists", first.Encounters[1].Attachment.Law.Name);
+
+        Assert.True(TraversalRuntime.TryStep(first.State, family, out var secondStep));
+
+        var second = Assert.IsType<TraversalStepResult>(secondStep);
+        Assert.Equal(new AtomicElement(3, 1), Assert.IsType<AtomicElement>(second.State.Token["accumulator"]));
+        Assert.Equal(new AtomicElement(2, 1), Assert.IsType<AtomicElement>(second.State.Context["currentItem"]));
+        Assert.Equal(new AtomicElement(3, 1), Assert.IsType<AtomicElement>(second.State.Context["nextItem"]));
+        Assert.Equal(new AtomicElement(1, 1), Assert.IsType<AtomicElement>(second.State.Result["route"]));
+        Assert.Equal(new AtomicElement(2, 3), second.State.Mover.Position);
+    }
+
+    [Fact]
     public void TraversalMover_CanAdvanceOneTickAtATimeUntilDenominatorStop()
     {
         var mover = new TraversalMover(
@@ -324,4 +372,66 @@ public sealed class BindingTests
         Assert.True(final.IsAtStop);
         Assert.False(final.TryAdvance(out _));
     }
+
+    private static TraversalMachineDefinition CreateAccumulatorLoopMachine(long endTick) =>
+        new(
+            "sum-loop",
+            "accumulate",
+            new TraversalMover("family-cursor", new AtomicElement(0, endTick)),
+            [
+                new TraversalRegister(
+                    "accumulator",
+                    new BoundScalarTemplate
+                    {
+                        Value = new BoundSlot<long> { Literal = 0 },
+                        Unit = new BoundSlot<long> { Literal = 1 }
+                    })
+            ],
+            [
+                new OperationAttachment(
+                    new OperationSite(
+                        OperationSiteKind.Carrier,
+                        "accumulate",
+                        BindingAddress.At(1, 2)),
+                    new OperationLawReference("Add"),
+                    [
+                        new OperationInputBinding(
+                            "accumulator",
+                            BindingSelector.Named(
+                                BindingDomain.Token,
+                                "accumulator",
+                                BindingProjection.Whole)),
+                        new OperationInputBinding(
+                            "currentItem",
+                            BindingSelector.At(
+                                BindingDomain.Family,
+                                0,
+                                projection: BindingProjection.Whole,
+                                storeTarget: new BindingStorageTarget(BindingDomain.Context, "currentItem")))
+                    ],
+                    [
+                        new OperationOutputBinding(
+                            "sum",
+                            new BindingStorageTarget(BindingDomain.Token, "accumulator"),
+                            BindingTransform.Identity)
+                    ]),
+                new OperationAttachment(
+                    new OperationSite(OperationSiteKind.Boundary, "continue"),
+                    new OperationLawReference("ContinueWhileNextMemberExists"),
+                    [
+                        new OperationInputBinding(
+                            "nextItem",
+                            BindingSelector.At(
+                                BindingDomain.Family,
+                                1,
+                                projection: BindingProjection.Whole,
+                                storeTarget: new BindingStorageTarget(BindingDomain.Context, "nextItem")))
+                    ],
+                    [
+                        new OperationOutputBinding(
+                            "route",
+                            new BindingStorageTarget(BindingDomain.Result, "route"),
+                            BindingTransform.Identity)
+                    ])
+            ]);
 }
