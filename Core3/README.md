@@ -153,6 +153,10 @@ metadata without pushing those concerns into the engine core too early.
 The current direction there is to prefer small navigable Core3 value spaces for
 descriptor meaning, so later adjustment and exploration can happen through
 structure rather than only through opaque enum choices.
+It is also moving toward a more physical traversal picture where a real moving
+container or trolley supplies the current encounter and bindings use numeric
+positions relative to that mover rather than a pile of special-case selector
+tokens.
 
 `Core3.Serialization` now also provides a manual JSON writer so the current
 engine, runtime, binding, and operation shapes can be inspected on the wire

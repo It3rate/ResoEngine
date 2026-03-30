@@ -484,28 +484,15 @@ public static class Core3JsonSerializer
 
         switch (address)
         {
-            case BindingAddress.Current:
-                writer.WriteString("kind", "current");
-                break;
-
-            case BindingAddress.Slot slot:
-                writer.WriteString("kind", "slot");
-                writer.WriteNumber("index", slot.Index);
+            case BindingAddress.Position position:
+                writer.WriteString("kind", "position");
+                writer.WritePropertyName("parameter");
+                Write(writer, position.Parameter);
                 break;
 
             case BindingAddress.Name name:
                 writer.WriteString("kind", "name");
                 writer.WriteString("value", name.Value);
-                break;
-
-            case BindingAddress.Offset offset:
-                writer.WriteString("kind", "offset");
-                writer.WriteNumber("value", offset.Value);
-                break;
-
-            case BindingAddress.Normalized normalized:
-                writer.WriteString("kind", "normalized");
-                writer.WriteNumber("position", normalized.Position);
                 break;
 
             default:

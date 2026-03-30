@@ -1,3 +1,5 @@
+using Core3.Engine;
+
 namespace Core3.Binding;
 
 /// <summary>
@@ -17,16 +19,15 @@ public enum BindingDomain
 
 /// <summary>
 /// Local addressing inside one binding domain.
+/// A real mover or trolley is expected to supply the active encounter, so the
+/// address is now either a mover-relative numeric position or a named alias.
 /// </summary>
 public abstract record BindingAddress
 {
-    public sealed record Current : BindingAddress;
-
-    public sealed record Slot(int Index) : BindingAddress
+    public sealed record Position(GradedElement Parameter) : BindingAddress
     {
-        public int Index { get; } = Index >= 0
-            ? Index
-            : throw new ArgumentOutOfRangeException(nameof(Index));
+        public GradedElement Parameter { get; } =
+            Parameter ?? throw new ArgumentNullException(nameof(Parameter));
     }
 
     public sealed record Name(string Value) : BindingAddress
@@ -36,14 +37,8 @@ public abstract record BindingAddress
             : throw new ArgumentException("A binding name cannot be empty.", nameof(Value));
     }
 
-    public sealed record Offset(int Value) : BindingAddress;
-
-    public sealed record Normalized(decimal Position) : BindingAddress
-    {
-        public decimal Position { get; } = Position is >= 0m and <= 1m
-            ? Position
-            : throw new ArgumentOutOfRangeException(nameof(Position));
-    }
+    public static Position At(long value, long resolution = 1) =>
+        new(new AtomicElement(value, resolution));
 }
 
 /// <summary>
@@ -67,9 +62,29 @@ public sealed record BindingSelector(
     BindingProjection Projection,
     BindingStorageTarget? StoreTarget = null)
 {
-    public static BindingSelector Current(
+    /// <summary>
+    /// Creates a selector whose address is a Core3 numeric parameter. A value of
+    /// 0/1 typically means "where the mover is now"; signed values may look
+    /// backward or forward, and fractional values may query along a path-like
+    /// domain.
+    /// </summary>
+    public static BindingSelector At(
         BindingDomain domain,
+        long value,
+        long resolution = 1,
         BindingProjection? projection = null,
         BindingStorageTarget? storeTarget = null) =>
-        new(domain, new BindingAddress.Current(), projection ?? BindingProjection.Whole, storeTarget);
+        new(domain, BindingAddress.At(value, resolution), projection ?? BindingProjection.Whole, storeTarget);
+
+    /// <summary>
+    /// Creates a selector by named alias, which is useful for authored token or
+    /// context slots even when the deeper selector model prefers numeric
+    /// positions.
+    /// </summary>
+    public static BindingSelector Named(
+        BindingDomain domain,
+        string name,
+        BindingProjection? projection = null,
+        BindingStorageTarget? storeTarget = null) =>
+        new(domain, new BindingAddress.Name(name), projection ?? BindingProjection.Whole, storeTarget);
 }

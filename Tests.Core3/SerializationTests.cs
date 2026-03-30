@@ -251,9 +251,9 @@ public sealed class SerializationTests
             [
                 new OperationInputBinding(
                     "left",
-                    new BindingSelector(
+                    BindingSelector.Named(
                         BindingDomain.Token,
-                        new BindingAddress.Name("accumulator"),
+                        "accumulator",
                         BindingProjection.Whole))
             ],
             [

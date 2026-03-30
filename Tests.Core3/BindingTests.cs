@@ -15,18 +15,19 @@ public sealed class BindingTests
             },
             Unit = new BoundSlot<long>
             {
-                Binding = BindingSelector.Current(
+                Binding = BindingSelector.At(
                     BindingDomain.Frame,
-                    BindingProjection.Unit),
+                    0,
+                    projection: BindingProjection.Unit),
                 Transform = BindingTransform.OppositeOrientation
             },
             Constraints =
             [
                 new BindingConstraint(
                     "unit",
-                    new BindingSelector(
+                    BindingSelector.Named(
                         BindingDomain.Token,
-                        new BindingAddress.Name("accumulator"),
+                        "accumulator",
                         BindingProjection.Unit),
                     BindingTransform.Identity)
             ]
@@ -48,22 +49,22 @@ public sealed class BindingTests
             new OperationSite(
                 OperationSiteKind.Carrier,
                 "accumulate",
-                new BindingAddress.Normalized(0.5m)),
+                BindingAddress.At(1, 2)),
             new OperationLawReference("Add"),
             [
                 new OperationInputBinding(
                     "left",
-                    new BindingSelector(
+                    BindingSelector.Named(
                         BindingDomain.Token,
-                        new BindingAddress.Name("accumulator"),
+                        "accumulator",
                         BindingProjection.Whole)),
                 new OperationInputBinding(
                     "right",
-                    new BindingSelector(
+                    BindingSelector.At(
                         BindingDomain.Family,
-                        new BindingAddress.Current(),
-                        BindingProjection.Whole,
-                        new BindingStorageTarget(BindingDomain.Context, "currentItem")))
+                        0,
+                        projection: BindingProjection.Whole,
+                        storeTarget: new BindingStorageTarget(BindingDomain.Context, "currentItem")))
             ],
             [
                 new OperationOutputBinding(
@@ -96,21 +97,21 @@ public sealed class BindingTests
             new OperationSite(
                 OperationSiteKind.Carrier,
                 "accumulate",
-                new BindingAddress.Normalized(0.5m)),
+                BindingAddress.At(1, 2)),
             new OperationLawReference("Add"),
             [
                 new OperationInputBinding(
                     "accumulator",
-                    new BindingSelector(
+                    BindingSelector.Named(
                         BindingDomain.Token,
-                        new BindingAddress.Name("accumulator"),
+                        "accumulator",
                         BindingProjection.Whole)),
                 new OperationInputBinding(
                     "currentItem",
-                    new BindingSelector(
+                    BindingSelector.At(
                         BindingDomain.Family,
-                        new BindingAddress.Current(),
-                        BindingProjection.Whole))
+                        0,
+                        projection: BindingProjection.Whole))
             ],
             [
                 new OperationOutputBinding(
@@ -125,9 +126,9 @@ public sealed class BindingTests
             [
                 new OperationInputBinding(
                     "position",
-                    new BindingSelector(
+                    BindingSelector.Named(
                         BindingDomain.Context,
-                        new BindingAddress.Name("memberIndex"),
+                        "memberIndex",
                         BindingProjection.Whole))
             ],
             [
@@ -151,15 +152,15 @@ public sealed class BindingTests
             [
                 new OperationInputBinding(
                     "a",
-                    new BindingSelector(
+                    BindingSelector.Named(
                         BindingDomain.Token,
-                        new BindingAddress.Name("a"),
+                        "a",
                         BindingProjection.Whole)),
                 new OperationInputBinding(
                     "b",
-                    new BindingSelector(
+                    BindingSelector.Named(
                         BindingDomain.Token,
-                        new BindingAddress.Name("b"),
+                        "b",
                         BindingProjection.Whole))
             ],
             [

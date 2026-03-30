@@ -83,8 +83,8 @@ frame."
 
 The smallest useful binding pattern has:
 
-- an anchor
-- a source
+- a source domain
+- a local address or parameter
 - a transform
 - a materialization rule
 
@@ -96,6 +96,19 @@ This pattern is broad enough to cover:
 - later routing and continuation metadata
 
 without claiming that all such cases are one concrete type.
+
+### B4b. A mover should supply the current site.
+
+When traversal is stateful, the current encounter should preferably come from a
+real moving container, cursor, or trolley rather than from a separate virtual
+"current" selector token.
+
+That means a selector should usually describe:
+
+- which domain is being read
+- what numeric parameter or named alias is being used there
+
+while the mover supplies what "here" means.
 
 ### B4a. Descriptor meaning should prefer numeric Core3 structure.
 
@@ -177,19 +190,26 @@ Carriers are natural for transport, transform, and accumulation.
 Boundaries are natural for continuation decisions.
 Tokens are natural for local state updates.
 
-### B10. Input binding decomposes into domain, address, extraction, and miss policy.
+### B10. Input binding decomposes into domain, address, and projection.
 
 This is the current recommended selection grammar.
 
 - domain
   Which pool are we reading from?
 - address
-  Where inside that pool?
+  Which local numeric parameter or named alias is being used?
 - projection
   What aspect do we take?
 
-The current pass assumes nearest-or-fail behavior and leaves richer
-attention-style miss handling for a later layer.
+The current pass assumes that the active mover and domain decide how a numeric
+parameter is interpreted:
+
+- snap to discrete slot
+- choose nearest
+- interpolate along a path
+- apply boundary or continuation law
+
+Richer attention-style miss handling is left for a later layer.
 
 An optional storage target can retain the selected value for later use.
 
@@ -251,6 +271,13 @@ Describes how a value is chosen from context:
 Common projections may still be given friendly names, but the current direction
 is that the projection's underlying meaning should be a Core3 numeric signal.
 
+`BindingAddress` is currently being simplified toward:
+
+- numeric mover-relative position
+- named alias
+
+instead of many partly overlapping address kinds.
+
 ### `BoundTemplate`
 
 Represents a partially specified runtime literal that can later bind into a
@@ -306,6 +333,12 @@ This is the current preferred direction because it keeps descriptor meaning:
 
 and therefore more compatible with later tension-driven exploration than a
 closed enum list would be.
+
+## Traversal-Relative Note
+
+See [TraversalBinding.md](TraversalBinding.md) for the
+current note on physical movers, trolley-style traversal, and mover-relative
+numeric addressing.
 
 ## Examples
 

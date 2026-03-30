@@ -8,11 +8,18 @@ public sealed class BindingSerializationTests
     [Fact]
     public void Core3JsonSerializer_SerializesBindingAddressKinds_Minimally()
     {
-        // Serializes the built-in binding address shapes directly.
-        // These are the local "where inside the domain?" descriptors used by binding.
-        var expectedCurrentJson = """
+        // Serializes the remaining binding address shapes directly.
+        // Position is now the mover-relative numeric parameter, so:
+        // 0 means "here", -1 means one step back, and 1/2 means halfway/query midpoint.
+        var expectedHereJson = """
 {
-  "kind": "current"
+  "kind": "position",
+  "parameter": {
+    "kind": "atomic",
+    "grade": 0,
+    "value": 0,
+    "unit": 1
+  }
 }
 """;
 
@@ -23,44 +30,52 @@ public sealed class BindingSerializationTests
 }
 """;
 
-        var expectedSlotJson = """
+        var expectedPriorJson = """
 {
-  "kind": "slot",
-  "index": 2
+  "kind": "position",
+  "parameter": {
+    "kind": "atomic",
+    "grade": 0,
+    "value": -1,
+    "unit": 1
+  }
 }
 """;
 
-        var expectedOffsetJson = """
+        var expectedMidpointJson = """
 {
-  "kind": "offset",
-  "value": -1
+  "kind": "position",
+  "parameter": {
+    "kind": "atomic",
+    "grade": 0,
+    "value": 1,
+    "unit": 2
+  }
 }
 """;
 
-        var expectedNormalizedJson = """
-{
-  "kind": "normalized",
-  "position": 0.5
-}
-""";
-
-        AssertJsonEqual(expectedCurrentJson, Core3JsonSerializer.Serialize(new BindingAddress.Current()));
+        AssertJsonEqual(expectedHereJson, Core3JsonSerializer.Serialize(BindingAddress.At(0)));
         AssertJsonEqual(expectedNameJson, Core3JsonSerializer.Serialize(new BindingAddress.Name("accumulator")));
-        AssertJsonEqual(expectedSlotJson, Core3JsonSerializer.Serialize(new BindingAddress.Slot(2)));
-        AssertJsonEqual(expectedOffsetJson, Core3JsonSerializer.Serialize(new BindingAddress.Offset(-1)));
-        AssertJsonEqual(expectedNormalizedJson, Core3JsonSerializer.Serialize(new BindingAddress.Normalized(0.5m)));
+        AssertJsonEqual(expectedPriorJson, Core3JsonSerializer.Serialize(BindingAddress.At(-1)));
+        AssertJsonEqual(expectedMidpointJson, Core3JsonSerializer.Serialize(BindingAddress.At(1, 2)));
     }
 
     [Fact]
     public void Core3JsonSerializer_SerializesBindingSelectorWithStorage_Minimally()
     {
-        // Serializes a selector that reads the current family member and stores it
-        // into the local context as "currentItem" for later steps.
+        // Serializes a selector that reads "where the mover is now" in the family domain
+        // and stores that selected value into the local context as "currentItem".
         var expectedJson = """
 {
   "domain": "Family",
   "address": {
-    "kind": "current"
+    "kind": "position",
+    "parameter": {
+      "kind": "atomic",
+      "grade": 0,
+      "value": 0,
+      "unit": 1
+    }
   },
   "projection": {
     "note": "whole",
@@ -111,11 +126,11 @@ public sealed class BindingSerializationTests
 }
 """;
 
-        var selector = new BindingSelector(
+        var selector = BindingSelector.At(
             BindingDomain.Family,
-            new BindingAddress.Current(),
-            BindingProjection.Whole,
-            new BindingStorageTarget(BindingDomain.Context, "currentItem"));
+            0,
+            projection: BindingProjection.Whole,
+            storeTarget: new BindingStorageTarget(BindingDomain.Context, "currentItem"));
 
         var json = Core3JsonSerializer.Serialize(selector);
 
@@ -125,8 +140,8 @@ public sealed class BindingSerializationTests
     [Fact]
     public void Core3JsonSerializer_SerializesBoundScalarTemplate_Minimally()
     {
-        // Serializes a scalar bound literal with one explicit value, one inherited unit,
-        // and one coupling constraint from the token accumulator's unit slot.
+        // Serializes a scalar bound literal with one explicit value, one unit bound
+        // from the mover-relative frame position 0, and one named token-unit coupling.
         var expectedJson = """
 {
   "kind": "boundScalarTemplate",
@@ -180,7 +195,13 @@ public sealed class BindingSerializationTests
     "binding": {
       "domain": "Frame",
       "address": {
-        "kind": "current"
+        "kind": "position",
+        "parameter": {
+          "kind": "atomic",
+          "grade": 0,
+          "value": 0,
+          "unit": 1
+        }
       },
       "projection": {
         "note": "unit",
@@ -376,18 +397,19 @@ public sealed class BindingSerializationTests
             },
             Unit = new BoundSlot<long>
             {
-                Binding = BindingSelector.Current(
+                Binding = BindingSelector.At(
                     BindingDomain.Frame,
-                    BindingProjection.Unit),
+                    0,
+                    projection: BindingProjection.Unit),
                 Transform = BindingTransform.OppositeOrientation
             },
             Constraints =
             [
                 new BindingConstraint(
                     "unit",
-                    new BindingSelector(
+                    BindingSelector.Named(
                         BindingDomain.Token,
-                        new BindingAddress.Name("accumulator"),
+                        "accumulator",
                         BindingProjection.Unit),
                     BindingTransform.Identity)
             ]
@@ -402,7 +424,7 @@ public sealed class BindingSerializationTests
     public void Core3JsonSerializer_SerializesBoundCompositeTemplate_Minimally()
     {
         // Serializes a recursive bound template: one literal scalar plus one
-        // history-bound scalar whose unit is orthogonalized at bind time.
+        // history-bound scalar whose address is one step back and whose unit is orthogonalized.
         var expectedJson = """
 {
   "kind": "boundCompositeTemplate",
@@ -509,8 +531,13 @@ public sealed class BindingSerializationTests
       "binding": {
         "domain": "History",
         "address": {
-          "kind": "offset",
-          "value": -1
+          "kind": "position",
+          "parameter": {
+            "kind": "atomic",
+            "grade": 0,
+            "value": -1,
+            "unit": 1
+          }
         },
         "projection": {
           "note": "whole",
@@ -665,10 +692,10 @@ public sealed class BindingSerializationTests
             {
                 Value = new BoundSlot<long>
                 {
-                    Binding = new BindingSelector(
+                    Binding = BindingSelector.At(
                         BindingDomain.History,
-                        new BindingAddress.Offset(-1),
-                        BindingProjection.Whole)
+                        -1,
+                        projection: BindingProjection.Whole)
                 },
                 Unit = new BoundSlot<long>
                 {
