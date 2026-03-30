@@ -10,25 +10,18 @@ internal static class EngineBooleanProjection
         CompositeElement primary,
         CompositeElement secondary,
         EngineBooleanOperation operation,
-        out EngineBooleanResult? result)
-    {
-        if (TryResolveWithTension(
+        out EngineBooleanResult? result) =>
+        EngineExactness.TryGetExact(
+            TryResolveWithTension(
                 frame,
                 primary,
                 secondary,
                 operation,
                 null,
                 null,
-                out result) &&
-            result is not null &&
-            result.IsExact)
-        {
-            return true;
-        }
-
-        result = null;
-        return false;
-    }
+                out var candidate),
+            candidate,
+            out result);
 
     internal static bool TryResolveWithTension(
         CompositeElement frame,
@@ -173,25 +166,18 @@ internal static class EngineBooleanProjection
         IReadOnlyList<CompositeElement> members,
         bool isOrdered,
         EngineOccupancyOperation operation,
-        out EngineFamilyBooleanResult? result)
-    {
-        if (TryResolveFamilyWithTension(
+        out EngineFamilyBooleanResult? result) =>
+        EngineExactness.TryGetExact(
+            TryResolveFamilyWithTension(
                 frame,
                 members,
                 isOrdered,
                 operation,
                 null,
                 null,
-                out result) &&
-            result is not null &&
-            result.IsExact)
-        {
-            return true;
-        }
-
-        result = null;
-        return false;
-    }
+                out var candidate),
+            candidate,
+            out result);
 
     internal static bool TryResolveFamilyWithTension(
         CompositeElement frame,

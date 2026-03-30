@@ -65,19 +65,11 @@ internal static class EngineEvaluation
     internal static bool TryComposeRatio(
         AtomicElement numerator,
         AtomicElement denominator,
-        out GradedElement? folded)
-    {
-        var outcome = ComposeRatio(numerator, denominator);
-
-        if (!outcome.IsExact)
-        {
-            folded = null;
-            return false;
-        }
-
-        folded = outcome.Result;
-        return true;
-    }
+        out GradedElement? folded) =>
+        EngineExactness.TryProjectExact(
+            ComposeRatio(numerator, denominator),
+            static outcome => outcome.Result,
+            out folded);
 
     internal static bool TryMultiplyAtomic(
         AtomicElement left,

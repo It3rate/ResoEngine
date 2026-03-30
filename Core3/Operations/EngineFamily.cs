@@ -259,7 +259,7 @@ public sealed class EngineFamily
         {
             var outcome = member.CommitToCalibrationWithTension(Frame);
             resolvedReads.Add(outcome.Result);
-            tension = outcome.Tension ?? tension;
+            tension = EngineTension.CombineTension(tension, outcome.Tension);
             note = EngineTension.CombineNotes(note, outcome.Note);
         }
 
@@ -304,7 +304,7 @@ public sealed class EngineFamily
         {
             var stepOutcome = current.AddWithTension(readResult.Reads[index]);
             current = stepOutcome.Result;
-            tension = stepOutcome.Tension ?? tension;
+            tension = EngineTension.CombineTension(tension, stepOutcome.Tension);
             note = EngineTension.CombineNotes(note, stepOutcome.Note);
         }
 
@@ -337,7 +337,7 @@ public sealed class EngineFamily
         {
             var stepOutcome = current.MultiplyWithTension(readResult.Reads[index]);
             current = stepOutcome.Result;
-            tension = stepOutcome.Tension ?? tension;
+            tension = EngineTension.CombineTension(tension, stepOutcome.Tension);
             note = EngineTension.CombineNotes(note, stepOutcome.Note);
         }
 

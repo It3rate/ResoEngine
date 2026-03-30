@@ -89,12 +89,6 @@ public sealed record CompositeElement : GradedElement
             "Composite calibration preserved child tension.");
     }
 
-    public override bool TryFold(out GradedElement? folded)
-    {
-        folded = FoldWithTension().Result;
-        return true;
-    }
-
     public override EngineElementPairOutcome AlignWithTension(
         GradedElement other,
         ResolutionPolicy policy)

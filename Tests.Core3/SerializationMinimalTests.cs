@@ -567,7 +567,8 @@ public sealed class SerializationMinimalTests
     {
         // Serializes a family add that stays lawful but unresolved.
         // Approximate math: read 1/1 and 1/0 in frame 0/1, then preserve the
-        // unresolved sum 2/0 with its tension and combined note.
+        // unresolved sum 2/0 with the earlier calibration tension still attached
+        // and the combined note preserved.
         var expectedJson = """
 {
   "kind": "operationResult",
@@ -616,13 +617,13 @@ public sealed class SerializationMinimalTests
       "kind": "atomic",
       "grade": 0,
       "value": 1,
-      "unit": 1
+      "unit": 0
     },
     "dominant": {
       "kind": "atomic",
       "grade": 0,
-      "value": 1,
-      "unit": 0
+      "value": 0,
+      "unit": 1
     }
   },
   "note": "Calibration preserved unresolved support because one or both unit slots were unresolved. | Addition preserved unresolved support from the aligned pair."

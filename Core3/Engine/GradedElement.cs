@@ -19,7 +19,11 @@ public abstract record GradedElement
     public abstract EngineElementOutcome SubtractWithTension(GradedElement other);
     public abstract EngineElementOutcome MultiplyWithTension(GradedElement other);
     public abstract EngineElementOutcome ScaleWithTension(AtomicElement factor);
-    public abstract bool TryFold(out GradedElement? folded);
+    public virtual bool TryFold(out GradedElement? folded)
+    {
+        folded = FoldWithTension().Result;
+        return true;
+    }
     public virtual bool TryCommitToCalibration(GradedElement calibration, out GradedElement? committed) =>
         EngineExactness.TryProjectExact(
             CommitToCalibrationWithTension(calibration),

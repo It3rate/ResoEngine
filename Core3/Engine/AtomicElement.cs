@@ -39,12 +39,6 @@ public sealed record AtomicElement(long Value, long Unit) : GradedElement
             CreateReexpressionNote(targetResolution));
     }
 
-    public override bool TryFold(out GradedElement? folded)
-    {
-        folded = this;
-        return true;
-    }
-
     // Resolution is preserved during exact working arithmetic.
     // Re-expression, alignment, and support commit are explicit operations so
     // the engine does not silently collapse support by coincidence.
