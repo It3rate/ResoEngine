@@ -68,8 +68,8 @@ public static class TraversalRuntime
             var outcome = Materialize(register.Template);
 
             token[register.Name] = outcome.Result;
-            tension = CombineTension(tension, outcome.Tension);
-            note = CombineNotes(note, outcome.Note);
+            tension = EngineTension.CombineTension(tension, outcome.Tension);
+            note = EngineTension.CombineNotes(note, outcome.Note);
         }
 
         return new TraversalRuntimeState(
@@ -110,13 +110,13 @@ public static class TraversalRuntime
                         out var selectedTension,
                         out var selectedNote))
                 {
-                    stepState.Tension = CombineTension(stepState.Tension, selectedTension);
-                    stepState.Note = CombineNotes(stepState.Note, selectedNote);
+                    stepState.Tension = EngineTension.CombineTension(stepState.Tension, selectedTension);
+                    stepState.Note = EngineTension.CombineNotes(stepState.Note, selectedNote);
                     continue;
                 }
 
-                stepState.Tension = CombineTension(stepState.Tension, selectedTension);
-                stepState.Note = CombineNotes(stepState.Note, selectedNote);
+                stepState.Tension = EngineTension.CombineTension(stepState.Tension, selectedTension);
+                stepState.Note = EngineTension.CombineNotes(stepState.Note, selectedNote);
 
                 if (selected is null)
                 {
@@ -139,7 +139,7 @@ public static class TraversalRuntime
             }
             else
             {
-                stepState.Note = CombineNotes(
+                stepState.Note = EngineTension.CombineNotes(
                     stepState.Note,
                     $"Traversal runtime has no handler for law '{attachment.Law.Name}'.");
             }
@@ -203,7 +203,7 @@ public static class TraversalRuntime
         return EngineElementOutcome.WithTension(
             materialized,
             materialized,
-            CombineNotes(
+            EngineTension.CombineNotes(
                 "Traversal composite register materialization preserved child tension.",
                 recessiveOutcome.Note,
                 dominantOutcome.Note));
@@ -316,13 +316,13 @@ public static class TraversalRuntime
         if (!inputs.TryGetValue("accumulator", out var left) ||
             !inputs.TryGetValue("currentItem", out var right))
         {
-            state.Note = CombineNotes(state.Note, "Traversal Add encountered missing inputs and left the token unchanged.");
+            state.Note = EngineTension.CombineNotes(state.Note, "Traversal Add encountered missing inputs and left the token unchanged.");
             return;
         }
 
         var outcome = left.AddWithTension(right);
-        state.Tension = CombineTension(state.Tension, outcome.Tension);
-        state.Note = CombineNotes(state.Note, outcome.Note);
+        state.Tension = EngineTension.CombineTension(state.Tension, outcome.Tension);
+        state.Note = EngineTension.CombineNotes(state.Note, outcome.Note);
 
         foreach (var outputBinding in attachment.Outputs)
         {
@@ -422,29 +422,5 @@ public static class TraversalRuntime
 
         private static bool IsStoredDomain(BindingDomain domain) =>
             domain is BindingDomain.Token or BindingDomain.Context or BindingDomain.Result;
-    }
-
-    private static GradedElement? CombineTension(GradedElement? existing, GradedElement? next) =>
-        existing ?? next;
-
-    private static string? CombineNotes(params string?[] notes)
-    {
-        string? combined = null;
-
-        foreach (var note in notes)
-        {
-            if (string.IsNullOrWhiteSpace(note))
-            {
-                continue;
-            }
-
-            combined = string.IsNullOrWhiteSpace(combined)
-                ? note
-                : combined == note
-                    ? combined
-                    : $"{combined} | {note}";
-        }
-
-        return combined;
     }
 }

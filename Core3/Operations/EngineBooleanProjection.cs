@@ -60,13 +60,13 @@ internal static class EngineBooleanProjection
                 context,
                 operation,
                 [],
-                CombineTension(
+                EngineTension.CombineTension(
                     tension,
                     frameTension,
                     primaryTension,
                     secondaryTension,
                     primary),
-                CombineNotes(
+                EngineTension.CombineNotes(
                     note,
                     frameNote,
                     primaryNote,
@@ -157,8 +157,8 @@ internal static class EngineBooleanProjection
             }
             else
             {
-                tension = CombineTension(tension, pieceTension, currentCarrier);
-                note = CombineNotes(note, pieceNote);
+                tension = EngineTension.CombineTension(tension, pieceTension, currentCarrier);
+                note = EngineTension.CombineNotes(note, pieceNote);
             }
 
             currentLeft = null;
@@ -218,8 +218,8 @@ internal static class EngineBooleanProjection
                 context,
                 operation,
                 [],
-                CombineTension(tension, frameTension, frame),
-                CombineNotes(note, frameNote));
+                    EngineTension.CombineTension(tension, frameTension, frame),
+                    EngineTension.CombineNotes(note, frameNote));
             return true;
         }
 
@@ -233,8 +233,8 @@ internal static class EngineBooleanProjection
                     context,
                     operation,
                     [],
-                    CombineTension(tension, memberTension, member),
-                    CombineNotes(note, memberNote));
+                    EngineTension.CombineTension(tension, memberTension, member),
+                    EngineTension.CombineNotes(note, memberNote));
                 return true;
             }
 
@@ -323,8 +323,8 @@ internal static class EngineBooleanProjection
             }
             else
             {
-                tension = CombineTension(tension, pieceTension, currentCarrier);
-                note = CombineNotes(note, pieceNote);
+                tension = EngineTension.CombineTension(tension, pieceTension, currentCarrier);
+                note = EngineTension.CombineNotes(note, pieceNote);
             }
 
             currentLeft = null;
@@ -562,38 +562,4 @@ internal static class EngineBooleanProjection
     }
 
     private readonly record struct AtomicSegment(decimal Start, decimal End);
-
-    private static GradedElement? CombineTension(params GradedElement?[] tensions)
-    {
-        foreach (var tension in tensions)
-        {
-            if (tension is not null)
-            {
-                return tension;
-            }
-        }
-
-        return null;
-    }
-
-    private static string? CombineNotes(params string?[] notes)
-    {
-        string? combined = null;
-
-        foreach (var note in notes)
-        {
-            if (string.IsNullOrWhiteSpace(note))
-            {
-                continue;
-            }
-
-            combined = string.IsNullOrWhiteSpace(combined)
-                ? note
-                : combined == note
-                    ? combined
-                    : $"{combined} | {note}";
-        }
-
-        return combined;
-    }
 }

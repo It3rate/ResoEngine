@@ -108,7 +108,7 @@ public sealed record EnginePin
         var positionOutcome = ResolvePositionWithTension(host, pinPosition);
         var inboundOutcome = positionOutcome.Result.SubtractWithTension(host.Recessive);
         var outboundOutcome = host.Dominant.SubtractWithTension(positionOutcome.Result);
-        var note = CombineNotes(positionOutcome.Note, inboundOutcome.Note, outboundOutcome.Note);
+        var note = EngineTension.CombineNotes(positionOutcome.Note, inboundOutcome.Note, outboundOutcome.Note);
 
         return new EngineHostedPinResult(
             host,
@@ -225,7 +225,7 @@ public sealed record EnginePin
         var declaredSpan = host.Dominant.SubtractWithTension(host.Recessive);
         var offset = declaredSpan.Result.ScaleWithTension(ratio);
         var positioned = host.Recessive.AddWithTension(offset.Result);
-        var note = CombineNotes(folded.Note, declaredSpan.Note, offset.Note, positioned.Note);
+        var note = EngineTension.CombineNotes(folded.Note, declaredSpan.Note, offset.Note, positioned.Note);
 
         return positioned.IsExact && folded.IsExact && declaredSpan.IsExact && offset.IsExact
             ? EngineElementOutcome.Exact(positioned.Result)
@@ -268,20 +268,5 @@ public sealed record EnginePin
         {
             throw new InvalidOperationException("Pins require children of the same grade.");
         }
-    }
-
-    private static string? CombineNotes(params string?[] notes)
-    {
-        var present = notes
-            .Where(note => !string.IsNullOrWhiteSpace(note))
-            .Distinct()
-            .ToArray();
-
-        return present.Length switch
-        {
-            0 => null,
-            1 => present[0],
-            _ => string.Join(" | ", present)
-        };
     }
 }

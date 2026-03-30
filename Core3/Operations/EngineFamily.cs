@@ -260,7 +260,7 @@ public sealed class EngineFamily
             var outcome = member.CommitToCalibrationWithTension(Frame);
             resolvedReads.Add(outcome.Result);
             tension = outcome.Tension ?? tension;
-            note = CombineNotes(note, outcome.Note);
+            note = EngineTension.CombineNotes(note, outcome.Note);
         }
 
         result = new EngineReadResult(CreateContext(), resolvedReads, tension, note);
@@ -319,7 +319,7 @@ public sealed class EngineFamily
             var stepOutcome = current.AddWithTension(readResult.Reads[index]);
             current = stepOutcome.Result;
             tension = stepOutcome.Tension ?? tension;
-            note = CombineNotes(note, stepOutcome.Note);
+            note = EngineTension.CombineNotes(note, stepOutcome.Note);
         }
 
         result = new EngineOperationResult("Add", CreateContext(), current, Frame, tension, note);
@@ -359,7 +359,7 @@ public sealed class EngineFamily
             var stepOutcome = current.MultiplyWithTension(readResult.Reads[index]);
             current = stepOutcome.Result;
             tension = stepOutcome.Tension ?? tension;
-            note = CombineNotes(note, stepOutcome.Note);
+            note = EngineTension.CombineNotes(note, stepOutcome.Note);
         }
 
         result = new EngineOperationResult(
@@ -517,8 +517,8 @@ public sealed class EngineFamily
                     left,
                     right,
                     operation,
-                    CombineTension(leftOutcome.Tension, rightOutcome.Tension),
-                    CombineNotes(leftOutcome.Note, rightOutcome.Note),
+                    EngineTension.CombineTension(leftOutcome.Tension, rightOutcome.Tension),
+                    EngineTension.CombineNotes(leftOutcome.Note, rightOutcome.Note),
                     out var pairResult) ||
                 pairResult is null)
             {
@@ -653,24 +653,4 @@ public sealed class EngineFamily
     }
 
     private sealed record SortableMember(int OriginalIndex, GradedElement Member, AtomicElement Slot);
-
-    private static string? CombineNotes(string? existing, string? next)
-    {
-        if (string.IsNullOrWhiteSpace(next))
-        {
-            return existing;
-        }
-
-        if (string.IsNullOrWhiteSpace(existing))
-        {
-            return next;
-        }
-
-        return existing == next
-            ? existing
-            : $"{existing} | {next}";
-    }
-
-    private static GradedElement? CombineTension(GradedElement? existing, GradedElement? next) =>
-        existing ?? next;
 }
