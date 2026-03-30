@@ -776,4 +776,54 @@ public sealed class EngineTests
         Assert.Equal(new AtomicElement(2, 1), dominant.Recessive);
         Assert.Equal(new AtomicElement(7, 1), dominant.Dominant);
     }
+
+    [Fact]
+    public void EngineChain_CanBeBuiltManuallyFromProportionToVolume()
+    {
+        var proportionA = new CompositeElement(
+            new AtomicElement(10, 1),
+            new AtomicElement(3, 1));
+        var proportionB = new CompositeElement(
+            new AtomicElement(10, 1),
+            new AtomicElement(7, 1));
+        var proportionC = new CompositeElement(
+            new AtomicElement(10, -1),
+            new AtomicElement(2, -1));
+        var proportionD = new CompositeElement(
+            new AtomicElement(10, -1),
+            new AtomicElement(5, -1));
+
+        var axisHorizontal = new CompositeElement(proportionA, proportionB);
+        var axisVertical = new CompositeElement(proportionC, proportionD);
+        var areaLike = new CompositeElement(axisHorizontal, axisVertical);
+
+        var depthAxisNear = new CompositeElement(
+            new CompositeElement(
+                new AtomicElement(10, 1),
+                new AtomicElement(1, 1)),
+            new CompositeElement(
+                new AtomicElement(10, 1),
+                new AtomicElement(4, 1)));
+        var depthAxisFar = new CompositeElement(
+            new CompositeElement(
+                new AtomicElement(10, -1),
+                new AtomicElement(6, -1)),
+            new CompositeElement(
+                new AtomicElement(10, -1),
+                new AtomicElement(9, -1)));
+        var areaLikeDepth = new CompositeElement(depthAxisNear, depthAxisFar);
+        var volumeLike = new CompositeElement(areaLike, areaLikeDepth);
+
+        Assert.Equal(1, proportionA.Grade);
+        Assert.Equal(2, axisHorizontal.Grade);
+        Assert.Equal(3, areaLike.Grade);
+        Assert.Equal(4, volumeLike.Grade);
+
+        Assert.Equal(proportionA, axisHorizontal.Recessive);
+        Assert.Equal(proportionB, axisHorizontal.Dominant);
+        Assert.Equal(axisHorizontal, areaLike.Recessive);
+        Assert.Equal(axisVertical, areaLike.Dominant);
+        Assert.Equal(areaLike, volumeLike.Recessive);
+        Assert.Equal(areaLikeDepth, volumeLike.Dominant);
+    }
 }
