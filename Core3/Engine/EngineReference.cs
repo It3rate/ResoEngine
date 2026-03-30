@@ -21,14 +21,14 @@ public sealed record EngineReference(
     /// </summary>
     public GradedElement ExistingReadout => Frame.Dominant;
 
-    public EngineElementOutcome ReadWithTension() =>
+    public EngineElementOutcome Read() =>
         Subject.Grade == Frame.Grade
             ? Subject.CommitToCalibrationWithTension(Frame)
             : Subject.CommitToCalibrationWithTension(Calibration);
 
     public bool TryRead(out GradedElement? read) =>
         EngineExactness.TryProjectExact(
-            ReadWithTension(),
+            Read(),
             static outcome => outcome.Result,
             out read);
 
@@ -37,9 +37,9 @@ public sealed record EngineReference(
             ? EngineBoundary.GetAxis(Calibration, read)
             : EngineBoundary.CreateUnknownAxis(Calibration);
 
-    public EngineElementOutcome MeasureOnCalibrationWithTension()
+    public EngineElementOutcome MeasureOnCalibration()
     {
-        var readOutcome = ReadWithTension();
+        var readOutcome = Read();
 
         if (Calibration.Grade == Subject.Grade)
         {
@@ -60,7 +60,7 @@ public sealed record EngineReference(
 
     public bool TryMeasureOnCalibration(out CompositeElement? measured) =>
         EngineExactness.TryProjectExact(
-            MeasureOnCalibrationWithTension(),
+            MeasureOnCalibration(),
             static outcome => (CompositeElement)outcome.Result,
             out measured);
 

@@ -177,7 +177,7 @@ public sealed class EngineTests
     }
 
     [Fact]
-    public void EngineReference_ReadWithTension_PreservesUnresolvedBorrowedRead()
+    public void EngineReference_Read_PreservesUnresolvedBorrowedRead()
     {
         var frame = new CompositeElement(
             new AtomicElement(10, 10),
@@ -185,7 +185,7 @@ public sealed class EngineTests
         var subject = new AtomicElement(7, 0);
 
         var reference = new EngineReference(frame, subject);
-        var outcome = reference.ReadWithTension();
+        var outcome = reference.Read();
 
         Assert.False(outcome.IsExact);
         Assert.Equal(new AtomicElement(70, 0), Assert.IsType<AtomicElement>(outcome.Result));
@@ -193,7 +193,7 @@ public sealed class EngineTests
     }
 
     [Fact]
-    public void EngineReference_MeasureOnCalibrationWithTension_PreservesUnresolvedBorrowedRead()
+    public void EngineReference_MeasureOnCalibration_PreservesUnresolvedBorrowedRead()
     {
         var frame = new CompositeElement(
             new AtomicElement(10, 10),
@@ -201,7 +201,7 @@ public sealed class EngineTests
         var subject = new AtomicElement(7, 0);
 
         var reference = new EngineReference(frame, subject);
-        var outcome = reference.MeasureOnCalibrationWithTension();
+        var outcome = reference.MeasureOnCalibration();
 
         Assert.False(outcome.IsExact);
 
@@ -913,7 +913,7 @@ public sealed class EngineTests
         var reference = new EngineReference(
             Assert.IsType<CompositeElement>(fullArea),
             sparseArea);
-        var readOutcome = reference.ReadWithTension();
+        var readOutcome = reference.Read();
         var loweredOutcome = readOutcome.Result.Lower();
 
         Assert.Equal(horizontalAxis, loweredOutcome.Result);

@@ -282,7 +282,7 @@ public static class Core3JsonSerializer
             writer.WritePropertyName("existingReadout");
             Write(writer, reference.ExistingReadout, actual);
 
-            var readOutcome = reference.ReadWithTension();
+            var readOutcome = reference.Read();
 
             if (readOutcome.IsExact)
             {

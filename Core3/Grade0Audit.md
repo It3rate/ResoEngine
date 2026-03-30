@@ -49,8 +49,8 @@ The first migrated paths are:
 - family-wide read / add / multiply outcome surfaces
 - binary and family boolean outcome surfaces
 - pairwise adjacent boolean traversal outcome surfaces
-- `EngineReference.ReadWithTension`
-- `EngineReference.MeasureOnCalibrationWithTension`
+- `EngineReference.Read`
+- `EngineReference.MeasureOnCalibration`
 - `EnginePin.ResolveHostedWithTension`
 
 This now distinguishes two layers:
