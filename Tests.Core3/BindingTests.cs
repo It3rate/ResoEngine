@@ -310,6 +310,33 @@ public sealed class BindingTests
     }
 
     [Fact]
+    public void TraversalRuntime_PreservesUnsupportedLawAsNote()
+    {
+        var machine = new TraversalMachineDefinition(
+            "unknown-law",
+            "mystery",
+            new TraversalMover("cursor", new AtomicElement(0, 1)),
+            [],
+            [
+                new OperationAttachment(
+                    new OperationSite(OperationSiteKind.Carrier, "mystery"),
+                    new OperationLawReference("UnimplementedLaw"),
+                    [],
+                    [])
+            ]);
+
+        var initial = TraversalRuntime.CreateInitial(machine);
+
+        Assert.True(TraversalRuntime.TryStep(initial, family: null, out var step));
+
+        var result = Assert.IsType<TraversalStepResult>(step);
+        Assert.Single(result.Encounters);
+        Assert.Equal("UnimplementedLaw", result.Encounters[0].Attachment.Law.Name);
+        Assert.Contains("no handler", result.State.Note);
+        Assert.Equal(initial.Mover, result.State.Mover);
+    }
+
+    [Fact]
     public void TraversalMover_CanAdvanceOneTickAtATimeUntilDenominatorStop()
     {
         var mover = new TraversalMover(

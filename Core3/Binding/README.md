@@ -357,6 +357,7 @@ It currently supports:
 - mover-relative family reads
 - token/context/result storage by name
 - a tiny law surface for example machines
+- a small named law-dispatch registry instead of hard-coded inline step branching
 
 This is not yet the final execution engine.
 It is the first compact place where route, mover, reads, laws, and carried

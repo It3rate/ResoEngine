@@ -45,6 +45,18 @@ public sealed record TraversalStepResult(
 /// </summary>
 public static class TraversalRuntime
 {
+    private delegate void TraversalLawHandler(
+        OperationAttachment attachment,
+        IReadOnlyDictionary<string, GradedElement> inputs,
+        StepState state);
+
+    private static readonly IReadOnlyDictionary<string, TraversalLawHandler> LawHandlers =
+        new Dictionary<string, TraversalLawHandler>(StringComparer.Ordinal)
+        {
+            ["Add"] = ApplyAdd,
+            ["ContinueWhileNextMemberExists"] = ApplyContinueWhileNextMemberExists
+        };
+
     public static TraversalRuntimeState CreateInitial(TraversalMachineDefinition machine)
     {
         var token = new Dictionary<string, GradedElement>(StringComparer.Ordinal);
@@ -75,13 +87,14 @@ public static class TraversalRuntime
         EngineFamily? family,
         out TraversalStepResult? result)
     {
-        var token = new Dictionary<string, GradedElement>(state.Token, StringComparer.Ordinal);
-        var context = new Dictionary<string, GradedElement>(state.Context, StringComparer.Ordinal);
-        var output = new Dictionary<string, GradedElement>(state.Result, StringComparer.Ordinal);
         var encounters = new List<TraversalSiteEncounter>();
-        var tension = state.Tension;
-        var note = state.Note;
-        var mover = state.Mover;
+        var stepState = new StepState(
+            state.Mover,
+            new Dictionary<string, GradedElement>(state.Token, StringComparer.Ordinal),
+            new Dictionary<string, GradedElement>(state.Context, StringComparer.Ordinal),
+            new Dictionary<string, GradedElement>(state.Result, StringComparer.Ordinal),
+            state.Tension,
+            state.Note);
 
         foreach (var attachment in ResolveActiveAttachments(state.Machine))
         {
@@ -97,13 +110,13 @@ public static class TraversalRuntime
                         out var selectedTension,
                         out var selectedNote))
                 {
-                    tension = CombineTension(tension, selectedTension);
-                    note = CombineNotes(note, selectedNote);
+                    stepState.Tension = CombineTension(stepState.Tension, selectedTension);
+                    stepState.Note = CombineNotes(stepState.Note, selectedNote);
                     continue;
                 }
 
-                tension = CombineTension(tension, selectedTension);
-                note = CombineNotes(note, selectedNote);
+                stepState.Tension = CombineTension(stepState.Tension, selectedTension);
+                stepState.Note = CombineNotes(stepState.Note, selectedNote);
 
                 if (selected is null)
                 {
@@ -114,39 +127,33 @@ public static class TraversalRuntime
 
                 if (input.Selector.StoreTarget is not null)
                 {
-                    Store(input.Selector.StoreTarget, selected, token, context, output);
+                    Store(input.Selector.StoreTarget, selected, stepState);
                 }
             }
 
             encounters.Add(new TraversalSiteEncounter(attachment, inputs));
 
-            switch (attachment.Law.Name)
+            if (LawHandlers.TryGetValue(attachment.Law.Name, out var handler))
             {
-                case "Add":
-                    ApplyAdd(attachment, inputs, token, context, output, ref tension, ref note);
-                    break;
-
-                case "ContinueWhileNextMemberExists":
-                    ApplyContinueWhileNextMemberExists(
-                        attachment,
-                        inputs,
-                        ref mover,
-                        token,
-                        context,
-                        output);
-                    break;
+                handler(attachment, inputs, stepState);
+            }
+            else
+            {
+                stepState.Note = CombineNotes(
+                    stepState.Note,
+                    $"Traversal runtime has no handler for law '{attachment.Law.Name}'.");
             }
         }
 
         result = new TraversalStepResult(
             new TraversalRuntimeState(
                 state.Machine,
-                mover,
-                token,
-                context,
-                output,
-                tension,
-                note),
+                stepState.Mover,
+                stepState.Token,
+                stepState.Context,
+                stepState.Result,
+                stepState.Tension,
+                stepState.Note),
             encounters);
         return true;
     }
@@ -347,36 +354,29 @@ public static class TraversalRuntime
     private static void ApplyAdd(
         OperationAttachment attachment,
         IReadOnlyDictionary<string, GradedElement> inputs,
-        IDictionary<string, GradedElement> token,
-        IDictionary<string, GradedElement> context,
-        IDictionary<string, GradedElement> result,
-        ref GradedElement? tension,
-        ref string? note)
+        StepState state)
     {
         if (!inputs.TryGetValue("accumulator", out var left) ||
             !inputs.TryGetValue("currentItem", out var right))
         {
-            note = CombineNotes(note, "Traversal Add encountered missing inputs and left the token unchanged.");
+            state.Note = CombineNotes(state.Note, "Traversal Add encountered missing inputs and left the token unchanged.");
             return;
         }
 
         var outcome = left.AddWithTension(right);
-        tension = CombineTension(tension, outcome.Tension);
-        note = CombineNotes(note, outcome.Note);
+        state.Tension = CombineTension(state.Tension, outcome.Tension);
+        state.Note = CombineNotes(state.Note, outcome.Note);
 
         foreach (var outputBinding in attachment.Outputs)
         {
-            Store(outputBinding.Target, outcome.Result, token, context, result);
+            Store(outputBinding.Target, outcome.Result, state);
         }
     }
 
     private static void ApplyContinueWhileNextMemberExists(
         OperationAttachment attachment,
         IReadOnlyDictionary<string, GradedElement> inputs,
-        ref TraversalMover mover,
-        IDictionary<string, GradedElement> token,
-        IDictionary<string, GradedElement> context,
-        IDictionary<string, GradedElement> result)
+        StepState state)
     {
         var route = inputs.ContainsKey("nextItem")
             ? new AtomicElement(1, 1)
@@ -384,38 +384,52 @@ public static class TraversalRuntime
 
         foreach (var outputBinding in attachment.Outputs)
         {
-            Store(outputBinding.Target, route, token, context, result);
+            Store(outputBinding.Target, route, state);
         }
 
         if (route.Value > 0 &&
-            mover.TryAdvance(out var advanced) &&
+            state.Mover.TryAdvance(out var advanced) &&
             advanced is not null)
         {
-            mover = advanced;
+            state.Mover = advanced;
         }
     }
 
     private static void Store(
         BindingStorageTarget target,
         GradedElement value,
-        IDictionary<string, GradedElement> token,
-        IDictionary<string, GradedElement> context,
-        IDictionary<string, GradedElement> result)
+        StepState state)
     {
         switch (target.Domain)
         {
             case BindingDomain.Token when !string.IsNullOrWhiteSpace(target.Name):
-                token[target.Name] = value;
+                state.Token[target.Name] = value;
                 return;
 
             case BindingDomain.Context when !string.IsNullOrWhiteSpace(target.Name):
-                context[target.Name] = value;
+                state.Context[target.Name] = value;
                 return;
 
             case BindingDomain.Result when !string.IsNullOrWhiteSpace(target.Name):
-                result[target.Name] = value;
+                state.Result[target.Name] = value;
                 return;
         }
+    }
+
+    private sealed class StepState(
+        TraversalMover mover,
+        Dictionary<string, GradedElement> token,
+        Dictionary<string, GradedElement> context,
+        Dictionary<string, GradedElement> result,
+        GradedElement? tension,
+        string? note)
+    {
+        public TraversalMover Mover { get; set; } = mover;
+        public Dictionary<string, GradedElement> Token { get; } = token;
+        public Dictionary<string, GradedElement> Context { get; } = context;
+        public Dictionary<string, GradedElement> Result { get; } = result;
+        public GradedElement? Tension { get; set; } = tension;
+        public string? Note { get; set; } = note;
     }
 
     private static GradedElement? CombineTension(GradedElement? existing, GradedElement? next) =>
