@@ -337,6 +337,85 @@ public sealed class BindingTests
     }
 
     [Fact]
+    public void TraversalRuntime_AllowsLaterAttachmentToReadContextWrittenEarlierInSameStep()
+    {
+        var machine = new TraversalMachineDefinition(
+            "context-chain",
+            "accumulate",
+            new TraversalMover("family-cursor", new AtomicElement(0, 2)),
+            [
+                new TraversalRegister(
+                    "accumulator",
+                    new BoundScalarTemplate
+                    {
+                        Value = new BoundSlot<long> { Literal = 0 },
+                        Unit = new BoundSlot<long> { Literal = 1 }
+                    })
+            ],
+            [
+                new OperationAttachment(
+                    new OperationSite(
+                        OperationSiteKind.Carrier,
+                        "accumulate",
+                        BindingAddress.At(1, 2)),
+                    new OperationLawReference("Add"),
+                    [
+                        new OperationInputBinding(
+                            "accumulator",
+                            BindingSelector.Named(
+                                BindingDomain.Token,
+                                "accumulator",
+                                BindingProjection.Whole)),
+                        new OperationInputBinding(
+                            "currentItem",
+                            BindingSelector.At(
+                                BindingDomain.Family,
+                                0,
+                                projection: BindingProjection.Whole,
+                                storeTarget: new BindingStorageTarget(BindingDomain.Context, "currentItem")))
+                    ],
+                    [
+                        new OperationOutputBinding(
+                            "sum",
+                            new BindingStorageTarget(BindingDomain.Token, "accumulator"),
+                            BindingTransform.Identity)
+                    ]),
+                new OperationAttachment(
+                    new OperationSite(OperationSiteKind.Boundary, "continue"),
+                    new OperationLawReference("ContinueWhileNextMemberExists"),
+                    [
+                        new OperationInputBinding(
+                            "nextItem",
+                            BindingSelector.Named(
+                                BindingDomain.Context,
+                                "currentItem",
+                                BindingProjection.Whole))
+                    ],
+                    [
+                        new OperationOutputBinding(
+                            "route",
+                            new BindingStorageTarget(BindingDomain.Result, "route"),
+                            BindingTransform.Identity)
+                    ])
+            ]);
+        var family = new EngineFamily(new AtomicElement(0, 1));
+        family.AddMember(new AtomicElement(1, 1));
+        family.AddMember(new AtomicElement(2, 1));
+
+        var initial = TraversalRuntime.CreateInitial(machine);
+
+        Assert.True(TraversalRuntime.TryStep(initial, family, out var step));
+
+        var result = Assert.IsType<TraversalStepResult>(step);
+        Assert.Equal(new AtomicElement(1, 1), Assert.IsType<AtomicElement>(result.State.Context["currentItem"]));
+        Assert.Equal(new AtomicElement(1, 1), Assert.IsType<AtomicElement>(result.State.Result["route"]));
+        Assert.Equal(new AtomicElement(1, 2), result.State.Mover.Position);
+        Assert.Equal(
+            new AtomicElement(1, 1),
+            Assert.IsType<AtomicElement>(result.Encounters[1].Inputs["nextItem"]));
+    }
+
+    [Fact]
     public void TraversalMover_CanAdvanceOneTickAtATimeUntilDenominatorStop()
     {
         var mover = new TraversalMover(

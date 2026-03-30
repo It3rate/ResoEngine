@@ -103,7 +103,7 @@ public static class TraversalRuntime
             foreach (var input in attachment.Inputs)
             {
                 if (!TryResolveSelector(
-                        state,
+                        stepState,
                         family,
                         input.Selector,
                         out var selected,
@@ -224,39 +224,21 @@ public static class TraversalRuntime
             : decimal.MaxValue;
 
     private static bool TryResolveSelector(
-        TraversalRuntimeState state,
+        StepState state,
         EngineFamily? family,
         BindingSelector selector,
         out GradedElement? value,
         out GradedElement? tension,
         out string? note)
     {
+        if (state.TryResolveNamed(selector.Domain, selector.Address, out value, out note))
+        {
+            tension = null;
+            return true;
+        }
+
         switch (selector.Domain)
         {
-            case BindingDomain.Token:
-                return TryResolveNamedOrIndexed(
-                    state.Token,
-                    selector.Address,
-                    out value,
-                    out tension,
-                    out note);
-
-            case BindingDomain.Context:
-                return TryResolveNamedOrIndexed(
-                    state.Context,
-                    selector.Address,
-                    out value,
-                    out tension,
-                    out note);
-
-            case BindingDomain.Result:
-                return TryResolveNamedOrIndexed(
-                    state.Result,
-                    selector.Address,
-                    out value,
-                    out tension,
-                    out note);
-
             case BindingDomain.Frame:
                 value = family?.Frame;
                 tension = null;
@@ -277,32 +259,7 @@ public static class TraversalRuntime
             default:
                 value = null;
                 tension = null;
-                note = $"Traversal selector domain '{selector.Domain}' is not yet supported by the minimal runtime.";
-                return false;
-        }
-    }
-
-    private static bool TryResolveNamedOrIndexed(
-        IReadOnlyDictionary<string, GradedElement> values,
-        BindingAddress address,
-        out GradedElement? value,
-        out GradedElement? tension,
-        out string? note)
-    {
-        switch (address)
-        {
-            case BindingAddress.Name name:
-                values.TryGetValue(name.Value, out value);
-                tension = null;
-                note = value is null
-                    ? null
-                    : null;
-                return true;
-
-            default:
-                value = null;
-                tension = null;
-                note = "Traversal token/context/result lookup currently requires named addressing.";
+                note = note ?? $"Traversal selector domain '{selector.Domain}' is not yet supported by the minimal runtime.";
                 return false;
         }
     }
@@ -398,23 +355,8 @@ public static class TraversalRuntime
     private static void Store(
         BindingStorageTarget target,
         GradedElement value,
-        StepState state)
-    {
-        switch (target.Domain)
-        {
-            case BindingDomain.Token when !string.IsNullOrWhiteSpace(target.Name):
-                state.Token[target.Name] = value;
-                return;
-
-            case BindingDomain.Context when !string.IsNullOrWhiteSpace(target.Name):
-                state.Context[target.Name] = value;
-                return;
-
-            case BindingDomain.Result when !string.IsNullOrWhiteSpace(target.Name):
-                state.Result[target.Name] = value;
-                return;
-        }
-    }
+        StepState state) =>
+        state.Store(target, value);
 
     private sealed class StepState(
         TraversalMover mover,
@@ -430,6 +372,56 @@ public static class TraversalRuntime
         public Dictionary<string, GradedElement> Result { get; } = result;
         public GradedElement? Tension { get; set; } = tension;
         public string? Note { get; set; } = note;
+
+        public bool TryResolveNamed(
+            BindingDomain domain,
+            BindingAddress address,
+            out GradedElement? value,
+            out string? note)
+        {
+            if (address is not BindingAddress.Name name)
+            {
+                value = null;
+                note = IsStoredDomain(domain)
+                    ? "Traversal token/context/result lookup currently requires named addressing."
+                    : null;
+                return false;
+            }
+
+            var values = GetStoredDomain(domain);
+
+            if (values is null)
+            {
+                value = null;
+                note = null;
+                return false;
+            }
+
+            values.TryGetValue(name.Value, out value);
+            note = null;
+            return true;
+        }
+
+        public void Store(BindingStorageTarget target, GradedElement value)
+        {
+            if (!string.IsNullOrWhiteSpace(target.Name) &&
+                GetStoredDomain(target.Domain) is Dictionary<string, GradedElement> values)
+            {
+                values[target.Name] = value;
+            }
+        }
+
+        private Dictionary<string, GradedElement>? GetStoredDomain(BindingDomain domain) =>
+            domain switch
+            {
+                BindingDomain.Token => Token,
+                BindingDomain.Context => Context,
+                BindingDomain.Result => Result,
+                _ => null
+            };
+
+        private static bool IsStoredDomain(BindingDomain domain) =>
+            domain is BindingDomain.Token or BindingDomain.Context or BindingDomain.Result;
     }
 
     private static GradedElement? CombineTension(GradedElement? existing, GradedElement? next) =>

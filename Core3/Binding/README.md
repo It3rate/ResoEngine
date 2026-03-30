@@ -356,6 +356,7 @@ It currently supports:
 - literal register materialization into token state
 - mover-relative family reads
 - token/context/result storage by name
+- same-step token/context/result reads against the live evolving step state
 - a tiny law surface for example machines
 - a small named law-dispatch registry instead of hard-coded inline step branching
 
