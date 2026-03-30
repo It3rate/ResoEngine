@@ -319,6 +319,7 @@ their contact points explicit.
 
 Represents one small declarative machine made from:
 
+- one exact traversal mover
 - named traversal registers
 - one entry site name
 - a list of attached operation laws
@@ -326,6 +327,18 @@ Represents one small declarative machine made from:
 This is still definition-time structure rather than a full execution runtime,
 but it provides a convenient serializable bundle for inspecting loop shapes,
 branch shapes, and later visualizing flow.
+
+### `TraversalMover`
+
+Represents one physical cursor/trolley carried by one exact atomic iterator:
+
+- `Position`
+
+The numerator is the current route position.
+The denominator is the current route end/resolution.
+
+The current pass uses a default continuation of `+1` on the numerator until the
+denominator is reached, then stops with clamp-like endpoint behavior.
 
 ## Numeric Descriptor Direction
 
@@ -351,6 +364,9 @@ closed enum list would be.
 See [TraversalBinding.md](TraversalBinding.md) for the
 current note on physical movers, trolley-style traversal, and mover-relative
 numeric addressing.
+
+See [RouteAndMover.md](RouteAndMover.md) for the current route/site/mover/read
+picture across the current Core3 engine, binding, and runtime layers.
 
 ## Examples
 

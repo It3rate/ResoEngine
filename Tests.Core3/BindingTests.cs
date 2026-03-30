@@ -1,4 +1,5 @@
 using Core3.Binding;
+using Core3.Engine;
 
 namespace Tests.Core3;
 
@@ -184,9 +185,14 @@ public sealed class BindingTests
     [Fact]
     public void TraversalMachineDefinition_CanDescribeAccumulatorLoop()
     {
+        var mover = new TraversalMover(
+            "family-cursor",
+            new AtomicElement(0, 4));
+
         var machine = new TraversalMachineDefinition(
             "sum-loop",
             "accumulate",
+            mover,
             [
                 new TraversalRegister(
                     "accumulator",
@@ -246,10 +252,76 @@ public sealed class BindingTests
 
         Assert.Equal("sum-loop", machine.Name);
         Assert.Equal("accumulate", machine.EntrySiteName);
+        Assert.Equal("family-cursor", machine.Mover.Name);
+        Assert.Equal(new AtomicElement(0, 4), machine.Mover.Position);
         Assert.Single(machine.Registers);
         Assert.Equal("accumulator", machine.Registers[0].Name);
         Assert.Equal(2, machine.Attachments.Count);
         Assert.Equal("Add", machine.Attachments[0].Law.Name);
         Assert.Equal("ContinueWhileNextMemberExists", machine.Attachments[1].Law.Name);
+    }
+
+    [Fact]
+    public void TraversalMover_CanAdvanceOneTickAtATimeUntilDenominatorStop()
+    {
+        var mover = new TraversalMover(
+            "quarter-cursor",
+            new AtomicElement(0, 4));
+
+        Assert.Equal(new AtomicElement(0, 4), mover.Position);
+        Assert.Equal(0, mover.CurrentTick);
+        Assert.Equal(4, mover.EndTick);
+        Assert.False(mover.IsAtStop);
+
+        Assert.True(mover.TryAdvance(out var first));
+        Assert.NotNull(first);
+        Assert.Equal(new AtomicElement(1, 4), first!.Position);
+        Assert.Equal(1, first.CurrentTick);
+
+        Assert.True(first.TryAdvance(out var second));
+        Assert.NotNull(second);
+        Assert.Equal(new AtomicElement(2, 4), second!.Position);
+        Assert.Equal(2, second.CurrentTick);
+
+        Assert.True(second.TryAdvance(out var third));
+        Assert.NotNull(third);
+        Assert.Equal(new AtomicElement(3, 4), third!.Position);
+        Assert.Equal(3, third.CurrentTick);
+
+        Assert.True(third.TryAdvance(out var fourth));
+        Assert.NotNull(fourth);
+        Assert.Equal(new AtomicElement(4, 4), fourth!.Position);
+        Assert.Equal(4, fourth.CurrentTick);
+        Assert.True(fourth.IsAtStop);
+        Assert.False(fourth.TryAdvance(out _));
+    }
+
+    [Fact]
+    public void TraversalMover_CanStartMidwayAndAdvanceByOneTick()
+    {
+        var mover = new TraversalMover(
+            "offset-cursor",
+            new AtomicElement(20, 100));
+
+        Assert.True(mover.TryAdvance(out var first));
+        Assert.NotNull(first);
+        Assert.Equal(new AtomicElement(21, 100), first!.Position);
+        Assert.Equal(21, first.CurrentTick);
+        Assert.Equal(100, first.EndTick);
+        Assert.False(first.IsAtStop);
+    }
+
+    [Fact]
+    public void TraversalMover_StopsWhenNumeratorReachesDenominator()
+    {
+        var mover = new TraversalMover(
+            "final-cursor",
+            new AtomicElement(99, 100));
+
+        Assert.True(mover.TryAdvance(out var final));
+        Assert.NotNull(final);
+        Assert.Equal(new AtomicElement(100, 100), final!.Position);
+        Assert.True(final.IsAtStop);
+        Assert.False(final.TryAdvance(out _));
     }
 }

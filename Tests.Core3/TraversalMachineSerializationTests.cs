@@ -1,4 +1,5 @@
 using Core3.Binding;
+using Core3.Engine;
 using Core3.Serialization;
 
 namespace Tests.Core3;
@@ -16,11 +17,23 @@ public sealed class TraversalMachineSerializationTests
         // Approximate math:
         //   accumulator := accumulator + currentItem
         //   continue while nextItem exists
+        // Route iterator:
+        //   0/4 means the mover is at the start of a four-step route sample.
         var expectedJson = """
 {
   "kind": "traversalMachine",
   "name": "sum-loop",
   "entrySiteName": "accumulate",
+  "mover": {
+    "kind": "traversalMover",
+    "name": "family-cursor",
+    "position": {
+      "kind": "atomic",
+      "grade": 0,
+      "value": 0,
+      "unit": 4
+    }
+  },
   "registers": [
     {
       "name": "accumulator",
@@ -438,9 +451,14 @@ public sealed class TraversalMachineSerializationTests
 }
 """;
 
+        var mover = new TraversalMover(
+            "family-cursor",
+            new AtomicElement(0, 4));
+
         var machine = new TraversalMachineDefinition(
             "sum-loop",
             "accumulate",
+            mover,
             [
                 new TraversalRegister(
                     "accumulator",

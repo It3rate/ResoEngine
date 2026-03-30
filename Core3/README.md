@@ -156,7 +156,9 @@ structure rather than only through opaque enum choices.
 It is also moving toward a more physical traversal picture where a real moving
 container or trolley supplies the current encounter and bindings use numeric
 positions relative to that mover rather than a pile of special-case selector
-tokens.
+tokens. The current `Core3.Binding` experiment now also treats that mover as a
+small exact atomic iterator, so loop progress stays inspectable as structure
+rather than becoming hidden iterator bookkeeping.
 
 `Core3.Serialization` now also provides a manual JSON writer so the current
 engine, runtime, binding, and operation shapes can be inspected on the wire
