@@ -20,12 +20,14 @@ The third is where most of the remaining cleanup pressure currently sits.
 These paths still use `Try...` plus `false` / `null` as their main language for
 non-ideal outcomes:
 
-- `EngineFamily.TryReadAll`
-- family-wide add / multiply loops
+- exact-only family wrappers such as `TryReadAll`, `TryAddAll`, and
+  `TryMultiplyAll`
+- exact-only provenance wrappers such as `TryAddAllWithProvenance` and
+  `TryMultiplyAllWithProvenance`
 
 That does not make them wrong.
-It means they are still expressing "exactly settled under the current law" more
-than "always produce a lawful Core3 output."
+It means the compatibility shell is still exact-first even though the richer
+lawful-outcome surface now exists beside it.
 
 ## First Migrated Paths
 
@@ -43,6 +45,8 @@ The first migrated paths are:
 - recursive composite calibration/alignment outcome surfaces
 - recursive composite add/subtract outcome surfaces
 - recursive composite multiply/scale outcome surfaces
+- `EngineReadResult`
+- family-wide read / add / multiply outcome surfaces
 
 This now distinguishes two layers:
 
@@ -69,11 +73,14 @@ Under this first pass:
 - incompatible subtraction no longer disappears into failure
 - unresolved-unit multiply no longer disappears into failure
 - unresolved-unit scale no longer disappears into failure
+- family reads no longer disappear into failure
+- family add / multiply no longer disappear into failure
 - those calibration/alignment cases preserve unresolved outputs together with
   the originating pair as held tension
 - those add/subtract cases preserve unresolved outputs together with the
   originating pair as held tension
 - multiply/scale now do the same at the leaf and recursive composite level
+- the family layer now carries those tensions upward into runtime provenance
 
 ## Present Working Law
 
@@ -93,10 +100,10 @@ It is the first step away from silent non-result.
 
 The next best places to move are:
 
-1. family-wide operation surfaces so tension can travel with provenance
-2. reference reads and frame borrowing
-3. hosted pin positioning and route encounter logic
-4. route/site encounter execution
+1. reference reads and frame borrowing
+2. hosted pin positioning and route encounter logic
+3. route/site encounter execution
+4. boolean and occupancy layers adopting the same lawful-outcome surface
 5. eventual collapse of sidecar outcomes into native higher-grade elements
 
 ## Intent

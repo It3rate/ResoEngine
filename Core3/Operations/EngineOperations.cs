@@ -27,12 +27,25 @@ public static class EngineOperations
         out EngineOperationResult? result) =>
         new EngineFamily(context).TryAddAllWithProvenance(out result);
 
+    public static bool TryAddWithTension(
+        EngineOperationContext context,
+        out EngineOperationResult? result) =>
+        new EngineFamily(context).TryAddAllWithTension(out result);
+
     public static bool TryAddWithProvenance(
         GradedElement frame,
         IEnumerable<GradedElement> members,
         out EngineOperationResult? result)
     {
         return TryAddWithProvenance(EngineOperationContext.Create(frame, members), out result);
+    }
+
+    public static bool TryAddWithTension(
+        GradedElement frame,
+        IEnumerable<GradedElement> members,
+        out EngineOperationResult? result)
+    {
+        return TryAddWithTension(EngineOperationContext.Create(frame, members), out result);
     }
 
     public static bool TryMultiply(
@@ -53,12 +66,25 @@ public static class EngineOperations
         out EngineOperationResult? result) =>
         new EngineFamily(context).TryMultiplyAllWithProvenance(out result);
 
+    public static bool TryMultiplyWithTension(
+        EngineOperationContext context,
+        out EngineOperationResult? result) =>
+        new EngineFamily(context).TryMultiplyAllWithTension(out result);
+
     public static bool TryMultiplyWithProvenance(
         GradedElement frame,
         IEnumerable<GradedElement> members,
         out EngineOperationResult? result)
     {
         return TryMultiplyWithProvenance(EngineOperationContext.Create(frame, members), out result);
+    }
+
+    public static bool TryMultiplyWithTension(
+        GradedElement frame,
+        IEnumerable<GradedElement> members,
+        out EngineOperationResult? result)
+    {
+        return TryMultiplyWithTension(EngineOperationContext.Create(frame, members), out result);
     }
 
     public static bool TryBoolean(

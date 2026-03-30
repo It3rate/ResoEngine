@@ -249,6 +249,24 @@ public sealed class EngineFamily
     public bool TryReadMember(GradedElement member, out GradedElement? read)
         => member.TryReferenceToFrame(Frame, out read);
 
+    public bool TryReadAllWithTension(out EngineReadResult? result)
+    {
+        var resolvedReads = new List<GradedElement>(_members.Count);
+        GradedElement? tension = null;
+        string? note = null;
+
+        foreach (var member in _members)
+        {
+            var outcome = member.CommitToCalibrationWithTension(Frame);
+            resolvedReads.Add(outcome.Result);
+            tension = outcome.Tension ?? tension;
+            note = CombineNotes(note, outcome.Note);
+        }
+
+        result = new EngineReadResult(CreateContext(), resolvedReads, tension, note);
+        return true;
+    }
+
     public CompositeElement GetMemberBoundaryAxis(GradedElement member)
         => TryReadMember(member, out var read) && read is not null
             ? EngineBoundary.GetAxis(Frame, read)
@@ -256,85 +274,112 @@ public sealed class EngineFamily
 
     public bool TryReadAll(out IReadOnlyList<GradedElement>? reads)
     {
-        var resolvedReads = new List<GradedElement>(_members.Count);
-
-        foreach (var member in _members)
+        if (TryReadAllWithTension(out var result) &&
+            result is not null &&
+            result.IsExact)
         {
-            if (!member.TryReferenceToFrame(Frame, out var read) || read is null)
-            {
-                reads = null;
-                return false;
-            }
-
-            resolvedReads.Add(read);
+            reads = result.Reads;
+            return true;
         }
 
-        reads = resolvedReads;
-        return true;
+        reads = null;
+        return false;
     }
 
     public bool TryAddAll(out GradedElement? sum)
     {
-        if (!TryReadAll(out var reads) ||
-            reads is null ||
-            reads.Count == 0)
+        if (TryAddAllWithTension(out var result) &&
+            result is not null &&
+            result.IsExact)
         {
-            sum = null;
+            sum = result.Result;
+            return true;
+        }
+
+        sum = null;
+        return false;
+    }
+
+    public bool TryAddAllWithTension(out EngineOperationResult? result)
+    {
+        if (!TryReadAllWithTension(out var readResult) ||
+            readResult is null ||
+            readResult.Reads.Count == 0)
+        {
+            result = null;
             return false;
         }
 
-        var current = reads[0];
+        var current = readResult.Reads[0];
+        var tension = readResult.Tension;
+        var note = readResult.Note;
 
-        for (var index = 1; index < reads.Count; index++)
+        for (var index = 1; index < readResult.Reads.Count; index++)
         {
-            if (!current.TryAdd(reads[index], out var next) || next is null)
-            {
-                sum = null;
-                return false;
-            }
-
-            current = next;
+            var stepOutcome = current.AddWithTension(readResult.Reads[index]);
+            current = stepOutcome.Result;
+            tension = stepOutcome.Tension ?? tension;
+            note = CombineNotes(note, stepOutcome.Note);
         }
 
-        sum = current;
+        result = new EngineOperationResult("Add", CreateContext(), current, Frame, tension, note);
         return true;
     }
 
     public bool TryMultiplyAll(out GradedElement? product)
     {
-        if (!TryReadAll(out var reads) ||
-            reads is null ||
-            reads.Count == 0)
+        if (TryMultiplyAllWithTension(out var result) &&
+            result is not null &&
+            result.IsExact)
         {
-            product = null;
+            product = result.Result;
+            return true;
+        }
+
+        product = null;
+        return false;
+    }
+
+    public bool TryMultiplyAllWithTension(out EngineOperationResult? result)
+    {
+        if (!TryReadAllWithTension(out var readResult) ||
+            readResult is null ||
+            readResult.Reads.Count == 0)
+        {
+            result = null;
             return false;
         }
 
-        var current = reads[0];
+        var current = readResult.Reads[0];
+        var tension = readResult.Tension;
+        var note = readResult.Note;
 
-        for (var index = 1; index < reads.Count; index++)
+        for (var index = 1; index < readResult.Reads.Count; index++)
         {
-            if (!current.TryMultiply(reads[index], out var next) || next is null)
-            {
-                product = null;
-                return false;
-            }
-
-            current = next;
+            var stepOutcome = current.MultiplyWithTension(readResult.Reads[index]);
+            current = stepOutcome.Result;
+            tension = stepOutcome.Tension ?? tension;
+            note = CombineNotes(note, stepOutcome.Note);
         }
 
-        product = current;
+        result = new EngineOperationResult(
+            "Multiply",
+            CreateContext(),
+            current,
+            TryDeriveMultiplyResultFrame(out var resultFrame) && resultFrame is not null
+                ? resultFrame
+                : Frame,
+            tension,
+            note);
         return true;
     }
 
     public bool TryAddAllWithProvenance(out EngineOperationResult? result)
     {
-        GradedElement? sum;
-
-        if (TryAddAll(out sum) &&
-            sum is not null)
+        if (TryAddAllWithTension(out result) &&
+            result is not null &&
+            result.IsExact)
         {
-            result = new EngineOperationResult("Add", CreateContext(), sum, Frame);
             return true;
         }
 
@@ -344,18 +389,10 @@ public sealed class EngineFamily
 
     public bool TryMultiplyAllWithProvenance(out EngineOperationResult? result)
     {
-        GradedElement? product;
-
-        if (TryMultiplyAll(out product) &&
-            product is not null)
+        if (TryMultiplyAllWithTension(out result) &&
+            result is not null &&
+            result.IsExact)
         {
-            result = new EngineOperationResult(
-                "Multiply",
-                CreateContext(),
-                product,
-                TryDeriveMultiplyResultFrame(out var resultFrame) && resultFrame is not null
-                    ? resultFrame
-                    : Frame);
             return true;
         }
 
@@ -554,4 +591,21 @@ public sealed class EngineFamily
     }
 
     private sealed record SortableMember(int OriginalIndex, GradedElement Member, AtomicElement Slot);
+
+    private static string? CombineNotes(string? existing, string? next)
+    {
+        if (string.IsNullOrWhiteSpace(next))
+        {
+            return existing;
+        }
+
+        if (string.IsNullOrWhiteSpace(existing))
+        {
+            return next;
+        }
+
+        return existing == next
+            ? existing
+            : $"{existing} | {next}";
+    }
 }

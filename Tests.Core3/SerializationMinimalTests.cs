@@ -125,6 +125,84 @@ public sealed class SerializationMinimalTests
     }
 
     [Fact]
+    public void Core3JsonSerializer_SerializesTensionBearingReadResult_Minimally()
+    {
+        // Serializes a family read where one member cannot be calibrated exactly
+        // into the active frame.
+        var expectedJson = """
+{
+  "kind": "readResult",
+  "isExact": false,
+  "context": {
+    "kind": "operationContext",
+    "isOrdered": true,
+    "frame": {
+      "kind": "atomic",
+      "grade": 0,
+      "value": 0,
+      "unit": 1
+    },
+    "members": [
+      {
+        "kind": "atomic",
+        "grade": 0,
+        "value": 1,
+        "unit": 1
+      },
+      {
+        "kind": "atomic",
+        "grade": 0,
+        "value": 1,
+        "unit": 0
+      }
+    ]
+  },
+  "reads": [
+    {
+      "kind": "atomic",
+      "grade": 0,
+      "value": 1,
+      "unit": 1
+    },
+    {
+      "kind": "atomic",
+      "grade": 0,
+      "value": 1,
+      "unit": 0
+    }
+  ],
+  "tension": {
+    "kind": "composite",
+    "grade": 1,
+    "recessive": {
+      "kind": "atomic",
+      "grade": 0,
+      "value": 1,
+      "unit": 0
+    },
+    "dominant": {
+      "kind": "atomic",
+      "grade": 0,
+      "value": 0,
+      "unit": 1
+    }
+  },
+  "note": "Calibration preserved unresolved support because one or both unit slots were unresolved."
+}
+""";
+
+        var family = new EngineFamily(new AtomicElement(0, 1));
+        family.AddMember(new AtomicElement(1, 1));
+        family.AddMember(new AtomicElement(1, 0));
+
+        Assert.True(family.TryReadAllWithTension(out var readResult));
+
+        var json = Core3JsonSerializer.Serialize(Assert.IsType<EngineReadResult>(readResult));
+
+        AssertJsonEqual(expectedJson, json);
+    }
+
+    [Fact]
     public void Core3JsonSerializer_SerializesTensionBearingFoldOutcome_Minimally()
     {
         // Serializes a grade-1 ratio fold that cannot stay on one resolved carrier.
@@ -304,6 +382,84 @@ public sealed class SerializationMinimalTests
         var right = new AtomicElement(4, 0);
 
         var json = Core3JsonSerializer.Serialize(left.MultiplyWithTension(right));
+
+        AssertJsonEqual(expectedJson, json);
+    }
+
+    [Fact]
+    public void Core3JsonSerializer_SerializesTensionBearingOperationResult_Minimally()
+    {
+        // Serializes a family add that stays lawful but unresolved.
+        // Approximate math: read 1/1 and 1/0 in frame 0/1, then preserve the
+        // unresolved sum 2/0 with its tension and combined note.
+        var expectedJson = """
+{
+  "kind": "operationResult",
+  "isExact": false,
+  "operationName": "Add",
+  "context": {
+    "kind": "operationContext",
+    "isOrdered": true,
+    "frame": {
+      "kind": "atomic",
+      "grade": 0,
+      "value": 0,
+      "unit": 1
+    },
+    "members": [
+      {
+        "kind": "atomic",
+        "grade": 0,
+        "value": 1,
+        "unit": 1
+      },
+      {
+        "kind": "atomic",
+        "grade": 0,
+        "value": 1,
+        "unit": 0
+      }
+    ]
+  },
+  "result": {
+    "kind": "atomic",
+    "grade": 0,
+    "value": 2,
+    "unit": 0
+  },
+  "resultFrame": {
+    "kind": "atomic",
+    "grade": 0,
+    "value": 0,
+    "unit": 1
+  },
+  "tension": {
+    "kind": "composite",
+    "grade": 1,
+    "recessive": {
+      "kind": "atomic",
+      "grade": 0,
+      "value": 1,
+      "unit": 1
+    },
+    "dominant": {
+      "kind": "atomic",
+      "grade": 0,
+      "value": 1,
+      "unit": 0
+    }
+  },
+  "note": "Calibration preserved unresolved support because one or both unit slots were unresolved. | Addition preserved unresolved support from the aligned pair."
+}
+""";
+
+        var family = new EngineFamily(new AtomicElement(0, 1));
+        family.AddMember(new AtomicElement(1, 1));
+        family.AddMember(new AtomicElement(1, 0));
+
+        Assert.True(family.TryAddAllWithTension(out var result));
+
+        var json = Core3JsonSerializer.Serialize(Assert.IsType<EngineOperationResult>(result));
 
         AssertJsonEqual(expectedJson, json);
     }

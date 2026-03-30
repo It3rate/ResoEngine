@@ -185,6 +185,39 @@ public sealed class OperationsTests
     }
 
     [Fact]
+    public void EngineFamily_TryReadAllWithTension_PreservesUnresolvedFamilyReads()
+    {
+        var family = new EngineFamily(new AtomicElement(0, 1));
+        family.AddMember(new AtomicElement(1, 1));
+        family.AddMember(new AtomicElement(1, 0));
+
+        Assert.True(family.TryReadAllWithTension(out var result));
+
+        var readResult = Assert.IsType<EngineReadResult>(result);
+        Assert.False(readResult.IsExact);
+        Assert.Equal(
+            [new AtomicElement(1, 1), new AtomicElement(1, 0)],
+            readResult.Reads);
+    }
+
+    [Fact]
+    public void EngineFamily_TryAddAllWithTension_PreservesUnresolvedOperationResult()
+    {
+        var family = new EngineFamily(new AtomicElement(0, 1));
+        family.AddMember(new AtomicElement(1, 1));
+        family.AddMember(new AtomicElement(1, 0));
+
+        Assert.True(family.TryAddAllWithTension(out var result));
+        Assert.False(family.TryAddAll(out _));
+
+        var operationResult = Assert.IsType<EngineOperationResult>(result);
+        Assert.False(operationResult.IsExact);
+        Assert.Equal(new AtomicElement(2, 0), operationResult.Result);
+        Assert.Equal(new AtomicElement(0, 1), operationResult.ResultFrame);
+        Assert.Contains("Addition preserved unresolved support", operationResult.Note);
+    }
+
+    [Fact]
     public void EngineOperations_TryAdd_SupportsOneShotFramedAddition()
     {
         var frame = new AtomicElement(0, 4);
@@ -212,6 +245,24 @@ public sealed class OperationsTests
 
         Assert.True(EngineOperations.TryAdd(context, out var sum));
         Assert.Equal(new AtomicElement(4, 4), Assert.IsType<AtomicElement>(sum));
+    }
+
+    [Fact]
+    public void EngineOperations_TryAddWithTension_CanReturnNonExactResultWithProvenance()
+    {
+        var frame = new AtomicElement(0, 1);
+        var members = new GradedElement[]
+        {
+            new AtomicElement(1, 1),
+            new AtomicElement(1, 0)
+        };
+
+        Assert.True(EngineOperations.TryAddWithTension(frame, members, out var result));
+        Assert.False(EngineOperations.TryAddWithProvenance(frame, members, out _));
+
+        var operationResult = Assert.IsType<EngineOperationResult>(result);
+        Assert.False(operationResult.IsExact);
+        Assert.Equal(new AtomicElement(2, 0), operationResult.Result);
     }
 
     [Fact]
@@ -269,6 +320,23 @@ public sealed class OperationsTests
     }
 
     [Fact]
+    public void EngineFamily_TryMultiplyAllWithTension_PreservesUnresolvedOperationResult()
+    {
+        var family = new EngineFamily(new AtomicElement(1, 1));
+        family.AddMember(new AtomicElement(2, 1));
+        family.AddMember(new AtomicElement(4, 0));
+
+        Assert.True(family.TryMultiplyAllWithTension(out var result));
+        Assert.False(family.TryMultiplyAll(out _));
+
+        var operationResult = Assert.IsType<EngineOperationResult>(result);
+        Assert.False(operationResult.IsExact);
+        Assert.Equal(new AtomicElement(8, 0), operationResult.Result);
+        Assert.Equal(new AtomicElement(1, 1), operationResult.ResultFrame);
+        Assert.Contains("Multiplication preserved unresolved support", operationResult.Note);
+    }
+
+    [Fact]
     public void EngineOperations_TryMultiply_SupportsOneShotFramedMultiplication()
     {
         var frame = new AtomicElement(4, 4);
@@ -280,6 +348,24 @@ public sealed class OperationsTests
 
         Assert.True(EngineOperations.TryMultiply(frame, members, out var product));
         Assert.Equal(new AtomicElement(6, 16), Assert.IsType<AtomicElement>(product));
+    }
+
+    [Fact]
+    public void EngineOperations_TryMultiplyWithTension_CanReturnNonExactResultWithProvenance()
+    {
+        var frame = new AtomicElement(1, 1);
+        var members = new GradedElement[]
+        {
+            new AtomicElement(2, 1),
+            new AtomicElement(4, 0)
+        };
+
+        Assert.True(EngineOperations.TryMultiplyWithTension(frame, members, out var result));
+        Assert.False(EngineOperations.TryMultiplyWithProvenance(frame, members, out _));
+
+        var operationResult = Assert.IsType<EngineOperationResult>(result);
+        Assert.False(operationResult.IsExact);
+        Assert.Equal(new AtomicElement(8, 0), operationResult.Result);
     }
 
     [Fact]

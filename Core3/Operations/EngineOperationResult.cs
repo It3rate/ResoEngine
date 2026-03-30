@@ -14,12 +14,16 @@ public sealed record EngineOperationResult
         string operationName,
         EngineOperationContext context,
         GradedElement result,
-        GradedElement? resultFrame = null)
+        GradedElement? resultFrame = null,
+        GradedElement? tension = null,
+        string? note = null)
     {
         OperationName = operationName;
         Context = context;
         Result = result;
         ResultFrame = resultFrame ?? context.Frame;
+        Tension = tension;
+        Note = note;
     }
 
     public EngineOperationResult(
@@ -27,12 +31,16 @@ public sealed record EngineOperationResult
         GradedElement sourceFrame,
         IReadOnlyList<GradedElement> sourceMembers,
         GradedElement result,
-        GradedElement? resultFrame = null)
+        GradedElement? resultFrame = null,
+        GradedElement? tension = null,
+        string? note = null)
         : this(
             operationName,
             new EngineOperationContext(sourceFrame, sourceMembers, true),
             result,
-            resultFrame)
+            resultFrame,
+            tension,
+            note)
     {
     }
 
@@ -43,6 +51,9 @@ public sealed record EngineOperationResult
     public bool IsOrdered => Context.IsOrdered;
     public GradedElement Result { get; }
     public GradedElement ResultFrame { get; }
+    public GradedElement? Tension { get; }
+    public string? Note { get; }
+    public bool IsExact => Tension is null;
 
     public bool TryReadResult(out GradedElement? read) =>
         Result.TryReferenceToFrame(ResultFrame, out read);
