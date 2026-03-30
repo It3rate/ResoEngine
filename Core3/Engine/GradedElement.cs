@@ -20,13 +20,37 @@ public abstract record GradedElement
     public abstract EngineElementOutcome MultiplyWithTension(GradedElement other);
     public abstract EngineElementOutcome ScaleWithTension(AtomicElement factor);
     public abstract bool TryFold(out GradedElement? folded);
-    public abstract bool TryCommitToCalibration(GradedElement calibration, out GradedElement? committed);
+    public virtual bool TryCommitToCalibration(GradedElement calibration, out GradedElement? committed) =>
+        EngineExactness.TryProjectExact(
+            CommitToCalibrationWithTension(calibration),
+            static outcome => outcome.Result,
+            out committed);
+
     public abstract bool TryAlignExact(GradedElement other, ResolutionPolicy policy, out GradedElement? leftAligned, out GradedElement? rightAligned);
     public abstract bool SharesUnitSpace(GradedElement other);
-    public abstract bool TryAdd(GradedElement other, out GradedElement? sum);
-    public abstract bool TrySubtract(GradedElement other, out GradedElement? difference);
-    public abstract bool TryMultiply(GradedElement other, out GradedElement? product);
-    public abstract bool TryScale(AtomicElement factor, out GradedElement? scaled);
+    public virtual bool TryAdd(GradedElement other, out GradedElement? sum) =>
+        EngineExactness.TryProjectExact(
+            AddWithTension(other),
+            static outcome => outcome.Result,
+            out sum);
+
+    public virtual bool TrySubtract(GradedElement other, out GradedElement? difference) =>
+        EngineExactness.TryProjectExact(
+            SubtractWithTension(other),
+            static outcome => outcome.Result,
+            out difference);
+
+    public virtual bool TryMultiply(GradedElement other, out GradedElement? product) =>
+        EngineExactness.TryProjectExact(
+            MultiplyWithTension(other),
+            static outcome => outcome.Result,
+            out product);
+
+    public virtual bool TryScale(AtomicElement factor, out GradedElement? scaled) =>
+        EngineExactness.TryProjectExact(
+            ScaleWithTension(factor),
+            static outcome => outcome.Result,
+            out scaled);
 
     public bool TryAlignExact(GradedElement other, out GradedElement? leftAligned, out GradedElement? rightAligned) =>
         TryAlignExact(other, ResolutionPolicy.ExactCommonFrame, out leftAligned, out rightAligned);

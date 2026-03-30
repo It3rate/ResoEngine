@@ -77,7 +77,8 @@ public sealed record AtomicElement(long Value, long Unit) : GradedElement
     {
         if (calibration is AtomicElement atomicCalibration)
         {
-            if (TryCommitToCalibration(atomicCalibration, out var committed) &&
+            if (SharesUnitSpace(atomicCalibration) &&
+                TryCommitToSupport(atomicCalibration.Resolution, out var committed) &&
                 committed is not null)
             {
                 return EngineElementOutcome.Exact(committed);
@@ -93,21 +94,6 @@ public sealed record AtomicElement(long Value, long Unit) : GradedElement
             CreateUnresolvedProjection(0),
             calibration,
             "Calibration preserved an unresolved atomic read because the calibration grade was incompatible.");
-    }
-
-    public override bool TryCommitToCalibration(GradedElement calibration, out GradedElement? committed)
-    {
-        if (calibration is AtomicElement atomicCalibration &&
-            SharesUnitSpace(atomicCalibration) &&
-            TryCommitToSupport(atomicCalibration.Resolution, out var committedAtomic) &&
-            committedAtomic is not null)
-        {
-            committed = committedAtomic;
-            return true;
-        }
-
-        committed = null;
-        return false;
     }
 
     public bool TryAlignExact(AtomicElement other, out AtomicElement? leftAligned, out AtomicElement? rightAligned)
@@ -240,34 +226,6 @@ public sealed record AtomicElement(long Value, long Unit) : GradedElement
         atomic.HasResolvedUnits &&
         Math.Sign(Unit) == Math.Sign(atomic.Unit);
 
-    public override bool TryAdd(GradedElement other, out GradedElement? sum)
-    {
-        var outcome = AddWithTension(other);
-
-        if (outcome.IsExact)
-        {
-            sum = outcome.Result;
-            return true;
-        }
-
-        sum = null;
-        return false;
-    }
-
-    public override bool TrySubtract(GradedElement other, out GradedElement? difference)
-    {
-        var outcome = SubtractWithTension(other);
-
-        if (outcome.IsExact)
-        {
-            difference = outcome.Result;
-            return true;
-        }
-
-        difference = null;
-        return false;
-    }
-
     public override EngineElementOutcome MultiplyWithTension(GradedElement other)
     {
         if (other is AtomicElement atomic)
@@ -290,20 +248,6 @@ public sealed record AtomicElement(long Value, long Unit) : GradedElement
             "Multiplication preserved an unresolved atomic result because the compared element was not atomic.");
     }
 
-    public override bool TryMultiply(GradedElement other, out GradedElement? product)
-    {
-        var outcome = MultiplyWithTension(other);
-
-        if (outcome.IsExact)
-        {
-            product = outcome.Result;
-            return true;
-        }
-
-        product = null;
-        return false;
-    }
-
     public override EngineElementOutcome ScaleWithTension(AtomicElement factor)
     {
         if (HasResolvedUnits && factor.HasResolvedUnits)
@@ -318,20 +262,6 @@ public sealed record AtomicElement(long Value, long Unit) : GradedElement
             CreateUnresolvedProduct(factor),
             new CompositeElement(this, factor),
             CreateScaleNote(factor));
-    }
-
-    public override bool TryScale(AtomicElement factor, out GradedElement? scaled)
-    {
-        if (!HasResolvedUnits || !factor.HasResolvedUnits)
-        {
-            scaled = null;
-            return false;
-        }
-
-        var scaledValue = checked(Value * factor.Value);
-        var scaledUnit = checked(Unit * factor.Unit);
-        scaled = new AtomicElement(scaledValue, scaledUnit);
-        return true;
     }
 
     public override string ToString() => $"{Value}/{Unit}";

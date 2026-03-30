@@ -24,19 +24,11 @@ public sealed record EngineReference(
     public EngineElementOutcome ReadWithTension() =>
         Subject.CommitToCalibrationWithTension(Calibration);
 
-    public bool TryRead(out GradedElement? read)
-    {
-        var outcome = ReadWithTension();
-
-        if (outcome.IsExact)
-        {
-            read = outcome.Result;
-            return true;
-        }
-
-        read = null;
-        return false;
-    }
+    public bool TryRead(out GradedElement? read) =>
+        EngineExactness.TryProjectExact(
+            ReadWithTension(),
+            static outcome => outcome.Result,
+            out read);
 
     public CompositeElement GetBoundaryAxis() =>
         TryRead(out var read) && read is not null
@@ -64,20 +56,11 @@ public sealed record EngineReference(
             "Reference measurement preserved unresolved structure because calibration and subject grades differed.");
     }
 
-    public bool TryMeasureOnCalibration(out CompositeElement? measured)
-    {
-        var outcome = MeasureOnCalibrationWithTension();
-
-        if (outcome.IsExact &&
-            outcome.Result is CompositeElement measuredComposite)
-        {
-            measured = measuredComposite;
-            return true;
-        }
-
-        measured = null;
-        return false;
-    }
+    public bool TryMeasureOnCalibration(out CompositeElement? measured) =>
+        EngineExactness.TryProjectExact(
+            MeasureOnCalibrationWithTension(),
+            static outcome => (CompositeElement)outcome.Result,
+            out measured);
 
     public override string ToString() => $"ref({Frame} <- {Subject})";
 }

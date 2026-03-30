@@ -95,23 +95,6 @@ public sealed record CompositeElement : GradedElement
         return true;
     }
 
-    public override bool TryCommitToCalibration(GradedElement calibration, out GradedElement? committed)
-    {
-        if (calibration is CompositeElement compositeCalibration &&
-            Grade == compositeCalibration.Grade &&
-            Recessive.TryCommitToCalibration(compositeCalibration.Recessive, out var committedRecessive) &&
-            Dominant.TryCommitToCalibration(compositeCalibration.Dominant, out var committedDominant) &&
-            committedRecessive is not null &&
-            committedDominant is not null)
-        {
-            committed = new CompositeElement(committedRecessive, committedDominant);
-            return true;
-        }
-
-        committed = null;
-        return false;
-    }
-
     public override EngineElementPairOutcome AlignWithTension(
         GradedElement other,
         ResolutionPolicy policy)
@@ -262,34 +245,6 @@ public sealed record CompositeElement : GradedElement
         Recessive.SharesUnitSpace(composite.Recessive) &&
         Dominant.SharesUnitSpace(composite.Dominant);
 
-    public override bool TryAdd(GradedElement other, out GradedElement? sum)
-    {
-        var outcome = AddWithTension(other);
-
-        if (outcome.IsExact)
-        {
-            sum = outcome.Result;
-            return true;
-        }
-
-        sum = null;
-        return false;
-    }
-
-    public override bool TrySubtract(GradedElement other, out GradedElement? difference)
-    {
-        var outcome = SubtractWithTension(other);
-
-        if (outcome.IsExact)
-        {
-            difference = outcome.Result;
-            return true;
-        }
-
-        difference = null;
-        return false;
-    }
-
     public override EngineElementOutcome MultiplyWithTension(GradedElement other)
     {
         if (other is not CompositeElement composite ||
@@ -368,20 +323,6 @@ public sealed record CompositeElement : GradedElement
             "Composite multiplication preserved the raw kernel because exact reduction did not settle.");
     }
 
-    public override bool TryMultiply(GradedElement other, out GradedElement? product)
-    {
-        var outcome = MultiplyWithTension(other);
-
-        if (outcome.IsExact)
-        {
-            product = outcome.Result;
-            return true;
-        }
-
-        product = null;
-        return false;
-    }
-
     public override EngineElementOutcome ScaleWithTension(AtomicElement factor)
     {
         var recessiveOutcome = Recessive.ScaleWithTension(factor);
@@ -398,20 +339,6 @@ public sealed record CompositeElement : GradedElement
             scaled,
             this,
             "Composite scale preserved child tension.");
-    }
-
-    public override bool TryScale(AtomicElement factor, out GradedElement? scaled)
-    {
-        var outcome = ScaleWithTension(factor);
-
-        if (outcome.IsExact)
-        {
-            scaled = outcome.Result;
-            return true;
-        }
-
-        scaled = null;
-        return false;
     }
 
     public override string ToString() => $"<{Recessive} | {Dominant}>";
