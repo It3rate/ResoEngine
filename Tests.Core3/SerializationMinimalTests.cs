@@ -263,6 +263,51 @@ public sealed class SerializationMinimalTests
         AssertJsonEqual(expectedJson, json);
     }
 
+    [Fact]
+    public void Core3JsonSerializer_SerializesTensionBearingMultiplyOutcome_Minimally()
+    {
+        // Serializes a multiply that cannot settle because one factor has
+        // unresolved support.
+        // Approximate math: multiply 2/3 by 4/0, preserving the unresolved
+        // product 8/0 and the original pair as held tension.
+        var expectedJson = """
+{
+  "kind": "elementOutcome",
+  "isExact": false,
+  "result": {
+    "kind": "atomic",
+    "grade": 0,
+    "value": 8,
+    "unit": 0
+  },
+  "tension": {
+    "kind": "composite",
+    "grade": 1,
+    "recessive": {
+      "kind": "atomic",
+      "grade": 0,
+      "value": 2,
+      "unit": 3
+    },
+    "dominant": {
+      "kind": "atomic",
+      "grade": 0,
+      "value": 4,
+      "unit": 0
+    }
+  },
+  "note": "Multiplication preserved unresolved support because one or both unit slots were unresolved."
+}
+""";
+
+        var left = new AtomicElement(2, 3);
+        var right = new AtomicElement(4, 0);
+
+        var json = Core3JsonSerializer.Serialize(left.MultiplyWithTension(right));
+
+        AssertJsonEqual(expectedJson, json);
+    }
+
     private static void AssertJsonEqual(string expectedJson, string actualJson) =>
         Assert.Equal(Normalize(expectedJson), Normalize(actualJson));
 

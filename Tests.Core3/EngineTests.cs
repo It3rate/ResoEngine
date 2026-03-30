@@ -484,6 +484,32 @@ public sealed class EngineTests
     }
 
     [Fact]
+    public void AtomicMultiplyWithTension_PreservesUnresolvedSupportWhenAUnitIsUnresolved()
+    {
+        var left = new AtomicElement(2, 3);
+        var right = new AtomicElement(4, 0);
+
+        var outcome = left.MultiplyWithTension(right);
+
+        Assert.False(outcome.IsExact);
+        Assert.Equal(new AtomicElement(8, 0), Assert.IsType<AtomicElement>(outcome.Result));
+        Assert.Equal(new CompositeElement(left, right), outcome.Tension);
+    }
+
+    [Fact]
+    public void AtomicScaleWithTension_PreservesUnresolvedSupportWhenFactorUnitIsUnresolved()
+    {
+        var value = new AtomicElement(10, 1);
+        var factor = new AtomicElement(3, 0);
+
+        var outcome = value.ScaleWithTension(factor);
+
+        Assert.False(outcome.IsExact);
+        Assert.Equal(new AtomicElement(30, 0), Assert.IsType<AtomicElement>(outcome.Result));
+        Assert.Equal(new CompositeElement(value, factor), outcome.Tension);
+    }
+
+    [Fact]
     public void GradeOneCompositeMultiply_UsesFoldFirstExactMultiplication()
     {
         var left = new CompositeElement(
@@ -498,6 +524,23 @@ public sealed class EngineTests
         var atomic = Assert.IsType<AtomicElement>(product);
         Assert.Equal(6, atomic.Value);
         Assert.Equal(80, atomic.Unit);
+    }
+
+    [Fact]
+    public void GradeOneCompositeMultiplyWithTension_PreservesUnresolvedAtomicProductWhenFoldCannotSettle()
+    {
+        var left = new CompositeElement(
+            new AtomicElement(2, 1),
+            new AtomicElement(3, -1));
+        var right = new CompositeElement(
+            new AtomicElement(8, 1),
+            new AtomicElement(2, 1));
+
+        var outcome = left.MultiplyWithTension(right);
+
+        Assert.False(outcome.IsExact);
+        Assert.Equal(new AtomicElement(6, 0), Assert.IsType<AtomicElement>(outcome.Result));
+        Assert.Equal(new CompositeElement(left, right), outcome.Tension);
     }
 
     [Fact]
@@ -540,6 +583,24 @@ public sealed class EngineTests
         Assert.Equal(new AtomicElement(15, -1), squares.Dominant);
         Assert.Equal(new AtomicElement(10, -1), cross.Recessive);
         Assert.Equal(new AtomicElement(12, -1), cross.Dominant);
+    }
+
+    [Fact]
+    public void CompositeScaleWithTension_CarriesChildTensionForward()
+    {
+        var composite = new CompositeElement(
+            new AtomicElement(1, 2),
+            new AtomicElement(3, 1));
+        var factor = new AtomicElement(2, 0);
+
+        var outcome = composite.ScaleWithTension(factor);
+
+        Assert.False(outcome.IsExact);
+
+        var scaled = Assert.IsType<CompositeElement>(outcome.Result);
+        Assert.Equal(new AtomicElement(2, 0), scaled.Recessive);
+        Assert.Equal(new AtomicElement(6, 0), scaled.Dominant);
+        Assert.Equal(composite, outcome.Tension);
     }
 
     [Theory]

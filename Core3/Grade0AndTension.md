@@ -267,6 +267,8 @@ The same first-pass law now also applies to:
 - alignment that cannot settle onto one resolved support
 - addition that cannot settle onto one resolved support
 - subtraction that cannot settle onto one resolved support
+- multiplication that cannot settle onto one resolved support
+- scaling that cannot settle onto one resolved support
 
 In those cases the current behavior is again:
 

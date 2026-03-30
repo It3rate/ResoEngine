@@ -268,21 +268,60 @@ public sealed record AtomicElement(long Value, long Unit) : GradedElement
         return false;
     }
 
-    public override bool TryMultiply(GradedElement other, out GradedElement? product)
+    public override EngineElementOutcome MultiplyWithTension(GradedElement other)
     {
         if (other is AtomicElement atomic)
         {
-            return EngineEvaluation.TryMultiplyAtomic(this, atomic, out product);
+            if (EngineEvaluation.TryMultiplyAtomic(this, atomic, out var product) &&
+                product is not null)
+            {
+                return EngineElementOutcome.Exact(product);
+            }
+
+            return EngineElementOutcome.WithTension(
+                CreateUnresolvedProduct(atomic),
+                new CompositeElement(this, atomic),
+                CreateMultiplyNote(atomic));
+        }
+
+        return EngineElementOutcome.WithTension(
+            CreateUnresolvedProjection(0),
+            this,
+            "Multiplication preserved an unresolved atomic result because the compared element was not atomic.");
+    }
+
+    public override bool TryMultiply(GradedElement other, out GradedElement? product)
+    {
+        var outcome = MultiplyWithTension(other);
+
+        if (outcome.IsExact)
+        {
+            product = outcome.Result;
+            return true;
         }
 
         product = null;
         return false;
     }
 
+    public override EngineElementOutcome ScaleWithTension(AtomicElement factor)
+    {
+        if (HasResolvedUnits && factor.HasResolvedUnits)
+        {
+            return EngineElementOutcome.Exact(
+                new AtomicElement(
+                    checked(Value * factor.Value),
+                    checked(Unit * factor.Unit)));
+        }
+
+        return EngineElementOutcome.WithTension(
+            CreateUnresolvedProduct(factor),
+            new CompositeElement(this, factor),
+            CreateScaleNote(factor));
+    }
+
     public override bool TryScale(AtomicElement factor, out GradedElement? scaled)
     {
-        ArgumentNullException.ThrowIfNull(factor);
-
         if (!HasResolvedUnits || !factor.HasResolvedUnits)
         {
             scaled = null;
@@ -329,6 +368,21 @@ public sealed record AtomicElement(long Value, long Unit) : GradedElement
                 : policy == ResolutionPolicy.ComposeSupport
                     ? "Alignment preserved unresolved support under composed support."
                     : "Alignment preserved unresolved support because the compared values did not align exactly under the requested policy.";
+
+    private string CreateMultiplyNote(AtomicElement other) =>
+        !HasResolvedUnits || !other.HasResolvedUnits
+            ? "Multiplication preserved unresolved support because one or both unit slots were unresolved."
+            : "Multiplication preserved an unresolved atomic result under the current unit relation.";
+
+    private string CreateScaleNote(AtomicElement factor) =>
+        !HasResolvedUnits || !factor.HasResolvedUnits
+            ? "Scale preserved unresolved support because one or both unit slots were unresolved."
+            : "Scale preserved an unresolved atomic result under the current unit relation.";
+
+    private AtomicElement CreateUnresolvedProduct(AtomicElement other) =>
+        new(
+            checked(Value * other.Value),
+            0);
 
     private long ResolveSuggestedAlignmentResolution(AtomicElement other, ResolutionPolicy policy)
     {

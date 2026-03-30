@@ -17,6 +17,8 @@ public abstract record GradedElement
     public abstract EngineElementPairOutcome AlignWithTension(GradedElement other, ResolutionPolicy policy);
     public abstract EngineElementOutcome AddWithTension(GradedElement other);
     public abstract EngineElementOutcome SubtractWithTension(GradedElement other);
+    public abstract EngineElementOutcome MultiplyWithTension(GradedElement other);
+    public abstract EngineElementOutcome ScaleWithTension(AtomicElement factor);
     public abstract bool TryFold(out GradedElement? folded);
     public abstract bool TryCommitToCalibration(GradedElement calibration, out GradedElement? committed);
     public abstract bool TryAlignExact(GradedElement other, ResolutionPolicy policy, out GradedElement? leftAligned, out GradedElement? rightAligned);

@@ -290,36 +290,123 @@ public sealed record CompositeElement : GradedElement
         return false;
     }
 
+    public override EngineElementOutcome MultiplyWithTension(GradedElement other)
+    {
+        if (other is not CompositeElement composite ||
+            Grade != composite.Grade)
+        {
+            return EngineElementOutcome.WithTension(
+                this,
+                this,
+                "Multiplication preserved the composite unchanged because the compared shape was incompatible.");
+        }
+
+        if (Grade == 1)
+        {
+            var leftFold = FoldWithTension();
+            var rightFold = composite.FoldWithTension();
+
+            if (leftFold.Result is AtomicElement leftAtomic &&
+                rightFold.Result is AtomicElement rightAtomic)
+            {
+                var productOutcome = leftAtomic.MultiplyWithTension(rightAtomic);
+
+                if (leftFold.IsExact &&
+                    rightFold.IsExact &&
+                    productOutcome.IsExact)
+                {
+                    return productOutcome;
+                }
+
+                return EngineElementOutcome.WithTension(
+                    productOutcome.Result,
+                    new CompositeElement(this, composite),
+                    "Grade-one multiply preserved fold or product tension.");
+            }
+
+            return EngineElementOutcome.WithTension(
+                this,
+                new CompositeElement(this, composite),
+                "Grade-one multiply preserved unresolved fold structure.");
+        }
+
+        var rr = Recessive.MultiplyWithTension(composite.Recessive);
+        var rd = Recessive.MultiplyWithTension(composite.Dominant);
+        var dr = Dominant.MultiplyWithTension(composite.Recessive);
+        var dd = Dominant.MultiplyWithTension(composite.Dominant);
+
+        if (rr.IsExact &&
+            rd.IsExact &&
+            dr.IsExact &&
+            dd.IsExact &&
+            rr.Result.TrySubtract(dd.Result, out var squareDifference) &&
+            squareDifference is not null &&
+            rd.Result.TryAdd(dr.Result, out var crossSum) &&
+            crossSum is not null &&
+            squareDifference.Grade == crossSum.Grade)
+        {
+            return EngineElementOutcome.Exact(
+                new CompositeElement(squareDifference, crossSum));
+        }
+
+        if (rr.IsExact &&
+            rd.IsExact &&
+            dr.IsExact &&
+            dd.IsExact)
+        {
+            return EngineElementOutcome.Exact(
+                new CompositeElement(
+                    new CompositeElement(rr.Result, dd.Result),
+                    new CompositeElement(rd.Result, dr.Result)));
+        }
+
+        return EngineElementOutcome.WithTension(
+            new CompositeElement(
+                new CompositeElement(rr.Result, dd.Result),
+                new CompositeElement(rd.Result, dr.Result)),
+            new CompositeElement(this, composite),
+            "Composite multiplication preserved the raw kernel because exact reduction did not settle.");
+    }
+
     public override bool TryMultiply(GradedElement other, out GradedElement? product)
     {
-        if (other is not CompositeElement composite || Grade != composite.Grade)
+        var outcome = MultiplyWithTension(other);
+
+        if (outcome.IsExact)
         {
-            product = null;
-            return false;
+            product = outcome.Result;
+            return true;
         }
 
-        if (Grade == 1 &&
-            EngineEvaluation.TryFoldToAtomic(this, out var left) &&
-            left is not null &&
-            EngineEvaluation.TryFoldToAtomic(composite, out var right) &&
-            right is not null)
+        product = null;
+        return false;
+    }
+
+    public override EngineElementOutcome ScaleWithTension(AtomicElement factor)
+    {
+        var recessiveOutcome = Recessive.ScaleWithTension(factor);
+        var dominantOutcome = Dominant.ScaleWithTension(factor);
+        var scaled = new CompositeElement(recessiveOutcome.Result, dominantOutcome.Result);
+
+        if (recessiveOutcome.IsExact &&
+            dominantOutcome.IsExact)
         {
-            return EngineEvaluation.TryMultiplyAtomic(left, right, out product);
+            return EngineElementOutcome.Exact(scaled);
         }
 
-        return EngineEvaluation.TryMultiplyKernel(this, composite, out product);
+        return EngineElementOutcome.WithTension(
+            scaled,
+            this,
+            "Composite scale preserved child tension.");
     }
 
     public override bool TryScale(AtomicElement factor, out GradedElement? scaled)
     {
-        ArgumentNullException.ThrowIfNull(factor);
+        var outcome = ScaleWithTension(factor);
 
-        if (Recessive.TryScale(factor, out var recessiveScaled) &&
-            Dominant.TryScale(factor, out var dominantScaled) &&
-            recessiveScaled is not null &&
-            dominantScaled is not null)
+        if (outcome.IsExact)
         {
-            scaled = new CompositeElement(recessiveScaled, dominantScaled);
+            scaled = outcome.Result;
             return true;
         }
 
