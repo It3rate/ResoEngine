@@ -6,7 +6,9 @@ namespace Core3.Operations;
 /// <summary>
 /// Operation-scoped grouping of subjects read in one frame.
 /// The frame is just an existing graded element in a frame role; it is not a
-/// special ontology.
+/// special ontology. For now this is also the main operation-time data area:
+/// a place to hold members, ordering hints, focus derivations, and family-wide
+/// laws without overcommitting the deeper runtime story yet.
 /// </summary>
 public sealed class EngineFamily
 {

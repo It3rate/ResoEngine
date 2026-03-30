@@ -310,6 +310,21 @@ underlying mechanics with different retention or fold laws.
 L5. Avoid introducing a new special primitive when an existing Core3 relation
 can be re-read lawfully.
 
+L6. Prefer one shared operation pipeline.
+Operations should increasingly be understood in terms of:
+
+- source domain
+- correspondence topology
+- local law
+- retention mode
+- carrier inheritance
+- reduction mode
+- continuation mode
+
+Simple arithmetic, boolean partitioning, traversal-time site laws, branch
+families, and later equations should be different presets of that larger
+pipeline rather than unrelated execution systems.
+
 ## Part XII. Binding
 
 B1. Binding is contextual, not core ontology.

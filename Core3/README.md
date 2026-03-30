@@ -164,6 +164,12 @@ rather than becoming hidden iterator bookkeeping.
 engine, runtime, binding, and operation shapes can be inspected on the wire
 without committing the codebase to serializer attributes too early.
 
+A broader operation-unification design note now lives in
+[Operations/OperationPipeline.md](Operations/OperationPipeline.md). It treats
+simple arithmetic, boolean partitioning, traversal-time site laws, and later
+equations as different presets of one larger operation pipeline rather than as
+unrelated execution systems.
+
 A short implementation note for how we want Core3 code to feel and where we do
 and do not want heavy guard boilerplate now lives in
 [CodingStyle.md](CodingStyle.md).
