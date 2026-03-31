@@ -586,34 +586,17 @@ public sealed class EngineFamily
             note = EngineTension.CombineNotes(note, stepOutcome.Note);
         }
 
-        GradedElement? preservedStructure = null;
-
-        if (readResult.Reads.Count == 2 &&
-            readResult.Reads[0].Grade == readResult.Reads[1].Grade)
-        {
-            if (string.Equals(operationName, "Multiply", StringComparison.Ordinal) &&
-                readResult.Reads[0] is CompositeElement leftComposite &&
-                readResult.Reads[1] is CompositeElement rightComposite &&
-                leftComposite.TryMultiplyKernel(rightComposite, out var kernel) &&
-                kernel is not null)
-            {
-                preservedStructure = kernel;
-            }
-            else if (string.Equals(operationName, "Add", StringComparison.Ordinal) ||
-                     string.Equals(operationName, "Subtract", StringComparison.Ordinal))
-            {
-                preservedStructure = new CompositeElement(
-                    readResult.Reads[0],
-                    readResult.Reads[1]);
-            }
-        }
+        // TODO: Some operations may have several lawful outputs or preserved
+        // substructures in addition to the normal expected result. When Core3
+        // has a more native way to carry those explicitly, they should be
+        // preserved there and later inspected through views instead of being
+        // guessed here from operation names.
 
         result = new EngineOperationResult(
             operationName,
             CreateContext(),
             current,
             resultFrameSelector(this),
-            preservedStructure,
             tension,
             note);
         return true;

@@ -435,12 +435,6 @@ public static class Core3JsonSerializer
             writer.WriteString("originLawName", result.OriginLawName);
             writer.WritePropertyName("outboundPieces");
             WritePieces(writer, result.OutboundPieces, actual);
-
-            if (result.PreservedStructure is not null)
-            {
-                writer.WritePropertyName("preservedStructure");
-                Write(writer, result.PreservedStructure, actual);
-            }
         }
 
         if (actual.IncludeDerived &&

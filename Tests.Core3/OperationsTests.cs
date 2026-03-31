@@ -263,11 +263,6 @@ public sealed class OperationsTests
         var operationResult = Assert.IsType<EngineOperationResult>(result);
         Assert.False(operationResult.IsExact);
         Assert.Equal(new AtomicElement(2, 0), operationResult.Result);
-        Assert.Equal(
-            new CompositeElement(
-                new AtomicElement(1, 1),
-                new AtomicElement(1, 0)),
-            operationResult.PreservedStructure);
     }
 
     [Fact]
@@ -400,27 +395,6 @@ public sealed class OperationsTests
         Assert.Equal(
             new CompositeElement(new AtomicElement(0, 16), new AtomicElement(0, 16)),
             operationResult.GetResultBoundaryAxis());
-    }
-
-    [Fact]
-    public void EngineOperationResult_CanPreserveMultiplyKernelForCompositeMultiply()
-    {
-        var left = Core3TestHelpers.CreateAxisLikeNumber(1, 1, 2, 1);
-        var right = Core3TestHelpers.CreateAxisLikeNumber(1, 1, 4, 1);
-        Assert.True(EngineOperations.TryMultiplyWithProvenance(left, [left, right], out var operationResult));
-
-        var result = Assert.IsType<EngineOperationResult>(operationResult);
-        Assert.NotNull(result.PreservedStructure);
-
-        Assert.True(result.TryGetRawMultiplyKernel(out var kernel));
-
-        var squares = Assert.IsType<CompositeElement>(Assert.IsType<CompositeElement>(kernel).Recessive);
-        var cross = Assert.IsType<CompositeElement>(Assert.IsType<CompositeElement>(kernel).Dominant);
-
-        Assert.Equal(new AtomicElement(1, 1), squares.Recessive);
-        Assert.Equal(new AtomicElement(8, 1), squares.Dominant);
-        Assert.Equal(new AtomicElement(4, 1), cross.Recessive);
-        Assert.Equal(new AtomicElement(2, 1), cross.Dominant);
     }
 
     [Fact]

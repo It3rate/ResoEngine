@@ -160,7 +160,7 @@ public sealed class EngineTests
     }
 
     [Fact]
-    public void EngineReference_CanReuseExistingCalibrationWithoutCopyingFrameOwnership()
+    public void EngineView_CanReuseExistingCalibrationWithoutCopyingFrameOwnership()
     {
         var frame = new CompositeElement(
             new AtomicElement(10, 10),
@@ -177,7 +177,7 @@ public sealed class EngineTests
     }
 
     [Fact]
-    public void EngineReference_Read_PreservesUnresolvedBorrowedRead()
+    public void EngineView_Read_PreservesUnresolvedBorrowedRead()
     {
         var frame = new CompositeElement(
             new AtomicElement(10, 10),
@@ -193,7 +193,7 @@ public sealed class EngineTests
     }
 
     [Fact]
-    public void EngineReference_MeasureOnCalibration_PreservesUnresolvedBorrowedRead()
+    public void EngineView_MeasureOnCalibration_PreservesUnresolvedBorrowedRead()
     {
         var frame = new CompositeElement(
             new AtomicElement(10, 10),
@@ -349,7 +349,7 @@ public sealed class EngineTests
     }
 
     [Fact]
-    public void EngineReference_UsesGenericGradedCommitPath()
+    public void EngineView_UsesGenericGradedCommitPath()
     {
         var frame = new CompositeElement(
             new CompositeElement(
@@ -376,7 +376,7 @@ public sealed class EngineTests
     }
 
     [Fact]
-    public void EngineReference_CanReadSubjectIntoFrameWithoutBuildingMeasuredPair()
+    public void EngineView_CanReadSubjectIntoFrameWithoutBuildingMeasuredPair()
     {
         var frame = new CompositeElement(
             new AtomicElement(10, 10),
@@ -390,7 +390,7 @@ public sealed class EngineTests
     }
 
     [Fact]
-    public void EngineReference_BoundaryAxis_UsesCalibrationAsRangeContext()
+    public void EngineView_BoundaryAxis_UsesCalibrationAsRangeContext()
     {
         var frame = new CompositeElement(
             new AtomicElement(4, 4),

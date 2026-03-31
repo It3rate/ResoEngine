@@ -18,7 +18,6 @@ public sealed record EngineOperationResult : IExactResult
         EngineOperationContext context,
         GradedElement result,
         GradedElement? resultFrame = null,
-        GradedElement? preservedStructure = null,
         GradedElement? tension = null,
         string? note = null)
     {
@@ -26,7 +25,6 @@ public sealed record EngineOperationResult : IExactResult
         Context = context;
         Result = result;
         ResultFrame = resultFrame ?? context.Frame;
-        PreservedStructure = preservedStructure;
         Tension = tension;
         Note = note;
     }
@@ -37,7 +35,6 @@ public sealed record EngineOperationResult : IExactResult
         IReadOnlyList<GradedElement> sourceMembers,
         GradedElement result,
         GradedElement? resultFrame = null,
-        GradedElement? preservedStructure = null,
         GradedElement? tension = null,
         string? note = null)
         : this(
@@ -45,7 +42,6 @@ public sealed record EngineOperationResult : IExactResult
             new EngineOperationContext(sourceFrame, sourceMembers, true),
             result,
             resultFrame,
-            preservedStructure,
             tension,
             note)
     {
@@ -60,7 +56,6 @@ public sealed record EngineOperationResult : IExactResult
     public string OriginLaw => OperationName;
     public GradedElement Result { get; }
     public GradedElement ResultFrame { get; }
-    public GradedElement? PreservedStructure { get; }
     public GradedElement Outbound => Result;
     public string OriginLawName => OperationName;
     public EngineOperationPiece OutboundPiece =>
@@ -74,39 +69,6 @@ public sealed record EngineOperationResult : IExactResult
 
     public bool TryReadResult(out GradedElement? read) =>
         Result.TryViewInFrame(ResultFrame, out read);
-
-    public bool TryGetRawMultiplyKernel(out CompositeElement? kernel)
-    {
-        // Temporary inspection shell. Long term this wants to become an
-        // ordinary frame/family read over preserved kernel structure rather
-        // than a bespoke multiply-only helper.
-        if (PreservedStructure is CompositeElement preservedKernel &&
-            string.Equals(OperationName, "Multiply", StringComparison.Ordinal))
-        {
-            kernel = preservedKernel;
-            return true;
-        }
-
-        if (!string.Equals(OperationName, "Multiply", StringComparison.Ordinal) ||
-            Context.Count != 2)
-        {
-            kernel = null;
-            return false;
-        }
-
-        var family = new EngineFamily(Context);
-
-        if (!family.TryReadAllWithTension(out var readResult) ||
-            readResult is null ||
-            readResult.Reads[0] is not CompositeElement left ||
-            readResult.Reads[1] is not CompositeElement right)
-        {
-            kernel = null;
-            return false;
-        }
-
-        return left.TryMultiplyKernel(right, out kernel);
-    }
 
     public CompositeElement GetResultBoundaryAxis() =>
         ResultFrame.Grade == Result.Grade &&
