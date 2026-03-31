@@ -218,7 +218,7 @@ public sealed class EngineFamily
             return false;
         }
 
-        if (!Frame.TryReferenceToFrame(ParentFamily.Frame, out var collapsedFrameMember) ||
+        if (!Frame.TryViewInFrame(ParentFamily.Frame, out var collapsedFrameMember) ||
             collapsedFrameMember is null)
         {
             collapsedFamily = null;
@@ -249,7 +249,7 @@ public sealed class EngineFamily
     }
 
     public bool TryReadMember(GradedElement member, out GradedElement? read)
-        => member.TryReferenceToFrame(Frame, out read);
+        => member.TryViewInFrame(Frame, out read);
 
     public bool TryReadAllWithTension(out EngineReadResult? result)
     {
@@ -586,11 +586,24 @@ public sealed class EngineFamily
             note = EngineTension.CombineNotes(note, stepOutcome.Note);
         }
 
+        GradedElement? preservedStructure = null;
+
+        if (string.Equals(operationName, "Multiply", StringComparison.Ordinal) &&
+            readResult.Reads.Count == 2 &&
+            readResult.Reads[0] is CompositeElement leftComposite &&
+            readResult.Reads[1] is CompositeElement rightComposite &&
+            leftComposite.TryMultiplyKernel(rightComposite, out var kernel) &&
+            kernel is not null)
+        {
+            preservedStructure = kernel;
+        }
+
         result = new EngineOperationResult(
             operationName,
             CreateContext(),
             current,
             resultFrameSelector(this),
+            preservedStructure,
             tension,
             note);
         return true;

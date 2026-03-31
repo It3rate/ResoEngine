@@ -15,7 +15,7 @@ public sealed class SerializationMinimalTests
         // without serializing the computed 70/10 read yet.
         var expectedJson = """
 {
-  "kind": "reference",
+  "kind": "view",
   "frame": {
     "kind": "composite",
     "grade": 1,
@@ -44,9 +44,9 @@ public sealed class SerializationMinimalTests
         var frame = new CompositeElement(
             new AtomicElement(10, 10),
             new AtomicElement(3, 10));
-        var reference = new EngineReference(frame, new AtomicElement(7, 1));
+        var view = new EngineView(frame, new AtomicElement(7, 1));
 
-        var json = Core3JsonSerializer.Serialize(reference);
+        var json = Core3JsonSerializer.Serialize(view);
 
         AssertJsonEqual(expectedJson, json);
     }
@@ -302,7 +302,7 @@ public sealed class SerializationMinimalTests
         // remains unresolved under the frame calibration.
         var expectedJson = """
 {
-  "kind": "reference",
+  "kind": "view",
   "frame": {
     "kind": "composite",
     "grade": 1,
@@ -410,10 +410,10 @@ public sealed class SerializationMinimalTests
         var frame = new CompositeElement(
             new AtomicElement(10, 10),
             new AtomicElement(3, 10));
-        var reference = new EngineReference(frame, new AtomicElement(7, 0));
+        var view = new EngineView(frame, new AtomicElement(7, 0));
 
         var json = Core3JsonSerializer.Serialize(
-            reference,
+            view,
             new Core3JsonSerializerOptions { IncludeDerived = true });
 
         AssertJsonEqual(expectedJson, json);
@@ -525,19 +525,17 @@ public sealed class SerializationMinimalTests
     }
 
     [Fact]
-    public void Core3JsonSerializer_SerializesDerivedOperationResultRawMultiplyKernel()
+    public void Core3JsonSerializer_SerializesDerivedOperationResultPreservedStructure()
     {
         var left = Core3TestHelpers.CreateAxisLikeNumber(1, 1, 2, 1);
         var right = Core3TestHelpers.CreateAxisLikeNumber(1, 1, 4, 1);
-        var context = EngineOperationContext.Create(left, [left, right]);
-        var outcome = left.Multiply(right);
-        var operationResult = new EngineOperationResult("Multiply", context, outcome.Result, left);
+        Assert.True(EngineOperations.TryMultiplyWithProvenance(left, [left, right], out var operationResult));
 
         var json = Core3JsonSerializer.Serialize(
-            operationResult,
+            Assert.IsType<EngineOperationResult>(operationResult),
             new Core3JsonSerializerOptions { IncludeDerived = true });
 
-        Assert.Contains("\"rawMultiplyKernel\"", json);
+        Assert.Contains("\"preservedStructure\"", json);
         Assert.Contains("\"value\": 2", json);
         Assert.Contains("\"value\": 8", json);
         Assert.Contains("\"value\": 4", json);

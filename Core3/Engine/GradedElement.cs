@@ -100,8 +100,11 @@ public abstract record GradedElement
     public EngineElementPairOutcome AlignWithTension(GradedElement other) =>
         Align(other, ResolutionPolicy.ExactCommonFrame);
 
-    public bool TryReferenceToFrame(GradedElement frame, out GradedElement? read) =>
+    public bool TryViewInFrame(GradedElement frame, out GradedElement? read) =>
         TryCommitToCalibration(frame, out read);
+
+    public bool TryReferenceToFrame(GradedElement frame, out GradedElement? read) =>
+        TryViewInFrame(frame, out read);
 
     public bool CanAdd(GradedElement other) => TryAdd(other, out _);
     public bool CanSubtract(GradedElement other) => TrySubtract(other, out _);

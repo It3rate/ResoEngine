@@ -120,13 +120,13 @@ The important distinction is:
 - a pin creates or exposes local structure
 - a boundary summarizes endpoint encounter structure
 - an operation attachment places a law at a site
-- a reference reads from a site or frame without creating local structure
+- a view reads from a site or frame without creating local structure
 
 ## Reads
 
-`EngineReference` is best read as a lens or viewpoint, not as a mover.
+`EngineView` is best read as a lens or viewpoint, not as a mover.
 
-A reference says:
+A view says:
 
 - use this frame or site as calibration
 - read that subject through it
@@ -135,7 +135,7 @@ In a route-oriented picture, that means references are the observational layer
 for traversal.
 
 The mover tells us where "here" is.
-The reference tells us how to look from there.
+The view tells us how to look from there.
 
 ## Laws
 

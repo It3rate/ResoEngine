@@ -167,9 +167,9 @@ public sealed class EngineTests
             new AtomicElement(3, 10));
         var subject = new AtomicElement(7, 1);
 
-        var reference = new EngineReference(frame, subject);
+        var view = new EngineView(frame, subject);
 
-        Assert.True(reference.TryMeasureOnCalibration(out var measured));
+        Assert.True(view.TryMeasureOnCalibration(out var measured));
 
         var calibrated = Assert.IsType<CompositeElement>(measured);
         Assert.Equal(frame.Recessive, calibrated.Recessive);
@@ -184,8 +184,8 @@ public sealed class EngineTests
             new AtomicElement(3, 10));
         var subject = new AtomicElement(7, 0);
 
-        var reference = new EngineReference(frame, subject);
-        var outcome = reference.Read();
+        var view = new EngineView(frame, subject);
+        var outcome = view.Read();
 
         Assert.False(outcome.IsExact);
         Assert.Equal(new AtomicElement(70, 0), Assert.IsType<AtomicElement>(outcome.Result));
@@ -200,8 +200,8 @@ public sealed class EngineTests
             new AtomicElement(3, 10));
         var subject = new AtomicElement(7, 0);
 
-        var reference = new EngineReference(frame, subject);
-        var outcome = reference.MeasureOnCalibration();
+        var view = new EngineView(frame, subject);
+        var outcome = view.MeasureOnCalibration();
 
         Assert.False(outcome.IsExact);
 
@@ -362,9 +362,9 @@ public sealed class EngineTests
             new AtomicElement(1, 2),
             new AtomicElement(3, 12));
 
-        var reference = new EngineReference(frame, subject);
+        var view = new EngineView(frame, subject);
 
-        Assert.True(reference.TryMeasureOnCalibration(out var measured));
+        Assert.True(view.TryMeasureOnCalibration(out var measured));
 
         var calibrated = Assert.IsType<CompositeElement>(measured);
         Assert.Equal(frame.Recessive, calibrated.Recessive);
@@ -383,9 +383,9 @@ public sealed class EngineTests
             new AtomicElement(3, 10));
         var subject = new AtomicElement(7, 1);
 
-        var reference = new EngineReference(frame, subject);
+        var view = new EngineView(frame, subject);
 
-        Assert.True(reference.TryRead(out var read));
+        Assert.True(view.TryRead(out var read));
         Assert.Equal(new AtomicElement(70, 10), Assert.IsType<AtomicElement>(read));
     }
 
@@ -395,8 +395,8 @@ public sealed class EngineTests
         var frame = new CompositeElement(
             new AtomicElement(4, 4),
             new AtomicElement(0, 4));
-        var inside = new EngineReference(frame, new AtomicElement(3, 4));
-        var outside = new EngineReference(frame, new AtomicElement(7, 4));
+        var inside = new EngineView(frame, new AtomicElement(3, 4));
+        var outside = new EngineView(frame, new AtomicElement(7, 4));
 
         var insideAxis = inside.GetBoundaryAxis();
         var outsideAxis = outside.GetBoundaryAxis();
@@ -940,10 +940,10 @@ public sealed class EngineTests
         var fullArea = horizontalAxis.Lift(verticalAxis).Result;
         var sparseArea = horizontalAxis.Lift(horizontalAxis.CreateZeroLikePeer()).Result;
 
-        var reference = new EngineReference(
+        var view = new EngineView(
             Assert.IsType<CompositeElement>(fullArea),
             sparseArea);
-        var readOutcome = reference.Read();
+        var readOutcome = view.Read();
         var loweredOutcome = readOutcome.Result.Lower();
 
         Assert.Equal(horizontalAxis, loweredOutcome.Result);

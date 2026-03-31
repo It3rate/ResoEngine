@@ -31,8 +31,8 @@ public static class Core3JsonSerializer
     public static string Serialize(EngineHostedPinResult result, Core3JsonSerializerOptions? options = null) =>
         Serialize(writer => Write(writer, result, Resolve(options)), options);
 
-    public static string Serialize(EngineReference reference, Core3JsonSerializerOptions? options = null) =>
-        Serialize(writer => Write(writer, reference, Resolve(options)), options);
+    public static string Serialize(EngineView view, Core3JsonSerializerOptions? options = null) =>
+        Serialize(writer => Write(writer, view, Resolve(options)), options);
 
     public static string Serialize(EngineOperationContext context, Core3JsonSerializerOptions? options = null) =>
         Serialize(writer => Write(writer, context, Resolve(options)), options);
@@ -285,25 +285,25 @@ public static class Core3JsonSerializer
         writer.WriteEndObject();
     }
 
-    public static void Write(Utf8JsonWriter writer, EngineReference reference, Core3JsonSerializerOptions? options = null)
+    public static void Write(Utf8JsonWriter writer, EngineView view, Core3JsonSerializerOptions? options = null)
     {
         var actual = Resolve(options);
 
         writer.WriteStartObject();
-        writer.WriteString("kind", "reference");
+        writer.WriteString("kind", "view");
         writer.WritePropertyName("frame");
-        Write(writer, reference.Frame, actual);
+        Write(writer, view.Frame, actual);
         writer.WritePropertyName("subject");
-        Write(writer, reference.Subject, actual);
+        Write(writer, view.Subject, actual);
 
         if (actual.IncludeDerived)
         {
             writer.WritePropertyName("calibration");
-            Write(writer, reference.Calibration, actual);
+            Write(writer, view.Calibration, actual);
             writer.WritePropertyName("existingReadout");
-            Write(writer, reference.ExistingReadout, actual);
+            Write(writer, view.ExistingReadout, actual);
 
-            var readOutcome = reference.Read();
+            var readOutcome = view.Read();
 
             if (readOutcome.IsExact)
             {
@@ -436,11 +436,10 @@ public static class Core3JsonSerializer
             writer.WritePropertyName("outboundPieces");
             WritePieces(writer, result.OutboundPieces, actual);
 
-            if (result.TryGetRawMultiplyKernel(out var rawMultiplyKernel) &&
-                rawMultiplyKernel is not null)
+            if (result.PreservedStructure is not null)
             {
-                writer.WritePropertyName("rawMultiplyKernel");
-                Write(writer, rawMultiplyKernel, actual);
+                writer.WritePropertyName("preservedStructure");
+                Write(writer, result.PreservedStructure, actual);
             }
         }
 
@@ -905,9 +904,9 @@ public static class Core3JsonSerializer
         writer.Write(Serialize(result, options));
     }
 
-    public static void Write(TextWriter writer, EngineReference reference, Core3JsonSerializerOptions? options = null)
+    public static void Write(TextWriter writer, EngineView view, Core3JsonSerializerOptions? options = null)
     {
-        writer.Write(Serialize(reference, options));
+        writer.Write(Serialize(view, options));
     }
 
     public static void Write(TextWriter writer, EngineOperationResult result, Core3JsonSerializerOptions? options = null)

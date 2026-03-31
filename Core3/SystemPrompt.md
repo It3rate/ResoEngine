@@ -224,11 +224,11 @@ T5. The system should not "crash because nature was awkward."
 
 F1. Pinning is structural encounter.
 
-F2. Reference is observational reading through an existing frame or site.
+F2. View is observational reading through an existing frame or site.
 
 F3. A pin creates or exposes local structure.
 
-F4. A reference lends calibration without making the subject owned structure
+F4. A view lends calibration without making the subject owned structure
 inside that frame.
 
 F5. Pins, boundaries, and operation sites should increasingly be read as one
@@ -296,10 +296,10 @@ expressions and attached continuation laws.
 
 ## Part X. Reads
 
-R9. `EngineReference` is best understood as a lens, not as a mover.
+R9. `EngineView` is best understood as a lens, not as a mover.
 
 R10. The mover tells us where "here" is.
-The reference tells us how to look from there.
+The view tells us how to look from there.
 
 R11. References, selector addresses, and route positions should all prefer
 numeric/Core3-shaped meaning where practical.

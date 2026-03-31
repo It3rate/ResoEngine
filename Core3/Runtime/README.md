@@ -29,7 +29,7 @@ This includes things like:
 - `AtomicElement`
 - `CompositeElement`
 - `EnginePin`
-- `EngineReference`
+- `EngineView`
 - `EngineBoundary`
 
 These are the things that should remain closest to serialization and the

@@ -54,7 +54,7 @@ The idea is to keep a distinction between:
 
 For example:
 
-- a reference can serialize just `frame` and `subject`
+- a view can serialize just `frame` and `subject`
 - or also derived `calibration`, `existingReadout`, and a current `read`
 
 That helps expose how much of the serialized shape is fundamental structure and

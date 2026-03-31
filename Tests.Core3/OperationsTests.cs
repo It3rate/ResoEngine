@@ -398,13 +398,14 @@ public sealed class OperationsTests
     }
 
     [Fact]
-    public void EngineOperationResult_CanExposeRawMultiplyKernelForCompositeMultiply()
+    public void EngineOperationResult_CanPreserveMultiplyKernelForCompositeMultiply()
     {
         var left = Core3TestHelpers.CreateAxisLikeNumber(1, 1, 2, 1);
         var right = Core3TestHelpers.CreateAxisLikeNumber(1, 1, 4, 1);
-        var context = EngineOperationContext.Create(left, [left, right]);
-        var outcome = left.Multiply(right);
-        var result = new EngineOperationResult("Multiply", context, outcome.Result, left);
+        Assert.True(EngineOperations.TryMultiplyWithProvenance(left, [left, right], out var operationResult));
+
+        var result = Assert.IsType<EngineOperationResult>(operationResult);
+        Assert.NotNull(result.PreservedStructure);
 
         Assert.True(result.TryGetRawMultiplyKernel(out var kernel));
 

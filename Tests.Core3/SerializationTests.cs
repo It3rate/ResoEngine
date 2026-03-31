@@ -61,7 +61,7 @@ public sealed class SerializationTests
         // frame plus the borrowed read 70/10.
         var expectedJson = """
 {
-  "kind": "reference",
+  "kind": "view",
   "frame": {
     "kind": "composite",
     "grade": 1,
@@ -108,10 +108,10 @@ public sealed class SerializationTests
         var frame = new CompositeElement(
             new AtomicElement(10, 10),
             new AtomicElement(3, 10));
-        var reference = new EngineReference(frame, new AtomicElement(7, 1));
+        var view = new EngineView(frame, new AtomicElement(7, 1));
 
         var json = Core3JsonSerializer.Serialize(
-            reference,
+            view,
             new Core3JsonSerializerOptions
             {
                 IncludeDerived = true

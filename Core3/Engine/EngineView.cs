@@ -5,10 +5,7 @@ namespace Core3.Engine;
 /// calibration without being copied into the subject as owned structure.
 /// This is closer to measurement or inscription than to containment.
 /// </summary>
-// TODO: Pick a better Core3-facing name than "Reference". "View",
-// "Framing", or another term for a carried perspective/read may fit the
-// actual role better and avoid the usual programming-language overload.
-public sealed record EngineReference(
+public sealed record EngineView(
     CompositeElement Frame,
     GradedElement Subject)
 {
@@ -52,13 +49,13 @@ public sealed record EngineReference(
                 : EngineElementOutcome.WithTension(
                     measured,
                     readOutcome.Tension ?? Subject,
-                    readOutcome.Note ?? "Reference measurement preserved unresolved borrowed read.");
+                    readOutcome.Note ?? "View measurement preserved unresolved borrowed read.");
         }
 
         return EngineElementOutcome.WithTension(
             Subject,
             Frame,
-            "Reference measurement preserved unresolved structure because calibration and subject grades differed.");
+            "View measurement preserved unresolved structure because calibration and subject grades differed.");
     }
 
     public bool TryMeasureOnCalibration(out CompositeElement? measured) =>
@@ -67,5 +64,5 @@ public sealed record EngineReference(
             static outcome => (CompositeElement)outcome.Result,
             out measured);
 
-    public override string ToString() => $"ref({Frame} <- {Subject})";
+    public override string ToString() => $"view({Frame} <- {Subject})";
 }
