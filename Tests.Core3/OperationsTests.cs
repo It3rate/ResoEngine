@@ -263,6 +263,11 @@ public sealed class OperationsTests
         var operationResult = Assert.IsType<EngineOperationResult>(result);
         Assert.False(operationResult.IsExact);
         Assert.Equal(new AtomicElement(2, 0), operationResult.Result);
+        Assert.Equal(
+            new CompositeElement(
+                new AtomicElement(1, 1),
+                new AtomicElement(1, 0)),
+            operationResult.PreservedStructure);
     }
 
     [Fact]

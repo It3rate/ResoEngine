@@ -542,6 +542,27 @@ public sealed class SerializationMinimalTests
     }
 
     [Fact]
+    public void Core3JsonSerializer_SerializesDerivedAddOperationResultPreservedStructure()
+    {
+        var frame = new AtomicElement(0, 1);
+        var members = new GradedElement[]
+        {
+            new AtomicElement(1, 1),
+            new AtomicElement(1, 0)
+        };
+
+        Assert.True(EngineOperations.TryAddWithTension(frame, members, out var operationResult));
+
+        var json = Core3JsonSerializer.Serialize(
+            Assert.IsType<EngineOperationResult>(operationResult),
+            new Core3JsonSerializerOptions { IncludeDerived = true });
+
+        Assert.Contains("\"preservedStructure\"", json);
+        Assert.Contains("\"value\": 1", json);
+        Assert.Contains("\"unit\": 0", json);
+    }
+
+    [Fact]
     public void Core3JsonSerializer_SerializesDerivedBooleanResultOutboundPieces()
     {
         var expectedJson = """

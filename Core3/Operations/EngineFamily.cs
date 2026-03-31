@@ -588,14 +588,24 @@ public sealed class EngineFamily
 
         GradedElement? preservedStructure = null;
 
-        if (string.Equals(operationName, "Multiply", StringComparison.Ordinal) &&
-            readResult.Reads.Count == 2 &&
-            readResult.Reads[0] is CompositeElement leftComposite &&
-            readResult.Reads[1] is CompositeElement rightComposite &&
-            leftComposite.TryMultiplyKernel(rightComposite, out var kernel) &&
-            kernel is not null)
+        if (readResult.Reads.Count == 2 &&
+            readResult.Reads[0].Grade == readResult.Reads[1].Grade)
         {
-            preservedStructure = kernel;
+            if (string.Equals(operationName, "Multiply", StringComparison.Ordinal) &&
+                readResult.Reads[0] is CompositeElement leftComposite &&
+                readResult.Reads[1] is CompositeElement rightComposite &&
+                leftComposite.TryMultiplyKernel(rightComposite, out var kernel) &&
+                kernel is not null)
+            {
+                preservedStructure = kernel;
+            }
+            else if (string.Equals(operationName, "Add", StringComparison.Ordinal) ||
+                     string.Equals(operationName, "Subtract", StringComparison.Ordinal))
+            {
+                preservedStructure = new CompositeElement(
+                    readResult.Reads[0],
+                    readResult.Reads[1]);
+            }
         }
 
         result = new EngineOperationResult(
