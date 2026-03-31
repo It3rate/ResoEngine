@@ -146,13 +146,6 @@ public static class Core3JsonSerializer
             writer.WriteNumber("survivorCount", outcome.SurvivorCount);
             writer.WritePropertyName("outboundResults");
             WriteElements(writer, outcome.OutboundResults, actual);
-
-            if (outcome.TryGetRawPair(out var rawPair) &&
-                rawPair is not null)
-            {
-                writer.WritePropertyName("rawPair");
-                Write(writer, rawPair, actual);
-            }
         }
 
         writer.WriteEndObject();

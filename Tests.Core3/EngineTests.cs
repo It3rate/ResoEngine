@@ -472,9 +472,6 @@ public sealed class EngineTests
         Assert.Single(outcome.OutboundResults);
         Assert.Equal(new AtomicElement(8, 0), Assert.IsType<AtomicElement>(outcome.Result));
         Assert.Equal(new CompositeElement(left, right), outcome.Tension);
-        Assert.True(outcome.TryGetRawPair(out var rawPair));
-        Assert.Equal(left, rawPair!.Left);
-        Assert.Equal(right, rawPair.Right);
     }
 
     [Fact]

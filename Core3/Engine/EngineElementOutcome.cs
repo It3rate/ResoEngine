@@ -49,21 +49,4 @@ public sealed record EngineElementOutcome(
         right = null;
         return false;
     }
-
-    public bool TryGetRawPair(out EngineElementOutcome? pair)
-    {
-        // Temporary inspection shell. Long term this wants to become an
-        // ordinary frame/family read over preserved structure rather than a
-        // bespoke "raw pair" helper.
-        if (Tension is CompositeElement composite)
-        {
-            pair = Exact(
-                composite.Recessive,
-                composite.Dominant);
-            return true;
-        }
-
-        pair = null;
-        return false;
-    }
 }

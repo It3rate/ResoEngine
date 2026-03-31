@@ -207,7 +207,8 @@ public sealed class SerializationMinimalTests
             new AtomicElement(4, 1)
         };
 
-        Assert.True(new Family(OperationContext.Create(frame, members)).TryMultiplyAllResult(out var operationResult));
+        var operationResult = new Family(OperationContext.Create(frame, members)).MultiplyAllResult();
+        Assert.NotNull(operationResult);
 
         var finalizedResult = Assert.IsType<OperationResult>(operationResult);
         var operationJson = Core3JsonSerializer.Serialize(finalizedResult);
@@ -495,40 +496,7 @@ public sealed class SerializationMinimalTests
         "value": 70,
         "unit": 0
       }
-    ],
-    "rawPair": {
-      "kind": "elementOutcome",
-      "isExact": true,
-      "results": [
-        {
-          "kind": "atomic",
-          "grade": 0,
-          "value": 7,
-          "unit": 0
-        },
-        {
-          "kind": "atomic",
-          "grade": 0,
-          "value": 10,
-          "unit": 10
-        }
-      ],
-      "survivorCount": 2,
-      "outboundResults": [
-        {
-          "kind": "atomic",
-          "grade": 0,
-          "value": 7,
-          "unit": 0
-        },
-        {
-          "kind": "atomic",
-          "grade": 0,
-          "value": 10,
-          "unit": 10
-        }
-      ]
-    }
+    ]
   }
 }
 """;
@@ -641,7 +609,8 @@ public sealed class SerializationMinimalTests
             new AtomicElement(4, 1)
         };
 
-        Assert.True(new Family(OperationContext.Create(frame, members)).TryMultiplyAllResult(out var operationResult));
+        var operationResult = new Family(OperationContext.Create(frame, members)).MultiplyAllResult();
+        Assert.NotNull(operationResult);
 
         var json = Core3JsonSerializer.Serialize(
             Assert.IsType<OperationResult>(operationResult),
@@ -919,9 +888,9 @@ public sealed class SerializationMinimalTests
         var primary = Core3TestHelpers.CreateSegmentFrame(0, 10, 10);
         var secondary = Core3TestHelpers.CreateSegmentFrame(3, 5, 10);
 
-        Assert.True(new Family(OperationContext.Create(frame, [primary, secondary])).TryBooleanResult(
-            BooleanOperation.Xor,
-            out var result));
+        var result = new Family(OperationContext.Create(frame, [primary, secondary])).BooleanResult(
+            BooleanOperation.Xor);
+        Assert.NotNull(result);
 
         var json = Core3JsonSerializer.Serialize(
             Assert.IsType<PieceArcResult>(result),
@@ -1079,40 +1048,7 @@ public sealed class SerializationMinimalTests
       "value": 4,
       "unit": 0
     }
-  ],
-  "rawPair": {
-    "kind": "elementOutcome",
-    "isExact": true,
-    "results": [
-      {
-        "kind": "atomic",
-        "grade": 0,
-        "value": 1,
-        "unit": 2
-      },
-      {
-        "kind": "atomic",
-        "grade": 0,
-        "value": 1,
-        "unit": -4
-      }
-    ],
-    "survivorCount": 2,
-    "outboundResults": [
-      {
-        "kind": "atomic",
-        "grade": 0,
-        "value": 1,
-        "unit": 2
-      },
-      {
-        "kind": "atomic",
-        "grade": 0,
-        "value": 1,
-        "unit": -4
-      }
-    ]
-  }
+  ]
 }
 """;
 
@@ -1208,40 +1144,7 @@ public sealed class SerializationMinimalTests
       "value": 8,
       "unit": 0
     }
-  ],
-  "rawPair": {
-    "kind": "elementOutcome",
-    "isExact": true,
-    "results": [
-      {
-        "kind": "atomic",
-        "grade": 0,
-        "value": 1,
-        "unit": 2
-      },
-      {
-        "kind": "atomic",
-        "grade": 0,
-        "value": 1,
-        "unit": -4
-      }
-    ],
-    "survivorCount": 2,
-    "outboundResults": [
-      {
-        "kind": "atomic",
-        "grade": 0,
-        "value": 1,
-        "unit": 2
-      },
-      {
-        "kind": "atomic",
-        "grade": 0,
-        "value": 1,
-        "unit": -4
-      }
-    ]
-  }
+  ]
 }
 """;
 
@@ -1372,7 +1275,8 @@ public sealed class SerializationMinimalTests
         family.AddMember(new AtomicElement(1, 1));
         family.AddMember(new AtomicElement(1, 0));
 
-        Assert.True(family.TryAddAllResult(out var result));
+        var result = family.AddAllResult();
+        Assert.NotNull(result);
 
         var json = Core3JsonSerializer.Serialize(Assert.IsType<OperationResult>(result));
 
@@ -1493,9 +1397,9 @@ public sealed class SerializationMinimalTests
             new AtomicElement(3, 10),
             new AtomicElement(5, 0));
 
-        Assert.True(new Family(OperationContext.Create(frame, [primary, secondary])).TryBooleanResult(
-            BooleanOperation.And,
-            out var result));
+        var result = new Family(OperationContext.Create(frame, [primary, secondary])).BooleanResult(
+            BooleanOperation.And);
+        Assert.NotNull(result);
 
         var json = Core3JsonSerializer.Serialize(Assert.IsType<PieceArcResult>(result));
 

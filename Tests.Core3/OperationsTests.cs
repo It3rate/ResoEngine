@@ -68,7 +68,8 @@ public sealed class OperationsTests
         Assert.Equal(first, reframed.Members[0]);
         Assert.Equal(third, reframed.Members[1]);
 
-        Assert.True(reframed.TryAddAllResult(out var sumResult));
+        var sumResult = reframed.AddAllResult();
+        Assert.NotNull(sumResult);
         Assert.True(sumResult!.IsExact);
         Assert.Equal(new AtomicElement(3, 4), Assert.IsType<AtomicElement>(sumResult.Result));
     }
@@ -181,7 +182,8 @@ public sealed class OperationsTests
         family.AddMember(new AtomicElement(1, 2));
         family.AddMember(new AtomicElement(1, 4));
 
-        Assert.True(family.TryAddAllResult(out var sumResult));
+        var sumResult = family.AddAllResult();
+        Assert.NotNull(sumResult);
         Assert.True(sumResult!.IsExact);
         Assert.Equal(new AtomicElement(3, 4), Assert.IsType<AtomicElement>(sumResult.Result));
     }
@@ -215,7 +217,8 @@ public sealed class OperationsTests
         family.AddMember(new AtomicElement(1, 1));
         family.AddMember(new AtomicElement(1, 0));
 
-        Assert.True(family.TryAddAllResult(out var result));
+        var result = family.AddAllResult();
+        Assert.NotNull(result);
 
         var operationResult = Assert.IsType<OperationResult>(result);
         Assert.False(operationResult.IsExact);
@@ -235,7 +238,8 @@ public sealed class OperationsTests
             new AtomicElement(1, 4)
         };
 
-        Assert.True(new Family(OperationContext.Create(frame, members)).TryAddAllResult(out var sumResult));
+        var sumResult = new Family(OperationContext.Create(frame, members)).AddAllResult();
+        Assert.NotNull(sumResult);
         Assert.True(sumResult!.IsExact);
         Assert.Equal(new AtomicElement(4, 4), Assert.IsType<AtomicElement>(sumResult.Result));
     }
@@ -251,7 +255,8 @@ public sealed class OperationsTests
                 new AtomicElement(1, 4)
             ]);
 
-        Assert.True(new Family(context).TryAddAllResult(out var sumResult));
+        var sumResult = new Family(context).AddAllResult();
+        Assert.NotNull(sumResult);
         Assert.True(sumResult!.IsExact);
         Assert.Equal(new AtomicElement(4, 4), Assert.IsType<AtomicElement>(sumResult.Result));
     }
@@ -266,7 +271,8 @@ public sealed class OperationsTests
             new AtomicElement(1, 0)
         };
 
-        Assert.True(new Family(OperationContext.Create(frame, members)).TryAddAllResult(out var result));
+        var result = new Family(OperationContext.Create(frame, members)).AddAllResult();
+        Assert.NotNull(result);
 
         var operationResult = Assert.IsType<OperationResult>(result);
         Assert.False(operationResult.IsExact);
@@ -284,7 +290,8 @@ public sealed class OperationsTests
             new AtomicElement(1, 2)
         };
 
-        Assert.True(new Family(OperationContext.Create(frame, members)).TryAddAllResult(out var result));
+        var result = new Family(OperationContext.Create(frame, members)).AddAllResult();
+        Assert.NotNull(result);
 
         var operationResult = Assert.IsType<OperationResult>(result);
         Assert.Equal("Add", operationResult.OperationName);
@@ -314,7 +321,8 @@ public sealed class OperationsTests
             ],
             isOrdered: false);
 
-        Assert.True(new Family(context).TryAddAllResult(out var result));
+        var result = new Family(context).AddAllResult();
+        Assert.NotNull(result);
 
         var operationResult = Assert.IsType<OperationResult>(result);
         Assert.Equal(context.Frame, operationResult.Context.Frame);
@@ -329,7 +337,8 @@ public sealed class OperationsTests
         family.AddMember(new AtomicElement(1, 2));
         family.AddMember(new AtomicElement(3, 4));
 
-        Assert.True(family.TryMultiplyAllResult(out var productResult));
+        var productResult = family.MultiplyAllResult();
+        Assert.NotNull(productResult);
         Assert.True(productResult!.IsExact);
         Assert.Equal(new AtomicElement(6, 16), Assert.IsType<AtomicElement>(productResult.Result));
     }
@@ -341,7 +350,8 @@ public sealed class OperationsTests
         family.AddMember(new AtomicElement(2, 1));
         family.AddMember(new AtomicElement(4, 0));
 
-        Assert.True(family.TryMultiplyAllResult(out var result));
+        var result = family.MultiplyAllResult();
+        Assert.NotNull(result);
 
         var operationResult = Assert.IsType<OperationResult>(result);
         Assert.False(operationResult.IsExact);
@@ -360,7 +370,8 @@ public sealed class OperationsTests
             new AtomicElement(3, 4)
         };
 
-        Assert.True(new Family(OperationContext.Create(frame, members)).TryMultiplyAllResult(out var productResult));
+        var productResult = new Family(OperationContext.Create(frame, members)).MultiplyAllResult();
+        Assert.NotNull(productResult);
         Assert.True(productResult!.IsExact);
         Assert.Equal(new AtomicElement(6, 16), Assert.IsType<AtomicElement>(productResult.Result));
     }
@@ -375,7 +386,8 @@ public sealed class OperationsTests
             new AtomicElement(4, 0)
         };
 
-        Assert.True(new Family(OperationContext.Create(frame, members)).TryMultiplyAllResult(out var result));
+        var result = new Family(OperationContext.Create(frame, members)).MultiplyAllResult();
+        Assert.NotNull(result);
 
         var operationResult = Assert.IsType<OperationResult>(result);
         Assert.False(operationResult.IsExact);
@@ -392,7 +404,8 @@ public sealed class OperationsTests
             new AtomicElement(3, 4)
         };
 
-        Assert.True(new Family(OperationContext.Create(frame, members)).TryMultiplyAllResult(out var result));
+        var result = new Family(OperationContext.Create(frame, members)).MultiplyAllResult();
+        Assert.NotNull(result);
 
         var operationResult = Assert.IsType<OperationResult>(result);
         Assert.Equal("Multiply", operationResult.OperationName);
@@ -440,9 +453,8 @@ public sealed class OperationsTests
         var primary = Core3TestHelpers.CreateSegmentFrame(0, 10, 10);
         var secondary = Core3TestHelpers.CreateSegmentFrame(3, 5, 10);
 
-        Assert.True(new Family(OperationContext.Create(frame, [primary, secondary])).TryBooleanResult(
-            BooleanOperation.And,
-            out var result));
+        var result = new Family(OperationContext.Create(frame, [primary, secondary])).BooleanResult(BooleanOperation.And);
+        Assert.NotNull(result);
 
         var booleanResult = Assert.IsType<PieceArcResult>(result);
         Assert.Single(booleanResult.Pieces);
@@ -462,9 +474,8 @@ public sealed class OperationsTests
             new AtomicElement(3, 10),
             new AtomicElement(5, 0));
 
-        Assert.True(new Family(OperationContext.Create(frame, [primary, secondary])).TryBooleanResult(
-            BooleanOperation.And,
-            out var result));
+        var result = new Family(OperationContext.Create(frame, [primary, secondary])).BooleanResult(BooleanOperation.And);
+        Assert.NotNull(result);
 
         var booleanResult = Assert.IsType<PieceArcResult>(result);
         Assert.False(booleanResult.IsExact);
@@ -480,9 +491,8 @@ public sealed class OperationsTests
         var primary = Core3TestHelpers.CreateSegmentFrame(0, 10, 10);
         var secondary = Core3TestHelpers.CreateSegmentFrame(3, 5, 10);
 
-        Assert.True(new Family(OperationContext.Create(frame, [primary, secondary])).TryBooleanResult(
-            BooleanOperation.Xor,
-            out var result));
+        var result = new Family(OperationContext.Create(frame, [primary, secondary])).BooleanResult(BooleanOperation.Xor);
+        Assert.NotNull(result);
 
         var booleanResult = Assert.IsType<PieceArcResult>(result);
         Assert.True(booleanResult.HasAny);
@@ -499,9 +509,8 @@ public sealed class OperationsTests
         var primary = Core3TestHelpers.CreateSegmentFrame(0, 10, 10);
         var secondary = Core3TestHelpers.CreateSegmentFrame(3, 5, 10);
 
-        Assert.True(new Family(OperationContext.Create(frame, [primary, secondary])).TryBooleanResult(
-            BooleanOperation.NotSecondary,
-            out var result));
+        var result = new Family(OperationContext.Create(frame, [primary, secondary])).BooleanResult(BooleanOperation.NotSecondary);
+        Assert.NotNull(result);
 
         var booleanResult = Assert.IsType<PieceArcResult>(result);
         Assert.Equal(2, booleanResult.Pieces.Count);
@@ -519,9 +528,9 @@ public sealed class OperationsTests
         var second = Core3TestHelpers.CreateSegmentFrame(3, 5, 10);
         var third = Core3TestHelpers.CreateSegmentFrame(6, 8, 10);
 
-        Assert.True(new Family(OperationContext.Create(frame, [first, second, third], isOrdered: false)).TryOccupancyBooleanResult(
-            OccupancyOperation.ExactlyOne,
-            out var result));
+        var result = new Family(OperationContext.Create(frame, [first, second, third], isOrdered: false)).OccupancyBooleanResult(
+            OccupancyOperation.ExactlyOne);
+        Assert.NotNull(result);
 
         var occupancyResult = Assert.IsType<PieceArcResult>(result);
         Assert.False(occupancyResult.Context.IsOrdered);
@@ -543,9 +552,9 @@ public sealed class OperationsTests
         var second = Core3TestHelpers.CreateSegmentFrame(0, 10, 10);
         var third = Core3TestHelpers.CreateSegmentFrame(3, 5, 10);
 
-        Assert.True(new Family(OperationContext.Create(frame, [first, second, third], isOrdered: false)).TryOccupancyBooleanResult(
-            OccupancyOperation.All,
-            out var result));
+        var result = new Family(OperationContext.Create(frame, [first, second, third], isOrdered: false)).OccupancyBooleanResult(
+            OccupancyOperation.All);
+        Assert.NotNull(result);
 
         var occupancyResult = Assert.IsType<PieceArcResult>(result);
         Assert.Single(occupancyResult.Pieces);
@@ -564,9 +573,9 @@ public sealed class OperationsTests
             new AtomicElement(5, 0));
         var third = Core3TestHelpers.CreateSegmentFrame(6, 8, 10);
 
-        Assert.True(new Family(OperationContext.Create(frame, [first, second, third], isOrdered: false)).TryOccupancyBooleanResult(
-            OccupancyOperation.ExactlyOne,
-            out var result));
+        var result = new Family(OperationContext.Create(frame, [first, second, third], isOrdered: false)).OccupancyBooleanResult(
+            OccupancyOperation.ExactlyOne);
+        Assert.NotNull(result);
 
         var occupancyResult = Assert.IsType<PieceArcResult>(result);
         Assert.False(occupancyResult.IsExact);
@@ -583,9 +592,9 @@ public sealed class OperationsTests
         var second = Core3TestHelpers.CreateSegmentFrame(3, 5, 10);
         var third = Core3TestHelpers.CreateSegmentFrame(6, 8, 10);
 
-        Assert.True(new Family(OperationContext.Create(frame, [first, second, third], isOrdered: true)).TryBooleanAdjacentPairResults(
-            BooleanOperation.Xor,
-            out var results));
+        var results = new Family(OperationContext.Create(frame, [first, second, third], isOrdered: true)).BooleanAdjacentPairResults(
+            BooleanOperation.Xor);
+        Assert.NotNull(results);
 
         var pairwise = Assert.IsAssignableFrom<IReadOnlyList<PieceArcResult>>(results);
         Assert.Equal(2, pairwise.Count);
@@ -606,9 +615,9 @@ public sealed class OperationsTests
             new AtomicElement(5, 0));
         var third = Core3TestHelpers.CreateSegmentFrame(6, 8, 10);
 
-        Assert.True(new Family(OperationContext.Create(frame, [first, second, third], isOrdered: true)).TryBooleanAdjacentPairResults(
-            BooleanOperation.Xor,
-            out var results));
+        var results = new Family(OperationContext.Create(frame, [first, second, third], isOrdered: true)).BooleanAdjacentPairResults(
+            BooleanOperation.Xor);
+        Assert.NotNull(results);
 
         var pairwise = Assert.IsAssignableFrom<IReadOnlyList<PieceArcResult>>(results);
         Assert.Equal(2, pairwise.Count);
@@ -629,9 +638,9 @@ public sealed class OperationsTests
             ],
             isOrdered: false);
 
-        Assert.True(new Family(context).TryOccupancyBooleanResult(
-            OccupancyOperation.ExactlyOne,
-            out var result));
+        var result = new Family(context).OccupancyBooleanResult(
+            OccupancyOperation.ExactlyOne);
+        Assert.NotNull(result);
 
         var occupancyResult = Assert.IsType<PieceArcResult>(result);
         Assert.Equal(context.Frame, occupancyResult.Context.Frame);
@@ -646,7 +655,7 @@ public sealed class OperationsTests
         family.AddMember(Core3TestHelpers.CreateSegmentFrame(0, 10, 10));
         family.AddMember(Core3TestHelpers.CreateSegmentFrame(3, 5, 10));
 
-        Assert.False(family.TryBooleanAdjacentPairResults(BooleanOperation.And, out _));
+        Assert.Null(family.BooleanAdjacentPairResults(BooleanOperation.And));
     }
 
     [Fact]
@@ -658,7 +667,7 @@ public sealed class OperationsTests
         family.AddMember(Core3TestHelpers.CreateSegmentFrame(3, 5, 10));
         family.AddMember(Core3TestHelpers.CreateSegmentFrame(6, 8, 10));
 
-        Assert.False(family.TryBooleanResult(BooleanOperation.Or, out _));
+        Assert.Null(family.BooleanResult(BooleanOperation.Or));
     }
 }
 

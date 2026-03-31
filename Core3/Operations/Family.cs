@@ -276,27 +276,23 @@ public sealed class Family
             ? EngineBoundary.GetAxis(Frame, outcome.Result)
             : EngineBoundary.CreateUnknownAxis(Frame);
 
-    public bool TryAddAllResult(out OperationResult? result) =>
-        TryAccumulateAll(
+    public OperationResult? AddAllResult() =>
+        AccumulateAll(
             "Add",
             static (left, right) => left.Add(right),
-            static family => family.Frame,
-            out result);
+            static family => family.Frame);
 
-    public bool TryMultiplyAllResult(out OperationResult? result) =>
-        TryAccumulateAll(
+    public OperationResult? MultiplyAllResult() =>
+        AccumulateAll(
             "Multiply",
             static (left, right) => left.Multiply(right),
             static family =>
                 family.TryDeriveMultiplyResultFrame(out var resultFrame) &&
                 resultFrame is not null
                     ? resultFrame
-                    : family.Frame,
-            out result);
+                    : family.Frame);
 
-    public bool TryBooleanResult(
-        BooleanOperation operation,
-        out PieceArcResult? result)
+    public PieceArcResult? BooleanResult(BooleanOperation operation)
     {
         if (!TryReadBinaryCompositeFamily(
                 out var frame,
@@ -305,8 +301,7 @@ public sealed class Family
                 out var tension,
                 out var note))
         {
-            result = null;
-            return false;
+            return null;
         }
 
         return BooleanProjection.TryResolveResult(
@@ -316,12 +311,12 @@ public sealed class Family
             operation,
             tension,
             note,
-            out result);
+            out var result)
+            ? result
+            : null;
     }
 
-    public bool TryOccupancyBooleanResult(
-        OccupancyOperation operation,
-        out PieceArcResult? result)
+    public PieceArcResult? OccupancyBooleanResult(OccupancyOperation operation)
     {
         if (!TryReadCompositeFamily(
                 out var frame,
@@ -329,8 +324,7 @@ public sealed class Family
                 out var tension,
                 out var note))
         {
-            result = null;
-            return false;
+            return null;
         }
 
         return BooleanProjection.TryResolveFamilyResult(
@@ -340,17 +334,16 @@ public sealed class Family
             operation,
             tension,
             note,
-            out result);
+            out var result)
+            ? result
+            : null;
     }
 
-    public bool TryBooleanAdjacentPairResults(
-        BooleanOperation operation,
-        out IReadOnlyList<PieceArcResult>? results)
+    public IReadOnlyList<PieceArcResult>? BooleanAdjacentPairResults(BooleanOperation operation)
     {
         if (!IsOrdered || _members.Count < 2 || Frame is not CompositeElement frame)
         {
-            results = null;
-            return false;
+            return null;
         }
 
         var pairwiseResults = new List<PieceArcResult>(_members.Count - 1);
@@ -374,15 +367,13 @@ public sealed class Family
                     out var pairResult) ||
                 pairResult is null)
             {
-                results = null;
-                return false;
+                return null;
             }
 
             pairwiseResults.Add(pairResult);
         }
 
-        results = pairwiseResults;
-        return true;
+        return pairwiseResults;
     }
 
     private bool TryDeriveMultiplyResultFrame(out GradedElement? resultFrame)
@@ -503,18 +494,16 @@ public sealed class Family
         return true;
     }
 
-    private bool TryAccumulateAll(
+    private OperationResult? AccumulateAll(
         string operationName,
         Func<GradedElement, GradedElement, EngineElementOutcome> localLaw,
-        Func<Family, GradedElement> resultFrameSelector,
-        out OperationResult? result)
+        Func<Family, GradedElement> resultFrameSelector)
     {
         var readResult = ReadAllResult();
 
         if (readResult.Results.Count == 0)
         {
-            result = null;
-            return false;
+            return null;
         }
 
         var current = readResult.Results[0];
@@ -535,14 +524,13 @@ public sealed class Family
         // preserved there and later inspected through views instead of being
         // guessed here from operation names.
 
-        result = new OperationResult(
+        return new OperationResult(
             operationName,
             CreateContext(),
             current,
             resultFrame: resultFrameSelector(this),
             tension: tension,
             note: note);
-        return true;
     }
 
     private static bool TryAsCompositeReads(
