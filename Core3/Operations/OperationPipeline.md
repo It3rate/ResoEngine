@@ -237,6 +237,19 @@ Current multiply is more mixed:
 So multiply already shows why operations need explicit reduction mode instead
 of being treated as one uniform one-result law.
 
+That raw kernel matters.
+In complex-like or directed-segment-like multiplication, the familiar folded
+result often comes from a richer four-part activity such as:
+
+- recessive with recessive
+- recessive with dominant
+- dominant with recessive
+- dominant with dominant
+
+Those parts may later reduce to one familiar result, but the kernel is often
+important structure in its own right and should not be treated as accidental
+intermediate bookkeeping.
+
 ### Boolean
 
 Boolean currently looks separate in code, but structurally it is:

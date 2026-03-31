@@ -409,6 +409,13 @@ public static class Core3JsonSerializer
             writer.WriteString("note", result.Note);
         }
 
+        if (actual.IncludeDerived)
+        {
+            writer.WriteString("originLawName", result.OriginLawName);
+            writer.WritePropertyName("outboundPieces");
+            WritePieces(writer, result.OutboundPieces, actual);
+        }
+
         if (actual.IncludeDerived &&
             result.TryReadResult(out var read) &&
             read is not null)
@@ -449,6 +456,13 @@ public static class Core3JsonSerializer
             writer.WriteString("note", result.Note);
         }
 
+        if (actual.IncludeDerived)
+        {
+            writer.WriteString("originLawName", result.OriginLawName);
+            writer.WritePropertyName("outboundPieces");
+            WritePieces(writer, result.OutboundPieces, actual);
+        }
+
         writer.WriteEndObject();
     }
 
@@ -477,6 +491,13 @@ public static class Core3JsonSerializer
         if (!string.IsNullOrWhiteSpace(result.Note))
         {
             writer.WriteString("note", result.Note);
+        }
+
+        if (actual.IncludeDerived)
+        {
+            writer.WriteString("originLawName", result.OriginLawName);
+            writer.WritePropertyName("outboundPieces");
+            WritePieces(writer, result.OutboundPieces, actual);
         }
 
         writer.WriteEndObject();

@@ -379,6 +379,345 @@ public sealed class SerializationMinimalTests
     }
 
     [Fact]
+    public void Core3JsonSerializer_SerializesDerivedOperationResultOutboundPieces()
+    {
+        var expectedJson = """
+{
+  "kind": "operationResult",
+  "operationName": "Multiply",
+  "context": {
+    "kind": "operationContext",
+    "isOrdered": true,
+    "frame": {
+      "kind": "atomic",
+      "grade": 0,
+      "value": 1,
+      "unit": 1
+    },
+    "members": [
+      {
+        "kind": "atomic",
+        "grade": 0,
+        "value": 3,
+        "unit": 1
+      },
+      {
+        "kind": "atomic",
+        "grade": 0,
+        "value": 4,
+        "unit": 1
+      }
+    ]
+  },
+  "result": {
+    "kind": "atomic",
+    "grade": 0,
+    "value": 12,
+    "unit": 1
+  },
+  "resultFrame": {
+    "kind": "atomic",
+    "grade": 0,
+    "value": 1,
+    "unit": 1
+  },
+  "originLawName": "Multiply",
+  "outboundPieces": [
+    {
+      "result": {
+        "kind": "atomic",
+        "grade": 0,
+        "value": 12,
+        "unit": 1
+      },
+      "carrier": {
+        "kind": "atomic",
+        "grade": 0,
+        "value": 1,
+        "unit": 1
+      },
+      "sourceMemberIndices": [
+        0,
+        1
+      ]
+    }
+  ],
+  "readResult": {
+    "kind": "atomic",
+    "grade": 0,
+    "value": 12,
+    "unit": 1
+  },
+  "resultBoundaryAxis": {
+    "kind": "composite",
+    "grade": 1,
+    "recessive": {
+      "kind": "atomic",
+      "grade": 0,
+      "value": 0,
+      "unit": 1
+    },
+    "dominant": {
+      "kind": "atomic",
+      "grade": 0,
+      "value": 11,
+      "unit": 1
+    }
+  }
+}
+""";
+
+        var frame = new AtomicElement(1, 1);
+        var members = new GradedElement[]
+        {
+            new AtomicElement(3, 1),
+            new AtomicElement(4, 1)
+        };
+
+        Assert.True(EngineOperations.TryMultiplyWithProvenance(frame, members, out var operationResult));
+
+        var json = Core3JsonSerializer.Serialize(
+            Assert.IsType<EngineOperationResult>(operationResult),
+            new Core3JsonSerializerOptions { IncludeDerived = true });
+
+        AssertJsonEqual(expectedJson, json);
+    }
+
+    [Fact]
+    public void Core3JsonSerializer_SerializesDerivedBooleanResultOutboundPieces()
+    {
+        var expectedJson = """
+{
+  "kind": "booleanResult",
+  "operation": "Xor",
+  "context": {
+    "kind": "operationContext",
+    "isOrdered": true,
+    "frame": {
+      "kind": "composite",
+      "grade": 1,
+      "recessive": {
+        "kind": "atomic",
+        "grade": 0,
+        "value": 0,
+        "unit": 10
+      },
+      "dominant": {
+        "kind": "atomic",
+        "grade": 0,
+        "value": 10,
+        "unit": 10
+      }
+    },
+    "members": [
+      {
+        "kind": "composite",
+        "grade": 1,
+        "recessive": {
+          "kind": "atomic",
+          "grade": 0,
+          "value": 0,
+          "unit": 10
+        },
+        "dominant": {
+          "kind": "atomic",
+          "grade": 0,
+          "value": 10,
+          "unit": 10
+        }
+      },
+      {
+        "kind": "composite",
+        "grade": 1,
+        "recessive": {
+          "kind": "atomic",
+          "grade": 0,
+          "value": 3,
+          "unit": 10
+        },
+        "dominant": {
+          "kind": "atomic",
+          "grade": 0,
+          "value": 5,
+          "unit": 10
+        }
+      }
+    ]
+  },
+  "pieces": [
+    {
+      "result": {
+        "kind": "composite",
+        "grade": 1,
+        "recessive": {
+          "kind": "atomic",
+          "grade": 0,
+          "value": 0,
+          "unit": 10
+        },
+        "dominant": {
+          "kind": "atomic",
+          "grade": 0,
+          "value": 3,
+          "unit": 10
+        }
+      },
+      "carrier": {
+        "kind": "composite",
+        "grade": 1,
+        "recessive": {
+          "kind": "atomic",
+          "grade": 0,
+          "value": 0,
+          "unit": 10
+        },
+        "dominant": {
+          "kind": "atomic",
+          "grade": 0,
+          "value": 10,
+          "unit": 10
+        }
+      },
+      "sourceMemberIndices": [
+        0
+      ]
+    },
+    {
+      "result": {
+        "kind": "composite",
+        "grade": 1,
+        "recessive": {
+          "kind": "atomic",
+          "grade": 0,
+          "value": 5,
+          "unit": 10
+        },
+        "dominant": {
+          "kind": "atomic",
+          "grade": 0,
+          "value": 10,
+          "unit": 10
+        }
+      },
+      "carrier": {
+        "kind": "composite",
+        "grade": 1,
+        "recessive": {
+          "kind": "atomic",
+          "grade": 0,
+          "value": 0,
+          "unit": 10
+        },
+        "dominant": {
+          "kind": "atomic",
+          "grade": 0,
+          "value": 10,
+          "unit": 10
+        }
+      },
+      "sourceMemberIndices": [
+        0
+      ]
+    }
+  ],
+  "originLawName": "Xor",
+  "outboundPieces": [
+    {
+      "result": {
+        "kind": "composite",
+        "grade": 1,
+        "recessive": {
+          "kind": "atomic",
+          "grade": 0,
+          "value": 0,
+          "unit": 10
+        },
+        "dominant": {
+          "kind": "atomic",
+          "grade": 0,
+          "value": 3,
+          "unit": 10
+        }
+      },
+      "carrier": {
+        "kind": "composite",
+        "grade": 1,
+        "recessive": {
+          "kind": "atomic",
+          "grade": 0,
+          "value": 0,
+          "unit": 10
+        },
+        "dominant": {
+          "kind": "atomic",
+          "grade": 0,
+          "value": 10,
+          "unit": 10
+        }
+      },
+      "sourceMemberIndices": [
+        0
+      ]
+    },
+    {
+      "result": {
+        "kind": "composite",
+        "grade": 1,
+        "recessive": {
+          "kind": "atomic",
+          "grade": 0,
+          "value": 5,
+          "unit": 10
+        },
+        "dominant": {
+          "kind": "atomic",
+          "grade": 0,
+          "value": 10,
+          "unit": 10
+        }
+      },
+      "carrier": {
+        "kind": "composite",
+        "grade": 1,
+        "recessive": {
+          "kind": "atomic",
+          "grade": 0,
+          "value": 0,
+          "unit": 10
+        },
+        "dominant": {
+          "kind": "atomic",
+          "grade": 0,
+          "value": 10,
+          "unit": 10
+        }
+      },
+      "sourceMemberIndices": [
+        0
+      ]
+    }
+  ]
+}
+""";
+
+        var frame = Core3TestHelpers.CreateSegmentFrame(0, 10, 10);
+        var primary = Core3TestHelpers.CreateSegmentFrame(0, 10, 10);
+        var secondary = Core3TestHelpers.CreateSegmentFrame(3, 5, 10);
+
+        Assert.True(EngineOperations.TryBoolean(
+            frame,
+            [primary, secondary],
+            EngineBooleanOperation.Xor,
+            out var result));
+
+        var json = Core3JsonSerializer.Serialize(
+            Assert.IsType<EngineBooleanResult>(result),
+            new Core3JsonSerializerOptions { IncludeDerived = true });
+
+        AssertJsonEqual(expectedJson, json);
+    }
+
+    [Fact]
     public void Core3JsonSerializer_SerializesTensionBearingFoldOutcome_Minimally()
     {
         // Serializes a grade-1 ratio fold that cannot stay on one resolved carrier.

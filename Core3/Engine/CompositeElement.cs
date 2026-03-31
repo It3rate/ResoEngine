@@ -291,6 +291,10 @@ public sealed record CompositeElement : GradedElement
         var dr = Dominant.MultiplyWithTension(composite.Recessive);
         var dd = Dominant.MultiplyWithTension(composite.Dominant);
 
+        // This is the current explicit multiply kernel. Many familiar reads
+        // later fold these four activities back into one result, but the
+        // kernel itself is often important structure rather than disposable
+        // intermediate bookkeeping.
         if (rr.IsExact &&
             rd.IsExact &&
             dr.IsExact &&
