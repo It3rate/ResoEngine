@@ -398,6 +398,32 @@ public sealed class OperationsTests
     }
 
     [Fact]
+    public void EngineOperationResult_CanCarryExplicitPreservedStructure()
+    {
+        var left = new CompositeElement(
+            new CompositeElement(new AtomicElement(1, 1), new AtomicElement(2, 1)),
+            new CompositeElement(new AtomicElement(1, 1), new AtomicElement(3, 1)));
+        var right = new CompositeElement(
+            new CompositeElement(new AtomicElement(1, 1), new AtomicElement(4, 1)),
+            new CompositeElement(new AtomicElement(1, 1), new AtomicElement(5, 1)));
+
+        Assert.True(left.TryMultiplyKernel(right, out var kernel));
+        Assert.True(left.TryMultiply(right, out var product));
+        var preservedKernel = Assert.IsType<CompositeElement>(kernel);
+        var reducedProduct = Assert.IsType<CompositeElement>(product);
+
+        var operationResult = new EngineOperationResult(
+            "Multiply",
+            EngineOperationContext.Create(left, [left, right]),
+            reducedProduct,
+            reducedProduct,
+            preservedKernel);
+
+        Assert.Equal(reducedProduct, operationResult.Result);
+        Assert.Equal(preservedKernel, operationResult.PreservedStructure);
+    }
+
+    [Fact]
     public void EngineOperations_TryBoolean_And_UsesSharedFrameOverlap()
     {
         var frame = Core3TestHelpers.CreateSegmentFrame(0, 10, 10);

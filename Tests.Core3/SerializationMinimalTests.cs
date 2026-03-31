@@ -525,6 +525,130 @@ public sealed class SerializationMinimalTests
     }
 
     [Fact]
+    public void Core3JsonSerializer_SerializesDerivedOperationResultPreservedStructure()
+    {
+        var expectedJson = """
+{
+  "kind": "operationResult",
+  "operationName": "Multiply",
+  "context": {
+    "kind": "operationContext",
+    "isOrdered": true,
+    "frame": {
+      "kind": "atomic",
+      "grade": 0,
+      "value": 1,
+      "unit": 1
+    },
+    "members": [
+      {
+        "kind": "atomic",
+        "grade": 0,
+        "value": 3,
+        "unit": 1
+      },
+      {
+        "kind": "atomic",
+        "grade": 0,
+        "value": 4,
+        "unit": 1
+      }
+    ]
+  },
+  "result": {
+    "kind": "atomic",
+    "grade": 0,
+    "value": 12,
+    "unit": 1
+  },
+  "resultFrame": {
+    "kind": "atomic",
+    "grade": 0,
+    "value": 1,
+    "unit": 1
+  },
+  "originLawName": "Multiply",
+  "outboundPieces": [
+    {
+      "result": {
+        "kind": "atomic",
+        "grade": 0,
+        "value": 12,
+        "unit": 1
+      },
+      "carrier": {
+        "kind": "atomic",
+        "grade": 0,
+        "value": 1,
+        "unit": 1
+      },
+      "sourceMemberIndices": [
+        0,
+        1
+      ]
+    }
+  ],
+  "preservedStructure": {
+    "kind": "composite",
+    "grade": 1,
+    "recessive": {
+      "kind": "atomic",
+      "grade": 0,
+      "value": 3,
+      "unit": 1
+    },
+    "dominant": {
+      "kind": "atomic",
+      "grade": 0,
+      "value": 4,
+      "unit": 1
+    }
+  },
+  "readResult": {
+    "kind": "atomic",
+    "grade": 0,
+    "value": 12,
+    "unit": 1
+  },
+  "resultBoundaryAxis": {
+    "kind": "composite",
+    "grade": 1,
+    "recessive": {
+      "kind": "atomic",
+      "grade": 0,
+      "value": 0,
+      "unit": 1
+    },
+    "dominant": {
+      "kind": "atomic",
+      "grade": 0,
+      "value": 11,
+      "unit": 1
+    }
+  }
+}
+""";
+
+        var frame = new AtomicElement(1, 1);
+        var preservedStructure = new CompositeElement(
+            new AtomicElement(3, 1),
+            new AtomicElement(4, 1));
+        var result = new EngineOperationResult(
+            "Multiply",
+            frame,
+            [new AtomicElement(3, 1), new AtomicElement(4, 1)],
+            new AtomicElement(12, 1),
+            frame,
+            preservedStructure);
+
+        var json = Core3JsonSerializer.Serialize(
+            result,
+            new Core3JsonSerializerOptions { IncludeDerived = true });
+
+        AssertJsonEqual(expectedJson, json);
+    }
+
+    [Fact]
     public void Core3JsonSerializer_SerializesDerivedBooleanResultOutboundPieces()
     {
         var expectedJson = """

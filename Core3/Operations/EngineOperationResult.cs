@@ -7,9 +7,10 @@ namespace Core3.Operations;
 /// Carries the outbound side of a one-result operation arc together with the
 /// inbound context that produced it. The result element remains a normal graded
 /// element; the frame relation is preserved separately as provenance rather
-/// than creating a second result ontology. Conceptually this is the
-/// one-survivor case of the broader outbound-family pattern also used by
-/// piece-producing operations.
+/// than creating a second result ontology. Some laws may also choose to keep
+/// an explicit richer structure beside the normal expected result. Conceptually
+/// this is the one-survivor case of the broader outbound-family pattern also
+/// used by piece-producing operations.
 /// </summary>
 public sealed record EngineOperationResult : IExactResult
 {
@@ -18,6 +19,7 @@ public sealed record EngineOperationResult : IExactResult
         EngineOperationContext context,
         GradedElement result,
         GradedElement? resultFrame = null,
+        GradedElement? preservedStructure = null,
         GradedElement? tension = null,
         string? note = null)
     {
@@ -25,6 +27,7 @@ public sealed record EngineOperationResult : IExactResult
         Context = context;
         Result = result;
         ResultFrame = resultFrame ?? context.Frame;
+        PreservedStructure = preservedStructure;
         Tension = tension;
         Note = note;
     }
@@ -35,6 +38,7 @@ public sealed record EngineOperationResult : IExactResult
         IReadOnlyList<GradedElement> sourceMembers,
         GradedElement result,
         GradedElement? resultFrame = null,
+        GradedElement? preservedStructure = null,
         GradedElement? tension = null,
         string? note = null)
         : this(
@@ -42,6 +46,7 @@ public sealed record EngineOperationResult : IExactResult
             new EngineOperationContext(sourceFrame, sourceMembers, true),
             result,
             resultFrame,
+            preservedStructure,
             tension,
             note)
     {
@@ -56,6 +61,7 @@ public sealed record EngineOperationResult : IExactResult
     public string OriginLaw => OperationName;
     public GradedElement Result { get; }
     public GradedElement ResultFrame { get; }
+    public GradedElement? PreservedStructure { get; }
     public GradedElement Outbound => Result;
     public string OriginLawName => OperationName;
     public EngineOperationPiece OutboundPiece =>
