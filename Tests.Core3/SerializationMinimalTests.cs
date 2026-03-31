@@ -497,20 +497,22 @@ public sealed class SerializationMinimalTests
       }
     ],
     "rawPair": {
-      "kind": "elementPairOutcome",
+      "kind": "elementOutcome",
       "isExact": true,
-      "left": {
-        "kind": "atomic",
-        "grade": 0,
-        "value": 7,
-        "unit": 0
-      },
-      "right": {
-        "kind": "atomic",
-        "grade": 0,
-        "value": 10,
-        "unit": 10
-      },
+      "results": [
+        {
+          "kind": "atomic",
+          "grade": 0,
+          "value": 7,
+          "unit": 0
+        },
+        {
+          "kind": "atomic",
+          "grade": 0,
+          "value": 10,
+          "unit": 10
+        }
+      ],
       "survivorCount": 2,
       "outboundResults": [
         {
@@ -983,20 +985,22 @@ public sealed class SerializationMinimalTests
         // quarter-like support while keeping the original pair as held tension.
         var expectedJson = """
 {
-  "kind": "elementPairOutcome",
+  "kind": "elementOutcome",
   "isExact": false,
-  "left": {
-    "kind": "atomic",
-    "grade": 0,
-    "value": 4,
-    "unit": 0
-  },
-  "right": {
-    "kind": "atomic",
-    "grade": 0,
-    "value": 4,
-    "unit": 0
-  },
+  "results": [
+    {
+      "kind": "atomic",
+      "grade": 0,
+      "value": 4,
+      "unit": 0
+    },
+    {
+      "kind": "atomic",
+      "grade": 0,
+      "value": 4,
+      "unit": 0
+    }
+  ],
   "tension": {
     "kind": "composite",
     "grade": 1,
@@ -1030,20 +1034,22 @@ public sealed class SerializationMinimalTests
     {
         var expectedJson = """
 {
-  "kind": "elementPairOutcome",
+  "kind": "elementOutcome",
   "isExact": false,
-  "left": {
-    "kind": "atomic",
-    "grade": 0,
-    "value": 4,
-    "unit": 0
-  },
-  "right": {
-    "kind": "atomic",
-    "grade": 0,
-    "value": 4,
-    "unit": 0
-  },
+  "results": [
+    {
+      "kind": "atomic",
+      "grade": 0,
+      "value": 4,
+      "unit": 0
+    },
+    {
+      "kind": "atomic",
+      "grade": 0,
+      "value": 4,
+      "unit": 0
+    }
+  ],
   "tension": {
     "kind": "composite",
     "grade": 1,
@@ -1075,7 +1081,40 @@ public sealed class SerializationMinimalTests
       "value": 4,
       "unit": 0
     }
-  ]
+  ],
+  "rawPair": {
+    "kind": "elementOutcome",
+    "isExact": true,
+    "results": [
+      {
+        "kind": "atomic",
+        "grade": 0,
+        "value": 1,
+        "unit": 2
+      },
+      {
+        "kind": "atomic",
+        "grade": 0,
+        "value": 1,
+        "unit": -4
+      }
+    ],
+    "survivorCount": 2,
+    "outboundResults": [
+      {
+        "kind": "atomic",
+        "grade": 0,
+        "value": 1,
+        "unit": 2
+      },
+      {
+        "kind": "atomic",
+        "grade": 0,
+        "value": 1,
+        "unit": -4
+      }
+    ]
+  }
 }
 """;
 
@@ -1173,20 +1212,22 @@ public sealed class SerializationMinimalTests
     }
   ],
   "rawPair": {
-    "kind": "elementPairOutcome",
+    "kind": "elementOutcome",
     "isExact": true,
-    "left": {
-      "kind": "atomic",
-      "grade": 0,
-      "value": 1,
-      "unit": 2
-    },
-    "right": {
-      "kind": "atomic",
-      "grade": 0,
-      "value": 1,
-      "unit": -4
-    },
+    "results": [
+      {
+        "kind": "atomic",
+        "grade": 0,
+        "value": 1,
+        "unit": 2
+      },
+      {
+        "kind": "atomic",
+        "grade": 0,
+        "value": 1,
+        "unit": -4
+      }
+    ],
     "survivorCount": 2,
     "outboundResults": [
       {

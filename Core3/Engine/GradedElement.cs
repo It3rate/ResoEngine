@@ -15,7 +15,7 @@ public abstract record GradedElement
     public abstract EngineElementOutcome Fold();
     public EngineElementOutcome Lower() => EngineEvaluation.Lower(this);
     public abstract EngineElementOutcome CommitToCalibration(GradedElement calibration);
-    public abstract EngineElementPairOutcome Align(GradedElement other, ResolutionPolicy policy);
+    public abstract EngineElementOutcome Align(GradedElement other, ResolutionPolicy policy);
     public abstract EngineElementOutcome Add(GradedElement other);
     public abstract EngineElementOutcome Subtract(GradedElement other);
     public abstract EngineElementOutcome Multiply(GradedElement other);
@@ -76,7 +76,7 @@ public abstract record GradedElement
     public bool TryAlignExact(GradedElement other, out GradedElement? leftAligned, out GradedElement? rightAligned) =>
         TryAlignExact(other, ResolutionPolicy.ExactCommonFrame, out leftAligned, out rightAligned);
 
-    public EngineElementPairOutcome Align(GradedElement other) =>
+    public EngineElementOutcome Align(GradedElement other) =>
         Align(other, ResolutionPolicy.ExactCommonFrame);
 
     public bool TryViewInFrame(GradedElement frame, out GradedElement? read) =>

@@ -106,7 +106,7 @@ public sealed record AtomicElement(long Value, long Unit) : GradedElement
         return false;
     }
 
-    public override EngineElementPairOutcome Align(
+    public override EngineElementOutcome Align(
         GradedElement other,
         ResolutionPolicy policy)
     {
@@ -116,18 +116,18 @@ public sealed record AtomicElement(long Value, long Unit) : GradedElement
                 leftAligned is not null &&
                 rightAligned is not null)
             {
-                return EngineElementPairOutcome.Exact(leftAligned, rightAligned);
+                return EngineElementOutcome.Exact(leftAligned, rightAligned);
             }
 
             var targetResolution = ResolveSuggestedAlignmentResolution(atomic, policy);
-            return EngineElementPairOutcome.WithTension(
+            return EngineElementOutcome.WithTension(
                 CreateUnresolvedProjection(targetResolution),
                 atomic.CreateUnresolvedProjection(targetResolution),
                 new CompositeElement(this, atomic),
                 CreateAlignmentNote(atomic, policy));
         }
 
-        return EngineElementPairOutcome.WithTension(
+        return EngineElementOutcome.WithTension(
             CreateUnresolvedProjection(0),
             other,
             this,
@@ -138,8 +138,9 @@ public sealed record AtomicElement(long Value, long Unit) : GradedElement
     {
         var alignment = Align(other);
 
-        if (alignment.Left is AtomicElement left &&
-            alignment.Right is AtomicElement right)
+        if (alignment.TryGetPair(out var leftElement, out var rightElement) &&
+            leftElement is AtomicElement left &&
+            rightElement is AtomicElement right)
         {
             var sum = new AtomicElement(
                 checked(left.Value + right.Value),
@@ -163,8 +164,9 @@ public sealed record AtomicElement(long Value, long Unit) : GradedElement
     {
         var alignment = Align(other);
 
-        if (alignment.Left is AtomicElement left &&
-            alignment.Right is AtomicElement right)
+        if (alignment.TryGetPair(out var leftElement, out var rightElement) &&
+            leftElement is AtomicElement left &&
+            rightElement is AtomicElement right)
         {
             var difference = new AtomicElement(
                 checked(left.Value - right.Value),

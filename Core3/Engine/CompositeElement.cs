@@ -96,14 +96,14 @@ public sealed record CompositeElement : GradedElement
             "Composite calibration preserved child tension.");
     }
 
-    public override EngineElementPairOutcome Align(
+    public override EngineElementOutcome Align(
         GradedElement other,
         ResolutionPolicy policy)
     {
         if (other is not CompositeElement composite ||
             Grade != composite.Grade)
         {
-            return EngineElementPairOutcome.WithTension(
+            return EngineElementOutcome.WithTension(
                 this,
                 other,
                 this,
@@ -112,16 +112,31 @@ public sealed record CompositeElement : GradedElement
 
         var recessiveOutcome = Recessive.Align(composite.Recessive, policy);
         var dominantOutcome = Dominant.Align(composite.Dominant, policy);
-        var left = new CompositeElement(recessiveOutcome.Left, dominantOutcome.Left);
-        var right = new CompositeElement(recessiveOutcome.Right, dominantOutcome.Right);
+
+        if (!recessiveOutcome.TryGetPair(out var leftRecessive, out var rightRecessive) ||
+            !dominantOutcome.TryGetPair(out var leftDominant, out var rightDominant) ||
+            leftRecessive is null ||
+            rightRecessive is null ||
+            leftDominant is null ||
+            rightDominant is null)
+        {
+            return EngineElementOutcome.WithTension(
+                this,
+                other,
+                new CompositeElement(this, composite),
+                "Composite alignment preserved an incomplete survivor family.");
+        }
+
+        var left = new CompositeElement(leftRecessive, leftDominant);
+        var right = new CompositeElement(rightRecessive, rightDominant);
 
         if (recessiveOutcome.IsExact &&
             dominantOutcome.IsExact)
         {
-            return EngineElementPairOutcome.Exact(left, right);
+            return EngineElementOutcome.Exact(left, right);
         }
 
-        return EngineElementPairOutcome.WithTension(
+        return EngineElementOutcome.WithTension(
             left,
             right,
             new CompositeElement(this, composite),
