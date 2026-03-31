@@ -8,25 +8,7 @@ internal static class EngineBooleanProjection
     // TODO: Fold boolean projection into the same generic operation pipeline as
     // add/multiply/fold/alignment/resolution so the engine only sees laws over
     // structure and does not need a separate boolean-special execution path.
-    internal static bool TryResolve(
-        CompositeElement frame,
-        CompositeElement primary,
-        CompositeElement secondary,
-        EngineBooleanOperation operation,
-        out EngineBooleanResult? result) =>
-        EngineExactness.TryGetExact(
-            TryResolveWithTension(
-                frame,
-                primary,
-                secondary,
-                operation,
-                null,
-                null,
-                out var candidate),
-            candidate,
-            out result);
-
-    internal static bool TryResolveWithTension(
+    internal static bool TryResolveResult(
         CompositeElement frame,
         CompositeElement primary,
         CompositeElement secondary,
@@ -38,35 +20,17 @@ internal static class EngineBooleanProjection
         var context = new EngineOperationContext(frame, [primary, secondary], true);
         var tension = inheritedTension;
         var note = inheritedNote;
-        AtomicSegment frameSegment = default;
-        AtomicSegment primarySegment = default;
-        AtomicSegment secondarySegment = default;
-        GradedElement? frameTension = null;
-        GradedElement? primaryTension = null;
-        GradedElement? secondaryTension = null;
-        string? frameNote = null;
-        string? primaryNote = null;
-        string? secondaryNote = null;
-
-        if (!TryReadAtomicSegment(frame, out frameSegment, out frameTension, out frameNote) ||
-            !TryReadAtomicSegment(primary, out primarySegment, out primaryTension, out primaryNote) ||
-            !TryReadAtomicSegment(secondary, out secondarySegment, out secondaryTension, out secondaryNote))
+        if (!TryReadSegmentFamily(
+                frame,
+                [primary, secondary],
+                tension,
+                note,
+                out var frameSegment,
+                out var memberSegments,
+                out tension,
+                out note))
         {
-            result = new EngineBooleanResult(
-                context,
-                operation,
-                [],
-                EngineTension.CombineTension(
-                    tension,
-                    frameTension,
-                    primaryTension,
-                    secondaryTension,
-                    primary),
-                EngineTension.CombineNotes(
-                    note,
-                    frameNote,
-                    primaryNote,
-                    secondaryNote));
+            result = new EngineBooleanResult(context, operation, [], tension, note);
             return true;
         }
 
@@ -77,8 +41,8 @@ internal static class EngineBooleanProjection
         }
 
         var pieces = CollectPieces(
-            CollectBoundaries(frameSegment, primarySegment, secondarySegment),
-            midpoint => GetPresentMemberIndices(midpoint, primarySegment, secondarySegment),
+            CollectBoundaries(frameSegment, memberSegments),
+            midpoint => GetPresentMemberIndices(midpoint, memberSegments),
             presentMembers => EvaluateBinary(operation, presentMembers),
             presentMembers => SelectBinaryCarrier(presentMembers, frame, primary, secondary),
             ref tension,
@@ -87,25 +51,7 @@ internal static class EngineBooleanProjection
         return true;
     }
 
-    internal static bool TryResolveFamily(
-        CompositeElement frame,
-        IReadOnlyList<CompositeElement> members,
-        bool isOrdered,
-        EngineOccupancyOperation operation,
-        out EngineFamilyBooleanResult? result) =>
-        EngineExactness.TryGetExact(
-            TryResolveFamilyWithTension(
-                frame,
-                members,
-                isOrdered,
-                operation,
-                null,
-                null,
-                out var candidate),
-            candidate,
-            out result);
-
-    internal static bool TryResolveFamilyWithTension(
+    internal static bool TryResolveFamilyResult(
         CompositeElement frame,
         IReadOnlyList<CompositeElement> members,
         bool isOrdered,
@@ -120,37 +66,18 @@ internal static class EngineBooleanProjection
             isOrdered);
         var tension = inheritedTension;
         var note = inheritedNote;
-        AtomicSegment frameSegment = default;
-        GradedElement? frameTension = null;
-        string? frameNote = null;
-
-        if (!TryReadAtomicSegment(frame, out frameSegment, out frameTension, out frameNote))
+        if (!TryReadSegmentFamily(
+                frame,
+                members,
+                tension,
+                note,
+                out var frameSegment,
+                out var memberSegments,
+                out tension,
+                out note))
         {
-            result = new EngineFamilyBooleanResult(
-                context,
-                operation,
-                [],
-                    EngineTension.CombineTension(tension, frameTension, frame),
-                    EngineTension.CombineNotes(note, frameNote));
+            result = new EngineFamilyBooleanResult(context, operation, [], tension, note);
             return true;
-        }
-
-        var memberSegments = new List<AtomicSegment>(members.Count);
-
-        foreach (var member in members)
-        {
-            if (!TryReadAtomicSegment(member, out var memberSegment, out var memberTension, out var memberNote))
-            {
-                result = new EngineFamilyBooleanResult(
-                    context,
-                    operation,
-                    [],
-                    EngineTension.CombineTension(tension, memberTension, member),
-                    EngineTension.CombineNotes(note, memberNote));
-                return true;
-            }
-
-            memberSegments.Add(memberSegment);
         }
 
         if (frameSegment.End <= frameSegment.Start)
@@ -167,6 +94,45 @@ internal static class EngineBooleanProjection
             ref tension,
             ref note);
         result = new EngineFamilyBooleanResult(context, operation, pieces, tension, note);
+        return true;
+    }
+
+    private static bool TryReadSegmentFamily(
+        CompositeElement frame,
+        IReadOnlyList<CompositeElement> members,
+        GradedElement? inheritedTension,
+        string? inheritedNote,
+        out AtomicSegment frameSegment,
+        out IReadOnlyList<AtomicSegment> memberSegments,
+        out GradedElement? tension,
+        out string? note)
+    {
+        tension = inheritedTension;
+        note = inheritedNote;
+        memberSegments = [];
+
+        if (!TryReadAtomicSegment(frame, out frameSegment, out var frameTension, out var frameNote))
+        {
+            tension = EngineTension.CombineTension(tension, frameTension, frame);
+            note = EngineTension.CombineNotes(note, frameNote);
+            return false;
+        }
+
+        var resolvedMembers = new List<AtomicSegment>(members.Count);
+
+        foreach (var member in members)
+        {
+            if (!TryReadAtomicSegment(member, out var memberSegment, out var memberTension, out var memberNote))
+            {
+                tension = EngineTension.CombineTension(tension, memberTension, member);
+                note = EngineTension.CombineNotes(note, memberNote);
+                return false;
+            }
+
+            resolvedMembers.Add(memberSegment);
+        }
+
+        memberSegments = resolvedMembers;
         return true;
     }
 
@@ -300,19 +266,6 @@ internal static class EngineBooleanProjection
 
     private static SortedSet<decimal> CollectBoundaries(
         AtomicSegment frame,
-        AtomicSegment primary,
-        AtomicSegment secondary)
-    {
-        var boundaries = new SortedSet<decimal> { frame.Start, frame.End };
-        AddIfWithin(boundaries, primary.Start, frame);
-        AddIfWithin(boundaries, primary.End, frame);
-        AddIfWithin(boundaries, secondary.Start, frame);
-        AddIfWithin(boundaries, secondary.End, frame);
-        return boundaries;
-    }
-
-    private static SortedSet<decimal> CollectBoundaries(
-        AtomicSegment frame,
         IReadOnlyList<AtomicSegment> members)
     {
         var boundaries = new SortedSet<decimal> { frame.Start, frame.End };
@@ -336,14 +289,6 @@ internal static class EngineBooleanProjection
 
     private static bool IsWithin(decimal value, AtomicSegment segment) =>
         value > segment.Start && value < segment.End;
-
-    private static List<int> GetPresentMemberIndices(
-        decimal value,
-        AtomicSegment primary,
-        AtomicSegment secondary) =>
-        ToPresentMemberIndices(
-            IsWithin(value, primary),
-            IsWithin(value, secondary));
 
     private static bool EvaluateBinary(
         EngineBooleanOperation operation,
@@ -369,23 +314,6 @@ internal static class EngineBooleanProjection
         }
 
         return frame;
-    }
-
-    private static List<int> ToPresentMemberIndices(bool inPrimary, bool inSecondary)
-    {
-        var indices = new List<int>(2);
-
-        if (inPrimary)
-        {
-            indices.Add(0);
-        }
-
-        if (inSecondary)
-        {
-            indices.Add(1);
-        }
-
-        return indices;
     }
 
     private static CompositeElement SelectFamilyCarrier(

@@ -334,7 +334,7 @@ public sealed class EngineFamily
             return false;
         }
 
-        return EngineBooleanProjection.TryResolveWithTension(
+        return EngineBooleanProjection.TryResolveResult(
             frame,
             primary,
             secondary,
@@ -366,7 +366,7 @@ public sealed class EngineFamily
             return false;
         }
 
-        return EngineBooleanProjection.TryResolveFamilyWithTension(
+        return EngineBooleanProjection.TryResolveFamilyResult(
             frame,
             members,
             IsOrdered,
@@ -397,7 +397,7 @@ public sealed class EngineFamily
                     out var right,
                     out var tension,
                     out var note) ||
-                !EngineBooleanProjection.TryResolveWithTension(
+                !EngineBooleanProjection.TryResolveResult(
                     frame,
                     left,
                     right,
