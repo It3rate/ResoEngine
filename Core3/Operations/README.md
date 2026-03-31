@@ -225,7 +225,7 @@ So the current recommendation is:
 
 - do not add a special focused-member ontology yet
 - allow focused-member behavior to be expressed as a convenience over existing
-  frame/family/reference structure
+frame/family/view structure
 - allow derived families to collapse back into their parent frame when that
   temporary reframing is complete
 - let families carry an ordered/unordered hint rather than splitting into

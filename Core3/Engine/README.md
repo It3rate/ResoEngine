@@ -2,10 +2,7 @@
 
 This folder holds the independent `Core3.Engine` working model.
 
-It is intentionally separate from `Core3.Elements`.
-The current elements remain the source of truth for semantics, while the engine
-explores the more generic grade-first structure that those elements can later
-adopt internally.
+It is the current source of truth for Core3 runtime semantics.
 
 ## Aim
 
@@ -518,8 +515,7 @@ The same frame relation should also carry boundary meaning.
 - operation results may preserve the frame relation as provenance even when the
   result itself remains an ordinary graded element
 
-## Relationship To Existing Core3 Elements
+## Relationship To Core3 Semantics
 
-`Core3.Elements` remains the practical semantic reference.
-`Core3.Engine` is the more generic runtime-graded model that follows the same
-ideas but does not yet replace the existing element internals.
+`Core3.Engine` is the current runtime-graded model and should carry the
+practical Core3 semantics directly.

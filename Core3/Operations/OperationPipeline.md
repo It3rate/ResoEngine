@@ -79,7 +79,7 @@ Likewise, mixed-carrier add/subtract, boolean piece families, and later route
 or branch results should prefer:
 
 - preserved structure plus provenance
-- later reference/cast/reframe reads
+- later view/cast/reframe reads
 
 over one-off bespoke inspection helpers.
 
@@ -87,7 +87,7 @@ There is one important constraint:
 
 - a later read can only reveal what was actually preserved
 
-If the richer relation was discarded earlier, no later frame reference can
+If the richer relation was discarded earlier, no later frame view can
 reconstruct it honestly.
 
 So Core3 should distinguish two questions:

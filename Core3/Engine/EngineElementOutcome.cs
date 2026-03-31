@@ -12,7 +12,6 @@ public sealed record EngineElementOutcome(
     string? Note = null) : IExactResult
 {
     public bool IsExact => Tension is null;
-    public GradedElement Outbound => Result;
     public IReadOnlyList<GradedElement> OutboundResults => [Result];
     public bool HasAny => true;
     public bool HasMany => false;

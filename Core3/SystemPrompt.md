@@ -69,9 +69,9 @@ interpretations over recurring graded configurations.
 
 E6. The engine should remain small, serialized, and close to exact structure.
 
-E7. `Core3.Elements` is currently the named-structure layer and is not yet the
-fully synchronized engine backing. It remains useful for semantic guidance, but
-the current engine/runtime/binding stack is the more direct consolidation path.
+E7. The old named-structure layer has been retired in favor of the current
+engine/runtime/binding stack. Native Core3 semantics should be expressed
+directly through the current graded engine structures.
 
 ## Part III. Grade-0 Reading
 

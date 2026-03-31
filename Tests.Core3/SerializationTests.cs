@@ -56,7 +56,7 @@ public sealed class SerializationTests
     [Fact]
     public void Core3JsonSerializer_CanIncludeDerivedReferenceReads()
     {
-        // Serializes a frame-borrowing reference with derived reads enabled.
+        // Serializes a frame-borrowing view with derived reads enabled.
         // Approximate math: read 7/1 through calibration 10/10, preserving the host
         // frame plus the borrowed read 70/10.
         var expectedJson = """

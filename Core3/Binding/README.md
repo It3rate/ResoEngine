@@ -90,7 +90,7 @@ The smallest useful binding pattern has:
 
 This pattern is broad enough to cover:
 
-- reference-like reads
+- view-like reads
 - coupled slots
 - attached operations
 - later routing and continuation metadata

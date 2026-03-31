@@ -106,7 +106,7 @@ thing it measures.
 So `Core3` is not only about objects. It is also about the spaces, frames, and
 local origins by which objects become readable.
 
-This is part of why pinning, reference, and shared calibration matter so much.
+This is part of why pinning, views, and shared calibration matter so much.
 They are all ways of saying that one thing may help another thing become
 measurable, locatable, or meaningful.
 
