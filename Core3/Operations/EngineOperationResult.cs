@@ -12,7 +12,7 @@ namespace Core3.Operations;
 /// this is the one-survivor case of the broader outbound-family pattern also
 /// used by piece-producing operations.
 /// </summary>
-public sealed record EngineOperationResult : IExactResult
+public sealed record EngineOperationResult : EngineArcResult
 {
     public EngineOperationResult(
         string operationName,
@@ -22,14 +22,12 @@ public sealed record EngineOperationResult : IExactResult
         GradedElement? preservedStructure = null,
         GradedElement? tension = null,
         string? note = null)
+        : base(context, tension, note)
     {
         OperationName = operationName;
-        Context = context;
         Result = result;
         ResultFrame = resultFrame ?? context.Frame;
         PreservedStructure = preservedStructure;
-        Tension = tension;
-        Note = note;
     }
 
     public EngineOperationResult(
@@ -53,8 +51,6 @@ public sealed record EngineOperationResult : IExactResult
     }
 
     public string OperationName { get; }
-    public EngineOperationContext Context { get; }
-    public EngineOperationContext Inbound => Context;
     public GradedElement SourceFrame => Context.Frame;
     public IReadOnlyList<GradedElement> SourceMembers => Context.Members;
     public bool IsOrdered => Context.IsOrdered;
@@ -63,15 +59,10 @@ public sealed record EngineOperationResult : IExactResult
     public GradedElement ResultFrame { get; }
     public GradedElement? PreservedStructure { get; }
     public GradedElement Outbound => Result;
-    public string OriginLawName => OperationName;
+    public override string OriginLawName => OperationName;
     public EngineOperationPiece OutboundPiece =>
         new(Result, ResultFrame, Enumerable.Range(0, Context.Count).ToArray());
-    public IReadOnlyList<EngineOperationPiece> OutboundPieces => [OutboundPiece];
-    public GradedElement? Tension { get; }
-    public string? Note { get; }
-    public bool IsExact => Tension is null;
-    public bool HasAny => true;
-    public bool HasMany => false;
+    public override IReadOnlyList<EngineOperationPiece> OutboundPieces => [OutboundPiece];
 
     public bool TryReadResult(out GradedElement? read) =>
         Result.TryViewInFrame(ResultFrame, out read);

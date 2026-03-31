@@ -9,7 +9,7 @@ namespace Core3.Operations;
 /// the surviving pieces are the outbound family. The actual pieces remain
 /// ordinary composite elements.
 /// </summary>
-public sealed record EngineBooleanResult : IExactResult
+public sealed record EngineBooleanResult : EngineArcResult
 {
     public EngineBooleanResult(
         EngineOperationContext context,
@@ -17,6 +17,7 @@ public sealed record EngineBooleanResult : IExactResult
         IReadOnlyList<EngineOperationPiece> pieces,
         GradedElement? tension = null,
         string? note = null)
+        : base(context, tension, note)
     {
         if (context.Count != 2 ||
             context.Frame is not CompositeElement ||
@@ -26,27 +27,17 @@ public sealed record EngineBooleanResult : IExactResult
             throw new InvalidOperationException("Binary boolean results require a composite frame and two composite members.");
         }
 
-        Context = context;
         Operation = operation;
         Pieces = pieces;
-        Tension = tension;
-        Note = note;
     }
 
-    public EngineOperationContext Context { get; }
-    public EngineOperationContext Inbound => Context;
     public CompositeElement Frame => (CompositeElement)Context.Frame;
     public CompositeElement Primary => (CompositeElement)Context.Members[0];
     public CompositeElement Secondary => (CompositeElement)Context.Members[1];
     public EngineBooleanOperation Operation { get; }
     public EngineBooleanOperation OriginLaw => Operation;
-    public string OriginLawName => Operation.ToString();
+    public override string OriginLawName => Operation.ToString();
     public IReadOnlyList<EngineOperationPiece> Pieces { get; }
-    public IReadOnlyList<EngineOperationPiece> OutboundPieces => Pieces;
-    public GradedElement? Tension { get; }
-    public string? Note { get; }
-    public bool IsExact => Tension is null;
-    public bool HasAny => Pieces.Count > 0;
-    public bool HasMany => Pieces.Count > 1;
+    public override IReadOnlyList<EngineOperationPiece> OutboundPieces => Pieces;
     public IReadOnlyList<CompositeElement> Segments => Pieces.Select(piece => (CompositeElement)piece.Result).ToArray();
 }

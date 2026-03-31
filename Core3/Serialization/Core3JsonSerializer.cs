@@ -432,9 +432,7 @@ public static class Core3JsonSerializer
 
         if (actual.IncludeDerived)
         {
-            writer.WriteString("originLawName", result.OriginLawName);
-            writer.WritePropertyName("outboundPieces");
-            WritePieces(writer, result.OutboundPieces, actual);
+            WriteArcDerived(writer, result, actual);
 
             if (result.PreservedStructure is not null)
             {
@@ -485,9 +483,7 @@ public static class Core3JsonSerializer
 
         if (actual.IncludeDerived)
         {
-            writer.WriteString("originLawName", result.OriginLawName);
-            writer.WritePropertyName("outboundPieces");
-            WritePieces(writer, result.OutboundPieces, actual);
+            WriteArcDerived(writer, result, actual);
         }
 
         writer.WriteEndObject();
@@ -522,9 +518,7 @@ public static class Core3JsonSerializer
 
         if (actual.IncludeDerived)
         {
-            writer.WriteString("originLawName", result.OriginLawName);
-            writer.WritePropertyName("outboundPieces");
-            WritePieces(writer, result.OutboundPieces, actual);
+            WriteArcDerived(writer, result, actual);
         }
 
         writer.WriteEndObject();
@@ -1017,6 +1011,16 @@ public static class Core3JsonSerializer
             Write(writer, piece, options);
         }
         writer.WriteEndArray();
+    }
+
+    private static void WriteArcDerived(
+        Utf8JsonWriter writer,
+        EngineArcResult result,
+        Core3JsonSerializerOptions options)
+    {
+        writer.WriteString("originLawName", result.OriginLawName);
+        writer.WritePropertyName("outboundPieces");
+        WritePieces(writer, result.OutboundPieces, options);
     }
 
     private static void WriteNamedElements(
