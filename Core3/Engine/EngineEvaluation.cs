@@ -127,7 +127,7 @@ internal static class EngineEvaluation
     internal static bool TryMultiplyKernel(
         CompositeElement left,
         CompositeElement right,
-        out GradedElement? product)
+        out CompositeElement? kernel)
     {
         if (!left.Recessive.TryMultiply(right.Recessive, out var rr) ||
             rr is null ||
@@ -138,21 +138,11 @@ internal static class EngineEvaluation
             !left.Dominant.TryMultiply(right.Dominant, out var dd) ||
             dd is null)
         {
-            product = null;
+            kernel = null;
             return false;
         }
 
-        if (rr.TrySubtract(dd, out var squareDifference) &&
-            squareDifference is not null &&
-            rd.TryAdd(dr, out var crossSum) &&
-            crossSum is not null &&
-            squareDifference.Grade == crossSum.Grade)
-        {
-            product = new CompositeElement(squareDifference, crossSum);
-            return true;
-        }
-
-        product = new CompositeElement(
+        kernel = new CompositeElement(
             new CompositeElement(rr, dd),
             new CompositeElement(rd, dr));
         return true;

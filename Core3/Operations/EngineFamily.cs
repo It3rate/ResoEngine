@@ -259,7 +259,7 @@ public sealed class EngineFamily
 
         foreach (var member in _members)
         {
-            var outcome = member.CommitToCalibrationWithTension(Frame);
+            var outcome = member.CommitToCalibration(Frame);
             resolvedReads.Add(outcome.Result);
             tension = EngineTension.CombineTension(tension, outcome.Tension);
             note = EngineTension.CombineNotes(note, outcome.Note);
@@ -291,7 +291,7 @@ public sealed class EngineFamily
     public bool TryAddAllWithTension(out EngineOperationResult? result) =>
         TryAccumulateAll(
             "Add",
-            static (left, right) => left.AddWithTension(right),
+            static (left, right) => left.Add(right),
             static family => family.Frame,
             out result);
 
@@ -305,7 +305,7 @@ public sealed class EngineFamily
     public bool TryMultiplyAllWithTension(out EngineOperationResult? result) =>
         TryAccumulateAll(
             "Multiply",
-            static (left, right) => left.MultiplyWithTension(right),
+            static (left, right) => left.Multiply(right),
             static family =>
                 family.TryDeriveMultiplyResultFrame(out var resultFrame) &&
                 resultFrame is not null
@@ -538,8 +538,8 @@ public sealed class EngineFamily
             return false;
         }
 
-        var leftOutcome = _members[leftIndex].CommitToCalibrationWithTension(Frame);
-        var rightOutcome = _members[leftIndex + 1].CommitToCalibrationWithTension(Frame);
+        var leftOutcome = _members[leftIndex].CommitToCalibration(Frame);
+        var rightOutcome = _members[leftIndex + 1].CommitToCalibration(Frame);
 
         if (leftOutcome.Result is not CompositeElement leftComposite ||
             rightOutcome.Result is not CompositeElement rightComposite)

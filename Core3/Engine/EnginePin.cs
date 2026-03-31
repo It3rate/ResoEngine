@@ -106,8 +106,8 @@ public sealed record EnginePin
         }
 
         var positionOutcome = ResolvePositionWithTension(host, pinPosition);
-        var inboundOutcome = positionOutcome.Result.SubtractWithTension(host.Recessive);
-        var outboundOutcome = host.Dominant.SubtractWithTension(positionOutcome.Result);
+        var inboundOutcome = positionOutcome.Result.Subtract(host.Recessive);
+        var outboundOutcome = host.Dominant.Subtract(positionOutcome.Result);
         var note = EngineTension.CombineNotes(positionOutcome.Note, inboundOutcome.Note, outboundOutcome.Note);
 
         return new EngineHostedPinResult(
@@ -222,9 +222,9 @@ public sealed record EnginePin
                 "Hosted pin preserved a contrastive or unresolved ratio position.");
         }
 
-        var declaredSpan = host.Dominant.SubtractWithTension(host.Recessive);
-        var offset = declaredSpan.Result.ScaleWithTension(ratio);
-        var positioned = host.Recessive.AddWithTension(offset.Result);
+        var declaredSpan = host.Dominant.Subtract(host.Recessive);
+        var offset = declaredSpan.Result.Scale(ratio);
+        var positioned = host.Recessive.Add(offset.Result);
         var note = EngineTension.CombineNotes(folded.Note, declaredSpan.Note, offset.Note, positioned.Note);
 
         return positioned.IsExact && folded.IsExact && declaredSpan.IsExact && offset.IsExact

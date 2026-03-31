@@ -23,8 +23,8 @@ public sealed record EngineReference(
 
     public EngineElementOutcome Read() =>
         Subject.Grade == Frame.Grade
-            ? Subject.CommitToCalibrationWithTension(Frame)
-            : Subject.CommitToCalibrationWithTension(Calibration);
+            ? Subject.CommitToCalibration(Frame)
+            : Subject.CommitToCalibration(Calibration);
 
     public bool TryRead(out GradedElement? read) =>
         EngineExactness.TryProjectExact(

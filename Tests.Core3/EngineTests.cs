@@ -640,6 +640,27 @@ public sealed class EngineTests
     }
 
     [Fact]
+    public void GradeTwoCompositeMultiplyKernel_PreservesAllFourActivitiesBeforeReduction()
+    {
+        var left = new CompositeElement(
+            new CompositeElement(new AtomicElement(1, 1), new AtomicElement(2, 1)),
+            new CompositeElement(new AtomicElement(1, 1), new AtomicElement(3, 1)));
+        var right = new CompositeElement(
+            new CompositeElement(new AtomicElement(1, 1), new AtomicElement(4, 1)),
+            new CompositeElement(new AtomicElement(1, 1), new AtomicElement(5, 1)));
+
+        Assert.True(left.TryMultiplyKernel(right, out var kernel));
+
+        var squares = Assert.IsType<CompositeElement>(Assert.IsType<CompositeElement>(kernel).Recessive);
+        var cross = Assert.IsType<CompositeElement>(Assert.IsType<CompositeElement>(kernel).Dominant);
+
+        Assert.Equal(new AtomicElement(8, 1), squares.Recessive);
+        Assert.Equal(new AtomicElement(15, 1), squares.Dominant);
+        Assert.Equal(new AtomicElement(10, 1), cross.Recessive);
+        Assert.Equal(new AtomicElement(12, 1), cross.Dominant);
+    }
+
+    [Fact]
     public void GradeTwoCompositeMultiply_PreservesRawKernelWhenOrthogonalityPreventsReduction()
     {
         var left = new CompositeElement(

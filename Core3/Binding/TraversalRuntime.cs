@@ -301,7 +301,7 @@ public static class TraversalRuntime
             return true;
         }
 
-        var outcome = family.Members[targetIndex].CommitToCalibrationWithTension(family.Frame);
+        var outcome = family.Members[targetIndex].CommitToCalibration(family.Frame);
         value = outcome.Result;
         tension = outcome.Tension;
         note = outcome.Note;
@@ -320,7 +320,7 @@ public static class TraversalRuntime
             return;
         }
 
-        var outcome = left.AddWithTension(right);
+        var outcome = left.Add(right);
         state.Tension = EngineTension.CombineTension(state.Tension, outcome.Tension);
         state.Note = EngineTension.CombineNotes(state.Note, outcome.Note);
 

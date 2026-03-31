@@ -69,7 +69,7 @@ public sealed record CompositeElement : GradedElement
             "Composite fold preserved child tension.");
     }
 
-    public override EngineElementOutcome CommitToCalibrationWithTension(GradedElement calibration)
+    public override EngineElementOutcome CommitToCalibration(GradedElement calibration)
     {
         if (calibration is not CompositeElement compositeCalibration ||
             Grade != compositeCalibration.Grade)
@@ -80,8 +80,8 @@ public sealed record CompositeElement : GradedElement
                 "Calibration preserved the composite unchanged because the calibration shape was incompatible.");
         }
 
-        var recessiveOutcome = Recessive.CommitToCalibrationWithTension(compositeCalibration.Recessive);
-        var dominantOutcome = Dominant.CommitToCalibrationWithTension(compositeCalibration.Dominant);
+        var recessiveOutcome = Recessive.CommitToCalibration(compositeCalibration.Recessive);
+        var dominantOutcome = Dominant.CommitToCalibration(compositeCalibration.Dominant);
         var committed = new CompositeElement(recessiveOutcome.Result, dominantOutcome.Result);
 
         if (recessiveOutcome.IsExact &&
@@ -96,7 +96,7 @@ public sealed record CompositeElement : GradedElement
             "Composite calibration preserved child tension.");
     }
 
-    public override EngineElementPairOutcome AlignWithTension(
+    public override EngineElementPairOutcome Align(
         GradedElement other,
         ResolutionPolicy policy)
     {
@@ -110,8 +110,8 @@ public sealed record CompositeElement : GradedElement
                 "Alignment preserved the composites unchanged because their shapes were incompatible.");
         }
 
-        var recessiveOutcome = Recessive.AlignWithTension(composite.Recessive, policy);
-        var dominantOutcome = Dominant.AlignWithTension(composite.Dominant, policy);
+        var recessiveOutcome = Recessive.Align(composite.Recessive, policy);
+        var dominantOutcome = Dominant.Align(composite.Dominant, policy);
         var left = new CompositeElement(recessiveOutcome.Left, dominantOutcome.Left);
         var right = new CompositeElement(recessiveOutcome.Right, dominantOutcome.Right);
 
@@ -128,7 +128,7 @@ public sealed record CompositeElement : GradedElement
             "Composite alignment preserved child tension.");
     }
 
-    public override EngineElementOutcome AddWithTension(GradedElement other)
+    public override EngineElementOutcome Add(GradedElement other)
     {
         if (other is not CompositeElement composite ||
             Grade != composite.Grade)
@@ -139,8 +139,8 @@ public sealed record CompositeElement : GradedElement
                 "Addition preserved the composite unchanged because the compared shape was incompatible.");
         }
 
-        var recessiveOutcome = Recessive.AddWithTension(composite.Recessive);
-        var dominantOutcome = Dominant.AddWithTension(composite.Dominant);
+        var recessiveOutcome = Recessive.Add(composite.Recessive);
+        var dominantOutcome = Dominant.Add(composite.Dominant);
         var sum = new CompositeElement(recessiveOutcome.Result, dominantOutcome.Result);
 
         if (recessiveOutcome.IsExact &&
@@ -155,7 +155,7 @@ public sealed record CompositeElement : GradedElement
             "Composite addition preserved child tension.");
     }
 
-    public override EngineElementOutcome SubtractWithTension(GradedElement other)
+    public override EngineElementOutcome Subtract(GradedElement other)
     {
         if (other is not CompositeElement composite ||
             Grade != composite.Grade)
@@ -166,8 +166,8 @@ public sealed record CompositeElement : GradedElement
                 "Subtraction preserved the composite unchanged because the compared shape was incompatible.");
         }
 
-        var recessiveOutcome = Recessive.SubtractWithTension(composite.Recessive);
-        var dominantOutcome = Dominant.SubtractWithTension(composite.Dominant);
+        var recessiveOutcome = Recessive.Subtract(composite.Recessive);
+        var dominantOutcome = Dominant.Subtract(composite.Dominant);
         var difference = new CompositeElement(recessiveOutcome.Result, dominantOutcome.Result);
 
         if (recessiveOutcome.IsExact &&
@@ -246,7 +246,7 @@ public sealed record CompositeElement : GradedElement
         Recessive.SharesUnitSpace(composite.Recessive) &&
         Dominant.SharesUnitSpace(composite.Dominant);
 
-    public override EngineElementOutcome MultiplyWithTension(GradedElement other)
+    public override EngineElementOutcome Multiply(GradedElement other)
     {
         if (other is not CompositeElement composite ||
             Grade != composite.Grade)
@@ -265,7 +265,7 @@ public sealed record CompositeElement : GradedElement
             if (leftFold.Result is AtomicElement leftAtomic &&
                 rightFold.Result is AtomicElement rightAtomic)
             {
-                var productOutcome = leftAtomic.MultiplyWithTension(rightAtomic);
+                var productOutcome = leftAtomic.Multiply(rightAtomic);
 
                 if (leftFold.IsExact &&
                     rightFold.IsExact &&
@@ -286,10 +286,10 @@ public sealed record CompositeElement : GradedElement
                 "Grade-one multiply preserved unresolved fold structure.");
         }
 
-        var rr = Recessive.MultiplyWithTension(composite.Recessive);
-        var rd = Recessive.MultiplyWithTension(composite.Dominant);
-        var dr = Dominant.MultiplyWithTension(composite.Recessive);
-        var dd = Dominant.MultiplyWithTension(composite.Dominant);
+        var rr = Recessive.Multiply(composite.Recessive);
+        var rd = Recessive.Multiply(composite.Dominant);
+        var dr = Dominant.Multiply(composite.Recessive);
+        var dd = Dominant.Multiply(composite.Dominant);
 
         // This is the current explicit multiply kernel. Many familiar reads
         // later fold these four activities back into one result, but the
@@ -328,10 +328,10 @@ public sealed record CompositeElement : GradedElement
             "Composite multiplication preserved the raw kernel because exact reduction did not settle.");
     }
 
-    public override EngineElementOutcome ScaleWithTension(AtomicElement factor)
+    public override EngineElementOutcome Scale(AtomicElement factor)
     {
-        var recessiveOutcome = Recessive.ScaleWithTension(factor);
-        var dominantOutcome = Dominant.ScaleWithTension(factor);
+        var recessiveOutcome = Recessive.Scale(factor);
+        var dominantOutcome = Dominant.Scale(factor);
         var scaled = new CompositeElement(recessiveOutcome.Result, dominantOutcome.Result);
 
         if (recessiveOutcome.IsExact &&
@@ -344,6 +344,17 @@ public sealed record CompositeElement : GradedElement
             scaled,
             this,
             "Composite scale preserved child tension.");
+    }
+
+    public bool TryMultiplyKernel(CompositeElement other, out CompositeElement? kernel)
+    {
+        if (Grade != other.Grade)
+        {
+            kernel = null;
+            return false;
+        }
+
+        return EngineEvaluation.TryMultiplyKernel(this, other, out kernel);
     }
 
     public override string ToString() => $"<{Recessive} | {Dominant}>";

@@ -67,7 +67,7 @@ public sealed record AtomicElement(long Value, long Unit) : GradedElement
     public bool TryCommitToSupport(long targetResolution, out AtomicElement? committed) =>
         TryReexpressToSupport(targetResolution, out committed);
 
-    public override EngineElementOutcome CommitToCalibrationWithTension(GradedElement calibration)
+    public override EngineElementOutcome CommitToCalibration(GradedElement calibration)
     {
         if (calibration is AtomicElement atomicCalibration)
         {
@@ -106,7 +106,7 @@ public sealed record AtomicElement(long Value, long Unit) : GradedElement
         return false;
     }
 
-    public override EngineElementPairOutcome AlignWithTension(
+    public override EngineElementPairOutcome Align(
         GradedElement other,
         ResolutionPolicy policy)
     {
@@ -134,9 +134,9 @@ public sealed record AtomicElement(long Value, long Unit) : GradedElement
             "Alignment preserved an unresolved atomic read because the compared element was not atomic.");
     }
 
-    public override EngineElementOutcome AddWithTension(GradedElement other)
+    public override EngineElementOutcome Add(GradedElement other)
     {
-        var alignment = AlignWithTension(other);
+        var alignment = Align(other);
 
         if (alignment.Left is AtomicElement left &&
             alignment.Right is AtomicElement right)
@@ -159,9 +159,9 @@ public sealed record AtomicElement(long Value, long Unit) : GradedElement
             "Addition preserved an unresolved atomic result because the compared element was not atomic.");
     }
 
-    public override EngineElementOutcome SubtractWithTension(GradedElement other)
+    public override EngineElementOutcome Subtract(GradedElement other)
     {
-        var alignment = AlignWithTension(other);
+        var alignment = Align(other);
 
         if (alignment.Left is AtomicElement left &&
             alignment.Right is AtomicElement right)
@@ -220,7 +220,7 @@ public sealed record AtomicElement(long Value, long Unit) : GradedElement
         atomic.HasResolvedUnits &&
         Math.Sign(Unit) == Math.Sign(atomic.Unit);
 
-    public override EngineElementOutcome MultiplyWithTension(GradedElement other)
+    public override EngineElementOutcome Multiply(GradedElement other)
     {
         if (other is AtomicElement atomic)
         {
@@ -242,7 +242,7 @@ public sealed record AtomicElement(long Value, long Unit) : GradedElement
             "Multiplication preserved an unresolved atomic result because the compared element was not atomic.");
     }
 
-    public override EngineElementOutcome ScaleWithTension(AtomicElement factor)
+    public override EngineElementOutcome Scale(AtomicElement factor)
     {
         if (HasResolvedUnits && factor.HasResolvedUnits)
         {
