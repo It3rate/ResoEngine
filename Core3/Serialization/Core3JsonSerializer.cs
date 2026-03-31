@@ -1,4 +1,4 @@
-﻿using Core3.Binding;
+using Core3.Binding;
 using Core3.Engine;
 using Core3.Operations;
 using Core3.Runtime;
@@ -37,19 +37,13 @@ public static class Core3JsonSerializer
     public static string Serialize(OperationContext context, Core3JsonSerializerOptions? options = null) =>
         Serialize(writer => Write(writer, context, Resolve(options)), options);
 
-    public static string Serialize(ReadResult result, Core3JsonSerializerOptions? options = null) =>
+    public static string Serialize(PieceArcResult result, Core3JsonSerializerOptions? options = null) =>
         Serialize(writer => Write(writer, result, Resolve(options)), options);
 
     public static string Serialize(Family family, Core3JsonSerializerOptions? options = null) =>
         Serialize(writer => Write(writer, family, Resolve(options)), options);
 
     public static string Serialize(OperationResult result, Core3JsonSerializerOptions? options = null) =>
-        Serialize(writer => Write(writer, result, Resolve(options)), options);
-
-    public static string Serialize(BooleanResult result, Core3JsonSerializerOptions? options = null) =>
-        Serialize(writer => Write(writer, result, Resolve(options)), options);
-
-    public static string Serialize(FamilyBooleanResult result, Core3JsonSerializerOptions? options = null) =>
         Serialize(writer => Write(writer, result, Resolve(options)), options);
 
     public static string Serialize(BoundTemplate template, Core3JsonSerializerOptions? options = null) =>
@@ -372,20 +366,21 @@ public static class Core3JsonSerializer
         writer.WriteEndObject();
     }
 
-    public static void Write(Utf8JsonWriter writer, ReadResult result, Core3JsonSerializerOptions? options = null)
+    public static void Write(Utf8JsonWriter writer, PieceArcResult result, Core3JsonSerializerOptions? options = null)
     {
         var actual = Resolve(options);
 
         writer.WriteStartObject();
-        writer.WriteString("kind", "readResult");
+        writer.WriteString("kind", "pieceArcResult");
         if (!result.IsExact)
         {
             writer.WriteBoolean("isExact", false);
         }
         writer.WritePropertyName("context");
         Write(writer, result.Context, actual);
-        writer.WritePropertyName("reads");
-        WriteElements(writer, result.Reads, actual);
+        writer.WriteString("originLawName", result.OriginLawName);
+        writer.WritePropertyName("pieces");
+        WritePieces(writer, result.Pieces, actual);
 
         if (result.Tension is not null)
         {
@@ -396,11 +391,6 @@ public static class Core3JsonSerializer
         if (!string.IsNullOrWhiteSpace(result.Note))
         {
             writer.WriteString("note", result.Note);
-        }
-
-        if (actual.IncludeDerived)
-        {
-            WriteArcDerived(writer, result, actual);
         }
 
         writer.WriteEndObject();
@@ -454,76 +444,6 @@ public static class Core3JsonSerializer
             Write(writer, read, actual);
             writer.WritePropertyName("resultBoundaryAxis");
             Write(writer, result.GetResultBoundaryAxis(), actual);
-        }
-
-        writer.WriteEndObject();
-    }
-
-    public static void Write(Utf8JsonWriter writer, BooleanResult result, Core3JsonSerializerOptions? options = null)
-    {
-        var actual = Resolve(options);
-
-        writer.WriteStartObject();
-        writer.WriteString("kind", "booleanResult");
-        if (!result.IsExact)
-        {
-            writer.WriteBoolean("isExact", false);
-        }
-        writer.WriteString("operation", result.Operation.ToString());
-        writer.WritePropertyName("context");
-        Write(writer, result.Context, actual);
-        writer.WritePropertyName("pieces");
-        WritePieces(writer, result.Pieces, actual);
-
-        if (result.Tension is not null)
-        {
-            writer.WritePropertyName("tension");
-            Write(writer, result.Tension, actual);
-        }
-
-        if (!string.IsNullOrWhiteSpace(result.Note))
-        {
-            writer.WriteString("note", result.Note);
-        }
-
-        if (actual.IncludeDerived)
-        {
-            WriteArcDerived(writer, result, actual);
-        }
-
-        writer.WriteEndObject();
-    }
-
-    public static void Write(Utf8JsonWriter writer, FamilyBooleanResult result, Core3JsonSerializerOptions? options = null)
-    {
-        var actual = Resolve(options);
-
-        writer.WriteStartObject();
-        writer.WriteString("kind", "familyBooleanResult");
-        if (!result.IsExact)
-        {
-            writer.WriteBoolean("isExact", false);
-        }
-        writer.WriteString("operation", result.Operation.ToString());
-        writer.WritePropertyName("context");
-        Write(writer, result.Context, actual);
-        writer.WritePropertyName("pieces");
-        WritePieces(writer, result.Pieces, actual);
-
-        if (result.Tension is not null)
-        {
-            writer.WritePropertyName("tension");
-            Write(writer, result.Tension, actual);
-        }
-
-        if (!string.IsNullOrWhiteSpace(result.Note))
-        {
-            writer.WriteString("note", result.Note);
-        }
-
-        if (actual.IncludeDerived)
-        {
-            WriteArcDerived(writer, result, actual);
         }
 
         writer.WriteEndObject();
@@ -920,7 +840,7 @@ public static class Core3JsonSerializer
         writer.Write(Serialize(context, options));
     }
 
-    public static void Write(TextWriter writer, ReadResult result, Core3JsonSerializerOptions? options = null)
+    public static void Write(TextWriter writer, PieceArcResult result, Core3JsonSerializerOptions? options = null)
     {
         writer.Write(Serialize(result, options));
     }
@@ -1087,6 +1007,7 @@ public static class Core3JsonSerializer
     private static Core3JsonSerializerOptions Resolve(Core3JsonSerializerOptions? options) =>
         options ?? Core3JsonSerializerOptions.Default;
 }
+
 
 
 

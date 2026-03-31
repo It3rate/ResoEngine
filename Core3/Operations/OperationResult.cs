@@ -1,4 +1,4 @@
-﻿using Core3.Engine;
+using Core3.Engine;
 using Core3.Runtime;
 
 namespace Core3.Operations;
@@ -49,6 +49,7 @@ public sealed record OperationResult : ArcResult
             ? EngineBoundary.GetAxis(ResultFrame, read)
             : EngineBoundary.CreateUnknownAxis(ResultFrame);
 }
+
 
 
 

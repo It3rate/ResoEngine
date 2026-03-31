@@ -1,4 +1,4 @@
-﻿using Core3.Engine;
+using Core3.Engine;
 using Core3.Operations;
 using Core3.Runtime;
 
@@ -193,7 +193,7 @@ public sealed class OperationsTests
 
         Assert.True(family.TryReadAllResult(out var result));
 
-        var readResult = Assert.IsType<ReadResult>(result);
+        var readResult = Assert.IsType<PieceArcResult>(result);
         Assert.False(readResult.IsExact);
         Assert.Equal("Read", readResult.OriginLawName);
         Assert.True(readResult.HasAny);
@@ -203,7 +203,7 @@ public sealed class OperationsTests
         Assert.Equal([1], readResult.OutboundPieces[1].SourceMemberIndices);
         Assert.Equal(
             [new AtomicElement(1, 1), new AtomicElement(1, 0)],
-            readResult.Reads);
+            readResult.Results);
     }
 
     [Fact]
@@ -442,7 +442,7 @@ public sealed class OperationsTests
             BooleanOperation.And,
             out var result));
 
-        var booleanResult = Assert.IsType<BooleanResult>(result);
+        var booleanResult = Assert.IsType<PieceArcResult>(result);
         Assert.Single(booleanResult.Pieces);
         Assert.Equal(
             Core3TestHelpers.CreateSegmentFrame(3, 5, 10),
@@ -452,7 +452,7 @@ public sealed class OperationsTests
     }
 
     [Fact]
-    public void Operations_TryBooleanResult_PreservesUnresolvedSegmentProjection()
+    public void Operations_TryPieceArcResult_PreservesUnresolvedSegmentProjection()
     {
         var frame = Core3TestHelpers.CreateSegmentFrame(0, 10, 10);
         var primary = Core3TestHelpers.CreateSegmentFrame(0, 10, 10);
@@ -471,7 +471,7 @@ public sealed class OperationsTests
             BooleanOperation.And,
             out _));
 
-        var booleanResult = Assert.IsType<BooleanResult>(result);
+        var booleanResult = Assert.IsType<PieceArcResult>(result);
         Assert.False(booleanResult.IsExact);
         Assert.Empty(booleanResult.Pieces);
         Assert.NotNull(booleanResult.Tension);
@@ -491,7 +491,7 @@ public sealed class OperationsTests
             BooleanOperation.Xor,
             out var result));
 
-        var booleanResult = Assert.IsType<BooleanResult>(result);
+        var booleanResult = Assert.IsType<PieceArcResult>(result);
         Assert.True(booleanResult.HasAny);
         Assert.True(booleanResult.HasMany);
         Assert.Equal(2, booleanResult.Pieces.Count);
@@ -512,7 +512,7 @@ public sealed class OperationsTests
             BooleanOperation.NotSecondary,
             out var result));
 
-        var booleanResult = Assert.IsType<BooleanResult>(result);
+        var booleanResult = Assert.IsType<PieceArcResult>(result);
         Assert.Equal(2, booleanResult.Pieces.Count);
         Assert.Equal(frame, booleanResult.Pieces[0].Carrier);
         Assert.Equal(frame, booleanResult.Pieces[1].Carrier);
@@ -534,7 +534,7 @@ public sealed class OperationsTests
             OccupancyOperation.ExactlyOne,
             out var result));
 
-        var occupancyResult = Assert.IsType<FamilyBooleanResult>(result);
+        var occupancyResult = Assert.IsType<PieceArcResult>(result);
         Assert.False(occupancyResult.Context.IsOrdered);
         Assert.Equal(3, occupancyResult.Pieces.Count);
         Assert.Equal(Core3TestHelpers.CreateSegmentFrame(0, 3, 10), occupancyResult.Pieces[0].Result);
@@ -560,7 +560,7 @@ public sealed class OperationsTests
             OccupancyOperation.All,
             out var result));
 
-        var occupancyResult = Assert.IsType<FamilyBooleanResult>(result);
+        var occupancyResult = Assert.IsType<PieceArcResult>(result);
         Assert.Single(occupancyResult.Pieces);
         Assert.Equal(frame, occupancyResult.Pieces[0].Carrier);
         Assert.Equal(Core3TestHelpers.CreateSegmentFrame(3, 5, 10), occupancyResult.Pieces[0].Result);
@@ -568,7 +568,7 @@ public sealed class OperationsTests
     }
 
     [Fact]
-    public void Operations_TryOccupancyBooleanResult_PreservesUnresolvedFamilyProjection()
+    public void Operations_TryOccupancyPieceArcResult_PreservesUnresolvedFamilyProjection()
     {
         var frame = Core3TestHelpers.CreateSegmentFrame(0, 10, 10);
         var first = Core3TestHelpers.CreateSegmentFrame(0, 10, 10);
@@ -588,7 +588,7 @@ public sealed class OperationsTests
             OccupancyOperation.ExactlyOne,
             out _));
 
-        var occupancyResult = Assert.IsType<FamilyBooleanResult>(result);
+        var occupancyResult = Assert.IsType<PieceArcResult>(result);
         Assert.False(occupancyResult.IsExact);
         Assert.Empty(occupancyResult.Pieces);
         Assert.NotNull(occupancyResult.Tension);
@@ -609,7 +609,7 @@ public sealed class OperationsTests
             BooleanOperation.Xor,
             out var results));
 
-        var pairwise = Assert.IsAssignableFrom<IReadOnlyList<BooleanResult>>(results);
+        var pairwise = Assert.IsAssignableFrom<IReadOnlyList<PieceArcResult>>(results);
         Assert.Equal(2, pairwise.Count);
 
         Assert.Equal(Core3TestHelpers.CreateSegmentFrame(0, 3, 10), pairwise[0].Pieces[0].Result);
@@ -639,7 +639,7 @@ public sealed class OperationsTests
             BooleanOperation.Xor,
             out _));
 
-        var pairwise = Assert.IsAssignableFrom<IReadOnlyList<BooleanResult>>(results);
+        var pairwise = Assert.IsAssignableFrom<IReadOnlyList<PieceArcResult>>(results);
         Assert.Equal(2, pairwise.Count);
         Assert.All(pairwise, result => Assert.False(result.IsExact));
         Assert.All(pairwise, result => Assert.Empty(result.Pieces));
@@ -663,7 +663,7 @@ public sealed class OperationsTests
             OccupancyOperation.ExactlyOne,
             out var result));
 
-        var occupancyResult = Assert.IsType<FamilyBooleanResult>(result);
+        var occupancyResult = Assert.IsType<PieceArcResult>(result);
         Assert.Equal(context.Frame, occupancyResult.Context.Frame);
         Assert.Equal(context.IsOrdered, occupancyResult.Context.IsOrdered);
         Assert.Equal(3, occupancyResult.Pieces.Count);
@@ -691,6 +691,9 @@ public sealed class OperationsTests
         Assert.False(family.TryBoolean(BooleanOperation.Or, out _));
     }
 }
+
+
+
 
 
 

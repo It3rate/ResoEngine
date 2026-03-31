@@ -1,4 +1,4 @@
-﻿using Core3.Engine;
+using Core3.Engine;
 using Core3.Runtime;
 
 namespace Core3.Operations;
@@ -251,7 +251,7 @@ public sealed class Family
     public bool TryReadMember(GradedElement member, out GradedElement? read)
         => member.TryViewInFrame(Frame, out read);
 
-    public bool TryReadAllResult(out ReadResult? result)
+    public bool TryReadAllResult(out PieceArcResult? result)
     {
         var resolvedReads = new List<GradedElement>(_members.Count);
         GradedElement? tension = null;
@@ -265,7 +265,7 @@ public sealed class Family
             note = EngineTension.CombineNotes(note, outcome.Note);
         }
 
-        result = new ReadResult(CreateContext(), resolvedReads, tension, note);
+        result = PieceArcResult.FromResults("Read", CreateContext(), resolvedReads, tension, note);
         return true;
     }
 
@@ -278,7 +278,7 @@ public sealed class Family
         => EngineExactness.TryProjectExact(
             TryReadAllResult(out var result),
             result,
-            static item => item.Reads,
+            static item => item.Results,
             out reads);
 
     public bool TryAddAll(out GradedElement? sum)
@@ -313,7 +313,7 @@ public sealed class Family
                     : family.Frame,
             out result);
 
-    public bool TryBoolean(BooleanOperation operation, out BooleanResult? result)
+    public bool TryBoolean(BooleanOperation operation, out PieceArcResult? result)
         => EngineExactness.TryGetExact(
             TryBooleanResult(operation, out var candidate),
             candidate,
@@ -321,7 +321,7 @@ public sealed class Family
 
     public bool TryBooleanResult(
         BooleanOperation operation,
-        out BooleanResult? result)
+        out PieceArcResult? result)
     {
         if (!TryReadBinaryCompositeFamily(
                 out var frame,
@@ -346,7 +346,7 @@ public sealed class Family
 
     public bool TryOccupancyBoolean(
         OccupancyOperation operation,
-        out FamilyBooleanResult? result) =>
+        out PieceArcResult? result) =>
         EngineExactness.TryGetExact(
             TryOccupancyBooleanResult(operation, out var candidate),
             candidate,
@@ -354,7 +354,7 @@ public sealed class Family
 
     public bool TryOccupancyBooleanResult(
         OccupancyOperation operation,
-        out FamilyBooleanResult? result)
+        out PieceArcResult? result)
     {
         if (!TryReadCompositeFamily(
                 out var frame,
@@ -378,7 +378,7 @@ public sealed class Family
 
     public bool TryBooleanAdjacentPairResults(
         BooleanOperation operation,
-        out IReadOnlyList<BooleanResult>? results)
+        out IReadOnlyList<PieceArcResult>? results)
     {
         if (!IsOrdered || _members.Count < 2 || Frame is not CompositeElement frame)
         {
@@ -386,7 +386,7 @@ public sealed class Family
             return false;
         }
 
-        var pairwiseResults = new List<BooleanResult>(_members.Count - 1);
+        var pairwiseResults = new List<PieceArcResult>(_members.Count - 1);
 
         for (var index = 0; index < _members.Count - 1; index++)
         {
@@ -420,7 +420,7 @@ public sealed class Family
 
     public bool TryBooleanAdjacentPairs(
         BooleanOperation operation,
-        out IReadOnlyList<BooleanResult>? results)
+        out IReadOnlyList<PieceArcResult>? results)
     {
         if (TryBooleanAdjacentPairResults(operation, out results) &&
             EngineExactness.AreAllExact(results))
@@ -490,7 +490,7 @@ public sealed class Family
         if (Frame is not CompositeElement compositeFrame ||
             !TryReadAllResult(out var readResult) ||
             readResult is null ||
-            !TryAsCompositeReads(readResult.Reads, out var compositeMembers))
+            !TryAsCompositeReads(readResult.Results, out var compositeMembers))
         {
             frame = default!;
             members = [];
@@ -556,19 +556,19 @@ public sealed class Family
     {
         if (!TryReadAllResult(out var readResult) ||
             readResult is null ||
-            readResult.Reads.Count == 0)
+            readResult.Results.Count == 0)
         {
             result = null;
             return false;
         }
 
-        var current = readResult.Reads[0];
+        var current = readResult.Results[0];
         var tension = readResult.Tension;
         var note = readResult.Note;
 
-        for (var index = 1; index < readResult.Reads.Count; index++)
+        for (var index = 1; index < readResult.Results.Count; index++)
         {
-            var stepOutcome = localLaw(current, readResult.Reads[index]);
+            var stepOutcome = localLaw(current, readResult.Results[index]);
             current = stepOutcome.Result;
             tension = EngineTension.CombineTension(tension, stepOutcome.Tension);
             note = EngineTension.CombineNotes(note, stepOutcome.Note);
@@ -691,6 +691,7 @@ public sealed class Family
 
     private sealed record SortableMember(int OriginalIndex, GradedElement Member, AtomicElement Slot);
 }
+
 
 
 

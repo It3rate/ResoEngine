@@ -1,4 +1,4 @@
-﻿using Core3.Engine;
+using Core3.Engine;
 using Core3.Runtime;
 
 namespace Core3.Operations;
@@ -91,10 +91,10 @@ public static class Operations
     public static bool TryBoolean(
         OperationContext context,
         BooleanOperation operation,
-        out BooleanResult? result) =>
+        out PieceArcResult? result) =>
         TryWithCompositeFamily(
             context,
-            static (Family family, BooleanOperation payload, out BooleanResult? value) => family.TryBoolean(payload, out value),
+            static (Family family, BooleanOperation payload, out PieceArcResult? value) => family.TryBoolean(payload, out value),
             operation,
             out result);
 
@@ -102,22 +102,22 @@ public static class Operations
         CompositeElement frame,
         IEnumerable<GradedElement> members,
         BooleanOperation operation,
-        out BooleanResult? result) =>
+        out PieceArcResult? result) =>
         TryWithCompositeFamily(
             frame,
             members,
             operation,
             isOrdered: true,
-            static (Family family, BooleanOperation payload, out BooleanResult? value) => family.TryBoolean(payload, out value),
+            static (Family family, BooleanOperation payload, out PieceArcResult? value) => family.TryBoolean(payload, out value),
             out result);
 
     public static bool TryBooleanResult(
         OperationContext context,
         BooleanOperation operation,
-        out BooleanResult? result) =>
+        out PieceArcResult? result) =>
         TryWithCompositeFamily(
             context,
-            static (Family family, BooleanOperation payload, out BooleanResult? value) => family.TryBooleanResult(payload, out value),
+            static (Family family, BooleanOperation payload, out PieceArcResult? value) => family.TryBooleanResult(payload, out value),
             operation,
             out result);
 
@@ -125,22 +125,22 @@ public static class Operations
         CompositeElement frame,
         IEnumerable<GradedElement> members,
         BooleanOperation operation,
-        out BooleanResult? result) =>
+        out PieceArcResult? result) =>
         TryWithCompositeFamily(
             frame,
             members,
             operation,
             isOrdered: true,
-            static (Family family, BooleanOperation payload, out BooleanResult? value) => family.TryBooleanResult(payload, out value),
+            static (Family family, BooleanOperation payload, out PieceArcResult? value) => family.TryBooleanResult(payload, out value),
             out result);
 
     public static bool TryOccupancyBoolean(
         OperationContext context,
         OccupancyOperation operation,
-        out FamilyBooleanResult? result) =>
+        out PieceArcResult? result) =>
         TryWithCompositeFamily(
             context,
-            static (Family family, OccupancyOperation payload, out FamilyBooleanResult? value) => family.TryOccupancyBoolean(payload, out value),
+            static (Family family, OccupancyOperation payload, out PieceArcResult? value) => family.TryOccupancyBoolean(payload, out value),
             operation,
             out result);
 
@@ -148,23 +148,23 @@ public static class Operations
         CompositeElement frame,
         IEnumerable<GradedElement> members,
         OccupancyOperation operation,
-        out FamilyBooleanResult? result,
+        out PieceArcResult? result,
         bool isOrdered = false) =>
         TryWithCompositeFamily(
             frame,
             members,
             operation,
             isOrdered,
-            static (Family family, OccupancyOperation payload, out FamilyBooleanResult? value) => family.TryOccupancyBoolean(payload, out value),
+            static (Family family, OccupancyOperation payload, out PieceArcResult? value) => family.TryOccupancyBoolean(payload, out value),
             out result);
 
     public static bool TryOccupancyBooleanResult(
         OperationContext context,
         OccupancyOperation operation,
-        out FamilyBooleanResult? result) =>
+        out PieceArcResult? result) =>
         TryWithCompositeFamily(
             context,
-            static (Family family, OccupancyOperation payload, out FamilyBooleanResult? value) => family.TryOccupancyBooleanResult(payload, out value),
+            static (Family family, OccupancyOperation payload, out PieceArcResult? value) => family.TryOccupancyBooleanResult(payload, out value),
             operation,
             out result);
 
@@ -172,23 +172,23 @@ public static class Operations
         CompositeElement frame,
         IEnumerable<GradedElement> members,
         OccupancyOperation operation,
-        out FamilyBooleanResult? result,
+        out PieceArcResult? result,
         bool isOrdered = false) =>
         TryWithCompositeFamily(
             frame,
             members,
             operation,
             isOrdered,
-            static (Family family, OccupancyOperation payload, out FamilyBooleanResult? value) => family.TryOccupancyBooleanResult(payload, out value),
+            static (Family family, OccupancyOperation payload, out PieceArcResult? value) => family.TryOccupancyBooleanResult(payload, out value),
             out result);
 
     public static bool TryBooleanAdjacentPairs(
         OperationContext context,
         BooleanOperation operation,
-        out IReadOnlyList<BooleanResult>? results) =>
+        out IReadOnlyList<PieceArcResult>? results) =>
         TryWithCompositeFamily(
             context,
-            static (Family family, BooleanOperation payload, out IReadOnlyList<BooleanResult>? value) => family.TryBooleanAdjacentPairs(payload, out value),
+            static (Family family, BooleanOperation payload, out IReadOnlyList<PieceArcResult>? value) => family.TryBooleanAdjacentPairs(payload, out value),
             operation,
             out results);
 
@@ -196,22 +196,22 @@ public static class Operations
         CompositeElement frame,
         IEnumerable<GradedElement> members,
         BooleanOperation operation,
-        out IReadOnlyList<BooleanResult>? results) =>
+        out IReadOnlyList<PieceArcResult>? results) =>
         TryWithCompositeFamily(
             frame,
             members,
             operation,
             isOrdered: true,
-            static (Family family, BooleanOperation payload, out IReadOnlyList<BooleanResult>? value) => family.TryBooleanAdjacentPairs(payload, out value),
+            static (Family family, BooleanOperation payload, out IReadOnlyList<PieceArcResult>? value) => family.TryBooleanAdjacentPairs(payload, out value),
             out results);
 
     public static bool TryBooleanAdjacentPairResults(
         OperationContext context,
         BooleanOperation operation,
-        out IReadOnlyList<BooleanResult>? results) =>
+        out IReadOnlyList<PieceArcResult>? results) =>
         TryWithCompositeFamily(
             context,
-            static (Family family, BooleanOperation payload, out IReadOnlyList<BooleanResult>? value) => family.TryBooleanAdjacentPairResults(payload, out value),
+            static (Family family, BooleanOperation payload, out IReadOnlyList<PieceArcResult>? value) => family.TryBooleanAdjacentPairResults(payload, out value),
             operation,
             out results);
 
@@ -219,13 +219,13 @@ public static class Operations
         CompositeElement frame,
         IEnumerable<GradedElement> members,
         BooleanOperation operation,
-        out IReadOnlyList<BooleanResult>? results) =>
+        out IReadOnlyList<PieceArcResult>? results) =>
         TryWithCompositeFamily(
             frame,
             members,
             operation,
             isOrdered: true,
-            static (Family family, BooleanOperation payload, out IReadOnlyList<BooleanResult>? value) => family.TryBooleanAdjacentPairResults(payload, out value),
+            static (Family family, BooleanOperation payload, out IReadOnlyList<PieceArcResult>? value) => family.TryBooleanAdjacentPairResults(payload, out value),
             out results);
 
     private static bool TryWithFamily<TResult>(
@@ -273,6 +273,7 @@ public static class Operations
         return action(new Family(context), payload, out result);
     }
 }
+
 
 
 

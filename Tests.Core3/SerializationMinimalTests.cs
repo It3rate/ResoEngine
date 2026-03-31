@@ -1,4 +1,4 @@
-﻿using Core3.Engine;
+using Core3.Engine;
 using Core3.Operations;
 using Core3.Runtime;
 using Core3.Serialization;
@@ -218,13 +218,13 @@ public sealed class SerializationMinimalTests
     }
 
     [Fact]
-    public void Core3JsonSerializer_SerializesTensionBearingReadResult_Minimally()
+    public void Core3JsonSerializer_SerializesTensionBearingPieceArcResult_Minimally()
     {
         // Serializes a family read where one member cannot be calibrated exactly
         // into the active frame.
         var expectedJson = """
 {
-  "kind": "readResult",
+  "kind": "pieceArcResult",
   "isExact": false,
   "context": {
     "kind": "operationContext",
@@ -250,115 +250,8 @@ public sealed class SerializationMinimalTests
       }
     ]
   },
-  "reads": [
-    {
-      "kind": "atomic",
-      "grade": 0,
-      "value": 1,
-      "unit": 1
-    },
-    {
-      "kind": "atomic",
-      "grade": 0,
-      "value": 1,
-      "unit": 0
-    }
-  ],
-  "tension": {
-    "kind": "composite",
-    "grade": 1,
-    "recessive": {
-      "kind": "atomic",
-      "grade": 0,
-      "value": 1,
-      "unit": 0
-    },
-    "dominant": {
-      "kind": "atomic",
-      "grade": 0,
-      "value": 0,
-      "unit": 1
-    }
-  },
-  "note": "Calibration preserved unresolved support because one or both unit slots were unresolved."
-}
-""";
-
-        var family = new Family(new AtomicElement(0, 1));
-        family.AddMember(new AtomicElement(1, 1));
-        family.AddMember(new AtomicElement(1, 0));
-
-        Assert.True(family.TryReadAllResult(out var readResult));
-
-        var json = Core3JsonSerializer.Serialize(Assert.IsType<ReadResult>(readResult));
-
-        AssertJsonEqual(expectedJson, json);
-    }
-
-    [Fact]
-    public void Core3JsonSerializer_SerializesDerivedReadResultOutboundPieces()
-    {
-        var expectedJson = """
-{
-  "kind": "readResult",
-  "isExact": false,
-  "context": {
-    "kind": "operationContext",
-    "isOrdered": true,
-    "frame": {
-      "kind": "atomic",
-      "grade": 0,
-      "value": 0,
-      "unit": 1
-    },
-    "members": [
-      {
-        "kind": "atomic",
-        "grade": 0,
-        "value": 1,
-        "unit": 1
-      },
-      {
-        "kind": "atomic",
-        "grade": 0,
-        "value": 1,
-        "unit": 0
-      }
-    ]
-  },
-  "reads": [
-    {
-      "kind": "atomic",
-      "grade": 0,
-      "value": 1,
-      "unit": 1
-    },
-    {
-      "kind": "atomic",
-      "grade": 0,
-      "value": 1,
-      "unit": 0
-    }
-  ],
-  "tension": {
-    "kind": "composite",
-    "grade": 1,
-    "recessive": {
-      "kind": "atomic",
-      "grade": 0,
-      "value": 1,
-      "unit": 0
-    },
-    "dominant": {
-      "kind": "atomic",
-      "grade": 0,
-      "value": 0,
-      "unit": 1
-    }
-  },
-  "note": "Calibration preserved unresolved support because one or both unit slots were unresolved.",
   "originLawName": "Read",
-  "outboundPieces": [
+  "pieces": [
     {
       "result": {
         "kind": "atomic",
@@ -393,7 +286,123 @@ public sealed class SerializationMinimalTests
         1
       ]
     }
-  ]
+  ],
+  "tension": {
+    "kind": "composite",
+    "grade": 1,
+    "recessive": {
+      "kind": "atomic",
+      "grade": 0,
+      "value": 1,
+      "unit": 0
+    },
+    "dominant": {
+      "kind": "atomic",
+      "grade": 0,
+      "value": 0,
+      "unit": 1
+    }
+  },
+  "note": "Calibration preserved unresolved support because one or both unit slots were unresolved."
+}
+""";
+
+        var family = new Family(new AtomicElement(0, 1));
+        family.AddMember(new AtomicElement(1, 1));
+        family.AddMember(new AtomicElement(1, 0));
+
+        Assert.True(family.TryReadAllResult(out var readResult));
+
+        var json = Core3JsonSerializer.Serialize(Assert.IsType<PieceArcResult>(readResult));
+
+        AssertJsonEqual(expectedJson, json);
+    }
+
+    [Fact]
+    public void Core3JsonSerializer_SerializesDerivedBooleanPieceArcResultOutboundPieces()
+    {
+        var expectedJson = """
+{
+  "kind": "pieceArcResult",
+  "isExact": false,
+  "context": {
+    "kind": "operationContext",
+    "isOrdered": true,
+    "frame": {
+      "kind": "atomic",
+      "grade": 0,
+      "value": 0,
+      "unit": 1
+    },
+    "members": [
+      {
+        "kind": "atomic",
+        "grade": 0,
+        "value": 1,
+        "unit": 1
+      },
+      {
+        "kind": "atomic",
+        "grade": 0,
+        "value": 1,
+        "unit": 0
+      }
+    ]
+  },
+  "originLawName": "Read",
+  "pieces": [
+    {
+      "result": {
+        "kind": "atomic",
+        "grade": 0,
+        "value": 1,
+        "unit": 1
+      },
+      "carrier": {
+        "kind": "atomic",
+        "grade": 0,
+        "value": 0,
+        "unit": 1
+      },
+      "sourceMemberIndices": [
+        0
+      ]
+    },
+    {
+      "result": {
+        "kind": "atomic",
+        "grade": 0,
+        "value": 1,
+        "unit": 0
+      },
+      "carrier": {
+        "kind": "atomic",
+        "grade": 0,
+        "value": 0,
+        "unit": 1
+      },
+      "sourceMemberIndices": [
+        1
+      ]
+    }
+  ],
+  "tension": {
+    "kind": "composite",
+    "grade": 1,
+    "recessive": {
+      "kind": "atomic",
+      "grade": 0,
+      "value": 1,
+      "unit": 0
+    },
+    "dominant": {
+      "kind": "atomic",
+      "grade": 0,
+      "value": 0,
+      "unit": 1
+    }
+  },
+  "note": "Calibration preserved unresolved support because one or both unit slots were unresolved."
 }
 """;
 
@@ -404,7 +413,7 @@ public sealed class SerializationMinimalTests
         Assert.True(family.TryReadAllResult(out var readResult));
 
         var json = Core3JsonSerializer.Serialize(
-            Assert.IsType<ReadResult>(readResult),
+            Assert.IsType<PieceArcResult>(readResult),
             new Core3JsonSerializerOptions { IncludeDerived = true });
 
         AssertJsonEqual(expectedJson, json);
@@ -765,12 +774,11 @@ public sealed class SerializationMinimalTests
     }
 
     [Fact]
-    public void Core3JsonSerializer_SerializesDerivedBooleanResultOutboundPieces()
+    public void Core3JsonSerializer_SerializesDerivedPieceArcResultOutboundPieces()
     {
         var expectedJson = """
 {
-  "kind": "booleanResult",
-  "operation": "Xor",
+  "kind": "pieceArcResult",
   "context": {
     "kind": "operationContext",
     "isOrdered": true,
@@ -825,84 +833,8 @@ public sealed class SerializationMinimalTests
       }
     ]
   },
-  "pieces": [
-    {
-      "result": {
-        "kind": "composite",
-        "grade": 1,
-        "recessive": {
-          "kind": "atomic",
-          "grade": 0,
-          "value": 0,
-          "unit": 10
-        },
-        "dominant": {
-          "kind": "atomic",
-          "grade": 0,
-          "value": 3,
-          "unit": 10
-        }
-      },
-      "carrier": {
-        "kind": "composite",
-        "grade": 1,
-        "recessive": {
-          "kind": "atomic",
-          "grade": 0,
-          "value": 0,
-          "unit": 10
-        },
-        "dominant": {
-          "kind": "atomic",
-          "grade": 0,
-          "value": 10,
-          "unit": 10
-        }
-      },
-      "sourceMemberIndices": [
-        0
-      ]
-    },
-    {
-      "result": {
-        "kind": "composite",
-        "grade": 1,
-        "recessive": {
-          "kind": "atomic",
-          "grade": 0,
-          "value": 5,
-          "unit": 10
-        },
-        "dominant": {
-          "kind": "atomic",
-          "grade": 0,
-          "value": 10,
-          "unit": 10
-        }
-      },
-      "carrier": {
-        "kind": "composite",
-        "grade": 1,
-        "recessive": {
-          "kind": "atomic",
-          "grade": 0,
-          "value": 0,
-          "unit": 10
-        },
-        "dominant": {
-          "kind": "atomic",
-          "grade": 0,
-          "value": 10,
-          "unit": 10
-        }
-      },
-      "sourceMemberIndices": [
-        0
-      ]
-    }
-  ],
   "originLawName": "Xor",
-  "outboundPieces": [
+  "pieces": [
     {
       "result": {
         "kind": "composite",
@@ -992,7 +924,7 @@ public sealed class SerializationMinimalTests
             out var result));
 
         var json = Core3JsonSerializer.Serialize(
-            Assert.IsType<BooleanResult>(result),
+            Assert.IsType<PieceArcResult>(result),
             new Core3JsonSerializerOptions { IncludeDerived = true });
 
         AssertJsonEqual(expectedJson, json);
@@ -1409,7 +1341,7 @@ public sealed class SerializationMinimalTests
     }
 
     [Fact]
-    public void Core3JsonSerializer_SerializesTensionBearingBooleanResult_Minimally()
+    public void Core3JsonSerializer_SerializesTensionBearingBooleanPieceArcResult_Minimally()
     {
         // Serializes a binary boolean read when one compared segment endpoint
         // cannot be placed exactly on the current carrier.
@@ -1418,9 +1350,8 @@ public sealed class SerializationMinimalTests
         // lawful but produces no settled pieces yet.
         var expectedJson = """
 {
-  "kind": "booleanResult",
+  "kind": "pieceArcResult",
   "isExact": false,
-  "operation": "And",
   "context": {
     "kind": "operationContext",
     "isOrdered": true,
@@ -1475,6 +1406,7 @@ public sealed class SerializationMinimalTests
       }
     ]
   },
+  "originLawName": "And",
   "pieces": [],
   "tension": {
     "kind": "composite",
@@ -1528,7 +1460,7 @@ public sealed class SerializationMinimalTests
             BooleanOperation.And,
             out var result));
 
-        var json = Core3JsonSerializer.Serialize(Assert.IsType<BooleanResult>(result));
+        var json = Core3JsonSerializer.Serialize(Assert.IsType<PieceArcResult>(result));
 
         AssertJsonEqual(expectedJson, json);
     }
@@ -1539,6 +1471,8 @@ public sealed class SerializationMinimalTests
     private static string Normalize(string json) =>
         json.Trim().ReplaceLineEndings("\n");
 }
+
+
 
 
 

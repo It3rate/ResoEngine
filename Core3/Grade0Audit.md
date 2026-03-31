@@ -1,4 +1,4 @@
-﻿# Grade-0 Audit
+# Grade-0 Audit
 
 This note records the first concrete audit of where current Core3 grade-0
 behavior is still exact-only and where the first tension-preserving migration
@@ -45,7 +45,7 @@ The first migrated paths are:
 - recursive composite calibration/alignment outcome surfaces
 - recursive composite add/subtract outcome surfaces
 - recursive composite multiply/scale outcome surfaces
-- `ReadResult`
+- `PieceArcResult`
 - family-wide read / add / multiply outcome surfaces
 - binary and family boolean outcome surfaces
 - pairwise adjacent boolean traversal outcome surfaces
@@ -127,4 +127,5 @@ The goal is:
 - move mathematically meaningful non-fit out of `false` / `null`
 - keep malformed ontology and broken invariants as the narrower place where
   exceptions still belong
+
 

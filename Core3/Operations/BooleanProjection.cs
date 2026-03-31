@@ -1,4 +1,4 @@
-﻿using Core3.Engine;
+using Core3.Engine;
 using Core3.Runtime;
 
 namespace Core3.Operations;
@@ -15,7 +15,7 @@ internal static class BooleanProjection
         BooleanOperation operation,
         GradedElement? inheritedTension,
         string? inheritedNote,
-        out BooleanResult? result)
+        out PieceArcResult? result)
     {
         var context = new OperationContext(frame, [primary, secondary], true);
         var tension = inheritedTension;
@@ -30,13 +30,13 @@ internal static class BooleanProjection
                 out tension,
                 out note))
         {
-            result = new BooleanResult(context, operation, [], tension, note);
+            result = new PieceArcResult(operation.ToString(), context, [], tension, note);
             return true;
         }
 
         if (frameSegment.End <= frameSegment.Start)
         {
-            result = new BooleanResult(context, operation, [], tension, note);
+            result = new PieceArcResult(operation.ToString(), context, [], tension, note);
             return true;
         }
 
@@ -47,7 +47,7 @@ internal static class BooleanProjection
             presentMembers => SelectBinaryCarrier(presentMembers, frame, primary, secondary),
             ref tension,
             ref note);
-        result = new BooleanResult(context, operation, pieces, tension, note);
+        result = new PieceArcResult(operation.ToString(), context, pieces, tension, note);
         return true;
     }
 
@@ -58,7 +58,7 @@ internal static class BooleanProjection
         OccupancyOperation operation,
         GradedElement? inheritedTension,
         string? inheritedNote,
-        out FamilyBooleanResult? result)
+        out PieceArcResult? result)
     {
         var context = new OperationContext(
             frame,
@@ -76,13 +76,13 @@ internal static class BooleanProjection
                 out tension,
                 out note))
         {
-            result = new FamilyBooleanResult(context, operation, [], tension, note);
+            result = new PieceArcResult(operation.ToString(), context, [], tension, note);
             return true;
         }
 
         if (frameSegment.End <= frameSegment.Start)
         {
-            result = new FamilyBooleanResult(context, operation, [], tension, note);
+            result = new PieceArcResult(operation.ToString(), context, [], tension, note);
             return true;
         }
 
@@ -93,7 +93,7 @@ internal static class BooleanProjection
             presentMembers => SelectFamilyCarrier(presentMembers, frame, members),
             ref tension,
             ref note);
-        result = new FamilyBooleanResult(context, operation, pieces, tension, note);
+        result = new PieceArcResult(operation.ToString(), context, pieces, tension, note);
         return true;
     }
 
@@ -437,6 +437,7 @@ internal static class BooleanProjection
 
     private readonly record struct AtomicSegment(decimal Start, decimal End);
 }
+
 
 
 
