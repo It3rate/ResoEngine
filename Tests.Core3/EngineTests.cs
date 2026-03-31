@@ -271,12 +271,12 @@ public sealed class EngineTests
     }
 
     [Fact]
-    public void AtomicAlignWithTension_PreservesUnresolvedPairWhenCarrierSpaceDiffers()
+    public void AtomicAlign_PreservesUnresolvedPairWhenCarrierSpaceDiffers()
     {
         var left = new AtomicElement(1, 2);
         var right = new AtomicElement(1, -4);
 
-        var outcome = left.AlignWithTension(right);
+        var outcome = left.Align(right);
 
         Assert.False(outcome.IsExact);
         Assert.True(outcome.HasAny);
@@ -439,12 +439,12 @@ public sealed class EngineTests
     }
 
     [Fact]
-    public void AtomicAddWithTension_PreservesUnresolvedSupportWhenCarrierSpaceDiffers()
+    public void AtomicAdd_PreservesUnresolvedSupportWhenCarrierSpaceDiffers()
     {
         var left = new AtomicElement(1, 2);
         var right = new AtomicElement(1, -4);
 
-        var outcome = left.AddWithTension(right);
+        var outcome = left.Add(right);
 
         Assert.False(outcome.IsExact);
         Assert.True(outcome.HasAny);
@@ -452,15 +452,18 @@ public sealed class EngineTests
         Assert.Single(outcome.OutboundResults);
         Assert.Equal(new AtomicElement(8, 0), Assert.IsType<AtomicElement>(outcome.Result));
         Assert.Equal(new CompositeElement(left, right), outcome.Tension);
+        Assert.True(outcome.TryGetRawPair(out var rawPair));
+        Assert.Equal(left, rawPair!.Left);
+        Assert.Equal(right, rawPair.Right);
     }
 
     [Fact]
-    public void AtomicSubtractWithTension_PreservesUnresolvedSupportWhenCarrierSpaceDiffers()
+    public void AtomicSubtract_PreservesUnresolvedSupportWhenCarrierSpaceDiffers()
     {
         var left = new AtomicElement(3, 2);
         var right = new AtomicElement(1, -4);
 
-        var outcome = left.SubtractWithTension(right);
+        var outcome = left.Subtract(right);
 
         Assert.False(outcome.IsExact);
         Assert.Equal(new AtomicElement(8, 0), Assert.IsType<AtomicElement>(outcome.Result));
@@ -473,7 +476,7 @@ public sealed class EngineTests
         var aligned = new AtomicElement(3, 1);
         var orthogonal = new AtomicElement(3, -1);
 
-        var addOutcome = aligned.AddWithTension(orthogonal);
+        var addOutcome = aligned.Add(orthogonal);
         var explicitLift = aligned.Lift(orthogonal);
 
         Assert.False(addOutcome.IsExact);

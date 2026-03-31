@@ -25,4 +25,18 @@ public sealed record EngineElementOutcome(
         GradedElement tension,
         string? note = null) =>
         new(result, tension, note);
+
+    public bool TryGetRawPair(out EngineElementPairOutcome? pair)
+    {
+        if (Tension is CompositeElement composite)
+        {
+            pair = EngineElementPairOutcome.Exact(
+                composite.Recessive,
+                composite.Dominant);
+            return true;
+        }
+
+        pair = null;
+        return false;
+    }
 }

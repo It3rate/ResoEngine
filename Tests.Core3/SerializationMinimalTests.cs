@@ -371,7 +371,38 @@ public sealed class SerializationMinimalTests
         "value": 70,
         "unit": 0
       }
-    ]
+    ],
+    "rawPair": {
+      "kind": "elementPairOutcome",
+      "isExact": true,
+      "left": {
+        "kind": "atomic",
+        "grade": 0,
+        "value": 7,
+        "unit": 0
+      },
+      "right": {
+        "kind": "atomic",
+        "grade": 0,
+        "value": 10,
+        "unit": 10
+      },
+      "survivorCount": 2,
+      "outboundResults": [
+        {
+          "kind": "atomic",
+          "grade": 0,
+          "value": 7,
+          "unit": 0
+        },
+        {
+          "kind": "atomic",
+          "grade": 0,
+          "value": 10,
+          "unit": 10
+        }
+      ]
+    }
   }
 }
 """;
@@ -836,7 +867,7 @@ public sealed class SerializationMinimalTests
         var left = new AtomicElement(1, 2);
         var right = new AtomicElement(1, -4);
 
-        var json = Core3JsonSerializer.Serialize(left.AlignWithTension(right));
+        var json = Core3JsonSerializer.Serialize(left.Align(right));
 
         AssertJsonEqual(expectedJson, json);
     }
@@ -899,7 +930,7 @@ public sealed class SerializationMinimalTests
         var right = new AtomicElement(1, -4);
 
         var json = Core3JsonSerializer.Serialize(
-            left.AlignWithTension(right),
+            left.Align(right),
             new Core3JsonSerializerOptions { IncludeDerived = true });
 
         AssertJsonEqual(expectedJson, json);
@@ -944,7 +975,7 @@ public sealed class SerializationMinimalTests
         var left = new AtomicElement(1, 2);
         var right = new AtomicElement(1, -4);
 
-        var json = Core3JsonSerializer.Serialize(left.AddWithTension(right));
+        var json = Core3JsonSerializer.Serialize(left.Add(right));
 
         AssertJsonEqual(expectedJson, json);
     }
@@ -987,7 +1018,38 @@ public sealed class SerializationMinimalTests
       "value": 8,
       "unit": 0
     }
-  ]
+  ],
+  "rawPair": {
+    "kind": "elementPairOutcome",
+    "isExact": true,
+    "left": {
+      "kind": "atomic",
+      "grade": 0,
+      "value": 1,
+      "unit": 2
+    },
+    "right": {
+      "kind": "atomic",
+      "grade": 0,
+      "value": 1,
+      "unit": -4
+    },
+    "survivorCount": 2,
+    "outboundResults": [
+      {
+        "kind": "atomic",
+        "grade": 0,
+        "value": 1,
+        "unit": 2
+      },
+      {
+        "kind": "atomic",
+        "grade": 0,
+        "value": 1,
+        "unit": -4
+      }
+    ]
+  }
 }
 """;
 
@@ -995,7 +1057,7 @@ public sealed class SerializationMinimalTests
         var right = new AtomicElement(1, -4);
 
         var json = Core3JsonSerializer.Serialize(
-            left.AddWithTension(right),
+            left.Add(right),
             new Core3JsonSerializerOptions { IncludeDerived = true });
 
         AssertJsonEqual(expectedJson, json);
