@@ -279,6 +279,9 @@ public sealed class EngineTests
         var outcome = left.AlignWithTension(right);
 
         Assert.False(outcome.IsExact);
+        Assert.True(outcome.HasAny);
+        Assert.True(outcome.HasMany);
+        Assert.Equal(2, outcome.OutboundResults.Count);
         Assert.Equal(new AtomicElement(4, 0), Assert.IsType<AtomicElement>(outcome.Left));
         Assert.Equal(new AtomicElement(4, 0), Assert.IsType<AtomicElement>(outcome.Right));
         Assert.Equal(new CompositeElement(left, right), outcome.Tension);
@@ -444,6 +447,9 @@ public sealed class EngineTests
         var outcome = left.AddWithTension(right);
 
         Assert.False(outcome.IsExact);
+        Assert.True(outcome.HasAny);
+        Assert.False(outcome.HasMany);
+        Assert.Single(outcome.OutboundResults);
         Assert.Equal(new AtomicElement(8, 0), Assert.IsType<AtomicElement>(outcome.Result));
         Assert.Equal(new CompositeElement(left, right), outcome.Tension);
     }

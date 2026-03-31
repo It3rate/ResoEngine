@@ -141,6 +141,13 @@ public static class Core3JsonSerializer
             writer.WriteString("note", outcome.Note);
         }
 
+        if (actual.IncludeDerived)
+        {
+            writer.WriteNumber("survivorCount", outcome.SurvivorCount);
+            writer.WritePropertyName("outboundResults");
+            WriteElements(writer, outcome.OutboundResults, actual);
+        }
+
         writer.WriteEndObject();
     }
 
@@ -165,6 +172,13 @@ public static class Core3JsonSerializer
         if (!string.IsNullOrWhiteSpace(outcome.Note))
         {
             writer.WriteString("note", outcome.Note);
+        }
+
+        if (actual.IncludeDerived)
+        {
+            writer.WriteNumber("survivorCount", outcome.SurvivorCount);
+            writer.WritePropertyName("outboundResults");
+            WriteElements(writer, outcome.OutboundResults, actual);
         }
 
         writer.WriteEndObject();

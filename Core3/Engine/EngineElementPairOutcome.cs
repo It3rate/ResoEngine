@@ -2,7 +2,9 @@ namespace Core3.Engine;
 
 /// <summary>
 /// Carries a lawful pair result together with any unresolved structure that had
-/// to remain present as tension.
+/// to remain present as tension. Conceptually this is the co-present
+/// two-survivor case of the broader outbound-family pattern used across Core3
+/// results.
 /// </summary>
 public sealed record EngineElementPairOutcome(
     GradedElement Left,
@@ -11,6 +13,10 @@ public sealed record EngineElementPairOutcome(
     string? Note = null) : IExactResult
 {
     public bool IsExact => Tension is null;
+    public IReadOnlyList<GradedElement> OutboundResults => [Left, Right];
+    public bool HasAny => true;
+    public bool HasMany => true;
+    public int SurvivorCount => 2;
 
     public static EngineElementPairOutcome Exact(
         GradedElement left,
