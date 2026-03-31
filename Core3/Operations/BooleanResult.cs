@@ -1,4 +1,4 @@
-using Core3.Engine;
+﻿using Core3.Engine;
 using Core3.Runtime;
 
 namespace Core3.Operations;
@@ -9,12 +9,12 @@ namespace Core3.Operations;
 /// the surviving pieces are the outbound family. The actual pieces remain
 /// ordinary composite elements.
 /// </summary>
-public sealed record EngineBooleanResult : EngineArcResult
+public sealed record BooleanResult : ArcResult
 {
-    public EngineBooleanResult(
-        EngineOperationContext context,
-        EngineBooleanOperation operation,
-        IReadOnlyList<EngineOperationPiece> pieces,
+    public BooleanResult(
+        OperationContext context,
+        BooleanOperation operation,
+        IReadOnlyList<OperationPiece> pieces,
         GradedElement? tension = null,
         string? note = null)
         : base(context, tension, note)
@@ -31,8 +31,13 @@ public sealed record EngineBooleanResult : EngineArcResult
         Pieces = pieces;
     }
 
-    public EngineBooleanOperation Operation { get; }
+    public BooleanOperation Operation { get; }
     public override string OriginLawName => Operation.ToString();
-    public IReadOnlyList<EngineOperationPiece> Pieces { get; }
-    public override IReadOnlyList<EngineOperationPiece> OutboundPieces => Pieces;
+    public IReadOnlyList<OperationPiece> Pieces { get; }
+    public override IReadOnlyList<OperationPiece> OutboundPieces => Pieces;
 }
+
+
+
+
+

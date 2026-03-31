@@ -1,4 +1,4 @@
-using Core3.Engine;
+﻿using Core3.Engine;
 using Core3.Runtime;
 
 namespace Core3.Operations;
@@ -10,16 +10,16 @@ namespace Core3.Operations;
 /// a place to hold members, ordering hints, focus derivations, and family-wide
 /// laws without overcommitting the deeper runtime story yet.
 /// </summary>
-public sealed class EngineFamily
+public sealed class Family
 {
     private readonly List<GradedElement> _members = [];
 
-    public EngineFamily(EngineOperationContext context)
+    public Family(OperationContext context)
         : this(
             context.Frame,
             context.IsOrdered,
             context.ParentContext is not null
-                ? new EngineFamily(context.ParentContext)
+                ? new Family(context.ParentContext)
                 : null,
             context.ParentFocusIndex)
     {
@@ -29,15 +29,15 @@ public sealed class EngineFamily
         }
     }
 
-    public EngineFamily(GradedElement frame, bool isOrdered = true)
+    public Family(GradedElement frame, bool isOrdered = true)
         : this(frame, isOrdered, null, null)
     {
     }
 
-    private EngineFamily(
+    private Family(
         GradedElement frame,
         bool isOrdered,
-        EngineFamily? parentFamily,
+        Family? parentFamily,
         int? parentFocusIndex)
     {
         Frame = frame;
@@ -50,7 +50,7 @@ public sealed class EngineFamily
     public bool IsOrdered { get; }
     public IReadOnlyList<GradedElement> Members => _members;
     public int Count => _members.Count;
-    public EngineFamily? ParentFamily { get; }
+    public Family? ParentFamily { get; }
     public int? ParentFocusIndex { get; }
 
     public void AddMember(GradedElement member) => _members.Add(member);
@@ -59,14 +59,14 @@ public sealed class EngineFamily
 
     public void ClearMembers() => _members.Clear();
 
-    public EngineOperationContext CreateContext() => new(
+    public OperationContext CreateContext() => new(
         Frame,
         _members.ToArray(),
         IsOrdered,
         ParentFamily?.CreateContext(),
         ParentFocusIndex);
 
-    public EngineFamily CreateOrderedCopy()
+    public Family CreateOrderedCopy()
     {
         var orderedFamily = CreateDerivedFamily(Frame, isOrdered: true);
 
@@ -78,7 +78,7 @@ public sealed class EngineFamily
         return orderedFamily;
     }
 
-    public EngineFamily CreateUnorderedCopy()
+    public Family CreateUnorderedCopy()
     {
         var unorderedFamily = CreateDerivedFamily(Frame, isOrdered: false);
 
@@ -90,7 +90,7 @@ public sealed class EngineFamily
         return unorderedFamily;
     }
 
-    public EngineFamily CreateShuffledCopy(int? seed = null)
+    public Family CreateShuffledCopy(int? seed = null)
     {
         var random = seed is int fixedSeed ? new Random(fixedSeed) : Random.Shared;
         var shuffledMembers = _members.ToList();
@@ -112,7 +112,7 @@ public sealed class EngineFamily
         return shuffledFamily;
     }
 
-    public bool TryFocusMember(int index, out EngineFamily? focusedFamily)
+    public bool TryFocusMember(int index, out Family? focusedFamily)
     {
         if (index < 0 || index >= _members.Count)
         {
@@ -147,13 +147,13 @@ public sealed class EngineFamily
         return true;
     }
 
-    public bool TryFocusMember(GradedElement member, out EngineFamily? focusedFamily)
+    public bool TryFocusMember(GradedElement member, out Family? focusedFamily)
         => TryFocusMember(_members.IndexOf(member), out focusedFamily);
 
     public bool TrySortByFrameSlot(
         int slotIndex,
         bool descending,
-        out EngineFamily? sortedFamily)
+        out Family? sortedFamily)
     {
         if (slotIndex < 0)
         {
@@ -209,7 +209,7 @@ public sealed class EngineFamily
         return true;
     }
 
-    public bool TryCollapseToParentFrame(out EngineFamily? collapsedFamily)
+    public bool TryCollapseToParentFrame(out Family? collapsedFamily)
     {
         if (ParentFamily is null ||
             ParentFocusIndex is null)
@@ -226,7 +226,7 @@ public sealed class EngineFamily
         }
 
         collapsedFamily = ParentFamily.ParentFamily is null
-            ? new EngineFamily(ParentFamily.Frame, ParentFamily.IsOrdered)
+            ? new Family(ParentFamily.Frame, ParentFamily.IsOrdered)
             : ParentFamily.ParentFamily.CreateDerivedFamily(
                 ParentFamily.Frame,
                 ParentFamily.IsOrdered,
@@ -251,7 +251,7 @@ public sealed class EngineFamily
     public bool TryReadMember(GradedElement member, out GradedElement? read)
         => member.TryViewInFrame(Frame, out read);
 
-    public bool TryReadAllResult(out EngineReadResult? result)
+    public bool TryReadAllResult(out ReadResult? result)
     {
         var resolvedReads = new List<GradedElement>(_members.Count);
         GradedElement? tension = null;
@@ -265,7 +265,7 @@ public sealed class EngineFamily
             note = EngineTension.CombineNotes(note, outcome.Note);
         }
 
-        result = new EngineReadResult(CreateContext(), resolvedReads, tension, note);
+        result = new ReadResult(CreateContext(), resolvedReads, tension, note);
         return true;
     }
 
@@ -288,7 +288,7 @@ public sealed class EngineFamily
             static item => item.Result,
             out sum);
 
-    public bool TryAddAllResult(out EngineOperationResult? result) =>
+    public bool TryAddAllResult(out OperationResult? result) =>
         TryAccumulateAll(
             "Add",
             static (left, right) => left.Add(right),
@@ -302,7 +302,7 @@ public sealed class EngineFamily
             static item => item.Result,
             out product);
 
-    public bool TryMultiplyAllResult(out EngineOperationResult? result) =>
+    public bool TryMultiplyAllResult(out OperationResult? result) =>
         TryAccumulateAll(
             "Multiply",
             static (left, right) => left.Multiply(right),
@@ -313,15 +313,15 @@ public sealed class EngineFamily
                     : family.Frame,
             out result);
 
-    public bool TryBoolean(EngineBooleanOperation operation, out EngineBooleanResult? result)
+    public bool TryBoolean(BooleanOperation operation, out BooleanResult? result)
         => EngineExactness.TryGetExact(
             TryBooleanResult(operation, out var candidate),
             candidate,
             out result);
 
     public bool TryBooleanResult(
-        EngineBooleanOperation operation,
-        out EngineBooleanResult? result)
+        BooleanOperation operation,
+        out BooleanResult? result)
     {
         if (!TryReadBinaryCompositeFamily(
                 out var frame,
@@ -334,7 +334,7 @@ public sealed class EngineFamily
             return false;
         }
 
-        return EngineBooleanProjection.TryResolveResult(
+        return BooleanProjection.TryResolveResult(
             frame,
             primary,
             secondary,
@@ -345,16 +345,16 @@ public sealed class EngineFamily
     }
 
     public bool TryOccupancyBoolean(
-        EngineOccupancyOperation operation,
-        out EngineFamilyBooleanResult? result) =>
+        OccupancyOperation operation,
+        out FamilyBooleanResult? result) =>
         EngineExactness.TryGetExact(
             TryOccupancyBooleanResult(operation, out var candidate),
             candidate,
             out result);
 
     public bool TryOccupancyBooleanResult(
-        EngineOccupancyOperation operation,
-        out EngineFamilyBooleanResult? result)
+        OccupancyOperation operation,
+        out FamilyBooleanResult? result)
     {
         if (!TryReadCompositeFamily(
                 out var frame,
@@ -366,7 +366,7 @@ public sealed class EngineFamily
             return false;
         }
 
-        return EngineBooleanProjection.TryResolveFamilyResult(
+        return BooleanProjection.TryResolveFamilyResult(
             frame,
             members,
             IsOrdered,
@@ -377,8 +377,8 @@ public sealed class EngineFamily
     }
 
     public bool TryBooleanAdjacentPairResults(
-        EngineBooleanOperation operation,
-        out IReadOnlyList<EngineBooleanResult>? results)
+        BooleanOperation operation,
+        out IReadOnlyList<BooleanResult>? results)
     {
         if (!IsOrdered || _members.Count < 2 || Frame is not CompositeElement frame)
         {
@@ -386,7 +386,7 @@ public sealed class EngineFamily
             return false;
         }
 
-        var pairwiseResults = new List<EngineBooleanResult>(_members.Count - 1);
+        var pairwiseResults = new List<BooleanResult>(_members.Count - 1);
 
         for (var index = 0; index < _members.Count - 1; index++)
         {
@@ -397,7 +397,7 @@ public sealed class EngineFamily
                     out var right,
                     out var tension,
                     out var note) ||
-                !EngineBooleanProjection.TryResolveResult(
+                !BooleanProjection.TryResolveResult(
                     frame,
                     left,
                     right,
@@ -419,8 +419,8 @@ public sealed class EngineFamily
     }
 
     public bool TryBooleanAdjacentPairs(
-        EngineBooleanOperation operation,
-        out IReadOnlyList<EngineBooleanResult>? results)
+        BooleanOperation operation,
+        out IReadOnlyList<BooleanResult>? results)
     {
         if (TryBooleanAdjacentPairResults(operation, out results) &&
             EngineExactness.AreAllExact(results))
@@ -551,8 +551,8 @@ public sealed class EngineFamily
     private bool TryAccumulateAll(
         string operationName,
         Func<GradedElement, GradedElement, EngineElementOutcome> localLaw,
-        Func<EngineFamily, GradedElement> resultFrameSelector,
-        out EngineOperationResult? result)
+        Func<Family, GradedElement> resultFrameSelector,
+        out OperationResult? result)
     {
         if (!TryReadAllResult(out var readResult) ||
             readResult is null ||
@@ -580,7 +580,7 @@ public sealed class EngineFamily
         // preserved there and later inspected through views instead of being
         // guessed here from operation names.
 
-        result = new EngineOperationResult(
+        result = new OperationResult(
             operationName,
             CreateContext(),
             current,
@@ -610,7 +610,7 @@ public sealed class EngineFamily
         return true;
     }
 
-    private EngineFamily CreateDerivedFamily(
+    private Family CreateDerivedFamily(
         GradedElement frame,
         bool isOrdered,
         int? parentFocusIndex = null) =>
@@ -691,3 +691,12 @@ public sealed class EngineFamily
 
     private sealed record SortableMember(int OriginalIndex, GradedElement Member, AtomicElement Slot);
 }
+
+
+
+
+
+
+
+
+

@@ -1,4 +1,4 @@
-using Core3.Engine;
+﻿using Core3.Engine;
 
 namespace Core3.Runtime;
 
@@ -8,10 +8,11 @@ namespace Core3.Runtime;
 /// preserves provenance about how that survivor arose within an operation
 /// context.
 /// </summary>
-public sealed record EngineOperationPiece(
+public sealed record OperationPiece(
     GradedElement Result,
     GradedElement Carrier,
     IReadOnlyList<int> SourceMemberIndices)
 {
     public int SourceMemberCount => SourceMemberIndices.Count;
 }
+

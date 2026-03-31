@@ -1,4 +1,4 @@
-using Core3.Binding;
+﻿using Core3.Binding;
 using Core3.Engine;
 using Core3.Runtime;
 using Core3.Serialization;
@@ -40,7 +40,7 @@ public sealed class SerializationTests
 }
 """;
 
-        var context = EngineOperationContext.Create(
+        var context = OperationContext.Create(
             new AtomicElement(4, 4),
             [
                 new AtomicElement(1, 2),
@@ -274,3 +274,4 @@ public sealed class SerializationTests
     private static string Normalize(string json) =>
         json.Trim().ReplaceLineEndings("\n");
 }
+

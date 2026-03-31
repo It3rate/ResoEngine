@@ -1,4 +1,4 @@
-using Core3.Engine;
+﻿using Core3.Engine;
 using Core3.Runtime;
 
 namespace Core3.Operations;
@@ -8,10 +8,10 @@ namespace Core3.Operations;
 /// tension, and one-or-more outbound survivors without introducing a separate
 /// ontology for the survivors themselves.
 /// </summary>
-public abstract record EngineArcResult : IExactResult
+public abstract record ArcResult : IExactResult
 {
-    protected EngineArcResult(
-        EngineOperationContext context,
+    protected ArcResult(
+        OperationContext context,
         GradedElement? tension = null,
         string? note = null)
     {
@@ -20,12 +20,15 @@ public abstract record EngineArcResult : IExactResult
         Note = note;
     }
 
-    public EngineOperationContext Context { get; }
+    public OperationContext Context { get; }
     public GradedElement? Tension { get; }
     public string? Note { get; }
     public bool IsExact => Tension is null;
     public abstract string OriginLawName { get; }
-    public abstract IReadOnlyList<EngineOperationPiece> OutboundPieces { get; }
+    public abstract IReadOnlyList<OperationPiece> OutboundPieces { get; }
     public bool HasAny => OutboundPieces.Count > 0;
     public bool HasMany => OutboundPieces.Count > 1;
 }
+
+
+

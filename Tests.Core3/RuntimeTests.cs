@@ -1,4 +1,4 @@
-using Core3.Engine;
+﻿using Core3.Engine;
 using Core3.Runtime;
 
 namespace Tests.Core3;
@@ -6,9 +6,9 @@ namespace Tests.Core3;
 public sealed class RuntimeTests
 {
     [Fact]
-    public void EngineOperationContext_CanFocusSortShuffleAndCollapse()
+    public void OperationContext_CanFocusSortShuffleAndCollapse()
     {
-        var context = EngineOperationContext.Create(
+        var context = OperationContext.Create(
             new AtomicElement(4, 4),
             [
                 new AtomicElement(1, 2),
@@ -19,7 +19,7 @@ public sealed class RuntimeTests
 
         Assert.True(context.TryFocusMember(1, out var focused));
 
-        var focusedContext = Assert.IsType<EngineOperationContext>(focused);
+        var focusedContext = Assert.IsType<OperationContext>(focused);
         Assert.Equal(new AtomicElement(3, 4), focusedContext.Frame);
         Assert.False(focusedContext.IsOrdered);
         Assert.NotNull(focusedContext.ParentContext);
@@ -28,7 +28,7 @@ public sealed class RuntimeTests
 
         Assert.True(focusedContext.TryCollapseToParentFrame(out var collapsed));
 
-        var collapsedContext = Assert.IsType<EngineOperationContext>(collapsed);
+        var collapsedContext = Assert.IsType<OperationContext>(collapsed);
         Assert.Equal(context.Frame, collapsedContext.Frame);
         Assert.False(collapsedContext.IsOrdered);
         Assert.Equal(3, collapsedContext.Count);
@@ -36,7 +36,7 @@ public sealed class RuntimeTests
 
         Assert.True(context.TrySortByFrameSlot(0, descending: false, out var sorted));
 
-        var sortedContext = Assert.IsType<EngineOperationContext>(sorted);
+        var sortedContext = Assert.IsType<OperationContext>(sorted);
         Assert.True(sortedContext.IsOrdered);
         Assert.Equal(
             [new AtomicElement(1, 4), new AtomicElement(1, 2), new AtomicElement(3, 4)],
@@ -49,9 +49,9 @@ public sealed class RuntimeTests
     }
 
     [Fact]
-    public void EngineOperationContext_CanConvertBetweenOrderedAndUnorderedViews()
+    public void OperationContext_CanConvertBetweenOrderedAndUnorderedViews()
     {
-        var ordered = EngineOperationContext.Create(
+        var ordered = OperationContext.Create(
             new AtomicElement(4, 4),
             [new AtomicElement(1, 4), new AtomicElement(2, 4)],
             isOrdered: true);
@@ -67,3 +67,4 @@ public sealed class RuntimeTests
         Assert.Equal(unordered.Members, reordered.Members);
     }
 }
+

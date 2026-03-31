@@ -1,4 +1,4 @@
-namespace Core3.Operations;
+﻿namespace Core3.Operations;
 
 /// <summary>
 /// Symmetric family-wide occupancy predicates over one local partition of a
@@ -8,7 +8,7 @@ namespace Core3.Operations;
 /// Core3-native operation/branch expression rather than remaining a closed
 /// code-only category list.
 /// </summary>
-public enum EngineOccupancyOperation
+public enum OccupancyOperation
 {
     None,
     Any,
@@ -18,3 +18,4 @@ public enum EngineOccupancyOperation
     Odd,
     Even
 }
+

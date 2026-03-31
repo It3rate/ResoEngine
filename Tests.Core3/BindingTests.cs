@@ -1,4 +1,4 @@
-using Core3.Binding;
+﻿using Core3.Binding;
 using Core3.Engine;
 using Core3.Operations;
 
@@ -280,7 +280,7 @@ public sealed class BindingTests
     public void TraversalRuntime_CanStepAccumulatorLoopAcrossFamilyMembers()
     {
         var machine = CreateAccumulatorLoopMachine(endTick: 3);
-        var family = new EngineFamily(new AtomicElement(0, 1));
+        var family = new Family(new AtomicElement(0, 1));
         family.AddMember(new AtomicElement(1, 1));
         family.AddMember(new AtomicElement(2, 1));
         family.AddMember(new AtomicElement(3, 1));
@@ -409,7 +409,7 @@ public sealed class BindingTests
                             BindingTransform.Identity)
                     ])
             ]);
-        var family = new EngineFamily(new AtomicElement(0, 1));
+        var family = new Family(new AtomicElement(0, 1));
         family.AddMember(new AtomicElement(1, 1));
         family.AddMember(new AtomicElement(2, 1));
 
@@ -555,3 +555,4 @@ public sealed class BindingTests
                     ])
             ]);
 }
+

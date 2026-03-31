@@ -1,4 +1,4 @@
-using Core3.Engine;
+﻿using Core3.Engine;
 using Core3.Runtime;
 
 namespace Core3.Operations;
@@ -7,21 +7,21 @@ namespace Core3.Operations;
 /// Friendly one-shot operation shell over the current family pipeline for cases
 /// where the family does not need to persist after the read is complete.
 /// </summary>
-public static class EngineOperations
+public static class Operations
 {
-    private delegate bool FamilyAction<TResult>(EngineFamily family, out TResult? result)
+    private delegate bool FamilyAction<TResult>(Family family, out TResult? result)
         where TResult : class;
 
     private delegate bool CompositeFamilyAction<TResult, in TPayload>(
-        EngineFamily family,
+        Family family,
         TPayload payload,
         out TResult? result)
         where TResult : class;
 
-    public static bool TryAdd(EngineOperationContext context, out GradedElement? sum) =>
+    public static bool TryAdd(OperationContext context, out GradedElement? sum) =>
         TryWithFamily(
             context,
-            static (EngineFamily family, out GradedElement? result) => family.TryAddAll(out result),
+            static (Family family, out GradedElement? result) => family.TryAddAll(out result),
             out sum);
 
     public static bool TryAdd(
@@ -31,33 +31,33 @@ public static class EngineOperations
         TryWithFamily(
             frame,
             members,
-            static (EngineFamily family, out GradedElement? result) => family.TryAddAll(out result),
+            static (Family family, out GradedElement? result) => family.TryAddAll(out result),
             out sum);
 
     public static bool TryAddResult(
-        EngineOperationContext context,
-        out EngineOperationResult? result) =>
+        OperationContext context,
+        out OperationResult? result) =>
         TryWithFamily(
             context,
-            static (EngineFamily family, out EngineOperationResult? value) => family.TryAddAllResult(out value),
+            static (Family family, out OperationResult? value) => family.TryAddAllResult(out value),
             out result);
 
     public static bool TryAddResult(
         GradedElement frame,
         IEnumerable<GradedElement> members,
-        out EngineOperationResult? result) =>
+        out OperationResult? result) =>
         TryWithFamily(
             frame,
             members,
-            static (EngineFamily family, out EngineOperationResult? value) => family.TryAddAllResult(out value),
+            static (Family family, out OperationResult? value) => family.TryAddAllResult(out value),
             out result);
 
     public static bool TryMultiply(
-        EngineOperationContext context,
+        OperationContext context,
         out GradedElement? product) =>
         TryWithFamily(
             context,
-            static (EngineFamily family, out GradedElement? result) => family.TryMultiplyAll(out result),
+            static (Family family, out GradedElement? result) => family.TryMultiplyAll(out result),
             out product);
 
     public static bool TryMultiply(
@@ -67,165 +67,165 @@ public static class EngineOperations
         TryWithFamily(
             frame,
             members,
-            static (EngineFamily family, out GradedElement? result) => family.TryMultiplyAll(out result),
+            static (Family family, out GradedElement? result) => family.TryMultiplyAll(out result),
             out product);
 
     public static bool TryMultiplyResult(
-        EngineOperationContext context,
-        out EngineOperationResult? result) =>
+        OperationContext context,
+        out OperationResult? result) =>
         TryWithFamily(
             context,
-            static (EngineFamily family, out EngineOperationResult? value) => family.TryMultiplyAllResult(out value),
+            static (Family family, out OperationResult? value) => family.TryMultiplyAllResult(out value),
             out result);
 
     public static bool TryMultiplyResult(
         GradedElement frame,
         IEnumerable<GradedElement> members,
-        out EngineOperationResult? result) =>
+        out OperationResult? result) =>
         TryWithFamily(
             frame,
             members,
-            static (EngineFamily family, out EngineOperationResult? value) => family.TryMultiplyAllResult(out value),
+            static (Family family, out OperationResult? value) => family.TryMultiplyAllResult(out value),
             out result);
 
     public static bool TryBoolean(
-        EngineOperationContext context,
-        EngineBooleanOperation operation,
-        out EngineBooleanResult? result) =>
+        OperationContext context,
+        BooleanOperation operation,
+        out BooleanResult? result) =>
         TryWithCompositeFamily(
             context,
-            static (EngineFamily family, EngineBooleanOperation payload, out EngineBooleanResult? value) => family.TryBoolean(payload, out value),
+            static (Family family, BooleanOperation payload, out BooleanResult? value) => family.TryBoolean(payload, out value),
             operation,
             out result);
 
     public static bool TryBoolean(
         CompositeElement frame,
         IEnumerable<GradedElement> members,
-        EngineBooleanOperation operation,
-        out EngineBooleanResult? result) =>
+        BooleanOperation operation,
+        out BooleanResult? result) =>
         TryWithCompositeFamily(
             frame,
             members,
             operation,
             isOrdered: true,
-            static (EngineFamily family, EngineBooleanOperation payload, out EngineBooleanResult? value) => family.TryBoolean(payload, out value),
+            static (Family family, BooleanOperation payload, out BooleanResult? value) => family.TryBoolean(payload, out value),
             out result);
 
     public static bool TryBooleanResult(
-        EngineOperationContext context,
-        EngineBooleanOperation operation,
-        out EngineBooleanResult? result) =>
+        OperationContext context,
+        BooleanOperation operation,
+        out BooleanResult? result) =>
         TryWithCompositeFamily(
             context,
-            static (EngineFamily family, EngineBooleanOperation payload, out EngineBooleanResult? value) => family.TryBooleanResult(payload, out value),
+            static (Family family, BooleanOperation payload, out BooleanResult? value) => family.TryBooleanResult(payload, out value),
             operation,
             out result);
 
     public static bool TryBooleanResult(
         CompositeElement frame,
         IEnumerable<GradedElement> members,
-        EngineBooleanOperation operation,
-        out EngineBooleanResult? result) =>
+        BooleanOperation operation,
+        out BooleanResult? result) =>
         TryWithCompositeFamily(
             frame,
             members,
             operation,
             isOrdered: true,
-            static (EngineFamily family, EngineBooleanOperation payload, out EngineBooleanResult? value) => family.TryBooleanResult(payload, out value),
+            static (Family family, BooleanOperation payload, out BooleanResult? value) => family.TryBooleanResult(payload, out value),
             out result);
 
     public static bool TryOccupancyBoolean(
-        EngineOperationContext context,
-        EngineOccupancyOperation operation,
-        out EngineFamilyBooleanResult? result) =>
+        OperationContext context,
+        OccupancyOperation operation,
+        out FamilyBooleanResult? result) =>
         TryWithCompositeFamily(
             context,
-            static (EngineFamily family, EngineOccupancyOperation payload, out EngineFamilyBooleanResult? value) => family.TryOccupancyBoolean(payload, out value),
+            static (Family family, OccupancyOperation payload, out FamilyBooleanResult? value) => family.TryOccupancyBoolean(payload, out value),
             operation,
             out result);
 
     public static bool TryOccupancyBoolean(
         CompositeElement frame,
         IEnumerable<GradedElement> members,
-        EngineOccupancyOperation operation,
-        out EngineFamilyBooleanResult? result,
+        OccupancyOperation operation,
+        out FamilyBooleanResult? result,
         bool isOrdered = false) =>
         TryWithCompositeFamily(
             frame,
             members,
             operation,
             isOrdered,
-            static (EngineFamily family, EngineOccupancyOperation payload, out EngineFamilyBooleanResult? value) => family.TryOccupancyBoolean(payload, out value),
+            static (Family family, OccupancyOperation payload, out FamilyBooleanResult? value) => family.TryOccupancyBoolean(payload, out value),
             out result);
 
     public static bool TryOccupancyBooleanResult(
-        EngineOperationContext context,
-        EngineOccupancyOperation operation,
-        out EngineFamilyBooleanResult? result) =>
+        OperationContext context,
+        OccupancyOperation operation,
+        out FamilyBooleanResult? result) =>
         TryWithCompositeFamily(
             context,
-            static (EngineFamily family, EngineOccupancyOperation payload, out EngineFamilyBooleanResult? value) => family.TryOccupancyBooleanResult(payload, out value),
+            static (Family family, OccupancyOperation payload, out FamilyBooleanResult? value) => family.TryOccupancyBooleanResult(payload, out value),
             operation,
             out result);
 
     public static bool TryOccupancyBooleanResult(
         CompositeElement frame,
         IEnumerable<GradedElement> members,
-        EngineOccupancyOperation operation,
-        out EngineFamilyBooleanResult? result,
+        OccupancyOperation operation,
+        out FamilyBooleanResult? result,
         bool isOrdered = false) =>
         TryWithCompositeFamily(
             frame,
             members,
             operation,
             isOrdered,
-            static (EngineFamily family, EngineOccupancyOperation payload, out EngineFamilyBooleanResult? value) => family.TryOccupancyBooleanResult(payload, out value),
+            static (Family family, OccupancyOperation payload, out FamilyBooleanResult? value) => family.TryOccupancyBooleanResult(payload, out value),
             out result);
 
     public static bool TryBooleanAdjacentPairs(
-        EngineOperationContext context,
-        EngineBooleanOperation operation,
-        out IReadOnlyList<EngineBooleanResult>? results) =>
+        OperationContext context,
+        BooleanOperation operation,
+        out IReadOnlyList<BooleanResult>? results) =>
         TryWithCompositeFamily(
             context,
-            static (EngineFamily family, EngineBooleanOperation payload, out IReadOnlyList<EngineBooleanResult>? value) => family.TryBooleanAdjacentPairs(payload, out value),
+            static (Family family, BooleanOperation payload, out IReadOnlyList<BooleanResult>? value) => family.TryBooleanAdjacentPairs(payload, out value),
             operation,
             out results);
 
     public static bool TryBooleanAdjacentPairs(
         CompositeElement frame,
         IEnumerable<GradedElement> members,
-        EngineBooleanOperation operation,
-        out IReadOnlyList<EngineBooleanResult>? results) =>
+        BooleanOperation operation,
+        out IReadOnlyList<BooleanResult>? results) =>
         TryWithCompositeFamily(
             frame,
             members,
             operation,
             isOrdered: true,
-            static (EngineFamily family, EngineBooleanOperation payload, out IReadOnlyList<EngineBooleanResult>? value) => family.TryBooleanAdjacentPairs(payload, out value),
+            static (Family family, BooleanOperation payload, out IReadOnlyList<BooleanResult>? value) => family.TryBooleanAdjacentPairs(payload, out value),
             out results);
 
     public static bool TryBooleanAdjacentPairResults(
-        EngineOperationContext context,
-        EngineBooleanOperation operation,
-        out IReadOnlyList<EngineBooleanResult>? results) =>
+        OperationContext context,
+        BooleanOperation operation,
+        out IReadOnlyList<BooleanResult>? results) =>
         TryWithCompositeFamily(
             context,
-            static (EngineFamily family, EngineBooleanOperation payload, out IReadOnlyList<EngineBooleanResult>? value) => family.TryBooleanAdjacentPairResults(payload, out value),
+            static (Family family, BooleanOperation payload, out IReadOnlyList<BooleanResult>? value) => family.TryBooleanAdjacentPairResults(payload, out value),
             operation,
             out results);
 
     public static bool TryBooleanAdjacentPairResults(
         CompositeElement frame,
         IEnumerable<GradedElement> members,
-        EngineBooleanOperation operation,
-        out IReadOnlyList<EngineBooleanResult>? results) =>
+        BooleanOperation operation,
+        out IReadOnlyList<BooleanResult>? results) =>
         TryWithCompositeFamily(
             frame,
             members,
             operation,
             isOrdered: true,
-            static (EngineFamily family, EngineBooleanOperation payload, out IReadOnlyList<EngineBooleanResult>? value) => family.TryBooleanAdjacentPairResults(payload, out value),
+            static (Family family, BooleanOperation payload, out IReadOnlyList<BooleanResult>? value) => family.TryBooleanAdjacentPairResults(payload, out value),
             out results);
 
     private static bool TryWithFamily<TResult>(
@@ -234,14 +234,14 @@ public static class EngineOperations
         FamilyAction<TResult> action,
         out TResult? result)
         where TResult : class =>
-        TryWithFamily(EngineOperationContext.Create(frame, members), action, out result);
+        TryWithFamily(OperationContext.Create(frame, members), action, out result);
 
     private static bool TryWithFamily<TResult>(
-        EngineOperationContext context,
+        OperationContext context,
         FamilyAction<TResult> action,
         out TResult? result)
         where TResult : class =>
-        action(new EngineFamily(context), out result);
+        action(new Family(context), out result);
 
     private static bool TryWithCompositeFamily<TResult, TPayload>(
         CompositeElement frame,
@@ -252,13 +252,13 @@ public static class EngineOperations
         out TResult? result)
         where TResult : class =>
         TryWithCompositeFamily(
-            EngineOperationContext.Create(frame, members, isOrdered),
+            OperationContext.Create(frame, members, isOrdered),
             action,
             payload,
             out result);
 
     private static bool TryWithCompositeFamily<TResult, TPayload>(
-        EngineOperationContext context,
+        OperationContext context,
         CompositeFamilyAction<TResult, TPayload> action,
         TPayload payload,
         out TResult? result)
@@ -270,6 +270,13 @@ public static class EngineOperations
             return false;
         }
 
-        return action(new EngineFamily(context), payload, out result);
+        return action(new Family(context), payload, out result);
     }
 }
+
+
+
+
+
+
+

@@ -1,4 +1,4 @@
-# Core3 Runtime Notes
+﻿# Core3 Runtime Notes
 
 This note describes where the runtime layer fits inside `Core3`.
 
@@ -70,12 +70,12 @@ possible.
 
 In the current API direction, the intended flow is:
 
-1. build or derive an `EngineOperationContext`
+1. build or derive an `OperationContext`
 2. run an operation against that context
 3. inspect the resulting element and its provenance
 4. optionally use that result as the basis of a new context
 
-The current helper surface on `EngineOperationContext` is intentionally small.
+The current helper surface on `OperationContext` is intentionally small.
 It exposes a few significant derived-context operations such as:
 
 - ordered / unordered view changes
@@ -123,3 +123,4 @@ In short:
 - operation layer says what law is being applied to that runtime situation
 
 That is the current intended fit of `Core3.Runtime`.
+

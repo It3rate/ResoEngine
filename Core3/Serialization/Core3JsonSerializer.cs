@@ -1,4 +1,4 @@
-using Core3.Binding;
+﻿using Core3.Binding;
 using Core3.Engine;
 using Core3.Operations;
 using Core3.Runtime;
@@ -34,22 +34,22 @@ public static class Core3JsonSerializer
     public static string Serialize(EngineView view, Core3JsonSerializerOptions? options = null) =>
         Serialize(writer => Write(writer, view, Resolve(options)), options);
 
-    public static string Serialize(EngineOperationContext context, Core3JsonSerializerOptions? options = null) =>
+    public static string Serialize(OperationContext context, Core3JsonSerializerOptions? options = null) =>
         Serialize(writer => Write(writer, context, Resolve(options)), options);
 
-    public static string Serialize(EngineReadResult result, Core3JsonSerializerOptions? options = null) =>
+    public static string Serialize(ReadResult result, Core3JsonSerializerOptions? options = null) =>
         Serialize(writer => Write(writer, result, Resolve(options)), options);
 
-    public static string Serialize(EngineFamily family, Core3JsonSerializerOptions? options = null) =>
+    public static string Serialize(Family family, Core3JsonSerializerOptions? options = null) =>
         Serialize(writer => Write(writer, family, Resolve(options)), options);
 
-    public static string Serialize(EngineOperationResult result, Core3JsonSerializerOptions? options = null) =>
+    public static string Serialize(OperationResult result, Core3JsonSerializerOptions? options = null) =>
         Serialize(writer => Write(writer, result, Resolve(options)), options);
 
-    public static string Serialize(EngineBooleanResult result, Core3JsonSerializerOptions? options = null) =>
+    public static string Serialize(BooleanResult result, Core3JsonSerializerOptions? options = null) =>
         Serialize(writer => Write(writer, result, Resolve(options)), options);
 
-    public static string Serialize(EngineFamilyBooleanResult result, Core3JsonSerializerOptions? options = null) =>
+    public static string Serialize(FamilyBooleanResult result, Core3JsonSerializerOptions? options = null) =>
         Serialize(writer => Write(writer, result, Resolve(options)), options);
 
     public static string Serialize(BoundTemplate template, Core3JsonSerializerOptions? options = null) =>
@@ -320,7 +320,7 @@ public static class Core3JsonSerializer
         writer.WriteEndObject();
     }
 
-    public static void Write(Utf8JsonWriter writer, EngineOperationContext context, Core3JsonSerializerOptions? options = null)
+    public static void Write(Utf8JsonWriter writer, OperationContext context, Core3JsonSerializerOptions? options = null)
     {
         var actual = Resolve(options);
 
@@ -346,7 +346,7 @@ public static class Core3JsonSerializer
         writer.WriteEndObject();
     }
 
-    public static void Write(Utf8JsonWriter writer, EngineFamily family, Core3JsonSerializerOptions? options = null)
+    public static void Write(Utf8JsonWriter writer, Family family, Core3JsonSerializerOptions? options = null)
     {
         var actual = Resolve(options);
 
@@ -372,7 +372,7 @@ public static class Core3JsonSerializer
         writer.WriteEndObject();
     }
 
-    public static void Write(Utf8JsonWriter writer, EngineReadResult result, Core3JsonSerializerOptions? options = null)
+    public static void Write(Utf8JsonWriter writer, ReadResult result, Core3JsonSerializerOptions? options = null)
     {
         var actual = Resolve(options);
 
@@ -406,7 +406,7 @@ public static class Core3JsonSerializer
         writer.WriteEndObject();
     }
 
-    public static void Write(Utf8JsonWriter writer, EngineOperationResult result, Core3JsonSerializerOptions? options = null)
+    public static void Write(Utf8JsonWriter writer, OperationResult result, Core3JsonSerializerOptions? options = null)
     {
         var actual = Resolve(options);
 
@@ -459,7 +459,7 @@ public static class Core3JsonSerializer
         writer.WriteEndObject();
     }
 
-    public static void Write(Utf8JsonWriter writer, EngineBooleanResult result, Core3JsonSerializerOptions? options = null)
+    public static void Write(Utf8JsonWriter writer, BooleanResult result, Core3JsonSerializerOptions? options = null)
     {
         var actual = Resolve(options);
 
@@ -494,7 +494,7 @@ public static class Core3JsonSerializer
         writer.WriteEndObject();
     }
 
-    public static void Write(Utf8JsonWriter writer, EngineFamilyBooleanResult result, Core3JsonSerializerOptions? options = null)
+    public static void Write(Utf8JsonWriter writer, FamilyBooleanResult result, Core3JsonSerializerOptions? options = null)
     {
         var actual = Resolve(options);
 
@@ -915,12 +915,12 @@ public static class Core3JsonSerializer
         writer.Write(Serialize(outcome, options));
     }
 
-    public static void Write(TextWriter writer, EngineOperationContext context, Core3JsonSerializerOptions? options = null)
+    public static void Write(TextWriter writer, OperationContext context, Core3JsonSerializerOptions? options = null)
     {
         writer.Write(Serialize(context, options));
     }
 
-    public static void Write(TextWriter writer, EngineReadResult result, Core3JsonSerializerOptions? options = null)
+    public static void Write(TextWriter writer, ReadResult result, Core3JsonSerializerOptions? options = null)
     {
         writer.Write(Serialize(result, options));
     }
@@ -940,7 +940,7 @@ public static class Core3JsonSerializer
         writer.Write(Serialize(view, options));
     }
 
-    public static void Write(TextWriter writer, EngineOperationResult result, Core3JsonSerializerOptions? options = null)
+    public static void Write(TextWriter writer, OperationResult result, Core3JsonSerializerOptions? options = null)
     {
         writer.Write(Serialize(result, options));
     }
@@ -970,7 +970,7 @@ public static class Core3JsonSerializer
         writer.Write(Serialize(result, options));
     }
 
-    private static void Write(Utf8JsonWriter writer, EngineOperationPiece piece, Core3JsonSerializerOptions options)
+    private static void Write(Utf8JsonWriter writer, OperationPiece piece, Core3JsonSerializerOptions options)
     {
         writer.WriteStartObject();
         writer.WritePropertyName("result");
@@ -1039,7 +1039,7 @@ public static class Core3JsonSerializer
 
     private static void WritePieces(
         Utf8JsonWriter writer,
-        IReadOnlyList<EngineOperationPiece> pieces,
+        IReadOnlyList<OperationPiece> pieces,
         Core3JsonSerializerOptions options)
     {
         writer.WriteStartArray();
@@ -1052,7 +1052,7 @@ public static class Core3JsonSerializer
 
     private static void WriteArcDerived(
         Utf8JsonWriter writer,
-        EngineArcResult result,
+        ArcResult result,
         Core3JsonSerializerOptions options)
     {
         writer.WriteString("originLawName", result.OriginLawName);
@@ -1087,3 +1087,10 @@ public static class Core3JsonSerializer
     private static Core3JsonSerializerOptions Resolve(Core3JsonSerializerOptions? options) =>
         options ?? Core3JsonSerializerOptions.Default;
 }
+
+
+
+
+
+
+

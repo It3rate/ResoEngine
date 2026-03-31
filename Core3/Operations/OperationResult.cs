@@ -1,4 +1,4 @@
-using Core3.Engine;
+﻿using Core3.Engine;
 using Core3.Runtime;
 
 namespace Core3.Operations;
@@ -12,11 +12,11 @@ namespace Core3.Operations;
 /// this is the one-survivor case of the broader outbound-family pattern also
 /// used by piece-producing operations.
 /// </summary>
-public sealed record EngineOperationResult : EngineArcResult
+public sealed record OperationResult : ArcResult
 {
-    public EngineOperationResult(
+    public OperationResult(
         string operationName,
-        EngineOperationContext context,
+        OperationContext context,
         GradedElement result,
         GradedElement? resultFrame = null,
         GradedElement? preservedStructure = null,
@@ -35,9 +35,9 @@ public sealed record EngineOperationResult : EngineArcResult
     public GradedElement ResultFrame { get; }
     public GradedElement? PreservedStructure { get; }
     public override string OriginLawName => OperationName;
-    public EngineOperationPiece OutboundPiece =>
+    public OperationPiece OutboundPiece =>
         new(Result, ResultFrame, Enumerable.Range(0, Context.Count).ToArray());
-    public override IReadOnlyList<EngineOperationPiece> OutboundPieces => [OutboundPiece];
+    public override IReadOnlyList<OperationPiece> OutboundPieces => [OutboundPiece];
 
     public bool TryReadResult(out GradedElement? read) =>
         Result.TryViewInFrame(ResultFrame, out read);
@@ -49,3 +49,7 @@ public sealed record EngineOperationResult : EngineArcResult
             ? EngineBoundary.GetAxis(ResultFrame, read)
             : EngineBoundary.CreateUnknownAxis(ResultFrame);
 }
+
+
+
+

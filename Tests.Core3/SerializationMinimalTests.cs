@@ -1,4 +1,4 @@
-using Core3.Engine;
+﻿using Core3.Engine;
 using Core3.Operations;
 using Core3.Runtime;
 using Core3.Serialization;
@@ -207,9 +207,9 @@ public sealed class SerializationMinimalTests
             new AtomicElement(4, 1)
         };
 
-        Assert.True(EngineOperations.TryMultiplyResult(frame, members, out var operationResult));
+        Assert.True(Operations.TryMultiplyResult(frame, members, out var operationResult));
 
-        var finalizedResult = Assert.IsType<EngineOperationResult>(operationResult);
+        var finalizedResult = Assert.IsType<OperationResult>(operationResult);
         var operationJson = Core3JsonSerializer.Serialize(finalizedResult);
         var foldedResultJson = Core3JsonSerializer.Serialize(finalizedResult.Result);
 
@@ -284,13 +284,13 @@ public sealed class SerializationMinimalTests
 }
 """;
 
-        var family = new EngineFamily(new AtomicElement(0, 1));
+        var family = new Family(new AtomicElement(0, 1));
         family.AddMember(new AtomicElement(1, 1));
         family.AddMember(new AtomicElement(1, 0));
 
         Assert.True(family.TryReadAllResult(out var readResult));
 
-        var json = Core3JsonSerializer.Serialize(Assert.IsType<EngineReadResult>(readResult));
+        var json = Core3JsonSerializer.Serialize(Assert.IsType<ReadResult>(readResult));
 
         AssertJsonEqual(expectedJson, json);
     }
@@ -397,14 +397,14 @@ public sealed class SerializationMinimalTests
 }
 """;
 
-        var family = new EngineFamily(new AtomicElement(0, 1));
+        var family = new Family(new AtomicElement(0, 1));
         family.AddMember(new AtomicElement(1, 1));
         family.AddMember(new AtomicElement(1, 0));
 
         Assert.True(family.TryReadAllResult(out var readResult));
 
         var json = Core3JsonSerializer.Serialize(
-            Assert.IsType<EngineReadResult>(readResult),
+            Assert.IsType<ReadResult>(readResult),
             new Core3JsonSerializerOptions { IncludeDerived = true });
 
         AssertJsonEqual(expectedJson, json);
@@ -630,10 +630,10 @@ public sealed class SerializationMinimalTests
             new AtomicElement(4, 1)
         };
 
-        Assert.True(EngineOperations.TryMultiplyResult(frame, members, out var operationResult));
+        Assert.True(Operations.TryMultiplyResult(frame, members, out var operationResult));
 
         var json = Core3JsonSerializer.Serialize(
-            Assert.IsType<EngineOperationResult>(operationResult),
+            Assert.IsType<OperationResult>(operationResult),
             new Core3JsonSerializerOptions { IncludeDerived = true });
 
         AssertJsonEqual(expectedJson, json);
@@ -748,9 +748,9 @@ public sealed class SerializationMinimalTests
         var preservedStructure = new CompositeElement(
             new AtomicElement(3, 1),
             new AtomicElement(4, 1));
-        var result = new EngineOperationResult(
+        var result = new OperationResult(
             "Multiply",
-            EngineOperationContext.Create(
+            OperationContext.Create(
                 frame,
                 [new AtomicElement(3, 1), new AtomicElement(4, 1)]),
             new AtomicElement(12, 1),
@@ -985,14 +985,14 @@ public sealed class SerializationMinimalTests
         var primary = Core3TestHelpers.CreateSegmentFrame(0, 10, 10);
         var secondary = Core3TestHelpers.CreateSegmentFrame(3, 5, 10);
 
-        Assert.True(EngineOperations.TryBoolean(
+        Assert.True(Operations.TryBoolean(
             frame,
             [primary, secondary],
-            EngineBooleanOperation.Xor,
+            BooleanOperation.Xor,
             out var result));
 
         var json = Core3JsonSerializer.Serialize(
-            Assert.IsType<EngineBooleanResult>(result),
+            Assert.IsType<BooleanResult>(result),
             new Core3JsonSerializerOptions { IncludeDerived = true });
 
         AssertJsonEqual(expectedJson, json);
@@ -1397,13 +1397,13 @@ public sealed class SerializationMinimalTests
 }
 """;
 
-        var family = new EngineFamily(new AtomicElement(0, 1));
+        var family = new Family(new AtomicElement(0, 1));
         family.AddMember(new AtomicElement(1, 1));
         family.AddMember(new AtomicElement(1, 0));
 
         Assert.True(family.TryAddAllResult(out var result));
 
-        var json = Core3JsonSerializer.Serialize(Assert.IsType<EngineOperationResult>(result));
+        var json = Core3JsonSerializer.Serialize(Assert.IsType<OperationResult>(result));
 
         AssertJsonEqual(expectedJson, json);
     }
@@ -1522,13 +1522,13 @@ public sealed class SerializationMinimalTests
             new AtomicElement(3, 10),
             new AtomicElement(5, 0));
 
-        Assert.True(EngineOperations.TryBooleanResult(
+        Assert.True(Operations.TryBooleanResult(
             frame,
             [primary, secondary],
-            EngineBooleanOperation.And,
+            BooleanOperation.And,
             out var result));
 
-        var json = Core3JsonSerializer.Serialize(Assert.IsType<EngineBooleanResult>(result));
+        var json = Core3JsonSerializer.Serialize(Assert.IsType<BooleanResult>(result));
 
         AssertJsonEqual(expectedJson, json);
     }
@@ -1539,3 +1539,10 @@ public sealed class SerializationMinimalTests
     private static string Normalize(string json) =>
         json.Trim().ReplaceLineEndings("\n");
 }
+
+
+
+
+
+
+

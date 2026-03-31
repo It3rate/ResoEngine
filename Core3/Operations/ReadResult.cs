@@ -1,4 +1,4 @@
-using Core3.Engine;
+﻿using Core3.Engine;
 using Core3.Runtime;
 
 namespace Core3.Operations;
@@ -9,10 +9,10 @@ namespace Core3.Operations;
 /// wrapper preserves the inbound context and any unresolved structure that
 /// remained present during the read.
 /// </summary>
-public sealed record EngineReadResult : EngineArcResult
+public sealed record ReadResult : ArcResult
 {
-    public EngineReadResult(
-        EngineOperationContext context,
+    public ReadResult(
+        OperationContext context,
         IReadOnlyList<GradedElement> reads,
         GradedElement? tension = null,
         string? note = null)
@@ -23,8 +23,12 @@ public sealed record EngineReadResult : EngineArcResult
 
     public IReadOnlyList<GradedElement> Reads { get; }
     public override string OriginLawName => "Read";
-    public override IReadOnlyList<EngineOperationPiece> OutboundPieces =>
+    public override IReadOnlyList<OperationPiece> OutboundPieces =>
         Reads
-            .Select((read, index) => new EngineOperationPiece(read, Context.Frame, [index]))
+            .Select((read, index) => new OperationPiece(read, Context.Frame, [index]))
             .ToArray();
 }
+
+
+
+

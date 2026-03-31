@@ -1,9 +1,9 @@
-using Core3.Engine;
+﻿using Core3.Engine;
 using Core3.Runtime;
 
 namespace Core3.Operations;
 
-internal static class EngineBooleanProjection
+internal static class BooleanProjection
 {
     // TODO: Fold boolean projection into the same generic operation pipeline as
     // add/multiply/fold/alignment/resolution so the engine only sees laws over
@@ -12,12 +12,12 @@ internal static class EngineBooleanProjection
         CompositeElement frame,
         CompositeElement primary,
         CompositeElement secondary,
-        EngineBooleanOperation operation,
+        BooleanOperation operation,
         GradedElement? inheritedTension,
         string? inheritedNote,
-        out EngineBooleanResult? result)
+        out BooleanResult? result)
     {
-        var context = new EngineOperationContext(frame, [primary, secondary], true);
+        var context = new OperationContext(frame, [primary, secondary], true);
         var tension = inheritedTension;
         var note = inheritedNote;
         if (!TryReadSegmentFamily(
@@ -30,13 +30,13 @@ internal static class EngineBooleanProjection
                 out tension,
                 out note))
         {
-            result = new EngineBooleanResult(context, operation, [], tension, note);
+            result = new BooleanResult(context, operation, [], tension, note);
             return true;
         }
 
         if (frameSegment.End <= frameSegment.Start)
         {
-            result = new EngineBooleanResult(context, operation, [], tension, note);
+            result = new BooleanResult(context, operation, [], tension, note);
             return true;
         }
 
@@ -47,7 +47,7 @@ internal static class EngineBooleanProjection
             presentMembers => SelectBinaryCarrier(presentMembers, frame, primary, secondary),
             ref tension,
             ref note);
-        result = new EngineBooleanResult(context, operation, pieces, tension, note);
+        result = new BooleanResult(context, operation, pieces, tension, note);
         return true;
     }
 
@@ -55,12 +55,12 @@ internal static class EngineBooleanProjection
         CompositeElement frame,
         IReadOnlyList<CompositeElement> members,
         bool isOrdered,
-        EngineOccupancyOperation operation,
+        OccupancyOperation operation,
         GradedElement? inheritedTension,
         string? inheritedNote,
-        out EngineFamilyBooleanResult? result)
+        out FamilyBooleanResult? result)
     {
-        var context = new EngineOperationContext(
+        var context = new OperationContext(
             frame,
             members.Cast<GradedElement>().ToArray(),
             isOrdered);
@@ -76,13 +76,13 @@ internal static class EngineBooleanProjection
                 out tension,
                 out note))
         {
-            result = new EngineFamilyBooleanResult(context, operation, [], tension, note);
+            result = new FamilyBooleanResult(context, operation, [], tension, note);
             return true;
         }
 
         if (frameSegment.End <= frameSegment.Start)
         {
-            result = new EngineFamilyBooleanResult(context, operation, [], tension, note);
+            result = new FamilyBooleanResult(context, operation, [], tension, note);
             return true;
         }
 
@@ -93,7 +93,7 @@ internal static class EngineBooleanProjection
             presentMembers => SelectFamilyCarrier(presentMembers, frame, members),
             ref tension,
             ref note);
-        result = new EngineFamilyBooleanResult(context, operation, pieces, tension, note);
+        result = new FamilyBooleanResult(context, operation, pieces, tension, note);
         return true;
     }
 
@@ -136,7 +136,7 @@ internal static class EngineBooleanProjection
         return true;
     }
 
-    private static List<EngineOperationPiece> CollectPieces(
+    private static List<OperationPiece> CollectPieces(
         SortedSet<decimal> boundaries,
         Func<decimal, List<int>> presentMemberSelector,
         Func<IReadOnlyList<int>, bool> shouldKeep,
@@ -144,7 +144,7 @@ internal static class EngineBooleanProjection
         ref GradedElement? tension,
         ref string? note)
     {
-        var pieces = new List<EngineOperationPiece>();
+        var pieces = new List<OperationPiece>();
         var updatedTension = tension;
         var updatedNote = note;
         decimal? currentLeft = null;
@@ -214,7 +214,7 @@ internal static class EngineBooleanProjection
                     out var pieceNote) &&
                 piece is not null)
             {
-                pieces.Add(new EngineOperationPiece(
+                pieces.Add(new OperationPiece(
                     piece,
                     currentCarrier,
                     currentPresentMembers.ToArray()));
@@ -291,7 +291,7 @@ internal static class EngineBooleanProjection
         value > segment.Start && value < segment.End;
 
     private static bool EvaluateBinary(
-        EngineBooleanOperation operation,
+        BooleanOperation operation,
         IReadOnlyList<int> presentMembers) =>
         operation.Evaluate(
             presentMembers.Contains(0),
@@ -350,18 +350,18 @@ internal static class EngineBooleanProjection
     }
 
     private static bool EvaluateFamily(
-        EngineOccupancyOperation operation,
+        OccupancyOperation operation,
         int presenceCount,
         int memberCount) =>
         operation switch
         {
-            EngineOccupancyOperation.None => presenceCount == 0,
-            EngineOccupancyOperation.Any => presenceCount >= 1,
-            EngineOccupancyOperation.All => presenceCount == memberCount,
-            EngineOccupancyOperation.NotAll => presenceCount < memberCount,
-            EngineOccupancyOperation.ExactlyOne => presenceCount == 1,
-            EngineOccupancyOperation.Odd => (presenceCount & 1) == 1,
-            EngineOccupancyOperation.Even => (presenceCount & 1) == 0,
+            OccupancyOperation.None => presenceCount == 0,
+            OccupancyOperation.Any => presenceCount >= 1,
+            OccupancyOperation.All => presenceCount == memberCount,
+            OccupancyOperation.NotAll => presenceCount < memberCount,
+            OccupancyOperation.ExactlyOne => presenceCount == 1,
+            OccupancyOperation.Odd => (presenceCount & 1) == 1,
+            OccupancyOperation.Even => (presenceCount & 1) == 0,
             _ => false
         };
 
@@ -437,3 +437,10 @@ internal static class EngineBooleanProjection
 
     private readonly record struct AtomicSegment(decimal Start, decimal End);
 }
+
+
+
+
+
+
+

@@ -1,4 +1,4 @@
-using Core3.Engine;
+﻿using Core3.Engine;
 using Core3.Operations;
 
 namespace Core3.Binding;
@@ -100,7 +100,7 @@ public static class TraversalRuntime
 
     public static bool TryStep(
         TraversalRuntimeState state,
-        EngineFamily? family,
+        Family? family,
         out TraversalStepResult? result)
     {
         var encounters = new List<TraversalSiteEncounter>();
@@ -245,7 +245,7 @@ public static class TraversalRuntime
 
     private static bool TryResolveSelector(
         StepState state,
-        EngineFamily? family,
+        Family? family,
         BindingSelector selector,
         out GradedElement? value,
         out GradedElement? tension,
@@ -286,7 +286,7 @@ public static class TraversalRuntime
 
     private static bool TryResolveFamilyRead(
         TraversalMover mover,
-        EngineFamily? family,
+        Family? family,
         BindingAddress address,
         out GradedElement? value,
         out GradedElement? tension,
@@ -472,3 +472,4 @@ public static class TraversalRuntime
             domain is BindingDomain.Token or BindingDomain.Context or BindingDomain.Result;
     }
 }
+

@@ -1,4 +1,4 @@
-using Core3.Engine;
+﻿using Core3.Engine;
 using Core3.Operations;
 
 namespace Core3.Runtime;
@@ -9,14 +9,14 @@ namespace Core3.Runtime;
 /// operation-arc reading, this record is the inbound side: active frame,
 /// participating members, ordering, and temporary parent/focus provenance.
 /// </summary>
-public sealed record EngineOperationContext(
+public sealed record OperationContext(
     GradedElement Frame,
     IReadOnlyList<GradedElement> Members,
     bool IsOrdered,
-    EngineOperationContext? ParentContext = null,
+    OperationContext? ParentContext = null,
     int? ParentFocusIndex = null)
 {
-    public static EngineOperationContext Create(
+    public static OperationContext Create(
         GradedElement frame,
         IEnumerable<GradedElement> members,
         bool isOrdered = true) =>
@@ -24,22 +24,22 @@ public sealed record EngineOperationContext(
 
     public int Count => Members.Count;
 
-    public EngineFamily ToFamily() => new(this);
+    public Family ToFamily() => new(this);
 
-    public EngineOperationContext AsOrdered() =>
+    public OperationContext AsOrdered() =>
         IsOrdered
             ? this
-            : new EngineOperationContext(Frame, Members, true, ParentContext, ParentFocusIndex);
+            : new OperationContext(Frame, Members, true, ParentContext, ParentFocusIndex);
 
-    public EngineOperationContext AsUnordered() =>
+    public OperationContext AsUnordered() =>
         !IsOrdered
             ? this
-            : new EngineOperationContext(Frame, Members, false, ParentContext, ParentFocusIndex);
+            : new OperationContext(Frame, Members, false, ParentContext, ParentFocusIndex);
 
-    public EngineOperationContext CreateShuffledCopy(int? seed = null) =>
+    public OperationContext CreateShuffledCopy(int? seed = null) =>
         ToFamily().CreateShuffledCopy(seed).CreateContext();
 
-    public bool TryFocusMember(int index, out EngineOperationContext? focusedContext)
+    public bool TryFocusMember(int index, out OperationContext? focusedContext)
     {
         if (ToFamily().TryFocusMember(index, out var focusedFamily) &&
             focusedFamily is not null)
@@ -52,7 +52,7 @@ public sealed record EngineOperationContext(
         return false;
     }
 
-    public bool TryFocusMember(GradedElement member, out EngineOperationContext? focusedContext)
+    public bool TryFocusMember(GradedElement member, out OperationContext? focusedContext)
     {
         if (ToFamily().TryFocusMember(member, out var focusedFamily) &&
             focusedFamily is not null)
@@ -68,7 +68,7 @@ public sealed record EngineOperationContext(
     public bool TrySortByFrameSlot(
         int slotIndex,
         bool descending,
-        out EngineOperationContext? sortedContext)
+        out OperationContext? sortedContext)
     {
         if (ToFamily().TrySortByFrameSlot(slotIndex, descending, out var sortedFamily) &&
             sortedFamily is not null)
@@ -81,7 +81,7 @@ public sealed record EngineOperationContext(
         return false;
     }
 
-    public bool TryCollapseToParentFrame(out EngineOperationContext? collapsedContext)
+    public bool TryCollapseToParentFrame(out OperationContext? collapsedContext)
     {
         if (ToFamily().TryCollapseToParentFrame(out var collapsedFamily) &&
             collapsedFamily is not null)
@@ -94,3 +94,5 @@ public sealed record EngineOperationContext(
         return false;
     }
 }
+
+

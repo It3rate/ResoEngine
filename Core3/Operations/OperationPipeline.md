@@ -1,4 +1,4 @@
-# Core3 Operation Pipeline
+﻿# Core3 Operation Pipeline
 
 This note records the current intended unification path for operations in
 `Core3`.
@@ -101,7 +101,7 @@ more directly referenceable through ordinary Core3 frame/family reads.
 
 ## Family As Current Data Area
 
-For now, `EngineFamily` should be treated pragmatically as the current data
+For now, `Family` should be treated pragmatically as the current data
 area.
 
 It holds:
@@ -406,7 +406,7 @@ That means:
 
 For the next implementation pass:
 
-1. Keep `EngineFamily` as the current data area.
+1. Keep `Family` as the current data area.
 2. Do not over-commit family semantics yet.
 3. Define one generic operation descriptor in terms of:
    - topology
@@ -446,3 +446,4 @@ system that later supports:
 - loops
 - repeated equations
 - syntax-like flows
+
