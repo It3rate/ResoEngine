@@ -398,6 +398,26 @@ public sealed class OperationsTests
     }
 
     [Fact]
+    public void EngineOperationResult_CanExposeRawMultiplyKernelForCompositeMultiply()
+    {
+        var left = Core3TestHelpers.CreateAxisLikeNumber(1, 1, 2, 1);
+        var right = Core3TestHelpers.CreateAxisLikeNumber(1, 1, 4, 1);
+        var context = EngineOperationContext.Create(left, [left, right]);
+        var outcome = left.Multiply(right);
+        var result = new EngineOperationResult("Multiply", context, outcome.Result, left);
+
+        Assert.True(result.TryGetRawMultiplyKernel(out var kernel));
+
+        var squares = Assert.IsType<CompositeElement>(Assert.IsType<CompositeElement>(kernel).Recessive);
+        var cross = Assert.IsType<CompositeElement>(Assert.IsType<CompositeElement>(kernel).Dominant);
+
+        Assert.Equal(new AtomicElement(1, 1), squares.Recessive);
+        Assert.Equal(new AtomicElement(8, 1), squares.Dominant);
+        Assert.Equal(new AtomicElement(4, 1), cross.Recessive);
+        Assert.Equal(new AtomicElement(2, 1), cross.Dominant);
+    }
+
+    [Fact]
     public void EngineOperations_TryBoolean_And_UsesSharedFrameOverlap()
     {
         var frame = Core3TestHelpers.CreateSegmentFrame(0, 10, 10);

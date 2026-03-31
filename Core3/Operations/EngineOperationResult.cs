@@ -70,6 +70,29 @@ public sealed record EngineOperationResult : IExactResult
     public bool TryReadResult(out GradedElement? read) =>
         Result.TryReferenceToFrame(ResultFrame, out read);
 
+    public bool TryGetRawMultiplyKernel(out CompositeElement? kernel)
+    {
+        if (!string.Equals(OperationName, "Multiply", StringComparison.Ordinal) ||
+            Context.Count != 2)
+        {
+            kernel = null;
+            return false;
+        }
+
+        var family = new EngineFamily(Context);
+
+        if (!family.TryReadAllWithTension(out var readResult) ||
+            readResult is null ||
+            readResult.Reads[0] is not CompositeElement left ||
+            readResult.Reads[1] is not CompositeElement right)
+        {
+            kernel = null;
+            return false;
+        }
+
+        return left.TryMultiplyKernel(right, out kernel);
+    }
+
     public CompositeElement GetResultBoundaryAxis() =>
         ResultFrame.Grade == Result.Grade &&
         TryReadResult(out var read) &&

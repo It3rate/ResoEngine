@@ -1,5 +1,6 @@
 using Core3.Engine;
 using Core3.Operations;
+using Core3.Runtime;
 using Core3.Serialization;
 
 namespace Tests.Core3;
@@ -490,6 +491,25 @@ public sealed class SerializationMinimalTests
             new Core3JsonSerializerOptions { IncludeDerived = true });
 
         AssertJsonEqual(expectedJson, json);
+    }
+
+    [Fact]
+    public void Core3JsonSerializer_SerializesDerivedOperationResultRawMultiplyKernel()
+    {
+        var left = Core3TestHelpers.CreateAxisLikeNumber(1, 1, 2, 1);
+        var right = Core3TestHelpers.CreateAxisLikeNumber(1, 1, 4, 1);
+        var context = EngineOperationContext.Create(left, [left, right]);
+        var outcome = left.Multiply(right);
+        var operationResult = new EngineOperationResult("Multiply", context, outcome.Result, left);
+
+        var json = Core3JsonSerializer.Serialize(
+            operationResult,
+            new Core3JsonSerializerOptions { IncludeDerived = true });
+
+        Assert.Contains("\"rawMultiplyKernel\"", json);
+        Assert.Contains("\"value\": 2", json);
+        Assert.Contains("\"value\": 8", json);
+        Assert.Contains("\"value\": 4", json);
     }
 
     [Fact]

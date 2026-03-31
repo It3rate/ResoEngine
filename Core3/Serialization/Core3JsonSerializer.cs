@@ -428,6 +428,13 @@ public static class Core3JsonSerializer
             writer.WriteString("originLawName", result.OriginLawName);
             writer.WritePropertyName("outboundPieces");
             WritePieces(writer, result.OutboundPieces, actual);
+
+            if (result.TryGetRawMultiplyKernel(out var rawMultiplyKernel) &&
+                rawMultiplyKernel is not null)
+            {
+                writer.WritePropertyName("rawMultiplyKernel");
+                Write(writer, rawMultiplyKernel, actual);
+            }
         }
 
         if (actual.IncludeDerived &&
