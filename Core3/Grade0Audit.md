@@ -36,12 +36,12 @@ The first migrated paths are:
 - `CompositeElement.Fold`
 - `EngineEvaluation.ComposeRatio`
 - `AtomicElement.ReexpressToSupportWithTension`
-- `AtomicElement.CommitToCalibrationWithTension`
-- `AtomicElement.AlignWithTension`
-- `AtomicElement.AddWithTension`
-- `AtomicElement.SubtractWithTension`
-- `AtomicElement.MultiplyWithTension`
-- `AtomicElement.ScaleWithTension`
+- `AtomicElement.CommitToCalibration`
+- `AtomicElement.Align`
+- `AtomicElement.Add`
+- `AtomicElement.Subtract`
+- `AtomicElement.Multiply`
+- `AtomicElement.Scale`
 - recursive composite calibration/alignment outcome surfaces
 - recursive composite add/subtract outcome surfaces
 - recursive composite multiply/scale outcome surfaces
@@ -61,7 +61,7 @@ This now distinguishes two layers:
   lawful result surface returning `EngineElementOutcome`
 - exact-only `TryCommit...` / `TryAlign...`
   compatibility surfaces
-- lawful `...WithTension(...)` outcome surfaces
+- lawful plain operation surfaces
   preserving unresolved results and provenance
 
 Under this first pass:

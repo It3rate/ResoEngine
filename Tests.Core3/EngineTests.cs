@@ -254,12 +254,12 @@ public sealed class EngineTests
     }
 
     [Fact]
-    public void AtomicCommitToCalibrationWithTension_PreservesCarrierContrastAsUnresolvedRead()
+    public void AtomicCommitToCalibration_PreservesCarrierContrastAsUnresolvedRead()
     {
         var subject = new AtomicElement(3, 1);
         var calibration = new AtomicElement(4, -4);
 
-        var outcome = subject.CommitToCalibrationWithTension(calibration);
+        var outcome = subject.CommitToCalibration(calibration);
 
         Assert.False(outcome.IsExact);
         Assert.Equal(
@@ -305,7 +305,7 @@ public sealed class EngineTests
     }
 
     [Fact]
-    public void CompositeCommitToCalibrationWithTension_CarriesChildTensionForward()
+    public void CompositeCommitToCalibration_CarriesChildTensionForward()
     {
         var subject = new CompositeElement(
             new AtomicElement(1, 2),
@@ -314,7 +314,7 @@ public sealed class EngineTests
             new AtomicElement(2, 4),
             new AtomicElement(4, -4));
 
-        var outcome = subject.CommitToCalibrationWithTension(calibration);
+        var outcome = subject.CommitToCalibration(calibration);
 
         Assert.False(outcome.IsExact);
 
@@ -325,7 +325,7 @@ public sealed class EngineTests
     }
 
     [Fact]
-    public void CompositeAlignWithTension_CarriesChildTensionForward()
+    public void CompositeAlign_CarriesChildTensionForward()
     {
         var left = new CompositeElement(
             new AtomicElement(1, 2),
@@ -334,7 +334,7 @@ public sealed class EngineTests
             new AtomicElement(2, 4),
             new AtomicElement(4, -4));
 
-        var outcome = left.AlignWithTension(right);
+        var outcome = left.Align(right);
 
         Assert.False(outcome.IsExact);
 
@@ -503,7 +503,7 @@ public sealed class EngineTests
     }
 
     [Fact]
-    public void CompositeAddWithTension_CarriesChildTensionForward()
+    public void CompositeAdd_CarriesChildTensionForward()
     {
         var left = new CompositeElement(
             new AtomicElement(1, 2),
@@ -512,7 +512,7 @@ public sealed class EngineTests
             new AtomicElement(2, 4),
             new AtomicElement(4, -4));
 
-        var outcome = left.AddWithTension(right);
+        var outcome = left.Add(right);
 
         Assert.False(outcome.IsExact);
 
@@ -523,7 +523,7 @@ public sealed class EngineTests
     }
 
     [Fact]
-    public void CompositeSubtractWithTension_CarriesChildTensionForward()
+    public void CompositeSubtract_CarriesChildTensionForward()
     {
         var left = new CompositeElement(
             new AtomicElement(3, 2),
@@ -532,7 +532,7 @@ public sealed class EngineTests
             new AtomicElement(2, 4),
             new AtomicElement(4, -4));
 
-        var outcome = left.SubtractWithTension(right);
+        var outcome = left.Subtract(right);
 
         Assert.False(outcome.IsExact);
 
@@ -565,12 +565,12 @@ public sealed class EngineTests
     }
 
     [Fact]
-    public void AtomicMultiplyWithTension_PreservesUnresolvedSupportWhenAUnitIsUnresolved()
+    public void AtomicMultiply_PreservesUnresolvedSupportWhenAUnitIsUnresolved()
     {
         var left = new AtomicElement(2, 3);
         var right = new AtomicElement(4, 0);
 
-        var outcome = left.MultiplyWithTension(right);
+        var outcome = left.Multiply(right);
 
         Assert.False(outcome.IsExact);
         Assert.Equal(new AtomicElement(8, 0), Assert.IsType<AtomicElement>(outcome.Result));
@@ -578,12 +578,12 @@ public sealed class EngineTests
     }
 
     [Fact]
-    public void AtomicScaleWithTension_PreservesUnresolvedSupportWhenFactorUnitIsUnresolved()
+    public void AtomicScale_PreservesUnresolvedSupportWhenFactorUnitIsUnresolved()
     {
         var value = new AtomicElement(10, 1);
         var factor = new AtomicElement(3, 0);
 
-        var outcome = value.ScaleWithTension(factor);
+        var outcome = value.Scale(factor);
 
         Assert.False(outcome.IsExact);
         Assert.Equal(new AtomicElement(30, 0), Assert.IsType<AtomicElement>(outcome.Result));
@@ -608,7 +608,7 @@ public sealed class EngineTests
     }
 
     [Fact]
-    public void GradeOneCompositeMultiplyWithTension_PreservesUnresolvedAtomicProductWhenFoldCannotSettle()
+    public void GradeOneCompositeMultiply_PreservesUnresolvedAtomicProductWhenFoldCannotSettle()
     {
         var left = new CompositeElement(
             new AtomicElement(2, 1),
@@ -617,7 +617,7 @@ public sealed class EngineTests
             new AtomicElement(8, 1),
             new AtomicElement(2, 1));
 
-        var outcome = left.MultiplyWithTension(right);
+        var outcome = left.Multiply(right);
 
         Assert.False(outcome.IsExact);
         Assert.Equal(new AtomicElement(6, 0), Assert.IsType<AtomicElement>(outcome.Result));
@@ -688,14 +688,14 @@ public sealed class EngineTests
     }
 
     [Fact]
-    public void CompositeScaleWithTension_CarriesChildTensionForward()
+    public void CompositeScale_CarriesChildTensionForward()
     {
         var composite = new CompositeElement(
             new AtomicElement(1, 2),
             new AtomicElement(3, 1));
         var factor = new AtomicElement(2, 0);
 
-        var outcome = composite.ScaleWithTension(factor);
+        var outcome = composite.Scale(factor);
 
         Assert.False(outcome.IsExact);
 

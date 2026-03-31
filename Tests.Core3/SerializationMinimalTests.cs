@@ -1103,7 +1103,7 @@ public sealed class SerializationMinimalTests
         var left = new AtomicElement(2, 3);
         var right = new AtomicElement(4, 0);
 
-        var json = Core3JsonSerializer.Serialize(left.MultiplyWithTension(right));
+        var json = Core3JsonSerializer.Serialize(left.Multiply(right));
 
         AssertJsonEqual(expectedJson, json);
     }
