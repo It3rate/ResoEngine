@@ -7,8 +7,18 @@ namespace Core3.Operations;
 /// Operation-scoped grouping of subjects read in one frame.
 /// The frame is just an existing graded element in a frame role; it is not a
 /// special ontology. For now this is also the main operation-time data area:
-/// a place to hold members, ordering hints, focus derivations, and family-wide
-/// laws without overcommitting the deeper runtime story yet.
+/// a neutral holder for members, ordering hints, focus derivations, and
+/// family-wide laws without overcommitting the deeper runtime story yet.
+///
+/// This should stay broad enough to support several higher-layer readings of
+/// the same held data. A family may later be viewed as an ordered span, a bag,
+/// a graph-like local neighborhood, a route slice, or another domain-friendly
+/// collection surface. The important thing is to keep one holder and let views
+/// and laws interpret it, rather than inventing several unrelated collection
+/// ontologies.
+///
+/// Future law cleanup should keep that holder/view split intact, including
+/// compatibility with the experimental Core3.Data layer.
 /// </summary>
 public sealed class Family
 {

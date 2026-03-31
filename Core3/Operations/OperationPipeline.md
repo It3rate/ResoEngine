@@ -116,6 +116,18 @@ Sometimes it may be little more than a neutral or zeroed holder.
 
 That is acceptable for now.
 
+This should also stay compatible with the higher-layer data work:
+
+- the same family may later be read as a bag
+- or an array-like span
+- or a graph-like local neighborhood
+- or a route slice
+- or another domain-friendly collection view
+
+The point is not to create several different ontologies for those.
+The point is to keep one holder surface and let lawful views / framings
+interpret it differently.
+
 The immediate requirement is not that family already explains the whole runtime
 ontology.
 The requirement is that it be capable of:
@@ -130,6 +142,32 @@ So the present recommendation is:
 - treat family as the current operation-time data area
 - do not over-define it yet
 - make sure later law unification can still run through it
+
+That means the upcoming law cleanup should keep the data-layer perspective in
+mind: `Family` should remain a stable holder / data-area surface while laws and
+views become cleaner about how they interpret what is being held.
+
+## Unit Sign As First Read Posture
+
+The experimental data layer is also a useful reminder that unit sign may guide
+the first carrier interpretation of a read:
+
+- positive unit -> aligned / calibrative / value-facing
+- negative unit -> orthogonal / organizational / structural-facing
+- zero unit -> unresolved / generative demand
+
+That is useful, but it is not yet the whole law by itself.
+Actual law choice still depends on things such as:
+
+- current grade shape
+- host / frame relation
+- continuation mode
+- retention mode
+- reduction mode
+- explicit local law
+
+So unit sign should help classify the read, not replace the rest of the
+operation pipeline.
 
 ## Generic Operation Pipeline
 
@@ -418,6 +456,9 @@ For the next implementation pass:
    structure.
 5. Treat boolean as the first explicit multi-piece preset, not as a permanent
    separate subsystem.
+6. Keep the holder / view split compatible with the experimental data layer, so
+   law cleanup does not hard-code one narrow collection interpretation into
+   `Family`.
 
 That descriptor does not need to become a large new class family.
 It may begin as a very small internal shape, or as shared helpers over the
