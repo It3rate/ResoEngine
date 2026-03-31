@@ -296,6 +296,121 @@ public sealed class SerializationMinimalTests
     }
 
     [Fact]
+    public void Core3JsonSerializer_SerializesDerivedReadResultOutboundPieces()
+    {
+        var expectedJson = """
+{
+  "kind": "readResult",
+  "isExact": false,
+  "context": {
+    "kind": "operationContext",
+    "isOrdered": true,
+    "frame": {
+      "kind": "atomic",
+      "grade": 0,
+      "value": 0,
+      "unit": 1
+    },
+    "members": [
+      {
+        "kind": "atomic",
+        "grade": 0,
+        "value": 1,
+        "unit": 1
+      },
+      {
+        "kind": "atomic",
+        "grade": 0,
+        "value": 1,
+        "unit": 0
+      }
+    ]
+  },
+  "reads": [
+    {
+      "kind": "atomic",
+      "grade": 0,
+      "value": 1,
+      "unit": 1
+    },
+    {
+      "kind": "atomic",
+      "grade": 0,
+      "value": 1,
+      "unit": 0
+    }
+  ],
+  "tension": {
+    "kind": "composite",
+    "grade": 1,
+    "recessive": {
+      "kind": "atomic",
+      "grade": 0,
+      "value": 1,
+      "unit": 0
+    },
+    "dominant": {
+      "kind": "atomic",
+      "grade": 0,
+      "value": 0,
+      "unit": 1
+    }
+  },
+  "note": "Calibration preserved unresolved support because one or both unit slots were unresolved.",
+  "originLawName": "Read",
+  "outboundPieces": [
+    {
+      "result": {
+        "kind": "atomic",
+        "grade": 0,
+        "value": 1,
+        "unit": 1
+      },
+      "carrier": {
+        "kind": "atomic",
+        "grade": 0,
+        "value": 0,
+        "unit": 1
+      },
+      "sourceMemberIndices": [
+        0
+      ]
+    },
+    {
+      "result": {
+        "kind": "atomic",
+        "grade": 0,
+        "value": 1,
+        "unit": 0
+      },
+      "carrier": {
+        "kind": "atomic",
+        "grade": 0,
+        "value": 0,
+        "unit": 1
+      },
+      "sourceMemberIndices": [
+        1
+      ]
+    }
+  ]
+}
+""";
+
+        var family = new EngineFamily(new AtomicElement(0, 1));
+        family.AddMember(new AtomicElement(1, 1));
+        family.AddMember(new AtomicElement(1, 0));
+
+        Assert.True(family.TryReadAllResult(out var readResult));
+
+        var json = Core3JsonSerializer.Serialize(
+            Assert.IsType<EngineReadResult>(readResult),
+            new Core3JsonSerializerOptions { IncludeDerived = true });
+
+        AssertJsonEqual(expectedJson, json);
+    }
+
+    [Fact]
     public void Core3JsonSerializer_SerializesDerivedReferenceOutcome_WhenReadIsNotExact()
     {
         // Serializes a reference with derived view enabled when the borrowed read

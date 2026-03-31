@@ -195,6 +195,12 @@ public sealed class OperationsTests
 
         var readResult = Assert.IsType<EngineReadResult>(result);
         Assert.False(readResult.IsExact);
+        Assert.Equal("Read", readResult.OriginLawName);
+        Assert.True(readResult.HasAny);
+        Assert.True(readResult.HasMany);
+        Assert.Equal(2, readResult.OutboundPieces.Count);
+        Assert.Equal([0], readResult.OutboundPieces[0].SourceMemberIndices);
+        Assert.Equal([1], readResult.OutboundPieces[1].SourceMemberIndices);
         Assert.Equal(
             [new AtomicElement(1, 1), new AtomicElement(1, 0)],
             readResult.Reads);

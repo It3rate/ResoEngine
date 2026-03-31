@@ -398,6 +398,11 @@ public static class Core3JsonSerializer
             writer.WriteString("note", result.Note);
         }
 
+        if (actual.IncludeDerived)
+        {
+            WriteArcDerived(writer, result, actual);
+        }
+
         writer.WriteEndObject();
     }
 
