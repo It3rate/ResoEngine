@@ -78,8 +78,9 @@ internal static class EngineBoundary
             return true;
         }
 
-        if (read.TryCommitToCalibration(frame, out var committed) &&
-            committed is AtomicElement committedAtomic)
+        var commitOutcome = read.CommitToCalibration(frame);
+        if (commitOutcome.IsExact &&
+            commitOutcome.Result is AtomicElement committedAtomic)
         {
             committedRead = committedAtomic;
             return true;

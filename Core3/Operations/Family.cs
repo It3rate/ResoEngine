@@ -122,15 +122,16 @@ public sealed class Family
 
         var focusedMember = _members[index];
 
-        if (!TryReadMember(focusedMember, out var focusedFrame) ||
-            focusedFrame is null)
+        var focusedOutcome = ReadMember(focusedMember);
+
+        if (!focusedOutcome.IsExact)
         {
             focusedFamily = null;
             return false;
         }
 
         focusedFamily = CreateDerivedFamily(
-            focusedFrame,
+            focusedOutcome.Result,
             IsOrdered,
             index);
 
@@ -167,9 +168,10 @@ public sealed class Family
         {
             var member = _members[memberIndex];
 
-            if (!TryReadMember(member, out var read) ||
-                read is null ||
-                !TryGetAtomicSlot(read, slotIndex, out var slot) ||
+            var readOutcome = ReadMember(member);
+
+            if (!readOutcome.IsExact ||
+                !TryGetAtomicSlot(readOutcome.Result, slotIndex, out var slot) ||
                 slot is null)
             {
                 sortedFamily = null;
@@ -218,8 +220,9 @@ public sealed class Family
             return false;
         }
 
-        if (!Frame.TryViewInFrame(ParentFamily.Frame, out var collapsedFrameMember) ||
-            collapsedFrameMember is null)
+        var collapsedOutcome = Frame.ViewInFrame(ParentFamily.Frame);
+
+        if (!collapsedOutcome.IsExact)
         {
             collapsedFamily = null;
             return false;
@@ -236,7 +239,7 @@ public sealed class Family
         {
             if (memberIndex == ParentFocusIndex.Value)
             {
-                collapsedFamily.AddMember(collapsedFrameMember);
+                collapsedFamily.AddMember(collapsedOutcome.Result);
             }
 
             if (memberIndex < _members.Count)
@@ -248,10 +251,10 @@ public sealed class Family
         return true;
     }
 
-    public bool TryReadMember(GradedElement member, out GradedElement? read)
-        => member.TryViewInFrame(Frame, out read);
+    public EngineElementOutcome ReadMember(GradedElement member) =>
+        member.ViewInFrame(Frame);
 
-    public bool TryReadAllResult(out PieceArcResult? result)
+    public PieceArcResult ReadAllResult()
     {
         var resolvedReads = new List<GradedElement>(_members.Count);
         GradedElement? tension = null;
@@ -265,28 +268,13 @@ public sealed class Family
             note = EngineTension.CombineNotes(note, outcome.Note);
         }
 
-        result = PieceArcResult.FromResults("Read", CreateContext(), resolvedReads, tension, note);
-        return true;
+        return PieceArcResult.FromResults("Read", CreateContext(), resolvedReads, tension, note);
     }
 
     public CompositeElement GetMemberBoundaryAxis(GradedElement member)
-        => TryReadMember(member, out var read) && read is not null
-            ? EngineBoundary.GetAxis(Frame, read)
+        => ReadMember(member) is var outcome && outcome.IsExact
+            ? EngineBoundary.GetAxis(Frame, outcome.Result)
             : EngineBoundary.CreateUnknownAxis(Frame);
-
-    public bool TryReadAll(out IReadOnlyList<GradedElement>? reads)
-        => EngineExactness.TryProjectExact(
-            TryReadAllResult(out var result),
-            result,
-            static item => item.Results,
-            out reads);
-
-    public bool TryAddAll(out GradedElement? sum)
-        => EngineExactness.TryProjectExact(
-            TryAddAllResult(out var result),
-            result,
-            static item => item.Result,
-            out sum);
 
     public bool TryAddAllResult(out OperationResult? result) =>
         TryAccumulateAll(
@@ -294,13 +282,6 @@ public sealed class Family
             static (left, right) => left.Add(right),
             static family => family.Frame,
             out result);
-
-    public bool TryMultiplyAll(out GradedElement? product)
-        => EngineExactness.TryProjectExact(
-            TryMultiplyAllResult(out var result),
-            result,
-            static item => item.Result,
-            out product);
 
     public bool TryMultiplyAllResult(out OperationResult? result) =>
         TryAccumulateAll(
@@ -311,12 +292,6 @@ public sealed class Family
                 resultFrame is not null
                     ? resultFrame
                     : family.Frame,
-            out result);
-
-    public bool TryBoolean(BooleanOperation operation, out PieceArcResult? result)
-        => EngineExactness.TryGetExact(
-            TryBooleanResult(operation, out var candidate),
-            candidate,
             out result);
 
     public bool TryBooleanResult(
@@ -343,14 +318,6 @@ public sealed class Family
             note,
             out result);
     }
-
-    public bool TryOccupancyBoolean(
-        OccupancyOperation operation,
-        out PieceArcResult? result) =>
-        EngineExactness.TryGetExact(
-            TryOccupancyBooleanResult(operation, out var candidate),
-            candidate,
-            out result);
 
     public bool TryOccupancyBooleanResult(
         OccupancyOperation operation,
@@ -418,20 +385,6 @@ public sealed class Family
         return true;
     }
 
-    public bool TryBooleanAdjacentPairs(
-        BooleanOperation operation,
-        out IReadOnlyList<PieceArcResult>? results)
-    {
-        if (TryBooleanAdjacentPairResults(operation, out results) &&
-            EngineExactness.AreAllExact(results))
-        {
-            return true;
-        }
-
-        results = null;
-        return false;
-    }
-
     private bool TryDeriveMultiplyResultFrame(out GradedElement? resultFrame)
     {
         if (_members.Count == 0)
@@ -444,13 +397,15 @@ public sealed class Family
 
         for (var index = 1; index < _members.Count; index++)
         {
-            if (!current.TryMultiply(Frame, out var next) || next is null)
+            var nextOutcome = current.Multiply(Frame);
+
+            if (!nextOutcome.IsExact)
             {
                 resultFrame = null;
                 return false;
             }
 
-            current = next;
+            current = nextOutcome.Result;
         }
 
         resultFrame = current;
@@ -487,9 +442,9 @@ public sealed class Family
         out GradedElement? tension,
         out string? note)
     {
+        var readResult = ReadAllResult();
+
         if (Frame is not CompositeElement compositeFrame ||
-            !TryReadAllResult(out var readResult) ||
-            readResult is null ||
             !TryAsCompositeReads(readResult.Results, out var compositeMembers))
         {
             frame = default!;
@@ -554,9 +509,9 @@ public sealed class Family
         Func<Family, GradedElement> resultFrameSelector,
         out OperationResult? result)
     {
-        if (!TryReadAllResult(out var readResult) ||
-            readResult is null ||
-            readResult.Results.Count == 0)
+        var readResult = ReadAllResult();
+
+        if (readResult.Results.Count == 0)
         {
             result = null;
             return false;
@@ -622,10 +577,11 @@ public sealed class Family
         {
             for (var rightIndex = leftIndex + 1; rightIndex < sortableMembers.Count; rightIndex++)
             {
-                if (!sortableMembers[leftIndex].Slot.TryAlignExact(
-                        sortableMembers[rightIndex].Slot,
-                        out _,
-                        out _))
+                var alignment = sortableMembers[leftIndex].Slot.Align(
+                    sortableMembers[rightIndex].Slot);
+
+                if (!alignment.IsExact ||
+                    !alignment.TryGetPair(out _, out _))
                 {
                     return false;
                 }
@@ -637,9 +593,12 @@ public sealed class Family
 
     private static int CompareAtomicSlots(AtomicElement left, AtomicElement right)
     {
-        if (!left.TryAlignExact(right, out var leftAligned, out var rightAligned) ||
-            leftAligned is null ||
-            rightAligned is null)
+        var alignment = left.Align(right);
+
+        if (!alignment.IsExact ||
+            !alignment.TryGetPair(out var leftElement, out var rightElement) ||
+            leftElement is not AtomicElement leftAligned ||
+            rightElement is not AtomicElement rightAligned)
         {
             throw new InvalidOperationException("Family slot comparison requires aligned atomic reads.");
         }

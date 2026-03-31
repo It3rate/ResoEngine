@@ -39,14 +39,14 @@ public sealed record OperationResult : ArcResult
         new(Result, ResultFrame, Enumerable.Range(0, Context.Count).ToArray());
     public override IReadOnlyList<OperationPiece> OutboundPieces => [OutboundPiece];
 
-    public bool TryReadResult(out GradedElement? read) =>
-        Result.TryViewInFrame(ResultFrame, out read);
+    public EngineElementOutcome ReadResult() =>
+        Result.ViewInFrame(ResultFrame);
 
     public CompositeElement GetResultBoundaryAxis() =>
         ResultFrame.Grade == Result.Grade &&
-        TryReadResult(out var read) &&
-        read is not null
-            ? EngineBoundary.GetAxis(ResultFrame, read)
+        ReadResult() is var outcome &&
+        outcome.IsExact
+            ? EngineBoundary.GetAxis(ResultFrame, outcome.Result)
             : EngineBoundary.CreateUnknownAxis(ResultFrame);
 }
 

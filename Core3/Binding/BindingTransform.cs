@@ -60,12 +60,13 @@ public sealed record BindingSignal
             return false;
         }
 
-        if (Value.TryMultiply(other.Value, out var product) &&
-            product is not null)
+        var productOutcome = Value.Multiply(other.Value);
+
+        if (productOutcome.IsExact)
         {
             try
             {
-                composed = new BindingSignal(product);
+                composed = new BindingSignal(productOutcome.Result);
                 return true;
             }
             catch (InvalidOperationException)

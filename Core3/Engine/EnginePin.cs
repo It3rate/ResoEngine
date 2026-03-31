@@ -45,13 +45,14 @@ public sealed record EnginePin
     public bool HasResolvedUnits => Inbound.HasResolvedUnits && Outbound.HasResolvedUnits;
     public bool SharesUnitSpace => Inbound.SharesUnitSpace(Outbound);
     public bool HasContrastSpace => HasResolvedUnits && !SharesUnitSpace;
-    public GradedElement? DeclaredSpan => TryGetDeclaredSpan(out var declaredSpan) ? declaredSpan : null;
+    public GradedElement? DeclaredSpan => Host is not null
+        ? Host.Dominant.Subtract(Host.Recessive).Result
+        : null;
     public GradedElement? InboundTension => Host is not null ? Outbound : null;
-    public GradedElement? OutboundTension => TryGetOutboundTension(out var tension) ? tension : null;
-
-    public GradedElement? Add() =>
-        Inbound.TryAdd(Outbound, out var sum)
-            ? sum
+    public GradedElement? OutboundTension =>
+        DeclaredSpan is not null &&
+        DeclaredSpan.SharesUnitSpace(Outbound)
+            ? DeclaredSpan
             : null;
 
     public GradedElement? Multiply() =>
@@ -62,31 +63,6 @@ public sealed record EnginePin
     public CompositeElement Contrast() => new(Inbound, Outbound);
 
     public bool MultiplyRequiresLift() => HasResolvedUnits && SharesUnitSpace;
-
-    public EnginePin SlideTo(GradedElement pinPosition)
-    {
-        if (Host is null)
-        {
-            throw new InvalidOperationException("Only hosted pins can be slid to a new position.");
-        }
-
-        return new EnginePin(Host, pinPosition);
-    }
-
-    public bool TrySlideBy(GradedElement offset, out EnginePin? shifted)
-    {
-        if (Host is not null &&
-            ResolvedPosition is not null &&
-            ResolvedPosition.TryAdd(offset, out var shiftedPosition) &&
-            shiftedPosition is not null)
-        {
-            shifted = new EnginePin(Host, shiftedPosition);
-            return true;
-        }
-
-        shifted = null;
-        return false;
-    }
 
     public override string ToString() => $"pin(in {Inbound}, out {Outbound})";
 
@@ -118,33 +94,6 @@ public sealed record EnginePin
             outboundOutcome.Result,
             positionOutcome.Tension ?? inboundOutcome.Tension ?? outboundOutcome.Tension ?? pinPosition,
             note ?? "Hosted pin preserved unresolved placement.");
-    }
-
-    private bool TryGetDeclaredSpan(out GradedElement? declaredSpan)
-    {
-        if (Host is not null &&
-            Host.Dominant.TrySubtract(Host.Recessive, out declaredSpan) &&
-            declaredSpan is not null)
-        {
-            return true;
-        }
-
-        declaredSpan = null;
-        return false;
-    }
-
-    private bool TryGetOutboundTension(out GradedElement? tension)
-    {
-        if (TryGetDeclaredSpan(out var declaredSpan) &&
-            declaredSpan is not null &&
-            declaredSpan.SharesUnitSpace(Outbound))
-        {
-            tension = declaredSpan;
-            return true;
-        }
-
-        tension = null;
-        return false;
     }
 
     private static bool TryResolveHostedPin(
@@ -179,15 +128,18 @@ public sealed record EnginePin
         out GradedElement inbound,
         out GradedElement outbound)
     {
-        if (position.Grade == host.Recessive.Grade &&
-            position.TrySubtract(host.Recessive, out var inboundSide) &&
-            host.Dominant.TrySubtract(position, out var outboundSide) &&
-            inboundSide is not null &&
-            outboundSide is not null)
+        if (position.Grade == host.Recessive.Grade)
         {
-            inbound = inboundSide;
-            outbound = outboundSide;
-            return true;
+            var inboundOutcome = position.Subtract(host.Recessive);
+            var outboundOutcome = host.Dominant.Subtract(position);
+
+            if (inboundOutcome.IsExact &&
+                outboundOutcome.IsExact)
+            {
+                inbound = inboundOutcome.Result;
+                outbound = outboundOutcome.Result;
+                return true;
+            }
         }
 
         inbound = null!;
@@ -248,13 +200,24 @@ public sealed record EnginePin
             return false;
         }
 
-        if (host.Dominant.TrySubtract(host.Recessive, out var declaredSpan) &&
-            declaredSpan is not null &&
-            declaredSpan.TryScale(ratio, out var offset) &&
-            offset is not null &&
-            host.Recessive.TryAdd(offset, out resolvedPosition) &&
-            resolvedPosition is not null)
+        var declaredSpan = host.Dominant.Subtract(host.Recessive);
+        if (!declaredSpan.IsExact)
         {
+            resolvedPosition = null;
+            return false;
+        }
+
+        var offset = declaredSpan.Result.Scale(ratio);
+        if (!offset.IsExact)
+        {
+            resolvedPosition = null;
+            return false;
+        }
+
+        var positioned = host.Recessive.Add(offset.Result);
+        if (positioned.IsExact)
+        {
+            resolvedPosition = positioned.Result;
             return true;
         }
 

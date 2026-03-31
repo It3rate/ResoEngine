@@ -15,11 +15,13 @@ public sealed class EngineTests
             new AtomicElement(2, 1),
             new AtomicElement(-1, 1));
 
-        Assert.True(orthogonalRatio.TryFold(out var orthogonalFolded));
-        Assert.True(reversedRatio.TryFold(out var reversedFolded));
+        var orthogonalOutcome = orthogonalRatio.Fold();
+        var reversedOutcome = reversedRatio.Fold();
+        Assert.True(orthogonalOutcome.IsExact);
+        Assert.True(reversedOutcome.IsExact);
 
-        var orthogonal = Assert.IsType<AtomicElement>(orthogonalFolded);
-        var reversed = Assert.IsType<AtomicElement>(reversedFolded);
+        var orthogonal = Assert.IsType<AtomicElement>(orthogonalOutcome.Result);
+        var reversed = Assert.IsType<AtomicElement>(reversedOutcome.Result);
 
         Assert.True(orthogonal.IsOrthogonalUnit);
         Assert.False(reversed.IsOrthogonalUnit);
@@ -34,9 +36,10 @@ public sealed class EngineTests
             new AtomicElement(2, 1),
             new AtomicElement(-3, 1));
 
-        Assert.True(ratio.TryFold(out var folded));
+        var outcome = ratio.Fold();
+        Assert.True(outcome.IsExact);
 
-        var atomic = Assert.IsType<AtomicElement>(folded);
+        var atomic = Assert.IsType<AtomicElement>(outcome.Result);
         Assert.Equal(-3, atomic.Value);
         Assert.Equal(2, atomic.Unit);
         Assert.True(atomic.IsAlignedUnit);
@@ -51,7 +54,6 @@ public sealed class EngineTests
 
         var outcome = contrastive.Fold();
 
-        Assert.True(contrastive.TryFold(out var folded));
         Assert.False(outcome.IsExact);
         Assert.Equal(
             new CompositeElement(
@@ -59,7 +61,7 @@ public sealed class EngineTests
                 new AtomicElement(3, -1)),
             outcome.Tension);
 
-        var atomic = Assert.IsType<AtomicElement>(folded);
+        var atomic = Assert.IsType<AtomicElement>(outcome.Result);
         Assert.Equal(new AtomicElement(3, 0), atomic);
         Assert.True(atomic.IsUnresolvedUnit);
     }
@@ -73,11 +75,10 @@ public sealed class EngineTests
 
         var outcome = zeroLikeRatio.Fold();
 
-        Assert.True(zeroLikeRatio.TryFold(out var folded));
         Assert.False(outcome.IsExact);
         Assert.Equal(zeroLikeRatio, outcome.Tension);
 
-        var atomic = Assert.IsType<AtomicElement>(folded);
+        var atomic = Assert.IsType<AtomicElement>(outcome.Result);
         Assert.Equal(new AtomicElement(30, 0), atomic);
         Assert.True(atomic.IsUnresolvedUnit);
     }
@@ -93,9 +94,10 @@ public sealed class EngineTests
                 new AtomicElement(8, 1),
                 new AtomicElement(2, 1)));
 
-        Assert.True(gradeTwo.TryFold(out var folded));
+        var outcome = gradeTwo.Fold();
+        Assert.True(outcome.IsExact);
 
-        var lowered = Assert.IsType<CompositeElement>(folded);
+        var lowered = Assert.IsType<CompositeElement>(outcome.Result);
         Assert.Equal(1, lowered.Grade);
         Assert.Equal(new AtomicElement(3, 10), lowered.Recessive);
         Assert.Equal(new AtomicElement(2, 8), lowered.Dominant);
@@ -169,9 +171,10 @@ public sealed class EngineTests
 
         var view = new EngineView(frame, subject);
 
-        Assert.True(view.TryMeasureOnCalibration(out var measured));
+        var outcome = view.MeasureOnCalibration();
+        Assert.True(outcome.IsExact);
 
-        var calibrated = Assert.IsType<CompositeElement>(measured);
+        var calibrated = Assert.IsType<CompositeElement>(outcome.Result);
         Assert.Equal(frame.Recessive, calibrated.Recessive);
         Assert.Equal(new AtomicElement(70, 10), calibrated.Dominant);
     }
@@ -217,22 +220,31 @@ public sealed class EngineTests
         var host = new AtomicElement(1, 2);
         var applied = new AtomicElement(2, 4);
 
-        Assert.True(host.TryAlignExact(applied, ResolutionPolicy.PreserveHost, out var hostPreserved, out var appliedCommitted));
-        Assert.True(host.TryAlignExact(applied, ResolutionPolicy.PreserveApplied, out var hostCommitted, out var appliedPreserved));
-        Assert.True(host.TryAlignExact(applied, ResolutionPolicy.ExactCommonFrame, out var commonLeft, out var commonRight));
-        Assert.True(host.TryAlignExact(applied, ResolutionPolicy.ComposeSupport, out var composedLeft, out var composedRight));
+        var preserveHost = host.Align(applied, ResolutionPolicy.PreserveHost);
+        var preserveApplied = host.Align(applied, ResolutionPolicy.PreserveApplied);
+        var commonFrame = host.Align(applied, ResolutionPolicy.ExactCommonFrame);
+        var composedSupport = host.Align(applied, ResolutionPolicy.ComposeSupport);
 
-        Assert.Equal(new AtomicElement(1, 2), Assert.IsType<AtomicElement>(hostPreserved));
-        Assert.Equal(new AtomicElement(1, 2), Assert.IsType<AtomicElement>(appliedCommitted));
+        Assert.True(preserveHost.IsExact);
+        Assert.True(preserveApplied.IsExact);
+        Assert.True(commonFrame.IsExact);
+        Assert.True(composedSupport.IsExact);
+        Assert.True(preserveHost.TryGetPair(out var hostPreservedElement, out var appliedCommittedElement));
+        Assert.True(preserveApplied.TryGetPair(out var hostCommittedElement, out var appliedPreservedElement));
+        Assert.True(commonFrame.TryGetPair(out var commonLeftElement, out var commonRightElement));
+        Assert.True(composedSupport.TryGetPair(out var composedLeftElement, out var composedRightElement));
 
-        Assert.Equal(new AtomicElement(2, 4), Assert.IsType<AtomicElement>(hostCommitted));
-        Assert.Equal(new AtomicElement(2, 4), Assert.IsType<AtomicElement>(appliedPreserved));
+        Assert.Equal(new AtomicElement(1, 2), Assert.IsType<AtomicElement>(hostPreservedElement));
+        Assert.Equal(new AtomicElement(1, 2), Assert.IsType<AtomicElement>(appliedCommittedElement));
 
-        Assert.Equal(new AtomicElement(2, 4), Assert.IsType<AtomicElement>(commonLeft));
-        Assert.Equal(new AtomicElement(2, 4), Assert.IsType<AtomicElement>(commonRight));
+        Assert.Equal(new AtomicElement(2, 4), Assert.IsType<AtomicElement>(hostCommittedElement));
+        Assert.Equal(new AtomicElement(2, 4), Assert.IsType<AtomicElement>(appliedPreservedElement));
 
-        Assert.Equal(new AtomicElement(4, 8), Assert.IsType<AtomicElement>(composedLeft));
-        Assert.Equal(new AtomicElement(4, 8), Assert.IsType<AtomicElement>(composedRight));
+        Assert.Equal(new AtomicElement(2, 4), Assert.IsType<AtomicElement>(commonLeftElement));
+        Assert.Equal(new AtomicElement(2, 4), Assert.IsType<AtomicElement>(commonRightElement));
+
+        Assert.Equal(new AtomicElement(4, 8), Assert.IsType<AtomicElement>(composedLeftElement));
+        Assert.Equal(new AtomicElement(4, 8), Assert.IsType<AtomicElement>(composedRightElement));
     }
 
     [Fact]
@@ -297,9 +309,10 @@ public sealed class EngineTests
             new AtomicElement(2, 4),
             new AtomicElement(10, 40));
 
-        Assert.True(subject.TryCommitToCalibration(calibration, out var committed));
+        var outcome = subject.CommitToCalibration(calibration);
+        Assert.True(outcome.IsExact);
 
-        var aligned = Assert.IsType<CompositeElement>(committed);
+        var aligned = Assert.IsType<CompositeElement>(outcome.Result);
         Assert.Equal(new AtomicElement(2, 4), aligned.Recessive);
         Assert.Equal(new AtomicElement(10, 40), aligned.Dominant);
     }
@@ -364,9 +377,10 @@ public sealed class EngineTests
 
         var view = new EngineView(frame, subject);
 
-        Assert.True(view.TryMeasureOnCalibration(out var measured));
+        var outcome = view.MeasureOnCalibration();
+        Assert.True(outcome.IsExact);
 
-        var calibrated = Assert.IsType<CompositeElement>(measured);
+        var calibrated = Assert.IsType<CompositeElement>(outcome.Result);
         Assert.Equal(frame.Recessive, calibrated.Recessive);
         Assert.Equal(
             new CompositeElement(
@@ -385,8 +399,9 @@ public sealed class EngineTests
 
         var view = new EngineView(frame, subject);
 
-        Assert.True(view.TryRead(out var read));
-        Assert.Equal(new AtomicElement(70, 10), Assert.IsType<AtomicElement>(read));
+        var outcome = view.Read();
+        Assert.True(outcome.IsExact);
+        Assert.Equal(new AtomicElement(70, 10), Assert.IsType<AtomicElement>(outcome.Result));
     }
 
     [Fact]
@@ -416,13 +431,16 @@ public sealed class EngineTests
         var tenth = new AtomicElement(3, 10);
         var balanced = new AtomicElement(10, 10);
 
-        Assert.True(whole.TryScale(tenth, out var scaledWhole));
-        Assert.True(balanced.TryScale(new AtomicElement(10, 1), out var scaledValue));
-        Assert.True(balanced.TryScale(new AtomicElement(1, 10), out var scaledSupport));
+        var scaledWholeOutcome = whole.Scale(tenth);
+        var scaledValueOutcome = balanced.Scale(new AtomicElement(10, 1));
+        var scaledSupportOutcome = balanced.Scale(new AtomicElement(1, 10));
+        Assert.True(scaledWholeOutcome.IsExact);
+        Assert.True(scaledValueOutcome.IsExact);
+        Assert.True(scaledSupportOutcome.IsExact);
 
-        Assert.Equal(new AtomicElement(30, 10), Assert.IsType<AtomicElement>(scaledWhole));
-        Assert.Equal(new AtomicElement(100, 10), Assert.IsType<AtomicElement>(scaledValue));
-        Assert.Equal(new AtomicElement(10, 100), Assert.IsType<AtomicElement>(scaledSupport));
+        Assert.Equal(new AtomicElement(30, 10), Assert.IsType<AtomicElement>(scaledWholeOutcome.Result));
+        Assert.Equal(new AtomicElement(100, 10), Assert.IsType<AtomicElement>(scaledValueOutcome.Result));
+        Assert.Equal(new AtomicElement(10, 100), Assert.IsType<AtomicElement>(scaledSupportOutcome.Result));
     }
 
     [Fact]
@@ -431,11 +449,13 @@ public sealed class EngineTests
         var half = new AtomicElement(1, 2);
         var quarter = new AtomicElement(1, 4);
 
-        Assert.True(half.TryAdd(quarter, out var sum));
-        Assert.True(half.TrySubtract(quarter, out var difference));
+        var sumOutcome = half.Add(quarter);
+        var differenceOutcome = half.Subtract(quarter);
+        Assert.True(sumOutcome.IsExact);
+        Assert.True(differenceOutcome.IsExact);
 
-        Assert.Equal(new AtomicElement(3, 4), Assert.IsType<AtomicElement>(sum));
-        Assert.Equal(new AtomicElement(1, 4), Assert.IsType<AtomicElement>(difference));
+        Assert.Equal(new AtomicElement(3, 4), Assert.IsType<AtomicElement>(sumOutcome.Result));
+        Assert.Equal(new AtomicElement(1, 4), Assert.IsType<AtomicElement>(differenceOutcome.Result));
     }
 
     [Fact]
@@ -493,12 +513,15 @@ public sealed class EngineTests
     {
         var ratio = new AtomicElement(3, 10);
 
-        Assert.True(ratio.TryCommitToSupport(100, out var committed));
-        Assert.True(ratio.TryCommitToSupport(50, out var refined));
-        Assert.False(ratio.TryCommitToSupport(6, out _));
+        var committedOutcome = ratio.ReexpressToSupport(100);
+        var refinedOutcome = ratio.ReexpressToSupport(50);
+        var failedOutcome = ratio.ReexpressToSupport(6);
+        Assert.True(committedOutcome.IsExact);
+        Assert.True(refinedOutcome.IsExact);
+        Assert.False(failedOutcome.IsExact);
 
-        Assert.Equal(new AtomicElement(30, 100), committed);
-        Assert.Equal(new AtomicElement(15, 50), refined);
+        Assert.Equal(new AtomicElement(30, 100), committedOutcome.Result);
+        Assert.Equal(new AtomicElement(15, 50), refinedOutcome.Result);
         Assert.Equal(new AtomicElement(3, 10), ratio);
     }
 
@@ -549,11 +572,13 @@ public sealed class EngineTests
         var orthogonal = new AtomicElement(4, -5);
         var orthogonalAgain = new AtomicElement(6, -7);
 
-        Assert.True(aligned.TryMultiply(orthogonal, out var contrastProduct));
-        Assert.True(orthogonal.TryMultiply(orthogonalAgain, out var orthogonalProduct));
+        var contrastOutcome = aligned.Multiply(orthogonal);
+        var orthogonalOutcome = orthogonal.Multiply(orthogonalAgain);
+        Assert.True(contrastOutcome.IsExact);
+        Assert.True(orthogonalOutcome.IsExact);
 
-        var contrast = Assert.IsType<AtomicElement>(contrastProduct);
-        var orthogonalSquare = Assert.IsType<AtomicElement>(orthogonalProduct);
+        var contrast = Assert.IsType<AtomicElement>(contrastOutcome.Result);
+        var orthogonalSquare = Assert.IsType<AtomicElement>(orthogonalOutcome.Result);
 
         Assert.Equal(8, contrast.Value);
         Assert.Equal(-15, contrast.Unit);
@@ -600,9 +625,10 @@ public sealed class EngineTests
             new AtomicElement(8, 1),
             new AtomicElement(2, 1));
 
-        Assert.True(left.TryMultiply(right, out var product));
+        var outcome = left.Multiply(right);
+        Assert.True(outcome.IsExact);
 
-        var atomic = Assert.IsType<AtomicElement>(product);
+        var atomic = Assert.IsType<AtomicElement>(outcome.Result);
         Assert.Equal(6, atomic.Value);
         Assert.Equal(80, atomic.Unit);
     }
@@ -634,9 +660,10 @@ public sealed class EngineTests
             new CompositeElement(new AtomicElement(1, 1), new AtomicElement(4, 1)),
             new CompositeElement(new AtomicElement(1, 1), new AtomicElement(5, 1)));
 
-        Assert.True(left.TryMultiply(right, out var product));
+        var outcome = left.Multiply(right);
+        Assert.True(outcome.IsExact);
 
-        var reduced = Assert.IsType<CompositeElement>(product);
+        var reduced = Assert.IsType<CompositeElement>(outcome.Result);
         Assert.Equal(1, reduced.Grade);
         Assert.Equal(new AtomicElement(-7, 1), reduced.Recessive);
         Assert.Equal(new AtomicElement(22, 1), reduced.Dominant);
@@ -652,10 +679,12 @@ public sealed class EngineTests
             new CompositeElement(new AtomicElement(1, 1), new AtomicElement(4, 1)),
             new CompositeElement(new AtomicElement(1, 1), new AtomicElement(5, 1)));
 
-        Assert.True(left.TryMultiplyKernel(right, out var kernel));
+        var outcome = left.MultiplyKernel(right);
+        Assert.True(outcome.IsExact);
 
-        var squares = Assert.IsType<CompositeElement>(Assert.IsType<CompositeElement>(kernel).Recessive);
-        var cross = Assert.IsType<CompositeElement>(Assert.IsType<CompositeElement>(kernel).Dominant);
+        var kernel = Assert.IsType<CompositeElement>(outcome.Result);
+        var squares = Assert.IsType<CompositeElement>(kernel.Recessive);
+        var cross = Assert.IsType<CompositeElement>(kernel.Dominant);
 
         Assert.Equal(new AtomicElement(8, 1), squares.Recessive);
         Assert.Equal(new AtomicElement(15, 1), squares.Dominant);
@@ -673,9 +702,10 @@ public sealed class EngineTests
             new CompositeElement(new AtomicElement(1, 1), new AtomicElement(4, 1)),
             new CompositeElement(new AtomicElement(1, -1), new AtomicElement(5, -1)));
 
-        Assert.True(left.TryMultiply(right, out var product));
+        var outcome = left.Multiply(right);
+        Assert.True(outcome.IsExact);
 
-        var kernel = Assert.IsType<CompositeElement>(product);
+        var kernel = Assert.IsType<CompositeElement>(outcome.Result);
         Assert.Equal(2, kernel.Grade);
 
         var squares = Assert.IsType<CompositeElement>(kernel.Recessive);
@@ -736,9 +766,10 @@ public sealed class EngineTests
                 (double)rightRecessiveValue / rightRecessiveResolution,
                 (double)rightDominantValue / rightDominantResolution);
 
-        Assert.True(left.TryMultiply(right, out var product));
+        var outcome = left.Multiply(right);
+        Assert.True(outcome.IsExact);
 
-        var reduced = Assert.IsType<CompositeElement>(product);
+        var reduced = Assert.IsType<CompositeElement>(outcome.Result);
         Assert.Equal(1, reduced.Grade);
 
         var recessive = Assert.IsType<AtomicElement>(reduced.Recessive);

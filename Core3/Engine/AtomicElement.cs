@@ -27,7 +27,7 @@ public sealed record AtomicElement(long Value, long Unit) : GradedElement
 
     public EngineElementOutcome ReexpressToSupport(long targetResolution)
     {
-        if (TryReexpressToSupport(targetResolution, out var reexpressed) &&
+        if (TryReexpressToSupportExact(targetResolution, out var reexpressed) &&
             reexpressed is not null)
         {
             return EngineElementOutcome.Exact(reexpressed);
@@ -42,7 +42,7 @@ public sealed record AtomicElement(long Value, long Unit) : GradedElement
     // Resolution is preserved during exact working arithmetic.
     // Re-expression, alignment, and support commit are explicit operations so
     // the engine does not silently collapse support by coincidence.
-    public bool TryReexpressToSupport(long targetResolution, out AtomicElement? reexpressed)
+    private bool TryReexpressToSupportExact(long targetResolution, out AtomicElement? reexpressed)
     {
         if (!HasResolvedUnits || targetResolution <= 0)
         {
@@ -64,15 +64,12 @@ public sealed record AtomicElement(long Value, long Unit) : GradedElement
         return true;
     }
 
-    public bool TryCommitToSupport(long targetResolution, out AtomicElement? committed) =>
-        TryReexpressToSupport(targetResolution, out committed);
-
     public override EngineElementOutcome CommitToCalibration(GradedElement calibration)
     {
         if (calibration is AtomicElement atomicCalibration)
         {
             if (SharesUnitSpace(atomicCalibration) &&
-                TryCommitToSupport(atomicCalibration.Resolution, out var committed) &&
+                TryReexpressToSupportExact(atomicCalibration.Resolution, out var committed) &&
                 committed is not null)
             {
                 return EngineElementOutcome.Exact(committed);
@@ -90,29 +87,13 @@ public sealed record AtomicElement(long Value, long Unit) : GradedElement
             "Calibration preserved an unresolved atomic read because the calibration grade was incompatible.");
     }
 
-    public bool TryAlignExact(AtomicElement other, out AtomicElement? leftAligned, out AtomicElement? rightAligned)
-    {
-        if (TryAlignExact(other, ResolutionPolicy.ExactCommonFrame, out var leftCommitted, out var rightCommitted) &&
-            leftCommitted is AtomicElement leftAtomic &&
-            rightCommitted is AtomicElement rightAtomic)
-        {
-            leftAligned = leftAtomic;
-            rightAligned = rightAtomic;
-            return true;
-        }
-
-        leftAligned = null;
-        rightAligned = null;
-        return false;
-    }
-
     public override EngineElementOutcome Align(
         GradedElement other,
         ResolutionPolicy policy)
     {
         if (other is AtomicElement atomic)
         {
-            if (TryAlignExact(atomic, policy, out var leftAligned, out var rightAligned) &&
+            if (TryAlignExactInternal(atomic, policy, out var leftAligned, out var rightAligned) &&
                 leftAligned is not null &&
                 rightAligned is not null)
             {
@@ -186,24 +167,17 @@ public sealed record AtomicElement(long Value, long Unit) : GradedElement
             "Subtraction preserved an unresolved atomic result because the compared element was not atomic.");
     }
 
-    public override bool TryAlignExact(
-        GradedElement other,
+    private bool TryAlignExactInternal(
+        AtomicElement other,
         ResolutionPolicy policy,
-        out GradedElement? leftAligned,
-        out GradedElement? rightAligned)
+        out AtomicElement? leftAligned,
+        out AtomicElement? rightAligned)
     {
-        if (other is not AtomicElement atomic)
-        {
-            leftAligned = null;
-            rightAligned = null;
-            return false;
-        }
-
-        if (!SharesUnitSpace(atomic) ||
-            !TryResolveAlignmentResolution(atomic, policy, out var targetResolution) ||
-            !TryCommitToSupport(targetResolution, out var committedLeft) ||
+        if (!SharesUnitSpace(other) ||
+            !TryResolveAlignmentResolution(other, policy, out var targetResolution) ||
+            !TryReexpressToSupportExact(targetResolution, out var committedLeft) ||
             committedLeft is null ||
-            !atomic.TryCommitToSupport(targetResolution, out var committedRight) ||
+            !other.TryReexpressToSupportExact(targetResolution, out var committedRight) ||
             committedRight is null)
         {
             leftAligned = null;

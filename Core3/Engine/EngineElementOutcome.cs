@@ -9,7 +9,7 @@ namespace Core3.Engine;
 public sealed record EngineElementOutcome(
     IReadOnlyList<GradedElement> Results,
     GradedElement? Tension = null,
-    string? Note = null) : IExactResult
+    string? Note = null)
 {
     public GradedElement Result => Results[0];
     public GradedElement Left => Results[0];

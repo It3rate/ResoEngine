@@ -8,7 +8,7 @@ namespace Core3.Operations;
 /// tension, and one-or-more outbound survivors without introducing a separate
 /// ontology for the survivors themselves.
 /// </summary>
-public abstract record ArcResult : IExactResult
+public abstract record ArcResult
 {
     protected ArcResult(
         OperationContext context,

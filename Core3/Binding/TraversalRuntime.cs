@@ -15,7 +15,7 @@ public sealed record TraversalRuntimeState(
     IReadOnlyDictionary<string, GradedElement> Context,
     IReadOnlyDictionary<string, GradedElement> Result,
     GradedElement? Tension = null,
-    string? Note = null) : IExactResult
+    string? Note = null)
 {
     public bool IsExact => Tension is null;
 }
@@ -29,7 +29,7 @@ public sealed record TraversalSiteEncounter(
     IReadOnlyDictionary<string, GradedElement> Inputs,
     IReadOnlyList<TraversalStoredValue> Outputs,
     GradedElement? Tension = null,
-    string? Note = null) : IExactResult
+    string? Note = null)
 {
     public string OriginLawName => Attachment.Law.Name;
     public bool IsExact => Tension is null;

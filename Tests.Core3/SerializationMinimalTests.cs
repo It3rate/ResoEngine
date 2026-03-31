@@ -207,7 +207,7 @@ public sealed class SerializationMinimalTests
             new AtomicElement(4, 1)
         };
 
-        Assert.True(Operations.TryMultiplyResult(frame, members, out var operationResult));
+        Assert.True(new Family(OperationContext.Create(frame, members)).TryMultiplyAllResult(out var operationResult));
 
         var finalizedResult = Assert.IsType<OperationResult>(operationResult);
         var operationJson = Core3JsonSerializer.Serialize(finalizedResult);
@@ -311,7 +311,7 @@ public sealed class SerializationMinimalTests
         family.AddMember(new AtomicElement(1, 1));
         family.AddMember(new AtomicElement(1, 0));
 
-        Assert.True(family.TryReadAllResult(out var readResult));
+        var readResult = family.ReadAllResult();
 
         var json = Core3JsonSerializer.Serialize(Assert.IsType<PieceArcResult>(readResult));
 
@@ -410,7 +410,7 @@ public sealed class SerializationMinimalTests
         family.AddMember(new AtomicElement(1, 1));
         family.AddMember(new AtomicElement(1, 0));
 
-        Assert.True(family.TryReadAllResult(out var readResult));
+        var readResult = family.ReadAllResult();
 
         var json = Core3JsonSerializer.Serialize(
             Assert.IsType<PieceArcResult>(readResult),
@@ -641,7 +641,7 @@ public sealed class SerializationMinimalTests
             new AtomicElement(4, 1)
         };
 
-        Assert.True(Operations.TryMultiplyResult(frame, members, out var operationResult));
+        Assert.True(new Family(OperationContext.Create(frame, members)).TryMultiplyAllResult(out var operationResult));
 
         var json = Core3JsonSerializer.Serialize(
             Assert.IsType<OperationResult>(operationResult),
@@ -919,9 +919,7 @@ public sealed class SerializationMinimalTests
         var primary = Core3TestHelpers.CreateSegmentFrame(0, 10, 10);
         var secondary = Core3TestHelpers.CreateSegmentFrame(3, 5, 10);
 
-        Assert.True(Operations.TryBoolean(
-            frame,
-            [primary, secondary],
+        Assert.True(new Family(OperationContext.Create(frame, [primary, secondary])).TryBooleanResult(
             BooleanOperation.Xor,
             out var result));
 
@@ -1495,9 +1493,7 @@ public sealed class SerializationMinimalTests
             new AtomicElement(3, 10),
             new AtomicElement(5, 0));
 
-        Assert.True(Operations.TryBooleanResult(
-            frame,
-            [primary, secondary],
+        Assert.True(new Family(OperationContext.Create(frame, [primary, secondary])).TryBooleanResult(
             BooleanOperation.And,
             out var result));
 

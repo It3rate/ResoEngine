@@ -26,16 +26,13 @@ public sealed record EngineView(
             ? Subject.CommitToCalibration(Frame)
             : Subject.CommitToCalibration(Calibration);
 
-    public bool TryRead(out GradedElement? read) =>
-        EngineExactness.TryProjectExact(
-            Read(),
-            static outcome => outcome.Result,
-            out read);
-
-    public CompositeElement GetBoundaryAxis() =>
-        TryRead(out var read) && read is not null
-            ? EngineBoundary.GetAxis(Calibration, read)
+    public CompositeElement GetBoundaryAxis()
+    {
+        var readOutcome = Read();
+        return readOutcome.IsExact
+            ? EngineBoundary.GetAxis(Calibration, readOutcome.Result)
             : EngineBoundary.CreateUnknownAxis(Calibration);
+    }
 
     public EngineElementOutcome MeasureOnCalibration()
     {
@@ -57,12 +54,6 @@ public sealed record EngineView(
             Frame,
             "View measurement preserved unresolved structure because calibration and subject grades differed.");
     }
-
-    public bool TryMeasureOnCalibration(out CompositeElement? measured) =>
-        EngineExactness.TryProjectExact(
-            MeasureOnCalibration(),
-            static outcome => (CompositeElement)outcome.Result,
-            out measured);
 
     public override string ToString() => $"view({Frame} <- {Subject})";
 }

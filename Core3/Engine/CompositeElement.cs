@@ -197,63 +197,6 @@ public sealed record CompositeElement : GradedElement
             "Composite subtraction preserved child tension.");
     }
 
-    public override bool TryAlignExact(
-        GradedElement other,
-        ResolutionPolicy policy,
-        out GradedElement? leftAligned,
-        out GradedElement? rightAligned)
-    {
-        if (other is not CompositeElement composite || Grade != composite.Grade)
-        {
-            leftAligned = null;
-            rightAligned = null;
-            return false;
-        }
-
-        switch (policy)
-        {
-            case ResolutionPolicy.PreserveHost:
-                if (composite.TryCommitToCalibration(this, out rightAligned) &&
-                    rightAligned is not null)
-                {
-                    leftAligned = this;
-                    return true;
-                }
-
-                break;
-
-            case ResolutionPolicy.PreserveApplied:
-                if (TryCommitToCalibration(composite, out leftAligned) &&
-                    leftAligned is not null)
-                {
-                    rightAligned = composite;
-                    return true;
-                }
-
-                break;
-
-            case ResolutionPolicy.ExactCommonFrame:
-            case ResolutionPolicy.ComposeSupport:
-                if (Recessive.TryAlignExact(composite.Recessive, policy, out var leftRecessive, out var rightRecessive) &&
-                    Dominant.TryAlignExact(composite.Dominant, policy, out var leftDominant, out var rightDominant) &&
-                    leftRecessive is not null &&
-                    rightRecessive is not null &&
-                    leftDominant is not null &&
-                    rightDominant is not null)
-                {
-                    leftAligned = new CompositeElement(leftRecessive, leftDominant);
-                    rightAligned = new CompositeElement(rightRecessive, rightDominant);
-                    return true;
-                }
-
-                break;
-        }
-
-        leftAligned = null;
-        rightAligned = null;
-        return false;
-    }
-
     public override bool SharesUnitSpace(GradedElement other) =>
         other is CompositeElement composite &&
         HasResolvedUnits &&
@@ -313,15 +256,18 @@ public sealed record CompositeElement : GradedElement
         if (rr.IsExact &&
             rd.IsExact &&
             dr.IsExact &&
-            dd.IsExact &&
-            rr.Result.TrySubtract(dd.Result, out var squareDifference) &&
-            squareDifference is not null &&
-            rd.Result.TryAdd(dr.Result, out var crossSum) &&
-            crossSum is not null &&
-            squareDifference.Grade == crossSum.Grade)
+            dd.IsExact)
         {
-            return EngineElementOutcome.Exact(
-                new CompositeElement(squareDifference, crossSum));
+            var squareDifference = rr.Result.Subtract(dd.Result);
+            var crossSum = rd.Result.Add(dr.Result);
+
+            if (squareDifference.IsExact &&
+                crossSum.IsExact &&
+                squareDifference.Result.Grade == crossSum.Result.Grade)
+            {
+                return EngineElementOutcome.Exact(
+                    new CompositeElement(squareDifference.Result, crossSum.Result));
+            }
         }
 
         if (rr.IsExact &&
@@ -361,15 +307,36 @@ public sealed record CompositeElement : GradedElement
             "Composite scale preserved child tension.");
     }
 
-    public bool TryMultiplyKernel(CompositeElement other, out CompositeElement? kernel)
+    public EngineElementOutcome MultiplyKernel(CompositeElement other)
     {
         if (Grade != other.Grade)
         {
-            kernel = null;
-            return false;
+            return EngineElementOutcome.WithTension(
+                this,
+                this,
+                "Composite multiply kernel preserved the composite unchanged because the compared shape was incompatible.");
         }
 
-        return EngineEvaluation.TryMultiplyKernel(this, other, out kernel);
+        var rr = Recessive.Multiply(other.Recessive);
+        var rd = Recessive.Multiply(other.Dominant);
+        var dr = Dominant.Multiply(other.Recessive);
+        var dd = Dominant.Multiply(other.Dominant);
+        var kernel = new CompositeElement(
+            new CompositeElement(rr.Result, dd.Result),
+            new CompositeElement(rd.Result, dr.Result));
+
+        if (rr.IsExact &&
+            rd.IsExact &&
+            dr.IsExact &&
+            dd.IsExact)
+        {
+            return EngineElementOutcome.Exact(kernel);
+        }
+
+        return EngineElementOutcome.WithTension(
+            kernel,
+            new CompositeElement(this, other),
+            "Composite multiplication kernel preserved child tension.");
     }
 
     public override string ToString() => $"<{Recessive} | {Dominant}>";

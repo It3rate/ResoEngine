@@ -83,27 +83,19 @@ internal static class EngineEvaluation
 
         while (current is not AtomicElement atomic)
         {
-            if (!current.TryFold(out var next) || next is null)
+            var outcome = current.Fold();
+            if (!outcome.IsExact)
             {
                 folded = null;
                 return false;
             }
 
-            current = next;
+            current = outcome.Result;
         }
 
         folded = (AtomicElement)current;
         return true;
     }
-
-    internal static bool TryComposeRatio(
-        AtomicElement numerator,
-        AtomicElement denominator,
-        out GradedElement? folded) =>
-        EngineExactness.TryProjectExact(
-            ComposeRatio(numerator, denominator),
-            static outcome => outcome.Result,
-            out folded);
 
     internal static bool TryMultiplyAtomic(
         AtomicElement left,
@@ -121,30 +113,6 @@ internal static class EngineEvaluation
         var unitSign = left.IsOrthogonalUnit || right.IsOrthogonalUnit ? -1L : 1L;
         var unit = checked(unitSign * unitMagnitude);
         product = new AtomicElement(value, unit);
-        return true;
-    }
-
-    internal static bool TryMultiplyKernel(
-        CompositeElement left,
-        CompositeElement right,
-        out CompositeElement? kernel)
-    {
-        if (!left.Recessive.TryMultiply(right.Recessive, out var rr) ||
-            rr is null ||
-            !left.Recessive.TryMultiply(right.Dominant, out var rd) ||
-            rd is null ||
-            !left.Dominant.TryMultiply(right.Recessive, out var dr) ||
-            dr is null ||
-            !left.Dominant.TryMultiply(right.Dominant, out var dd) ||
-            dd is null)
-        {
-            kernel = null;
-            return false;
-        }
-
-        kernel = new CompositeElement(
-            new CompositeElement(rr, dd),
-            new CompositeElement(rd, dr));
         return true;
     }
 

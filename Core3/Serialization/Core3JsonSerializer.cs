@@ -409,12 +409,13 @@ public static class Core3JsonSerializer
             }
         }
 
+        var readOutcome = result.ReadResult();
+
         if (actual.IncludeDerived &&
-            result.TryReadResult(out var read) &&
-            read is not null)
+            readOutcome.IsExact)
         {
             writer.WritePropertyName("readResult");
-            Write(writer, read, actual);
+            Write(writer, readOutcome.Result, actual);
             writer.WritePropertyName("resultBoundaryAxis");
             Write(writer, result.GetResultBoundaryAxis(), actual);
         }
