@@ -40,11 +40,13 @@ public sealed record EngineBooleanResult : IExactResult
     public CompositeElement Secondary => (CompositeElement)Context.Members[1];
     public EngineBooleanOperation Operation { get; }
     public EngineBooleanOperation OriginLaw => Operation;
+    public string OriginLawName => Operation.ToString();
     public IReadOnlyList<EngineOperationPiece> Pieces { get; }
     public IReadOnlyList<EngineOperationPiece> OutboundPieces => Pieces;
     public GradedElement? Tension { get; }
     public string? Note { get; }
     public bool IsExact => Tension is null;
     public bool HasAny => Pieces.Count > 0;
+    public bool HasMany => Pieces.Count > 1;
     public IReadOnlyList<CompositeElement> Segments => Pieces.Select(piece => (CompositeElement)piece.Result).ToArray();
 }

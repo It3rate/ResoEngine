@@ -286,6 +286,12 @@ public sealed class OperationsTests
         Assert.Equal(
             new CompositeElement(new AtomicElement(0, 4), new AtomicElement(1, 4)),
             operationResult.GetResultBoundaryAxis());
+        Assert.True(operationResult.HasAny);
+        Assert.False(operationResult.HasMany);
+        Assert.Single(operationResult.OutboundPieces);
+        Assert.Equal(operationResult.Result, operationResult.OutboundPiece.Result);
+        Assert.Equal(operationResult.ResultFrame, operationResult.OutboundPiece.Carrier);
+        Assert.Equal([0, 1, 2], operationResult.OutboundPiece.SourceMemberIndices);
     }
 
     [Fact]
@@ -454,6 +460,8 @@ public sealed class OperationsTests
             out var result));
 
         var booleanResult = Assert.IsType<EngineBooleanResult>(result);
+        Assert.True(booleanResult.HasAny);
+        Assert.True(booleanResult.HasMany);
         Assert.Equal(2, booleanResult.Pieces.Count);
         Assert.Equal(Core3TestHelpers.CreateSegmentFrame(0, 3, 10), booleanResult.Pieces[0].Result);
         Assert.Equal(Core3TestHelpers.CreateSegmentFrame(5, 10, 10), booleanResult.Pieces[1].Result);

@@ -32,11 +32,13 @@ public sealed record EngineFamilyBooleanResult : IExactResult
     public bool IsOrdered => Context.IsOrdered;
     public EngineOccupancyOperation Operation { get; }
     public EngineOccupancyOperation OriginLaw => Operation;
+    public string OriginLawName => Operation.ToString();
     public IReadOnlyList<EngineOperationPiece> Pieces { get; }
     public IReadOnlyList<EngineOperationPiece> OutboundPieces => Pieces;
     public GradedElement? Tension { get; }
     public string? Note { get; }
     public bool IsExact => Tension is null;
     public bool HasAny => Pieces.Count > 0;
+    public bool HasMany => Pieces.Count > 1;
     public IReadOnlyList<CompositeElement> Segments => Pieces.Select(piece => (CompositeElement)piece.Result).ToArray();
 }

@@ -211,12 +211,19 @@ Current add/subtract are:
 - source domain: two peers, or one family reduced in order
 - correspondence topology: one-to-one
 - local law: aligned combination
-- retention mode: one result plus possible tension
+- retention mode: currently one consolidated result plus possible tension
 - carrier inheritance: aligned result carrier
 - reduction mode: none
 
 Long term, add/subtract should also be explainable as the optimized reduction of
 a more explicit traversal or correspondence process.
+They should not be treated as fundamentally one-result-only laws.
+Mixed-carrier or partially incompatible addition may still want to preserve:
+
+- one unresolved lower-grade survivor
+- several co-present outbound survivors
+- a possible higher-grade lift
+- tension about the relation between those readings
 
 ### Multiply
 

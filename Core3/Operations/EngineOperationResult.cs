@@ -7,7 +7,9 @@ namespace Core3.Operations;
 /// Carries the outbound side of a one-result operation arc together with the
 /// inbound context that produced it. The result element remains a normal graded
 /// element; the frame relation is preserved separately as provenance rather
-/// than creating a second result ontology.
+/// than creating a second result ontology. Conceptually this is the
+/// one-survivor case of the broader outbound-family pattern also used by
+/// piece-producing operations.
 /// </summary>
 public sealed record EngineOperationResult : IExactResult
 {
@@ -55,9 +57,15 @@ public sealed record EngineOperationResult : IExactResult
     public GradedElement Result { get; }
     public GradedElement ResultFrame { get; }
     public GradedElement Outbound => Result;
+    public string OriginLawName => OperationName;
+    public EngineOperationPiece OutboundPiece =>
+        new(Result, ResultFrame, Enumerable.Range(0, Context.Count).ToArray());
+    public IReadOnlyList<EngineOperationPiece> OutboundPieces => [OutboundPiece];
     public GradedElement? Tension { get; }
     public string? Note { get; }
     public bool IsExact => Tension is null;
+    public bool HasAny => true;
+    public bool HasMany => false;
 
     public bool TryReadResult(out GradedElement? read) =>
         Result.TryReferenceToFrame(ResultFrame, out read);
