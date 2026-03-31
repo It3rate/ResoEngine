@@ -72,6 +72,9 @@ public sealed record EngineOperationResult : IExactResult
 
     public bool TryGetRawMultiplyKernel(out CompositeElement? kernel)
     {
+        // Temporary inspection shell. Long term this wants to become an
+        // ordinary frame/family read over preserved kernel structure rather
+        // than a bespoke multiply-only helper.
         if (!string.Equals(OperationName, "Multiply", StringComparison.Ordinal) ||
             Context.Count != 2)
         {

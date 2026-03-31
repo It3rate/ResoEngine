@@ -28,6 +28,9 @@ public sealed record EngineElementOutcome(
 
     public bool TryGetRawPair(out EngineElementPairOutcome? pair)
     {
+        // Temporary inspection shell. Long term this wants to become an
+        // ordinary frame/family read over preserved structure rather than a
+        // bespoke "raw pair" helper.
         if (Tension is CompositeElement composite)
         {
             pair = EngineElementPairOutcome.Exact(

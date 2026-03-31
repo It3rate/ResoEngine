@@ -50,6 +50,55 @@ So a primitive operation is not a different kind of thing from a larger
 equation.
 It is a small, optimized instance of the same inbound-origin-outbound pattern.
 
+## Preserve First, Then Read
+
+One useful current pressure in Core3 is that an operation may appear to have
+several different "results":
+
+- a consolidated result in the original grade
+- a richer kernel such as `rr/dd/rd/dr`
+- a co-present survivor family
+- a relation held in tension because the current grade cannot settle it cleanly
+
+The intended long-term reading is not that Core3 should accumulate many
+specialized result species for each of those cases.
+
+The intended reading is closer to:
+
+- preserve the lawful structure first
+- then read that preserved structure in different frames, grades, or family
+  views
+
+So if a multiply currently exposes a raw kernel and a folded result, that
+should increasingly be understood as:
+
+- one preserved structure
+- several lawful reads of that structure
+
+Likewise, mixed-carrier add/subtract, boolean piece families, and later route
+or branch results should prefer:
+
+- preserved structure plus provenance
+- later reference/cast/reframe reads
+
+over one-off bespoke inspection helpers.
+
+There is one important constraint:
+
+- a later read can only reveal what was actually preserved
+
+If the richer relation was discarded earlier, no later frame reference can
+reconstruct it honestly.
+
+So Core3 should distinguish two questions:
+
+1. What structure was preserved?
+2. How is that preserved structure being read right now?
+
+Current helpers such as raw-pair or raw-kernel inspection are therefore best
+understood as temporary compatibility shells until the preserved structures are
+more directly referenceable through ordinary Core3 frame/family reads.
+
 ## Family As Current Data Area
 
 For now, `EngineFamily` should be treated pragmatically as the current data

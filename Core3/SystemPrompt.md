@@ -355,6 +355,16 @@ enum-only code categories if Core3 can eventually carry them more natively
 through lawful values, tensions, carriers, branch structure, or pinned route
 relations.
 
+L9. When one operation seems to expose several different "results," prefer to
+think in terms of one preserved structure and several lawful reads of it.
+If a richer relation such as a kernel, survivor family, or unresolved pair is
+preserved, later reference/cast/family views should increasingly be preferred
+over bespoke inspection helpers.
+
+L10. A later read cannot recover structure that was not preserved.
+So Core3 should preserve meaningful structure first, and only then rely on
+frame/family reads to expose different views of it.
+
 ## Part XII. Binding
 
 B1. Binding is contextual, not core ontology.
