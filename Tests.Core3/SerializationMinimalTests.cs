@@ -207,7 +207,7 @@ public sealed class SerializationMinimalTests
             new AtomicElement(4, 1)
         };
 
-        Assert.True(EngineOperations.TryMultiplyWithProvenance(frame, members, out var operationResult));
+        Assert.True(EngineOperations.TryMultiplyResult(frame, members, out var operationResult));
 
         var finalizedResult = Assert.IsType<EngineOperationResult>(operationResult);
         var operationJson = Core3JsonSerializer.Serialize(finalizedResult);
@@ -288,7 +288,7 @@ public sealed class SerializationMinimalTests
         family.AddMember(new AtomicElement(1, 1));
         family.AddMember(new AtomicElement(1, 0));
 
-        Assert.True(family.TryReadAllWithTension(out var readResult));
+        Assert.True(family.TryReadAllResult(out var readResult));
 
         var json = Core3JsonSerializer.Serialize(Assert.IsType<EngineReadResult>(readResult));
 
@@ -515,7 +515,7 @@ public sealed class SerializationMinimalTests
             new AtomicElement(4, 1)
         };
 
-        Assert.True(EngineOperations.TryMultiplyWithProvenance(frame, members, out var operationResult));
+        Assert.True(EngineOperations.TryMultiplyResult(frame, members, out var operationResult));
 
         var json = Core3JsonSerializer.Serialize(
             Assert.IsType<EngineOperationResult>(operationResult),
@@ -1285,7 +1285,7 @@ public sealed class SerializationMinimalTests
         family.AddMember(new AtomicElement(1, 1));
         family.AddMember(new AtomicElement(1, 0));
 
-        Assert.True(family.TryAddAllWithTension(out var result));
+        Assert.True(family.TryAddAllResult(out var result));
 
         var json = Core3JsonSerializer.Serialize(Assert.IsType<EngineOperationResult>(result));
 
@@ -1406,7 +1406,7 @@ public sealed class SerializationMinimalTests
             new AtomicElement(3, 10),
             new AtomicElement(5, 0));
 
-        Assert.True(EngineOperations.TryBooleanWithTension(
+        Assert.True(EngineOperations.TryBooleanResult(
             frame,
             [primary, secondary],
             EngineBooleanOperation.And,

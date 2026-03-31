@@ -22,8 +22,8 @@ non-ideal outcomes:
 
 - exact-only family wrappers such as `TryReadAll`, `TryAddAll`, and
   `TryMultiplyAll`
-- exact-only provenance wrappers such as `TryAddAllWithProvenance` and
-  `TryMultiplyAllWithProvenance`
+- exact-only family wrappers remain beside the richer result-facing methods
+  such as `TryReadAllResult`, `TryAddAllResult`, and `TryMultiplyAllResult`
 
 That does not make them wrong.
 It means the compatibility shell is still exact-first even though the richer

@@ -251,7 +251,7 @@ public sealed class EngineFamily
     public bool TryReadMember(GradedElement member, out GradedElement? read)
         => member.TryViewInFrame(Frame, out read);
 
-    public bool TryReadAllWithTension(out EngineReadResult? result)
+    public bool TryReadAllResult(out EngineReadResult? result)
     {
         var resolvedReads = new List<GradedElement>(_members.Count);
         GradedElement? tension = null;
@@ -276,19 +276,19 @@ public sealed class EngineFamily
 
     public bool TryReadAll(out IReadOnlyList<GradedElement>? reads)
         => EngineExactness.TryProjectExact(
-            TryReadAllWithTension(out var result),
+            TryReadAllResult(out var result),
             result,
             static item => item.Reads,
             out reads);
 
     public bool TryAddAll(out GradedElement? sum)
         => EngineExactness.TryProjectExact(
-            TryAddAllWithTension(out var result),
+            TryAddAllResult(out var result),
             result,
             static item => item.Result,
             out sum);
 
-    public bool TryAddAllWithTension(out EngineOperationResult? result) =>
+    public bool TryAddAllResult(out EngineOperationResult? result) =>
         TryAccumulateAll(
             "Add",
             static (left, right) => left.Add(right),
@@ -297,12 +297,12 @@ public sealed class EngineFamily
 
     public bool TryMultiplyAll(out GradedElement? product)
         => EngineExactness.TryProjectExact(
-            TryMultiplyAllWithTension(out var result),
+            TryMultiplyAllResult(out var result),
             result,
             static item => item.Result,
             out product);
 
-    public bool TryMultiplyAllWithTension(out EngineOperationResult? result) =>
+    public bool TryMultiplyAllResult(out EngineOperationResult? result) =>
         TryAccumulateAll(
             "Multiply",
             static (left, right) => left.Multiply(right),
@@ -313,25 +313,13 @@ public sealed class EngineFamily
                     : family.Frame,
             out result);
 
-    public bool TryAddAllWithProvenance(out EngineOperationResult? result)
-        => EngineExactness.TryGetExact(
-            TryAddAllWithTension(out var candidate),
-            candidate,
-            out result);
-
-    public bool TryMultiplyAllWithProvenance(out EngineOperationResult? result)
-        => EngineExactness.TryGetExact(
-            TryMultiplyAllWithTension(out var candidate),
-            candidate,
-            out result);
-
     public bool TryBoolean(EngineBooleanOperation operation, out EngineBooleanResult? result)
         => EngineExactness.TryGetExact(
-            TryBooleanWithTension(operation, out var candidate),
+            TryBooleanResult(operation, out var candidate),
             candidate,
             out result);
 
-    public bool TryBooleanWithTension(
+    public bool TryBooleanResult(
         EngineBooleanOperation operation,
         out EngineBooleanResult? result)
     {
@@ -360,11 +348,11 @@ public sealed class EngineFamily
         EngineOccupancyOperation operation,
         out EngineFamilyBooleanResult? result) =>
         EngineExactness.TryGetExact(
-            TryOccupancyBooleanWithTension(operation, out var candidate),
+            TryOccupancyBooleanResult(operation, out var candidate),
             candidate,
             out result);
 
-    public bool TryOccupancyBooleanWithTension(
+    public bool TryOccupancyBooleanResult(
         EngineOccupancyOperation operation,
         out EngineFamilyBooleanResult? result)
     {
@@ -388,7 +376,7 @@ public sealed class EngineFamily
             out result);
     }
 
-    public bool TryBooleanAdjacentPairsWithTension(
+    public bool TryBooleanAdjacentPairResults(
         EngineBooleanOperation operation,
         out IReadOnlyList<EngineBooleanResult>? results)
     {
@@ -434,7 +422,7 @@ public sealed class EngineFamily
         EngineBooleanOperation operation,
         out IReadOnlyList<EngineBooleanResult>? results)
     {
-        if (TryBooleanAdjacentPairsWithTension(operation, out results) &&
+        if (TryBooleanAdjacentPairResults(operation, out results) &&
             EngineExactness.AreAllExact(results))
         {
             return true;
@@ -500,7 +488,7 @@ public sealed class EngineFamily
         out string? note)
     {
         if (Frame is not CompositeElement compositeFrame ||
-            !TryReadAllWithTension(out var readResult) ||
+            !TryReadAllResult(out var readResult) ||
             readResult is null ||
             !TryAsCompositeReads(readResult.Reads, out var compositeMembers))
         {
@@ -566,7 +554,7 @@ public sealed class EngineFamily
         Func<EngineFamily, GradedElement> resultFrameSelector,
         out EngineOperationResult? result)
     {
-        if (!TryReadAllWithTension(out var readResult) ||
+        if (!TryReadAllResult(out var readResult) ||
             readResult is null ||
             readResult.Reads.Count == 0)
         {

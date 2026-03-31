@@ -185,13 +185,13 @@ public sealed class OperationsTests
     }
 
     [Fact]
-    public void EngineFamily_TryReadAllWithTension_PreservesUnresolvedFamilyReads()
+    public void EngineFamily_TryReadAllResult_PreservesUnresolvedFamilyReads()
     {
         var family = new EngineFamily(new AtomicElement(0, 1));
         family.AddMember(new AtomicElement(1, 1));
         family.AddMember(new AtomicElement(1, 0));
 
-        Assert.True(family.TryReadAllWithTension(out var result));
+        Assert.True(family.TryReadAllResult(out var result));
 
         var readResult = Assert.IsType<EngineReadResult>(result);
         Assert.False(readResult.IsExact);
@@ -201,13 +201,13 @@ public sealed class OperationsTests
     }
 
     [Fact]
-    public void EngineFamily_TryAddAllWithTension_PreservesUnresolvedOperationResult()
+    public void EngineFamily_TryAddAllResult_PreservesUnresolvedOperationResult()
     {
         var family = new EngineFamily(new AtomicElement(0, 1));
         family.AddMember(new AtomicElement(1, 1));
         family.AddMember(new AtomicElement(1, 0));
 
-        Assert.True(family.TryAddAllWithTension(out var result));
+        Assert.True(family.TryAddAllResult(out var result));
         Assert.False(family.TryAddAll(out _));
 
         var operationResult = Assert.IsType<EngineOperationResult>(result);
@@ -248,7 +248,7 @@ public sealed class OperationsTests
     }
 
     [Fact]
-    public void EngineOperations_TryAddWithTension_CanReturnNonExactResultWithProvenance()
+    public void EngineOperations_TryAddResult_CanReturnNonExactOperationResult()
     {
         var frame = new AtomicElement(0, 1);
         var members = new GradedElement[]
@@ -257,8 +257,8 @@ public sealed class OperationsTests
             new AtomicElement(1, 0)
         };
 
-        Assert.True(EngineOperations.TryAddWithTension(frame, members, out var result));
-        Assert.False(EngineOperations.TryAddWithProvenance(frame, members, out _));
+        Assert.True(EngineOperations.TryAddResult(frame, members, out var result));
+        Assert.False(EngineOperations.TryAdd(frame, members, out _));
 
         var operationResult = Assert.IsType<EngineOperationResult>(result);
         Assert.False(operationResult.IsExact);
@@ -276,7 +276,7 @@ public sealed class OperationsTests
             new AtomicElement(1, 2)
         };
 
-        Assert.True(EngineOperations.TryAddWithProvenance(frame, members, out var result));
+        Assert.True(EngineOperations.TryAddResult(frame, members, out var result));
 
         var operationResult = Assert.IsType<EngineOperationResult>(result);
         Assert.Equal("Add", operationResult.OperationName);
@@ -295,7 +295,7 @@ public sealed class OperationsTests
     }
 
     [Fact]
-    public void EngineOperations_TryAddWithProvenance_PreservesRuntimeContext()
+    public void EngineOperations_TryAddResult_PreservesRuntimeContext()
     {
         var context = EngineOperationContext.Create(
             new AtomicElement(4, 4),
@@ -306,7 +306,7 @@ public sealed class OperationsTests
             ],
             isOrdered: false);
 
-        Assert.True(EngineOperations.TryAddWithProvenance(context, out var result));
+        Assert.True(EngineOperations.TryAddResult(context, out var result));
 
         var operationResult = Assert.IsType<EngineOperationResult>(result);
         Assert.Equal(context.Frame, operationResult.Context.Frame);
@@ -326,13 +326,13 @@ public sealed class OperationsTests
     }
 
     [Fact]
-    public void EngineFamily_TryMultiplyAllWithTension_PreservesUnresolvedOperationResult()
+    public void EngineFamily_TryMultiplyAllResult_PreservesUnresolvedOperationResult()
     {
         var family = new EngineFamily(new AtomicElement(1, 1));
         family.AddMember(new AtomicElement(2, 1));
         family.AddMember(new AtomicElement(4, 0));
 
-        Assert.True(family.TryMultiplyAllWithTension(out var result));
+        Assert.True(family.TryMultiplyAllResult(out var result));
         Assert.False(family.TryMultiplyAll(out _));
 
         var operationResult = Assert.IsType<EngineOperationResult>(result);
@@ -357,7 +357,7 @@ public sealed class OperationsTests
     }
 
     [Fact]
-    public void EngineOperations_TryMultiplyWithTension_CanReturnNonExactResultWithProvenance()
+    public void EngineOperations_TryMultiplyResult_CanReturnNonExactOperationResult()
     {
         var frame = new AtomicElement(1, 1);
         var members = new GradedElement[]
@@ -366,8 +366,8 @@ public sealed class OperationsTests
             new AtomicElement(4, 0)
         };
 
-        Assert.True(EngineOperations.TryMultiplyWithTension(frame, members, out var result));
-        Assert.False(EngineOperations.TryMultiplyWithProvenance(frame, members, out _));
+        Assert.True(EngineOperations.TryMultiplyResult(frame, members, out var result));
+        Assert.False(EngineOperations.TryMultiply(frame, members, out _));
 
         var operationResult = Assert.IsType<EngineOperationResult>(result);
         Assert.False(operationResult.IsExact);
@@ -384,7 +384,7 @@ public sealed class OperationsTests
             new AtomicElement(3, 4)
         };
 
-        Assert.True(EngineOperations.TryMultiplyWithProvenance(frame, members, out var result));
+        Assert.True(EngineOperations.TryMultiplyResult(frame, members, out var result));
 
         var operationResult = Assert.IsType<EngineOperationResult>(result);
         Assert.Equal("Multiply", operationResult.OperationName);
@@ -446,7 +446,7 @@ public sealed class OperationsTests
     }
 
     [Fact]
-    public void EngineOperations_TryBooleanWithTension_PreservesUnresolvedSegmentProjection()
+    public void EngineOperations_TryBooleanResult_PreservesUnresolvedSegmentProjection()
     {
         var frame = Core3TestHelpers.CreateSegmentFrame(0, 10, 10);
         var primary = Core3TestHelpers.CreateSegmentFrame(0, 10, 10);
@@ -454,7 +454,7 @@ public sealed class OperationsTests
             new AtomicElement(3, 10),
             new AtomicElement(5, 0));
 
-        Assert.True(EngineOperations.TryBooleanWithTension(
+        Assert.True(EngineOperations.TryBooleanResult(
             frame,
             [primary, secondary],
             EngineBooleanOperation.And,
@@ -562,7 +562,7 @@ public sealed class OperationsTests
     }
 
     [Fact]
-    public void EngineOperations_TryOccupancyBooleanWithTension_PreservesUnresolvedFamilyProjection()
+    public void EngineOperations_TryOccupancyBooleanResult_PreservesUnresolvedFamilyProjection()
     {
         var frame = Core3TestHelpers.CreateSegmentFrame(0, 10, 10);
         var first = Core3TestHelpers.CreateSegmentFrame(0, 10, 10);
@@ -571,7 +571,7 @@ public sealed class OperationsTests
             new AtomicElement(5, 0));
         var third = Core3TestHelpers.CreateSegmentFrame(6, 8, 10);
 
-        Assert.True(EngineOperations.TryOccupancyBooleanWithTension(
+        Assert.True(EngineOperations.TryOccupancyBooleanResult(
             frame,
             [first, second, third],
             EngineOccupancyOperation.ExactlyOne,
@@ -613,7 +613,7 @@ public sealed class OperationsTests
     }
 
     [Fact]
-    public void EngineOperations_TryBooleanAdjacentPairsWithTension_PreservesUnresolvedPairReads()
+    public void EngineOperations_TryBooleanAdjacentPairResults_PreservesUnresolvedPairReads()
     {
         var frame = Core3TestHelpers.CreateSegmentFrame(0, 10, 10);
         var first = Core3TestHelpers.CreateSegmentFrame(0, 10, 10);
@@ -622,7 +622,7 @@ public sealed class OperationsTests
             new AtomicElement(5, 0));
         var third = Core3TestHelpers.CreateSegmentFrame(6, 8, 10);
 
-        Assert.True(EngineOperations.TryBooleanAdjacentPairsWithTension(
+        Assert.True(EngineOperations.TryBooleanAdjacentPairResults(
             frame,
             [first, second, third],
             EngineBooleanOperation.Xor,

@@ -34,40 +34,22 @@ public static class EngineOperations
             static (EngineFamily family, out GradedElement? result) => family.TryAddAll(out result),
             out sum);
 
-    public static bool TryAddWithProvenance(
+    public static bool TryAddResult(
         EngineOperationContext context,
         out EngineOperationResult? result) =>
         TryWithFamily(
             context,
-            static (EngineFamily family, out EngineOperationResult? value) => family.TryAddAllWithProvenance(out value),
+            static (EngineFamily family, out EngineOperationResult? value) => family.TryAddAllResult(out value),
             out result);
 
-    public static bool TryAddWithProvenance(
+    public static bool TryAddResult(
         GradedElement frame,
         IEnumerable<GradedElement> members,
         out EngineOperationResult? result) =>
         TryWithFamily(
             frame,
             members,
-            static (EngineFamily family, out EngineOperationResult? value) => family.TryAddAllWithProvenance(out value),
-            out result);
-
-    public static bool TryAddWithTension(
-        EngineOperationContext context,
-        out EngineOperationResult? result) =>
-        TryWithFamily(
-            context,
-            static (EngineFamily family, out EngineOperationResult? value) => family.TryAddAllWithTension(out value),
-            out result);
-
-    public static bool TryAddWithTension(
-        GradedElement frame,
-        IEnumerable<GradedElement> members,
-        out EngineOperationResult? result) =>
-        TryWithFamily(
-            frame,
-            members,
-            static (EngineFamily family, out EngineOperationResult? value) => family.TryAddAllWithTension(out value),
+            static (EngineFamily family, out EngineOperationResult? value) => family.TryAddAllResult(out value),
             out result);
 
     public static bool TryMultiply(
@@ -88,40 +70,22 @@ public static class EngineOperations
             static (EngineFamily family, out GradedElement? result) => family.TryMultiplyAll(out result),
             out product);
 
-    public static bool TryMultiplyWithProvenance(
+    public static bool TryMultiplyResult(
         EngineOperationContext context,
         out EngineOperationResult? result) =>
         TryWithFamily(
             context,
-            static (EngineFamily family, out EngineOperationResult? value) => family.TryMultiplyAllWithProvenance(out value),
+            static (EngineFamily family, out EngineOperationResult? value) => family.TryMultiplyAllResult(out value),
             out result);
 
-    public static bool TryMultiplyWithProvenance(
+    public static bool TryMultiplyResult(
         GradedElement frame,
         IEnumerable<GradedElement> members,
         out EngineOperationResult? result) =>
         TryWithFamily(
             frame,
             members,
-            static (EngineFamily family, out EngineOperationResult? value) => family.TryMultiplyAllWithProvenance(out value),
-            out result);
-
-    public static bool TryMultiplyWithTension(
-        EngineOperationContext context,
-        out EngineOperationResult? result) =>
-        TryWithFamily(
-            context,
-            static (EngineFamily family, out EngineOperationResult? value) => family.TryMultiplyAllWithTension(out value),
-            out result);
-
-    public static bool TryMultiplyWithTension(
-        GradedElement frame,
-        IEnumerable<GradedElement> members,
-        out EngineOperationResult? result) =>
-        TryWithFamily(
-            frame,
-            members,
-            static (EngineFamily family, out EngineOperationResult? value) => family.TryMultiplyAllWithTension(out value),
+            static (EngineFamily family, out EngineOperationResult? value) => family.TryMultiplyAllResult(out value),
             out result);
 
     public static bool TryBoolean(
@@ -147,17 +111,17 @@ public static class EngineOperations
             static (EngineFamily family, EngineBooleanOperation payload, out EngineBooleanResult? value) => family.TryBoolean(payload, out value),
             out result);
 
-    public static bool TryBooleanWithTension(
+    public static bool TryBooleanResult(
         EngineOperationContext context,
         EngineBooleanOperation operation,
         out EngineBooleanResult? result) =>
         TryWithCompositeFamily(
             context,
-            static (EngineFamily family, EngineBooleanOperation payload, out EngineBooleanResult? value) => family.TryBooleanWithTension(payload, out value),
+            static (EngineFamily family, EngineBooleanOperation payload, out EngineBooleanResult? value) => family.TryBooleanResult(payload, out value),
             operation,
             out result);
 
-    public static bool TryBooleanWithTension(
+    public static bool TryBooleanResult(
         CompositeElement frame,
         IEnumerable<GradedElement> members,
         EngineBooleanOperation operation,
@@ -167,7 +131,7 @@ public static class EngineOperations
             members,
             operation,
             isOrdered: true,
-            static (EngineFamily family, EngineBooleanOperation payload, out EngineBooleanResult? value) => family.TryBooleanWithTension(payload, out value),
+            static (EngineFamily family, EngineBooleanOperation payload, out EngineBooleanResult? value) => family.TryBooleanResult(payload, out value),
             out result);
 
     public static bool TryOccupancyBoolean(
@@ -194,17 +158,17 @@ public static class EngineOperations
             static (EngineFamily family, EngineOccupancyOperation payload, out EngineFamilyBooleanResult? value) => family.TryOccupancyBoolean(payload, out value),
             out result);
 
-    public static bool TryOccupancyBooleanWithTension(
+    public static bool TryOccupancyBooleanResult(
         EngineOperationContext context,
         EngineOccupancyOperation operation,
         out EngineFamilyBooleanResult? result) =>
         TryWithCompositeFamily(
             context,
-            static (EngineFamily family, EngineOccupancyOperation payload, out EngineFamilyBooleanResult? value) => family.TryOccupancyBooleanWithTension(payload, out value),
+            static (EngineFamily family, EngineOccupancyOperation payload, out EngineFamilyBooleanResult? value) => family.TryOccupancyBooleanResult(payload, out value),
             operation,
             out result);
 
-    public static bool TryOccupancyBooleanWithTension(
+    public static bool TryOccupancyBooleanResult(
         CompositeElement frame,
         IEnumerable<GradedElement> members,
         EngineOccupancyOperation operation,
@@ -215,7 +179,7 @@ public static class EngineOperations
             members,
             operation,
             isOrdered,
-            static (EngineFamily family, EngineOccupancyOperation payload, out EngineFamilyBooleanResult? value) => family.TryOccupancyBooleanWithTension(payload, out value),
+            static (EngineFamily family, EngineOccupancyOperation payload, out EngineFamilyBooleanResult? value) => family.TryOccupancyBooleanResult(payload, out value),
             out result);
 
     public static bool TryBooleanAdjacentPairs(
@@ -241,17 +205,17 @@ public static class EngineOperations
             static (EngineFamily family, EngineBooleanOperation payload, out IReadOnlyList<EngineBooleanResult>? value) => family.TryBooleanAdjacentPairs(payload, out value),
             out results);
 
-    public static bool TryBooleanAdjacentPairsWithTension(
+    public static bool TryBooleanAdjacentPairResults(
         EngineOperationContext context,
         EngineBooleanOperation operation,
         out IReadOnlyList<EngineBooleanResult>? results) =>
         TryWithCompositeFamily(
             context,
-            static (EngineFamily family, EngineBooleanOperation payload, out IReadOnlyList<EngineBooleanResult>? value) => family.TryBooleanAdjacentPairsWithTension(payload, out value),
+            static (EngineFamily family, EngineBooleanOperation payload, out IReadOnlyList<EngineBooleanResult>? value) => family.TryBooleanAdjacentPairResults(payload, out value),
             operation,
             out results);
 
-    public static bool TryBooleanAdjacentPairsWithTension(
+    public static bool TryBooleanAdjacentPairResults(
         CompositeElement frame,
         IEnumerable<GradedElement> members,
         EngineBooleanOperation operation,
@@ -261,7 +225,7 @@ public static class EngineOperations
             members,
             operation,
             isOrdered: true,
-            static (EngineFamily family, EngineBooleanOperation payload, out IReadOnlyList<EngineBooleanResult>? value) => family.TryBooleanAdjacentPairsWithTension(payload, out value),
+            static (EngineFamily family, EngineBooleanOperation payload, out IReadOnlyList<EngineBooleanResult>? value) => family.TryBooleanAdjacentPairResults(payload, out value),
             out results);
 
     private static bool TryWithFamily<TResult>(
