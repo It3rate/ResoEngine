@@ -5,6 +5,9 @@ namespace Core3.Engine;
 /// calibration without being copied into the subject as owned structure.
 /// This is closer to measurement or inscription than to containment.
 /// </summary>
+// TODO: Pick a better Core3-facing name than "Reference". "View",
+// "Framing", or another term for a carried perspective/read may fit the
+// actual role better and avoid the usual programming-language overload.
 public sealed record EngineReference(
     CompositeElement Frame,
     GradedElement Subject)
