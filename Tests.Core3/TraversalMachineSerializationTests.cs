@@ -548,7 +548,33 @@ public sealed class TraversalMachineSerializationTests
           "value": 1,
           "unit": 1
         }
-      }
+      },
+      "outputs": [
+        {
+          "target": {
+            "domain": "Context",
+            "name": "currentItem"
+          },
+          "value": {
+            "kind": "atomic",
+            "grade": 0,
+            "value": 1,
+            "unit": 1
+          }
+        },
+        {
+          "target": {
+            "domain": "Token",
+            "name": "accumulator"
+          },
+          "value": {
+            "kind": "atomic",
+            "grade": 0,
+            "value": 1,
+            "unit": 1
+          }
+        }
+      ]
     },
     {
       "site": {
@@ -565,7 +591,33 @@ public sealed class TraversalMachineSerializationTests
           "value": 2,
           "unit": 1
         }
-      }
+      },
+      "outputs": [
+        {
+          "target": {
+            "domain": "Context",
+            "name": "nextItem"
+          },
+          "value": {
+            "kind": "atomic",
+            "grade": 0,
+            "value": 2,
+            "unit": 1
+          }
+        },
+        {
+          "target": {
+            "domain": "Result",
+            "name": "route"
+          },
+          "value": {
+            "kind": "atomic",
+            "grade": 0,
+            "value": 1,
+            "unit": 1
+          }
+        }
+      ]
     }
   ]
 }
@@ -582,7 +634,6 @@ public sealed class TraversalMachineSerializationTests
         Assert.True(TraversalRuntime.TryStep(state, family, out var step));
 
         var json = Core3JsonSerializer.Serialize(Assert.IsType<TraversalStepResult>(step));
-
         AssertJsonEqual(expectedJson, json);
     }
 

@@ -357,6 +357,7 @@ It currently supports:
 - mover-relative family reads
 - token/context/result storage by name
 - same-step token/context/result reads against the live evolving step state
+- per-site encounter traces with preserved inputs, writes, and local note/tension
 - a tiny law surface for example machines
 - a small named law-dispatch registry instead of hard-coded inline step branching
 

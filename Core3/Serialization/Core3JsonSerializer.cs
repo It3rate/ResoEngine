@@ -829,6 +829,38 @@ public static class Core3JsonSerializer
         Write(writer, encounter.Attachment.Law);
         writer.WritePropertyName("inputs");
         WriteNamedElements(writer, encounter.Inputs, actual);
+
+        writer.WritePropertyName("outputs");
+        writer.WriteStartArray();
+        foreach (var output in encounter.Outputs)
+        {
+            Write(writer, output, actual);
+        }
+        writer.WriteEndArray();
+
+        if (encounter.Tension is not null)
+        {
+            writer.WritePropertyName("tension");
+            Write(writer, encounter.Tension, actual);
+        }
+
+        if (!string.IsNullOrWhiteSpace(encounter.Note))
+        {
+            writer.WriteString("note", encounter.Note);
+        }
+
+        writer.WriteEndObject();
+    }
+
+    public static void Write(Utf8JsonWriter writer, TraversalStoredValue output, Core3JsonSerializerOptions? options = null)
+    {
+        var actual = Resolve(options);
+
+        writer.WriteStartObject();
+        writer.WritePropertyName("target");
+        Write(writer, output.Target);
+        writer.WritePropertyName("value");
+        Write(writer, output.Value, actual);
         writer.WriteEndObject();
     }
 

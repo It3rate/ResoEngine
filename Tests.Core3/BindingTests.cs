@@ -298,6 +298,16 @@ public sealed class BindingTests
         Assert.Equal(2, first.Encounters.Count);
         Assert.Equal("Add", first.Encounters[0].Attachment.Law.Name);
         Assert.Equal("ContinueWhileNextMemberExists", first.Encounters[1].Attachment.Law.Name);
+        Assert.Equal(2, first.Encounters[0].Outputs.Count);
+        Assert.Equal(BindingDomain.Context, first.Encounters[0].Outputs[0].Target.Domain);
+        Assert.Equal("currentItem", first.Encounters[0].Outputs[0].Target.Name);
+        Assert.Equal(BindingDomain.Token, first.Encounters[0].Outputs[1].Target.Domain);
+        Assert.Equal("accumulator", first.Encounters[0].Outputs[1].Target.Name);
+        Assert.Equal(2, first.Encounters[1].Outputs.Count);
+        Assert.Equal(BindingDomain.Context, first.Encounters[1].Outputs[0].Target.Domain);
+        Assert.Equal("nextItem", first.Encounters[1].Outputs[0].Target.Name);
+        Assert.Equal(BindingDomain.Result, first.Encounters[1].Outputs[1].Target.Domain);
+        Assert.Equal("route", first.Encounters[1].Outputs[1].Target.Name);
 
         Assert.True(TraversalRuntime.TryStep(first.State, family, out var secondStep));
 
@@ -332,6 +342,7 @@ public sealed class BindingTests
         var result = Assert.IsType<TraversalStepResult>(step);
         Assert.Single(result.Encounters);
         Assert.Equal("UnimplementedLaw", result.Encounters[0].Attachment.Law.Name);
+        Assert.Empty(result.Encounters[0].Outputs);
         Assert.Contains("no handler", result.State.Note);
         Assert.Equal(initial.Mover, result.State.Mover);
     }
@@ -413,6 +424,9 @@ public sealed class BindingTests
         Assert.Equal(
             new AtomicElement(1, 1),
             Assert.IsType<AtomicElement>(result.Encounters[1].Inputs["nextItem"]));
+        Assert.Single(result.Encounters[1].Outputs);
+        Assert.Equal(BindingDomain.Result, result.Encounters[1].Outputs[0].Target.Domain);
+        Assert.Equal("route", result.Encounters[1].Outputs[0].Target.Name);
     }
 
     [Fact]
