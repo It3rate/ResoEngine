@@ -30,35 +30,10 @@ public sealed record EngineOperationResult : EngineArcResult
         PreservedStructure = preservedStructure;
     }
 
-    public EngineOperationResult(
-        string operationName,
-        GradedElement sourceFrame,
-        IReadOnlyList<GradedElement> sourceMembers,
-        GradedElement result,
-        GradedElement? resultFrame = null,
-        GradedElement? preservedStructure = null,
-        GradedElement? tension = null,
-        string? note = null)
-        : this(
-            operationName,
-            new EngineOperationContext(sourceFrame, sourceMembers, true),
-            result,
-            resultFrame,
-            preservedStructure,
-            tension,
-            note)
-    {
-    }
-
     public string OperationName { get; }
-    public GradedElement SourceFrame => Context.Frame;
-    public IReadOnlyList<GradedElement> SourceMembers => Context.Members;
-    public bool IsOrdered => Context.IsOrdered;
-    public string OriginLaw => OperationName;
     public GradedElement Result { get; }
     public GradedElement ResultFrame { get; }
     public GradedElement? PreservedStructure { get; }
-    public GradedElement Outbound => Result;
     public override string OriginLawName => OperationName;
     public EngineOperationPiece OutboundPiece =>
         new(Result, ResultFrame, Enumerable.Range(0, Context.Count).ToArray());

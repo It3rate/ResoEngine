@@ -141,7 +141,7 @@ public sealed class EngineTests
     }
 
     [Fact]
-    public void EnginePin_ResolveHostedWithTension_PreservesUnresolvedHostedPlacement()
+    public void EnginePin_ResolveHosted_PreservesUnresolvedHostedPlacement()
     {
         var host = new CompositeElement(
             new AtomicElement(0, 1),
@@ -150,7 +150,7 @@ public sealed class EngineTests
             new AtomicElement(2, 1),
             new AtomicElement(3, -1));
 
-        var outcome = EnginePin.ResolveHostedWithTension(host, contrastiveRatio);
+        var outcome = EnginePin.ResolveHosted(host, contrastiveRatio);
 
         Assert.False(outcome.IsExact);
         Assert.Equal(new AtomicElement(3, 0), Assert.IsType<AtomicElement>(outcome.ResolvedPosition));
@@ -236,11 +236,11 @@ public sealed class EngineTests
     }
 
     [Fact]
-    public void AtomicReexpressToSupportWithTension_PreservesUnresolvedProjectionWhenSupportDoesNotDivide()
+    public void AtomicReexpressToSupport_PreservesUnresolvedProjectionWhenSupportDoesNotDivide()
     {
         var ratio = new AtomicElement(3, 10);
 
-        var outcome = ratio.ReexpressToSupportWithTension(6);
+        var outcome = ratio.ReexpressToSupport(6);
 
         Assert.False(outcome.IsExact);
         Assert.Equal(

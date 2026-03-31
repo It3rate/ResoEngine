@@ -90,7 +90,7 @@ public sealed record EnginePin
 
     public override string ToString() => $"pin(in {Inbound}, out {Outbound})";
 
-    public static EngineHostedPinResult ResolveHostedWithTension(
+    public static EngineHostedPinResult ResolveHosted(
         CompositeElement host,
         GradedElement pinPosition)
     {

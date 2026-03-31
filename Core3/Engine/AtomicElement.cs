@@ -25,7 +25,7 @@ public sealed record AtomicElement(long Value, long Unit) : GradedElement
 
     public override EngineElementOutcome Fold() => EngineElementOutcome.Exact(this);
 
-    public EngineElementOutcome ReexpressToSupportWithTension(long targetResolution)
+    public EngineElementOutcome ReexpressToSupport(long targetResolution)
     {
         if (TryReexpressToSupport(targetResolution, out var reexpressed) &&
             reexpressed is not null)

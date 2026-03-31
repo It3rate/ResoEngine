@@ -35,7 +35,7 @@ The first migrated paths are:
 
 - `CompositeElement.Fold`
 - `EngineEvaluation.ComposeRatio`
-- `AtomicElement.ReexpressToSupportWithTension`
+- `AtomicElement.ReexpressToSupport`
 - `AtomicElement.CommitToCalibration`
 - `AtomicElement.Align`
 - `AtomicElement.Add`
@@ -51,7 +51,7 @@ The first migrated paths are:
 - pairwise adjacent boolean traversal outcome surfaces
 - `EngineView.Read`
 - `EngineView.MeasureOnCalibration`
-- `EnginePin.ResolveHostedWithTension`
+- `EnginePin.ResolveHosted`
 
 This now distinguishes two layers:
 

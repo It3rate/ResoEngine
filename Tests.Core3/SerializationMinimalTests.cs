@@ -8,9 +8,9 @@ namespace Tests.Core3;
 public sealed class SerializationMinimalTests
 {
     [Fact]
-    public void Core3JsonSerializer_SerializesReference_MinimallyByDefault()
+    public void Core3JsonSerializer_SerializesView_MinimallyByDefault()
     {
-        // Serializes a reference relation without any derived readout fields.
+        // Serializes a view relation without any derived readout fields.
         // Approximate math: keep the instruction "read 7 through the frame (10, 3)"
         // without serializing the computed 70/10 read yet.
         var expectedJson = """
@@ -52,7 +52,7 @@ public sealed class SerializationMinimalTests
     }
 
     [Fact]
-    public void Core3JsonSerializer_SerializesHostedPinResultWithTension_Minimally()
+    public void Core3JsonSerializer_SerializesHostedPinResult_Minimally()
     {
         // Serializes a hosted pin request that cannot settle onto one exact route
         // position, preserving the unresolved placement and local sides.
@@ -138,7 +138,7 @@ public sealed class SerializationMinimalTests
             new AtomicElement(3, -1));
 
         var json = Core3JsonSerializer.Serialize(
-            EnginePin.ResolveHostedWithTension(host, contrastiveRatio));
+            EnginePin.ResolveHosted(host, contrastiveRatio));
 
         AssertJsonEqual(expectedJson, json);
     }
@@ -411,9 +411,9 @@ public sealed class SerializationMinimalTests
     }
 
     [Fact]
-    public void Core3JsonSerializer_SerializesDerivedReferenceOutcome_WhenReadIsNotExact()
+    public void Core3JsonSerializer_SerializesDerivedViewOutcome_WhenReadIsNotExact()
     {
-        // Serializes a reference with derived view enabled when the borrowed read
+        // Serializes a view with derived output enabled when the borrowed read
         // remains unresolved under the frame calibration.
         var expectedJson = """
 {
@@ -750,8 +750,9 @@ public sealed class SerializationMinimalTests
             new AtomicElement(4, 1));
         var result = new EngineOperationResult(
             "Multiply",
-            frame,
-            [new AtomicElement(3, 1), new AtomicElement(4, 1)],
+            EngineOperationContext.Create(
+                frame,
+                [new AtomicElement(3, 1), new AtomicElement(4, 1)]),
             new AtomicElement(12, 1),
             frame,
             preservedStructure);

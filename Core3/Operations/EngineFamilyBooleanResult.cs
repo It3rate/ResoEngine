@@ -23,13 +23,8 @@ public sealed record EngineFamilyBooleanResult : EngineArcResult
         Pieces = pieces;
     }
 
-    public CompositeElement Frame => (CompositeElement)Context.Frame;
-    public IReadOnlyList<CompositeElement> Members => Context.Members.Cast<CompositeElement>().ToArray();
-    public bool IsOrdered => Context.IsOrdered;
     public EngineOccupancyOperation Operation { get; }
-    public EngineOccupancyOperation OriginLaw => Operation;
     public override string OriginLawName => Operation.ToString();
     public IReadOnlyList<EngineOperationPiece> Pieces { get; }
     public override IReadOnlyList<EngineOperationPiece> OutboundPieces => Pieces;
-    public IReadOnlyList<CompositeElement> Segments => Pieces.Select(piece => (CompositeElement)piece.Result).ToArray();
 }

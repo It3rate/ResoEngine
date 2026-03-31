@@ -286,8 +286,8 @@ public sealed class OperationsTests
 
         var operationResult = Assert.IsType<EngineOperationResult>(result);
         Assert.Equal("Add", operationResult.OperationName);
-        Assert.Equal(frame, operationResult.SourceFrame);
-        Assert.Equal(3, operationResult.SourceMembers.Count);
+        Assert.Equal(frame, operationResult.Context.Frame);
+        Assert.Equal(3, operationResult.Context.Members.Count);
         Assert.Equal(new AtomicElement(5, 4), operationResult.Result);
         Assert.Equal(
             new CompositeElement(new AtomicElement(0, 4), new AtomicElement(1, 4)),
@@ -394,8 +394,8 @@ public sealed class OperationsTests
 
         var operationResult = Assert.IsType<EngineOperationResult>(result);
         Assert.Equal("Multiply", operationResult.OperationName);
-        Assert.Equal(frame, operationResult.SourceFrame);
-        Assert.Equal(2, operationResult.SourceMembers.Count);
+        Assert.Equal(frame, operationResult.Context.Frame);
+        Assert.Equal(2, operationResult.Context.Members.Count);
         Assert.Equal(new AtomicElement(6, 16), operationResult.Result);
         Assert.Equal(new AtomicElement(16, 16), Assert.IsType<AtomicElement>(operationResult.ResultFrame));
         Assert.Equal(
@@ -535,7 +535,7 @@ public sealed class OperationsTests
             out var result));
 
         var occupancyResult = Assert.IsType<EngineFamilyBooleanResult>(result);
-        Assert.False(occupancyResult.IsOrdered);
+        Assert.False(occupancyResult.Context.IsOrdered);
         Assert.Equal(3, occupancyResult.Pieces.Count);
         Assert.Equal(Core3TestHelpers.CreateSegmentFrame(0, 3, 10), occupancyResult.Pieces[0].Result);
         Assert.Equal(Core3TestHelpers.CreateSegmentFrame(5, 6, 10), occupancyResult.Pieces[1].Result);

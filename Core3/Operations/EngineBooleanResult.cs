@@ -31,13 +31,8 @@ public sealed record EngineBooleanResult : EngineArcResult
         Pieces = pieces;
     }
 
-    public CompositeElement Frame => (CompositeElement)Context.Frame;
-    public CompositeElement Primary => (CompositeElement)Context.Members[0];
-    public CompositeElement Secondary => (CompositeElement)Context.Members[1];
     public EngineBooleanOperation Operation { get; }
-    public EngineBooleanOperation OriginLaw => Operation;
     public override string OriginLawName => Operation.ToString();
     public IReadOnlyList<EngineOperationPiece> Pieces { get; }
     public override IReadOnlyList<EngineOperationPiece> OutboundPieces => Pieces;
-    public IReadOnlyList<CompositeElement> Segments => Pieces.Select(piece => (CompositeElement)piece.Result).ToArray();
 }

@@ -21,7 +21,6 @@ public abstract record EngineArcResult : IExactResult
     }
 
     public EngineOperationContext Context { get; }
-    public EngineOperationContext Inbound => Context;
     public GradedElement? Tension { get; }
     public string? Note { get; }
     public bool IsExact => Tension is null;

@@ -21,13 +21,10 @@ public sealed record EngineReadResult : EngineArcResult
         Reads = reads;
     }
 
-    public GradedElement Frame => Context.Frame;
-    public bool IsOrdered => Context.IsOrdered;
     public IReadOnlyList<GradedElement> Reads { get; }
-    public IReadOnlyList<GradedElement> OutboundReads => Reads;
     public override string OriginLawName => "Read";
     public override IReadOnlyList<EngineOperationPiece> OutboundPieces =>
         Reads
-            .Select((read, index) => new EngineOperationPiece(read, Frame, [index]))
+            .Select((read, index) => new EngineOperationPiece(read, Context.Frame, [index]))
             .ToArray();
 }

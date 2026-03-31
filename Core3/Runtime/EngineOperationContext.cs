@@ -16,9 +16,6 @@ public sealed record EngineOperationContext(
     EngineOperationContext? ParentContext = null,
     int? ParentFocusIndex = null)
 {
-    public GradedElement InboundFrame => Frame;
-    public IReadOnlyList<GradedElement> InboundMembers => Members;
-
     public static EngineOperationContext Create(
         GradedElement frame,
         IEnumerable<GradedElement> members,

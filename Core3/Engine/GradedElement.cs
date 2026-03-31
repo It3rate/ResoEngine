@@ -25,24 +25,6 @@ public abstract record GradedElement
     public GradedElement CreateZeroLikePeer() =>
         EngineEvaluation.CreateZeroLikeElement(Grade);
 
-    public virtual EngineElementOutcome CommitToCalibrationWithTension(GradedElement calibration) =>
-        CommitToCalibration(calibration);
-
-    public virtual EngineElementPairOutcome AlignWithTension(GradedElement other, ResolutionPolicy policy) =>
-        Align(other, policy);
-
-    public virtual EngineElementOutcome AddWithTension(GradedElement other) =>
-        Add(other);
-
-    public virtual EngineElementOutcome SubtractWithTension(GradedElement other) =>
-        Subtract(other);
-
-    public virtual EngineElementOutcome MultiplyWithTension(GradedElement other) =>
-        Multiply(other);
-
-    public virtual EngineElementOutcome ScaleWithTension(AtomicElement factor) =>
-        Scale(factor);
-
     public virtual bool TryFold(out GradedElement? folded)
     {
         folded = Fold().Result;
@@ -95,9 +77,6 @@ public abstract record GradedElement
         TryAlignExact(other, ResolutionPolicy.ExactCommonFrame, out leftAligned, out rightAligned);
 
     public EngineElementPairOutcome Align(GradedElement other) =>
-        Align(other, ResolutionPolicy.ExactCommonFrame);
-
-    public EngineElementPairOutcome AlignWithTension(GradedElement other) =>
         Align(other, ResolutionPolicy.ExactCommonFrame);
 
     public bool TryViewInFrame(GradedElement frame, out GradedElement? read) =>
