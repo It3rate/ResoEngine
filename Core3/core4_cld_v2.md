@@ -30,7 +30,7 @@ An **atomic element** is a pair `(v, u)` where:
 - `v` is a signed integer: the **value** (how many)
 - `u` is a signed integer: the **unit** (what "one" is)
 
-The unit sign carries physical meaning (Axiom 10). The unit magnitude
+The unit sign carries physical meaning (Axiom 9). The unit magnitude
 `|u|` is the **resolution**: how many ticks compose one unit. When `u = 0`,
 the element has magnitude but no established "one" — it is **unresolved**.
 
@@ -63,6 +63,59 @@ Traversal from recessive to dominant is the most primitive form of time
 
 ---
 
+## Geometric Orientation
+
+This is not an axiom — it is a guide to help readers orient themselves
+geometrically as the system unfolds. The grades of this system correspond
+loosely to familiar geometric objects, but with important differences.
+
+**Pre-grade (uncalibrated extents).** Before any unit is formed, pinned
+extents can compare ratios and contain ticks, but there is no agreed way
+to read them — you don't know which extent is the denominator, so you
+don't know the resolution, and there is no unit another element could use
+as a measuring stick. Math is available here (comparison, ratio), but
+these are not yet graded elements.
+
+**Grade 0 — the "point."** In conventional geometry, a point is
+0-dimensional and has no extent. In this system, grade 0 is an atomic
+element: a ratio where one extent has been chosen as the unit. It is a
+segment from that unit's zero to the end of the value — calibrated,
+directed, and one-dimensional. A "point" here is already a measurement.
+
+**Grade 1 — the "line."** Conventionally, a line has one degree of
+freedom. In this system, a grade-1 element is a composite of two
+independent grade-0 elements (recessive and dominant). It is a directed
+segment with a start and an end — two independent points. This is why
+grade-1 elements need both a recessive and dominant axis as a unit: the
+line's identity is in the relationship between its two endpoints, not in
+a single free parameter.
+
+**Grade 2 — "area."** Formed by multiplying two grade-1 elements (lines).
+The four-term kernel produces four orthogonal shapes from the unit origin:
+`dd` (area creation) and `rr` (anti-area) lie on one diagonal, forming
+area that extends from the origin. `rd` and `dr` lie on the other
+diagonal, forming rays from the origin — these are complex numbers. The
+two types of complex numbers (dominant-recessive and recessive-dominant)
+are orthogonal values that can be thought of geometrically as pointing
+"up" and "down" from the area plane.
+
+**Grade 3 — "volume."** Formed by combining one of the rays (complex
+numbers) with one of the areas. The only way to break into a new
+dimension is to combine a symmetric object (area) with one that breaks
+symmetry (a ray). Higher grades continue this pattern indefinitely,
+though our intuitive spatial geometry ends at grade 3.
+
+**Beyond geometry.** Geometry is a convenient visualization, but these
+grades usually represent non-spatial quantities: weight and density,
+temperature and pressure, items and repetitions, signal and noise. An
+"orthogonal direction" simply means: the measurement system is receiving
+information it cannot account for within its current dimensions. That
+orthogonal direction can be *anything* until a different element is
+discovered that accounts for it. The geometric picture is a scaffold,
+not the territory.
+
+---
+
 ## Part II: The Lifecycle
 
 Every event in this system — from the first unit bootstrapping itself out
@@ -85,27 +138,35 @@ state. They are the same event seen from outside and inside.
 
 **Phase 1 — Observe / Attach**
 
-*Structural:* A connection forms. An extent connects to another extent
-at an endpoint, creating a pin. This has two sub-steps:
+*Structural:* A connection forms. This has two sub-steps, and the first
+is meaningful on its own:
 
-> **Pin:** The connection gives a **location** (here), a **direction**
-> (one way to go), and critically, the **potential to interpolate** along
-> the attached extent. Endpoint attachment is the primitive — midpoints
-> cannot be discovered without calibration, so midpoint attachment requires
-> having already exercised the interpolation potential from an endpoint.
+> **Pin (to a single extent):** A pin attaches to one extent at an
+> endpoint. This alone gives the pin a **location** (here), a **direction**
+> (one way to go along the extent), and the **potential to interpolate**
+> along that direction. Endpoint attachment is the primitive — midpoints
+> cannot be discovered without calibration, so a midpoint is just somewhere
+> along the interpolation from an endpoint, not a directly discoverable
+> position.
 >
-> **Join:** The connector attaches to a second extent without releasing
-> the first. Now there are **two direction opinions** from a single
-> location. These opinions are either aligned (same direction) or opposed
-> (opposite directions). This is comparison — not yet measured, but
-> structurally present as a ratio.
+> At this stage — pinned to one extent — the observer already has
+> meaningful capabilities: a position, a direction, the potential to
+> traverse, and a perspective (the world as seen from this location).
+>
+> **Join (pin to a second extent):** The pin attaches to a second extent
+> without releasing the first. Now there are **two direction opinions**
+> from a single location. These opinions are either aligned (same
+> direction) or opposed (opposite directions). This is comparison — not
+> yet measured, but structurally present as a ratio.
 
 *Observer:* This phase is entirely **passive**. The element observes
 endpoints, sees direction, recognizes that interpolation is possible.
 It can attach more closely to see more — but it is not acting on
 anything, only receiving information. The potential to interpolate exists
-from the moment of attachment, but exercising it is a separate choice
-that belongs to the next phase.
+from the moment of the first pin, but exercising it is a separate choice
+that belongs to the next phase. Joining a second extent enriches what
+can be observed (now there is comparison), but does not change the
+passive character of this phase.
 
 The observer at this stage has: a position, a view of the world from
 that position (perspective), and one or two directions it could go. It
@@ -213,8 +274,12 @@ phase provides the environment to use them — you had the concept of
 interpolation from Observe, but couldn't use it richly until Experience
 provided traversal and Manipulate provided modification.
 
-After **Observe/Attach**: location, direction, interpolation potential,
-perspective (the world seen from this position), comparison (if joined).
+After **Pin** (to one extent): location, direction, interpolation
+potential, perspective (the world seen from this position).
+
+After **Join** (to a second extent): comparison, two direction opinions,
+ratio, the distinction between aligned and opposed. All Pin abilities
+remain and are now richer — you had one direction, now you have two.
 
 After **Experience/Traverse**: time (ordered positions), feedback (what
 is at each position), tension awareness (when the structure is exceeded),
@@ -1116,3 +1181,15 @@ everything is ordered). Everything else — numbers, dimensions, topology,
 time, area, complex arithmetic, boundary conditions, laws, symbols,
 and the lifecycle itself — is constructed through observation, experience,
 manipulation, and resolution.
+
+---
+
+## Notes for Future Development
+
+**Pins as machines.** The system constructs many machines at different
+scales. A pin can be thought of as a mini-machine, and the extent it
+traverses is another machine. Both can hold data, and their data can
+affect each other — the pin's state influences how it reads the extent,
+and the extent's structure influences how the pin advances. The full
+interaction between pin-machines and extent-machines is part of the
+data layer design and will be formalized separately.
