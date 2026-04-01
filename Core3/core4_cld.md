@@ -14,6 +14,13 @@ There exist **extents**: ordered, comparable magnitudes. An extent has
 no unit, no resolution, no sign. It is simply "some amount" that can be
 compared to another extent by size. This is the sole assumption.
 
+Not everything is an extent. Some phenomena are **chaotic** — not orderable,
+not comparable. The system can only observe these; it cannot operate on them.
+They appear as irreducible tension, background noise within the resolution
+of whatever structure is present. One purpose of the system is to discover
+frames that render previously chaotic phenomena orderable — but that is
+never guaranteed, and some residual chaos is always acceptable.
+
 We write an extent as a bare value: `a`, `b`, `c`.
 
 ### Axiom 2 — The Atomic Element
@@ -333,11 +340,20 @@ pattern of its components:
 
 The engine resolves this kernel into two components:
 
-    squareDifference = rr - dd     → net area (aligned result)
+    squareDifference = rr + dd     → net area (aligned result)
     crossSum         = rd + dr     → net directed extent (orthogonal result)
 
+**Both equations are addition.** The traditional formulation writes
+`rr - dd` because conventional mathematics only acknowledges positive
+area — it needs an explicit subtraction to account for cancellation.
+In this system, `rr` IS anti-area: structurally negative, the opposite
+of `dd`. Adding anti-area to area cancels naturally, the same way
+adding a negative number to a positive one does. The subtraction is
+in the structure of `rr` itself, not in the equation. The operation
+is always addition; the signs are carried by the terms.
+
 This IS complex multiplication. It was not introduced — it **falls out**
-of the grade system. The "real part" (rr - dd) is the net area contribution.
+of the grade system. The "real part" (rr + dd) is the net area contribution.
 The "imaginary part" (rd + dr) is the net directional residue.
 
 ### Axiom 16 — Dimensional Promotion Through Symmetry Breaking
@@ -591,7 +607,7 @@ terms; the dominance pattern determines interpretation:
 - `dd` terms → area contribution (aligned)
 - `rr` terms → anti-area contribution (aligned, opposite sign)
 - `rd + dr` terms → directed extent contribution (orthogonal)
-- Net result: `(rr - dd)` aligned + `(rd + dr)` orthogonal
+- Net result: `(rr + dd)` aligned + `(rd + dr)` orthogonal
 
 The explicit law (add, multiply, etc.) is a further operation applied to
 the kernel's output. The kernel is universal; the explicit law is chosen.
