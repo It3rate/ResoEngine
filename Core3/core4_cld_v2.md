@@ -3,7 +3,7 @@
 A physical mathematics bootstrapped from uncalibrated extents.
 No real numbers, no stated axes, no assumed dimensions.
 Everything constructed from ordered magnitudes through a universal lifecycle
-of attachment, negotiation, commitment, and independence.
+of observation, experience, manipulation, and resolution.
 
 ---
 
@@ -59,7 +59,7 @@ Swapping them (SwapOrder) changes the physical meaning.
 
 Direction gives every composite a natural "before" and "after."
 Traversal from recessive to dominant is the most primitive form of time
-(see Part VI). No external clock is needed.
+(see Part VII). No external clock is needed.
 
 ---
 
@@ -67,9 +67,10 @@ Traversal from recessive to dominant is the most primitive form of time
 
 Every event in this system — from the first unit bootstrapping itself out
 of uncalibrated extents, to dimensional emergence, to a pin firing during
-traversal — follows a universal pattern. The pattern has four phases.
-Each phase unlocks abilities that remain available in all subsequent phases.
-The pattern can run forward (construction) or backward (decomposition).
+traversal — follows a universal pattern. The pattern has four phases,
+visible from two complementary perspectives: the **structural** perspective
+(what happens to the structure) and the **observer** perspective (what
+happens to the participant element moving through the structure).
 
 Any event in the system is one of:
 1. **A single phase** within a larger lifecycle
@@ -78,19 +79,20 @@ Any event in the system is one of:
 
 ### Axiom 5 — The Four Phases
 
-**Phase 1 — Attach.** A connection forms between previously independent
-things. This has two sub-steps:
+Each phase is described from both perspectives. The structural view
+names the mechanical event; the observer view names the experiential
+state. They are the same event seen from outside and inside.
 
-> **Pin:** An extent connects to another extent at an endpoint. This gives
-> the connector a **location** (here), a **direction** (one way to go),
-> and the **potential to interpolate** along that direction. Endpoint
-> attachment is the primitive — midpoints cannot be discovered without
-> calibration, so midpoint attachment requires having already exercised
-> the interpolation potential from an endpoint.
->
-> What the potential to interpolate means: moving along the attached extent
-> produces time (ordered sequence of positions). Moving past the end
-> produces tension (the structure has been exceeded).
+**Phase 1 — Observe / Attach**
+
+*Structural:* A connection forms. An extent connects to another extent
+at an endpoint, creating a pin. This has two sub-steps:
+
+> **Pin:** The connection gives a **location** (here), a **direction**
+> (one way to go), and critically, the **potential to interpolate** along
+> the attached extent. Endpoint attachment is the primitive — midpoints
+> cannot be discovered without calibration, so midpoint attachment requires
+> having already exercised the interpolation potential from an endpoint.
 >
 > **Join:** The connector attaches to a second extent without releasing
 > the first. Now there are **two direction opinions** from a single
@@ -98,9 +100,51 @@ things. This has two sub-steps:
 > (opposite directions). This is comparison — not yet measured, but
 > structurally present as a ratio.
 
-**Phase 2 — Negotiate.** The ability to compare implies the potential for
-change. Laws emerge from abilities already present at this stage — they
-are not imported from outside the system:
+*Observer:* This phase is entirely **passive**. The element observes
+endpoints, sees direction, recognizes that interpolation is possible.
+It can attach more closely to see more — but it is not acting on
+anything, only receiving information. The potential to interpolate exists
+from the moment of attachment, but exercising it is a separate choice
+that belongs to the next phase.
+
+The observer at this stage has: a position, a view of the world from
+that position (perspective), and one or two directions it could go. It
+has not yet gone anywhere.
+
+**Phase 2 — Experience / Traverse**
+
+*Structural:* The interpolation potential is exercised. The element moves
+along the attached extent, producing an ordered sequence of positions.
+This is traversal — the structure is being read, generating feedback at
+each position.
+
+*Observer:* The element **experiences** the extent by moving through it.
+This is like running an equation — at each position, the structure
+provides feedback (what is here, how does this compare to where I was).
+The experience is informational, not transformative: the element is
+learning about the structure, not changing it.
+
+The drive to interpolate is not innate in the observer. It requires
+**structure** to achieve — either external structure pushing the element
+through (a mover advancing along a route), or internal structure within
+the element itself (an internal mechanism invisible to the element, much
+as our cells are invisible to us). Either way, the element experiences
+traversal; whether the impulse is external or internal does not change
+what is experienced.
+
+If the element interpolates along the extent, it gains **time** — an
+ordered sequence of positions. If it interpolates past the end, it gains
+**tension** — the structure has been exceeded. If a second extent is
+attached (Join), the element can experience both directions: interpolating
+along one while using the other as reference, or interpolating through
+itself from one extent's endpoint to the other's.
+
+**Phase 3 — Manipulate / Negotiate**
+
+*Structural:* The ability to compare (from Observe) and the feedback
+from traversal (from Experience) together imply the potential for
+**change**. Laws emerge from abilities already present — they are not
+imported from outside the system:
 
 - **Track:** Use one extent to measure changes in the other
 - **Repeat:** Re-attach to the start when you reach the end
@@ -108,37 +152,51 @@ are not imported from outside the system:
 - **Negate:** Reverse direction
 - **Halt:** Recognize when combined potential is exceeded; create tension
 
-Every ability has two modes: **recognition** (you can see direction) and
-**action** (you can change direction). You can recognize extent or modify
-extent, attach to things to observe them or attach to things to accumulate
-them. The negotiation determines which abilities are exercised and how the
-two extents will relate. This is where the structure of the interaction
-is worked out.
+*Observer:* The element can now **manipulate** — actually modify extents,
+adjust directions, negotiate changes to be more in line with its needs.
+Where Experience was reading the structure, Manipulate is writing to it.
 
-The negotiation has limits. When combined potential is exceeded — for
-example, one axis repeats 3 times and the other stretches to twice its
-length, giving a combined reach of 6; beyond that, the shared system
-produces tension it cannot absorb — the negotiation records this as
-structural tension, not failure.
+Every ability has two modes that map to Experience and Manipulate:
+**recognition** (you can see direction, see extent, see rate) and
+**action** (you can change direction, modify extent, adjust rate). You
+had recognition from Phase 2; you gain action in Phase 3. You can
+attach to things to observe them (Experience) or attach to things to
+accumulate them (Manipulate).
 
-**Phase 3 — Commit.** The negotiated structure is locked. Specifically,
-the **denominator** is locked — the unit, the "what is one," the tick
-structure. The values that participated in negotiation become measurements
-*within* the new unit, not parts of the unit itself.
+The negotiation determines how the joined extents will relate. It has
+limits. When combined potential is exceeded — for example, one axis
+repeats 3 times and the other stretches to twice its length, giving a
+combined reach of 6; beyond that, the shared system produces tension it
+cannot absorb — the negotiation records this as structural tension, not
+failure.
 
-This is always a denominator lock, even at higher grades. A vertical 3
-and a horizontal 4 combine into an area of 12, but the unit created is
-1² (one-squared), not 12. The 3 and 4 become values measured by that
-unit. The unit commits to not changing size even if the values that
-created it later adjust themselves. Units are local — they are bound
-to the place and structure where they were committed.
+**Phase 4 — Resolve / Commit + Independence**
 
-**Phase 4 — Independence.** The committed unit separates from the values
-that created it. It becomes a **symbol**: a portable, self-sufficient
-entity that can calibrate other things. The unit transcends its
-construction — area is more than two segments, speed is more than
-distance and time. The values remain as a remainder or reattach
-elsewhere; the unit is free.
+*Structural:* Two things happen in sequence:
+
+> **Commit:** The negotiated structure is locked. Specifically, the
+> **denominator** is locked — the unit, the "what is one," the tick
+> structure. The values that participated in negotiation become
+> measurements *within* the new unit, not parts of the unit itself.
+>
+> This is always a denominator lock, even at higher grades. A vertical 3
+> and a horizontal 4 combine into an area of 12, but the unit created is
+> 1² (one-squared), not 12. The 3 and 4 become values measured by that
+> unit. The unit commits to not changing size even if the values that
+> created it later adjust themselves. Units are local — they are bound
+> to the place and structure where they were committed.
+>
+> **Independence:** The committed unit separates from the values that
+> created it. It becomes a **symbol**: a portable, self-sufficient entity
+> that can calibrate other things. The unit transcends its construction —
+> area is more than two segments, speed is more than distance and time.
+> The values remain as a remainder or reattach elsewhere; the unit is free.
+
+*Observer:* The element reaches a **resolution** — a stopping point. The
+negotiation is complete. The structure is committed. The element is now
+*available for others to observe*. Its Independence is the beginning of
+other elements' Observe phase — they can attach to this resolved symbol,
+experience it, and eventually manipulate in relation to it.
 
 This is the mechanism by which the system creates abstractions. A symbol
 carries the memory of its formation (direction, resolution, structure)
@@ -150,23 +208,30 @@ can travel to other parts of the structure and serve as a reference there.
 
 Abilities unlocked at any phase remain available in all subsequent phases
 and in all subsequent lifecycle instances at higher grades. Nothing is lost.
+Crucially, abilities gained early may not be *exercisable* until a later
+phase provides the environment to use them — you had the concept of
+interpolation from Observe, but couldn't use it richly until Experience
+provided traversal and Manipulate provided modification.
 
-After **Pin**: location, direction, interpolation potential, perspective
-(the world seen from this position).
+After **Observe/Attach**: location, direction, interpolation potential,
+perspective (the world seen from this position), comparison (if joined).
 
-After **Join**: comparison, two direction opinions, ratio, the distinction
-between aligned and opposed. The earlier abilities (location, direction,
-interpolation) are now exercisable in a richer environment — you had the
-concept of interpolation before, but now you have two extents to
-interpolate between, which enables uses that a single attachment could not.
+After **Experience/Traverse**: time (ordered positions), feedback (what
+is at each position), tension awareness (when the structure is exceeded),
+rate (how fast positions change). The earlier abilities (location,
+comparison) are now exercisable in a richer environment — you had the
+concept of interpolation before, but now you have actual experience of
+moving through structure.
 
-After **Negotiate**: change, laws (track, repeat, stretch, negate, halt),
-tension boundaries, rate. All earlier abilities (location, comparison,
-interpolation) are available as inputs to negotiation.
+After **Manipulate/Negotiate**: change, laws (track, repeat, stretch,
+negate, halt), tension boundaries, rate adjustment. All earlier abilities
+(location, comparison, traversal feedback) are available as inputs to
+manipulation. Recognition becomes action.
 
-After **Commit**: unit, measurement, denominator stability. Comparison
-now becomes measurable comparison (numbers, not just ratios). Interpolation
-now has resolution (ticks).
+After **Resolve/Commit**: unit, measurement, denominator stability.
+Comparison now becomes measurable comparison (numbers, not just ratios).
+Interpolation now has resolution (ticks). The element is complete and
+available for others.
 
 After **Independence**: symbol, portability, calibration of others.
 Everything from prior phases is available *and* the symbol carries a
@@ -177,17 +242,19 @@ compressed version of all of it.
 The lifecycle runs backward for decomposition:
 
 **Capture:** A free-running symbol is bound — attached to a specific
-context. (Reverse of Independence.)
+context. Another element observes and attaches to the resolved symbol.
+(Reverse of Independence.)
 
 **Cleave:** The committed structure is broken — the denominator lock
-is released, exposing the internal negotiation. (Reverse of Commit.)
+is released, exposing the internal negotiation. The manipulation is
+undone. (Reverse of Commit.)
 
 **Separate:** Values are distinguished from units by sorting — the
-negotiated relationships are unwound into their component opinions.
+negotiated relationships are unwound into their component experiences.
 (Reverse of Negotiate.)
 
 **Disconnect:** The pin releases. Two previously joined extents become
-independent again. (Reverse of Attach.)
+independent again. The observation ends. (Reverse of Attach.)
 
 In mathematics: taking a square root is capturing an area symbol, cleaving
 its unit, separating the axis values, and disconnecting them into
@@ -198,13 +265,16 @@ Analysis — in the broad sense — is the reverse lifecycle.
 
 When two extents join at a point, their directions from that point are
 either **aligned** (same direction) or **opposed** (opposite directions).
-This distinction is structural — it exists before any measurement.
+This distinction is structural — it exists before any measurement, and
+is observable from the first phase.
 
 **Aligned directions** create parallel flow. Two streams going the same
 way. They cannot create a new dimension (there is no tension between them
 that demands one), but they create something a single stream cannot:
 parallel force, co-travel, the concept of width between two co-directional
-flows. This is the seed of structure within a dimension.
+flows. This is the seed of structure within a dimension. An element
+experiencing both sees two parallel interpolation paths — it can traverse
+either, or both simultaneously, learning about the space between them.
 
 **Opposed directions** create orthogonal potential. From the join point,
 there is a *third* interpolation path that didn't exist in either extent
@@ -213,6 +283,10 @@ This path crosses both extents and requires acknowledging both directions
 simultaneously. This is why orthogonal forces create new dimensions —
 the tension between opposed directions opens a path that neither extent
 contains by itself.
+
+An element at the join point of opposed extents, if it chooses to
+experience the third path, is performing the most primitive dimensional
+promotion. It is discovering a direction that neither extent alone contained.
 
 ---
 
@@ -230,7 +304,7 @@ physical role in any encounter:
 | `u = 0` | **Generative** | Unresolved. The relationship between this element and its context hasn't settled. Has magnitude but no "one" to measure against. Between unit spaces. Demands resolution through a law. |
 
 These are not labels applied externally. They are readable from the element
-itself. You inspect the unit sign and the aspect is physically present.
+itself — observable in Phase 1, before any experience or manipulation.
 
 ### Axiom 10 — Aspects Are Relational
 
@@ -269,13 +343,13 @@ Key physical implications:
 
 The number system is the first complete run of the lifecycle.
 
-### Axiom 12 — Ratios from Extents (Attach Phase)
+### Axiom 12 — Ratios from Extents (Observe Phase)
 
 Take two uncalibrated extents and **join** them in a composite:
 
     Composite(a, b)
 
-This is the Attach phase: two extents are pinned together. The result is
+This is the Observe phase: two extents are pinned together. The result is
 a **ratio**: "a relative to b." It is meaningful even though neither `a`
 nor `b` has a unit. No measurement has been made. A relationship has been
 created. This is the first structural act.
@@ -283,44 +357,51 @@ created. This is the first structural act.
 The ratio does not have resolution — neither child knows what "one" is.
 But the relationship `a/b` is real and comparable to other ratios.
 
-At this point the abilities from Attach are live: location (within the
+At this point the abilities from Observe are live: location (within the
 ratio), direction (recessive → dominant), the potential to interpolate
-between the two extents, and comparison (their relative sizes).
+between the two extents, and comparison (their relative sizes). An element
+sitting at this ratio can see both extents and their relative magnitudes.
+It has not yet experienced traversal through either.
 
-### Axiom 13 — Unit Formation (Negotiate + Commit Phases)
+### Axiom 13 — Unit Formation (Experience + Manipulate + Resolve)
 
-The ratio can **fold**: the Negotiate and Commit phases run together.
+The ratio can **fold**: the Experience, Manipulate, and Resolve phases
+run in sequence.
 
     Fold(Composite(denominator, numerator)) → AtomicElement(v, u)
 
-The negotiation proceeds through four steps:
+**Step 1 — Experience gives direction (Phase 2).** The unit-to-be
+connects to the value at one endpoint and experiences it — traversing
+enough to discover the value's direction. Before this, the unit-to-be
+is directionless — just an extent with magnitude. The attachment point
+determines the sign relationship. If the unit-to-be and value face the
+same direction from the attachment point, the unit is **aligned**
+(positive). If they face opposite directions, the unit is **opposed**
+(negative). There are two physically distinct configurations; the other
+two apparent configurations are the same situations viewed from the
+other side.
 
-**Step 1 — Attachment gives direction.** The unit-to-be connects to the
-value at one endpoint. Before this, the unit-to-be is directionless — just
-an extent with magnitude. The attachment point determines the sign
-relationship. If the unit-to-be and value face the same direction from the
-attachment point, the unit is **aligned** (positive). If they face opposite
-directions, the unit is **opposed** (negative). There are two physically
-distinct configurations; the other two apparent configurations are the same
-situations viewed from the other side.
+The drive to traverse may come from external structure or from internal
+structure invisible to the unit-to-be itself. Either way, the experience
+happens and direction is discovered.
 
-**Step 2 — Negotiation of "one."** The value provides calibration: *where*
-the attachment point sits, and its own natural direction. The unit-to-be
-provides resolution: what "one" will mean, the tick structure. Together
-they negotiate a shared version of 1. The laws used in this negotiation
-are the abilities already available from Attach: comparison, ratio,
-direction.
+**Step 2 — Manipulation negotiates "one" (Phase 3).** The value provides
+calibration: *where* the attachment point sits, and its own natural
+direction. The unit-to-be provides resolution: what "one" will mean, the
+tick structure. Together they manipulate — actively adjusting — until they
+agree on a shared version of 1. The laws used in this negotiation are
+the abilities already available: comparison, ratio, direction, plus
+the feedback gained from experience.
 
-**Step 3 — Commitment.** The unit-to-be commits to **not changing size**.
-It becomes the fixed denominator. This is irreversible — the unit now
-carries direction (from Step 1), magnitude (from its original extent),
-and the agreement about what "one" means (from Step 2).
-
-**Step 4 — Independence.** The unit separates. It retains the information
-it received from the value (direction, attachment point, resolution), but
-the value itself could detach. A different value could join. The unit has
-become a measuring stick that remembers its formation but has no ongoing
-dependency on the specific value that formed it.
+**Step 3 — Resolution commits the unit (Phase 4).** The unit-to-be
+commits to **not changing size**. It becomes the fixed denominator. This
+is irreversible — the unit now carries direction (from Step 1), magnitude
+(from its original extent), and the agreement about what "one" means
+(from Step 2). The unit separates. It retains the information it received
+from the value (direction, attachment point, resolution), but the value
+itself could detach. A different value could join. The unit has become a
+measuring stick that remembers its formation but has no ongoing dependency
+on the specific value that formed it.
 
 The fold operation `ComposeRatio` performs this entire sequence:
 - The value `v` encodes the numerator's magnitude scaled by the denominator's resolution
@@ -330,9 +411,9 @@ The atomic case is special: the full value does not survive into the final
 unit. It donates calibration information (position, direction) and some of
 that lives on in the unit nondestructively, but the value field is then
 free for other use. All units — at every grade — form through these same
-four steps.
+steps.
 
-### Axiom 14 — Numbers from Alignment (Using the Independent Unit)
+### Axiom 14 — Numbers from Alignment (Others Observe the Resolved Unit)
 
 Once a unit exists and is independent, other elements can be **aligned**
 to it:
@@ -343,15 +424,17 @@ Alignment reexpresses an element in terms of the unit's resolution.
 The element becomes a **number**: a value expressed in terms of the
 self-declared "one." Numbers are born from units, not the reverse.
 
-This is the independent unit doing what independent units do: traveling
-to other parts of the structure and calibrating what it finds there.
-The unit is a symbol; alignment is the act of applying that symbol.
+This is the resolved unit being **observed by other elements**. Its
+Resolve/Independence phase is their Observe phase. The unit is a symbol;
+alignment is what happens when another element attaches to that symbol
+and uses it as a frame of reference. The lifecycle feeds forward.
 
 The complete bootstrap lifecycle:
-1. **Attach:** Pin two extents → a ratio (Axiom 12)
-2. **Negotiate:** Compare, establish direction and shared "one" (Axiom 13, Steps 1-2)
-3. **Commit:** Lock the denominator (Axiom 13, Step 3)
-4. **Independence:** Unit separates, calibrates others → numbers (Axiom 13 Step 4, Axiom 14)
+1. **Observe:** Pin two extents → a ratio (Axiom 12)
+2. **Experience:** Traverse to discover direction (Axiom 13, Step 1)
+3. **Manipulate:** Negotiate a shared "one" (Axiom 13, Step 2)
+4. **Resolve:** Lock denominator, unit becomes independent symbol (Axiom 13, Step 3)
+5. Others observe the symbol → numbers (Axiom 14)
 
 From "ordered magnitudes exist" alone, the entire number system is constructed.
 
@@ -360,7 +443,7 @@ From "ordered magnitudes exist" alone, the entire number system is constructed.
 ## Part V: Dimensional Emergence — The Second Lifecycle Instance
 
 Dimensions are the second lifecycle running at grade 1 and above.
-The pattern is the same: attach, negotiate, commit, independence.
+The pattern is the same: observe, experience, manipulate, resolve.
 But the objects are richer (directed segments, not bare extents),
 so the negotiation produces richer structures (area, complex numbers,
 higher dimensions).
@@ -371,20 +454,22 @@ The unit field of an atomic element is literally "what one is."
 When two elements sit in a composite with independent units, each retains
 its own "one." They are co-located but not fused.
 
-**Co-location** (Phase 1): Two elements in a composite, each with its own
-unit. A width AND a height. Two measurements. Independent denominators.
-Either side can be reexpressed without affecting the other.
+**Co-location** (Observe phase): Two elements in a composite, each with
+its own unit. A width AND a height. Two measurements. Independent
+denominators. Either side can be reexpressed without affecting the other.
+An observer can see both but they are not yet one thing.
 
-**Fusion** (Phase 2): The two units combine into a single "one" that spans
-both. Now you have area. The numerators still vary freely (measurements
-within the new space), but the denominator is locked. You cannot reexpress
-one side without affecting the other. The fused entity transcends its
-construction — area can be circular, not just rectangular.
+**Fusion** (Resolve phase): The two units combine into a single "one"
+that spans both. Now you have area. The numerators still vary freely
+(measurements within the new space), but the denominator is locked. You
+cannot reexpress one side without affecting the other. The fused entity
+transcends its construction — area can be circular, not just rectangular.
 
 The transition from co-location to fusion IS a lifecycle run: the two
-units attach (co-locate), negotiate (compare their "ones"), commit
-(lock a shared denominator), and the fused entity becomes independent
-(area as a concept, not just width-times-height).
+units are observed together (co-locate), experienced through traversal,
+manipulated (compare and adjust their "ones"), and resolved (lock a
+shared denominator). The fused entity becomes independent — area as a
+concept, not just width-times-height.
 
 ### Axiom 16 — The 1×1 Requirement and Degrees of Freedom
 
@@ -454,10 +539,10 @@ agree on a shared "one," the result carries **tension**:
 - `Tension`: the unresolved structure (what couldn't settle)
 - When `Tension` is null, the outcome is **exact** (fusion complete)
 
-Tension is not failure. It is a lifecycle that hasn't completed — the
-Negotiate phase produced structure that the Commit phase cannot lock.
-The tension records specifically what is unresolved and why. It preserves
-the partially-completed generation for later resolution.
+Tension is not failure. It is a lifecycle that hasn't reached Resolve —
+the Manipulate phase produced structure that cannot be committed. From the
+observer's perspective, tension is the experience of *almost* resolving
+but not quite — the structure remembers what it was trying to become.
 
 Tension is never discarded. It propagates through operations via
 `CombineTension`. The unresolved relationship remains inspectable and
@@ -529,35 +614,39 @@ This IS complex multiplication. It was not introduced — it **falls out**
 of the grade system. The "real part" (rr + dd) is the net area contribution.
 The "imaginary part" (rd + dr) is the net directional residue.
 
+The four-term kernel is what the observer experiences when two directed
+segments are multiplied: four distinct interactions, each with its own
+physical character, resolving into area and direction.
+
 ### Axiom 20 — Dimensional Promotion Through Symmetry Breaking
 
 New dimensions are not stated. They **emerge** from tension that cannot
 be expressed at the current dimensionality. The recipe is recursive and
 each step is a lifecycle instance:
 
-**0D → 1D:** Two uncalibrated extents **attach** (join). Their directions
-are opposed — they create tension when pinned. The **negotiation** resolves
-to a directed extent. The **commitment** locks the directed segment as a
-unit cell. The segment is **independent** — direction emerges from the
-incompatibility between the two extents.
+**0D → 1D:** Two uncalibrated extents are **observed** (joined). Their
+directions are opposed — the observer experiences tension between them.
+**Manipulation** resolves to a directed extent. **Resolution** locks the
+directed segment as a unit cell. The segment is independent — direction
+emerges from the incompatibility between the two extents.
 
-**1D → 2D:** Two directed segments **attach** (multiply). The four-term
-kernel is the **negotiation** — it produces terms that cannot all be
-expressed as 1D lines:
+**1D → 2D:** Two directed segments are **observed** together (multiply).
+The observer **experiences** the four-term kernel — four distinct
+interactions. **Manipulation** cannot reduce all terms to 1D lines:
 - `dd` and `rr` terms are area-like — they represent enclosed space
   that has no 1D expression. The excess IS area.
 - Area emerges specifically when both components are co-directional in
   dominance (both expanding or both contracting)
 - `rd` and `dr` terms cancel to lines (the complex number part)
-The **commitment** locks the area unit. The area is **independent** — a
-fused entity that transcends the segments that created it.
+**Resolution** locks the area unit. The area is independent — a fused
+entity that transcends the segments that created it.
 
-**2D → 3D:** Area has a natural flow (start size → end size). It **attaches**
-to a line that **breaks the 2D symmetry**: the line's dominance pattern is
-incompatible with the area's natural expansion/contraction. The
-**negotiation** forces volume — space swept by an area along a
-symmetry-breaking line. The **commitment** locks the volume unit. Volume
-is **independent**.
+**2D → 3D:** Area has a natural flow (start size → end size). It is
+**observed** alongside a line that **breaks the 2D symmetry**: the line's
+dominance pattern is incompatible with the area's natural
+expansion/contraction. The observer **experiences** volume — space swept
+by an area along a symmetry-breaking line. **Resolution** locks the
+volume unit. Volume is independent.
 
 **General rule:** Dimension N+1 = Dimension N entity × symmetry-breaking
 orthogonal extent. "Symmetry-breaking" means the new extent has a
@@ -604,12 +693,13 @@ the third dimension into existence.
 Structural topology is what happens when multiple lifecycles compose.
 A pin is a lifecycle site. A segment is the span between lifecycle sites.
 A network of pins and segments is a network of lifecycle instances
-interleaving and feeding into each other.
+interleaving and feeding into each other — each resolved symbol becoming
+the observed extent of the next lifecycle.
 
 ### Axiom 22 — The Pin
 
 Every structural transition happens at a **pin**. A pin is a lifecycle
-site: the place where attachment, negotiation, commitment, or independence
+site: the place where observation, experience, manipulation, or resolution
 occurs.
 
 A pin on a **host** (a composite span) splits the host at a position:
@@ -622,8 +712,8 @@ The pin position is a value. The host is structure. The inbound and outbound
 are **generated**: new elements that didn't exist in the inputs. The pin is
 the site of generation.
 
-A pin at the intermediate (zero-denominator) state is in the Negotiate
-phase — the old units have dissolved and the new unit hasn't committed yet.
+A pin at the intermediate (zero-denominator) state is in the Manipulate
+phase — the old units have dissolved and the new unit hasn't resolved yet.
 This is where the law acts.
 
 ### Axiom 23 — Merge and Branch
@@ -632,11 +722,11 @@ There are exactly two topological events. Everything else is traversal
 along a segment between pins.
 
 **Merge:** Two inbound segments → pin → one outbound. This is a
-**forward lifecycle**: two things attach, negotiate, commit, and produce
-one independent result. Multiplication, addition, fold, and every
-combining operation are merges. The zero-denominator intermediate state
-at the pin is the Negotiate phase where the old units dissolve and the
-new unit forms.
+**forward lifecycle**: two things are observed together, experienced
+through the kernel, manipulated through a law, and resolved into one
+independent result. Multiplication, addition, fold, and every combining
+operation are merges. The zero-denominator intermediate state at the pin
+is the Manipulate phase where the old units dissolve and the new unit forms.
 
 **Branch:** One inbound segment → pin → two outbound segments. This is
 the **reverse lifecycle**: one thing is captured, cleaved, separated,
@@ -651,8 +741,8 @@ is the reverse: one value branches into two components at an anti-merge pin.
 
 A **segment** is a grade-1 composite: `(start, end)`. It has direction
 (recessive → dominant), extent, and is traversable. A segment is the
-span between two lifecycle sites (pins) — the interval where no event
-is happening, only flow.
+span between two lifecycle sites (pins) — the interval where the observer
+is in the Experience phase, moving through structure between events.
 
 When segments meet at pins, their **flow directions** determine the
 physical character of the encounter:
@@ -676,13 +766,16 @@ end earlier in the structure: "this end IS that beginning."
 A loop creates:
 - A **period**: the number of ticks around the loop
 - **Repetition**: traversal naturally recurs (the Repeat ability from
-  Negotiate, now structurally embodied)
+  Manipulate, now structurally embodied)
 - **Enclosure**: a loop bounds a region. Area isn't in the 1D loop — it
   emerges from what the loop encloses (topological property)
 
-A loop is a lifecycle that feeds its Independence phase back into its
-Attach phase. The symbol produced by one cycle becomes the extent
-attached to the next. This is self-sustaining structure.
+A loop is a lifecycle that feeds its Resolve phase back into its Observe
+phase. The symbol produced by one cycle becomes the extent observed by
+the next. This is self-sustaining structure. From the observer's
+perspective, a loop means: experience → resolve → re-observe → experience
+again, endlessly. The observer never reaches true independence; it
+re-enters observation.
 
 ### Axiom 26 — Boundary Conditions from Structure
 
@@ -704,10 +797,11 @@ tension, and the surrounding structure either absorbs it or doesn't.
 The behavior is readable from the structure itself.
 
 Each boundary condition is a specific resolution of a lifecycle at the
-edge: the tension **attaches** to the orthogonal structure, **negotiates**
-using whatever law that structure carries, and either **commits** to a
-boundary behavior (wrap, reflect, extend, clamp) or fails to commit
-(**promote** — a new lifecycle begins at a higher dimension).
+edge: the tension is **observed** by the orthogonal structure,
+**experienced** as pressure, **manipulated** using whatever law that
+structure carries, and either **resolved** into a boundary behavior
+(wrap, reflect, extend, clamp) or fails to resolve (**promote** — a new
+lifecycle begins at a higher dimension).
 
 ### Axiom 27 — Dimensional Transition (Rivers and Lakes)
 
@@ -739,8 +833,10 @@ Traversal is the act of advancing the mover from tick 0 to tick `endTick`.
 Each step produces a new position — a new element that didn't exist at
 the previous tick. Each step is a generative act.
 
-Traversal is the interpolation potential (from the Attach phase) being
-*exercised*. What was potential becomes actual, one tick at a time.
+Traversal IS the Experience phase made structural. The mover is an
+observer being driven through a route by its internal or external
+structure. At each tick, the mover experiences what is at that position.
+The drive to advance — the "clock" — is structure, not will.
 
 ### Axiom 29 — Time Is Traversal
 
@@ -771,21 +867,22 @@ The traversal machine is a timeline: structural positions with lifecycle
 events that produce values as the mover passes through. The operations
 fire in order of their site position — causally ordered by the structure.
 
-Each operation is a complete lifecycle: the mover **attaches** to the
-operation site, the law **negotiates** between the mover's state and the
-operation's structure, the result **commits** to a value, and that value
-is **independent** — available downstream as input to later operations.
+Each operation is a complete lifecycle: the mover **observes** the
+operation site, **experiences** the law's effect on its state,
+**manipulates** the inputs through the law, and **resolves** to a value
+that is independent — available downstream as input to later operations,
+where it will be observed by the next lifecycle.
 
 ---
 
 ## Part VIII: Laws
 
-### Axiom 31 — Laws Are Abilities from the Negotiate Phase
+### Axiom 31 — Laws Are Abilities from the Manipulate Phase
 
 Laws are not external rules applied to the system. They are the abilities
-that emerge during the Negotiate phase (Axiom 5), formalized and named.
-Every law derives from capabilities already present when two extents
-are joined:
+that emerge during the Manipulate phase (Axiom 5), formalized and named.
+Every law derives from capabilities already present when two extents are
+joined and experienced:
 
 | Law | Derived from | Character |
 |-----|-------------|-----------|
@@ -796,13 +893,15 @@ are joined:
 | **Repeat** | Re-attach ability | Iteration. Return to start and run again. |
 | **Move** (translate) | Direction change | Shift position. Other-moving. |
 | **Reframe** (perspective) | Perspective from location | Change how values are read. Self-moving. |
-| **Fold/Interpolate** (run) | Interpolation potential | Traverse and derive intermediate values. |
+| **Fold/Interpolate** (run) | Experience/traversal | Traverse and derive intermediate values. |
 | **Split/Merge** | Attach/disconnect | Branch and join. Roots, averages, convergence. |
 | **Associate** (tension) | Halt/tension | Relate unlike forces. Preserve without resolving. |
 
 More complex laws are compositions of these primitives, possibly sequenced
 across multiple lifecycle instances. But the primitive laws all trace back
-to abilities that exist at the Negotiate phase.
+to abilities that exist by the Manipulate phase — abilities that were
+first *observed* as potential, then *experienced* through traversal, and
+finally exercised as *manipulation*.
 
 ### Axiom 32 — Two-Level Law System
 
@@ -851,10 +950,11 @@ Reading commits the subject to the frame's calibration. The result is
 a new element: the subject as seen through the frame. This is generation —
 the read outcome belongs to neither the frame nor the subject alone.
 
-A view is a lifecycle instance: the subject **attaches** to the frame,
-the calibration **negotiates** how the subject should be expressed, the
-result **commits** to a measured value, and that value is **independent**
-of both the original subject and the frame.
+A view is a lifecycle instance: the subject **observes** the frame
+(attaches), **experiences** the calibration (traverses the frame's
+structure), the frame **manipulates** the subject into its terms
+(negotiates expression), and the result **resolves** to a measured
+value independent of both the original subject and the frame.
 
 ### Axiom 35 — Frame-Driven Dispatch
 
@@ -919,14 +1019,14 @@ From lifecycle composition (Axioms 22-27), all topology is constructed:
 - Loops, boundaries, and dimensional transitions follow from
   pin topology and tension absorption
 - Equations are merge points where tension must reach zero
-- Variables are segments with free denominators (incomplete Negotiate phase)
-- Recurrence relations are loops (Independence feeding back to Attach)
+- Variables are segments with free denominators (incomplete Manipulate phase)
+- Recurrence relations are loops (Resolve feeding back to Observe)
 
 ### Theorem 4 — Temporal Completeness
 
 From traversal (Axioms 28-30), time emerges:
 - Every ordered structure contains "before" and "after"
-- Traversal actualizes interpolation potential into sequence
+- Traversal actualizes the Experience phase into sequence
 - Causation follows from ordering
 - No external clock needed
 - Operations fire as lifecycle instances at pinned positions
@@ -952,9 +1052,35 @@ Every event in the system is an instance of the four-phase lifecycle
 - Loops are self-feeding lifecycles (Axiom 25)
 
 The lifecycle is the universal pattern because its phases correspond
-to the only things that *can* happen between extents: connection,
-comparison, commitment, and separation. These exhaust the structural
-possibilities.
+to the only things that *can* happen between an observer and structure:
+
+| Phase | Observer | Structure | Ability mode |
+|-------|----------|-----------|--------------|
+| 1 | Observe | Attach | Passive — receive |
+| 2 | Experience | Traverse | Active — read |
+| 3 | Manipulate | Negotiate | Active — write |
+| 4 | Resolve | Commit + Independence | Complete — become observable |
+
+These exhaust the structural possibilities. An element can receive
+information (Observe), move through structure to gather feedback
+(Experience), act on structure using gathered knowledge (Manipulate),
+or reach completion and become available for others (Resolve). There
+is no fifth option.
+
+### Theorem 7 — Observer-Structure Duality
+
+The observer perspective and the structural perspective describe the
+same events. Every structural phase has an observer correlate and vice
+versa. No event exists that is purely structural (with no observer) or
+purely experiential (with no structure). This duality is not a metaphor —
+it is the same information described from inside and outside the lifecycle.
+
+The drive to traverse (Experience) requires structure to achieve, whether
+external or internal to the observer. The observer need not know which;
+the experience is the same. This is analogous to internal structure being
+invisible to the entity it composes (as cells are invisible to the
+organism). The system is agnostic about the source of the drive — only
+the structural result matters.
 
 ---
 
@@ -967,21 +1093,22 @@ possibilities.
 1. Atomic elements with value/unit pairs (Axiom 2)
 2. Composite structure via ordered pairing (Axiom 3)
 3. Direction from ordering (Axiom 4)
-4. The four-phase lifecycle from the possibilities between extents (Axiom 5)
+4. The four-phase lifecycle from the possibilities between observers
+   and structure (Axiom 5)
 5. Three aspects from unit sign (Axiom 9)
-6. Ratios from pinning extents (Axiom 12)
-7. Units from the negotiate/commit lifecycle (Axiom 13)
-8. Numbers from alignment to independent units (Axiom 14)
+6. Ratios from observing extents together (Axiom 12)
+7. Units from the experience/manipulate/resolve lifecycle (Axiom 13)
+8. Numbers from others observing the resolved unit (Axiom 14)
 9. Directed segments from orthogonal tension (Axiom 18)
 10. Area, complex numbers from the four-term kernel (Axioms 19, 21)
 11. Higher dimensions from symmetry breaking (Axiom 20)
 12. Topology from pins, merges, branches (Axioms 22-25)
 13. Boundary behavior from structural absorption (Axiom 26)
 14. Time from traversal of ordered structure (Axiom 29)
-15. Laws from Negotiate-phase abilities (Axiom 31)
+15. Laws from Manipulate-phase abilities (Axiom 31)
 
 Nothing is assumed except that ordered extents exist (and that not
 everything is ordered). Everything else — numbers, dimensions, topology,
 time, area, complex arithmetic, boundary conditions, laws, symbols,
-and the lifecycle itself — is constructed through attachment, negotiation,
-commitment, and independence.
+and the lifecycle itself — is constructed through observation, experience,
+manipulation, and resolution.
