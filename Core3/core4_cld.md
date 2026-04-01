@@ -119,25 +119,55 @@ relationship has been created. This is the first structural act.
 The ratio does not have resolution — neither child knows what "one" is.
 But the relationship `a/b` is real and comparable to other ratios.
 
-### Axiom 9 — Units from Self-Fold
+### Axiom 9 — Unit Formation
 
-A ratio can **fold**: the composite collapses into a single atomic element.
+A unit forms when a **unit-to-be** (an uncalibrated extent) attaches to
+what will become the value. Before attachment, the unit-to-be is
+directionless — it has magnitude but no "from" or "to." The attachment
+process has specific steps:
+
+**Step 1 — Attachment.** The unit-to-be connects to the value at one end.
+Which end it attaches to determines the sign relationship. If the unit-to-be
+and value face the same direction (both expanding or both contracting from
+the attachment point), the unit is **aligned** with the value — positive unit.
+If they face opposite directions, the unit is **opposed** — negative unit.
+There are two physically distinct configurations (same-direction and
+opposite-direction); the other two apparent configurations are the same
+situations viewed from the other side.
+
+**Step 2 — Negotiation.** The value provides calibration: *where* the
+attachment point sits, and its own natural direction (which determines
+aligned vs orthogonal). The unit-to-be provides resolution: what "one"
+will mean, the tick structure. Together they agree on a shared version of 1.
+
+**Step 3 — Commitment.** The unit-to-be commits to **not changing size**.
+It becomes the fixed denominator. This is irreversible — the unit now
+carries direction (from attachment), magnitude (from its original extent),
+and the agreement about what "one" means.
+
+**Step 4 — Independence.** After formation, the unit is self-sufficient.
+It retains the information it received from the value (direction, attachment
+point, resolution), but the value itself could detach. A different value
+could join. The unit has become a **measuring stick** that remembers its
+formation but has no ongoing dependency on the specific value that formed it.
+
+The fold operation `ComposeRatio` performs this entire sequence:
 
     Fold(Composite(denominator, numerator)) → AtomicElement(v, u)
 
-The fold operation `ComposeRatio` takes the two children and produces
-one atomic element where:
 - The value `v` encodes the numerator's magnitude scaled by the denominator's resolution
 - The unit `u` encodes the resolution, derived from the denominator's magnitude
-
-This is the **bootstrap moment**. The ratio declares itself as its own
-reference: "I am one of me." The denominator becomes the tick structure.
-The numerator becomes the count within that structure.
 
 **Self-fold is how units come into existence.** No external unit system
 is assumed. Units are constructed from the relationship between two
 uncalibrated extents. The denominator IS the ticks. It emerged from the
 relationship, not from any external decision about resolution.
+
+The atomic case is special: the full value does not survive into the final
+unit. It donates calibration information (position, direction) and some of
+that lives on in the unit nondestructively, but the value field is then
+free for other use. All units — at every grade — form through these same
+four steps.
 
 ### Axiom 10 — Numbers from Alignment
 
@@ -177,18 +207,50 @@ within the new space), but the denominator is locked. You cannot reexpress
 one side without affecting the other. The fused entity transcends its
 construction — area can be circular, not just rectangular.
 
-### Axiom 12 — The 1×1 Requirement
+### Axiom 12 — The 1×1 Requirement and Degrees of Freedom
 
 For dimensional fusion to produce a coherent space, the unit cell must be
 **1×1**: each axis contributes exactly one of its own measure.
 
-**Why:** Commutativity. For the fused space to behave as a single dimension,
-2×3 must equal 3×2 in that space. A unit cell that is not 1×1 would have
-an orientation bias that breaks commutativity.
+**Why:** Predictable scaling under interchangeable degrees of freedom.
 
-This is visible in all compound units: miles per **one** hour. Pounds per
-**one** square inch. Even liters per 100km treats 100km as **one** at that
-scale. The system always normalizes each axis to contribute exactly one.
+Every fused entity has exactly **one degree of freedom** — it is one thing.
+Speed is one thing. Area is one thing. But the *tools* used to construct
+fused entities may expose more than one adjustable axis (a rectangle has
+width and height). The 1×1 requirement governs what those tools may do.
+
+**When the fused axes are interchangeable** (both inches in a square-inch
+unit cell): the construction tool gets **multiple degrees of freedom**.
+You can scale width or height, and the area changes predictably without
+needing to know which axis changed. The axes are symmetric with respect
+to scaling — "I tripled one side" fully determines the new area. This
+extra freedom in the tool is only possible because the axes are
+indistinguishable within the fused unit.
+
+**When the fused axes are not interchangeable** (miles and hours in a
+speed unit): the fusion is equally real — speed is a genuine entity, not
+two measurements sitting side by side. But the fusion itself **imposes a
+restriction**: values may only attach freely to one axis. The tool gets
+exactly **one degree of freedom**. You cannot drag the hours around
+independently without destroying the concept of speed. The denominator
+axis (hours) is locked to one, and only the numerator axis (miles) is
+free. This restriction is not external — it is the cost of fusing
+non-interchangeable components into a single entity.
+
+**The non-fused alternative** is co-location without fusion: "I drove 80
+miles in 2 hours." You can compare such ratios — 20 miles in half an hour
+gives an equivalent ratio — but you do not have a *concept* of speed.
+There is no fused entity, no single degree of freedom, no unit that
+persists independently of the specific values that created it. You are
+stuck describing instances. Fusion is what turns a ratio into a thing.
+
+**The 1×1 cell** is the mechanism that makes all of this work. Each axis
+contributes exactly "one of itself." When the axes are interchangeable,
+this makes them symmetric in the tool. When they are not, this is what
+forces one axis to lock (it contributes its one, and that one is fixed).
+In both cases, the fused entity has predictable behavior: adjusting any
+*available* degree of freedom produces a result you can compute without
+additional information about which axis moved.
 
 **Consequence:** Denominators must be settled before fusion can happen.
 If either axis has a free denominator (u = 0), you cannot know what "1"
