@@ -260,7 +260,11 @@ In mathematics: taking a square root is capturing an area symbol, cleaving
 its unit, separating the axis values, and disconnecting them into
 independent extents. Factoring is the same pattern applied to multiplication.
 Analysis — in the broad sense — is the reverse lifecycle.
-
+Importantly, an area created from a rectanglular area generating machine
+can be captured and run in reverse through a circle generating machine,
+and result in a the component/s needed to generate a circle. A symbol 
+does not retain its provenance, so symbol creation is lossy and decomposing
+is context dependent.
 ### Axiom 8 — Aligned and Opposed Directions
 
 When two extents join at a point, their directions from that point are
@@ -271,7 +275,7 @@ is observable from the first phase.
 **Aligned directions** create parallel flow. Two streams going the same
 way. They cannot create a new dimension (there is no tension between them
 that demands one), but they create something a single stream cannot:
-parallel force, co-travel, the concept of width between two co-directional
+parallel force, co-travel, the concept of relation between two co-directional
 flows. This is the seed of structure within a dimension. An element
 experiencing both sees two parallel interpolation paths — it can traverse
 either, or both simultaneously, learning about the space between them.
