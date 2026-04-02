@@ -97,21 +97,73 @@ never guaranteed, and some residual chaos is always acceptable.
 
 We write an extent as a bare value: `a`, `b`, `c`.
 
-### Axiom 2 — The Atomic Element
+### Axiom 2 — Signs from Endpoint Attachment
+
+Extents have no sign. Signs arise from **how extents join at their
+endpoints.** Each extent has a start and an end. When two extents meet
+at a point, there are four possible configurations based on which
+endpoints are shared:
+
+```
+    ── ──        start-start    both extend away    ALIGNED (++)
+    ── ──        end-end        both extend toward   ALIGNED (--)
+    ──── ──      end-start      first flows into second  OPPOSED (+-)
+    ── ────      start-end      second flows into first  OPPOSED (-+)
+```
+
+**Aligned** configurations (start-start or end-end) produce extents
+facing the same direction from the join point. There is no tension
+between them — they reinforce.
+
+**Opposed** configurations (end-start or start-end) produce extents
+facing opposite directions from the join point. This opposition IS
+**negation** — one extent undoes the other's direction. This is where
+the concept of negative comes from. Not from a number line, but from
+the physical fact that two extents can face opposite ways.
+
+There are only **two** physically distinct configurations — aligned and
+opposed. The two aligned cases (++ and --) are the same relationship
+viewed from opposite sides, as are the two opposed cases (+- and -+).
+
+**Opposition has two modes**, like all elements in this system:
+- **Recognition:** you can *read* that two extents are opposed — observe
+  their negation without acting on it
+- **Action:** you can *cause* negation — attach in opposition to reverse
+  a direction
+
+This distinction between aligned and opposed attachment is the foundation
+of much that follows: it gives rise to the sign field in atomic elements,
+the aspect trichotomy (Axiom 10), the distinction between value and
+structure, and ultimately to dimensional emergence.
+
+### Axiom 3 — The Atomic Element
 
 An **atomic element** is a pair `(v, u)` where:
 - `v` is a signed integer: the **value** (how many)
 - `u` is a signed integer: the **unit** (what "one" is)
 
-The unit sign carries physical meaning (Axiom 9). The unit magnitude
-`|u|` is the **resolution**: how many ticks compose one unit. When `u = 0`,
-the element has magnitude but no established "one" — it is **unresolved**.
+The signs come from endpoint attachment (Axiom 2). When an extent is
+chosen as the unit, the attachment configuration determines the unit's
+sign. A negative value means the measurement opposes the unit's direction.
+A negative unit means something structurally different: **orthogonal
+tension** — the unit is in opposition to its context, which creates a
+force that organizes rather than measures (see Axiom 10).
+
+This distinction — negation in the value vs negation in the denominator
+— persists at every grade. At grade 0, a negative value is a reversed
+measurement; a negative unit is an orthogonal structural force. At higher
+grades, the same principle applies through every level of composition.
+
+The unit magnitude `|u|` is the **resolution**: how many ticks compose
+one unit. When `u = 0`, the element has magnitude but no established
+"one" — it is **unresolved**.
 
 An atomic element is **grade 0**: the leaf of all structure.
 
-### Axiom 3 — The Composite Element
+### Axiom 4 — The Composite Element
 
-A **composite element** is an pair of two equal-grade elements (assume grade 0 for now):
+A **composite element** is a pair of two equal-grade elements in
+opposition:
 
     Composite(recessive, dominant)    where recessive.grade == dominant.grade
 
@@ -120,11 +172,20 @@ The composite's grade is `children's grade + 1`.
 - **Recessive**: the reference side, the context, the "before"
 - **Dominant**: the applied side, the measured, the "after"
 
+**Why opposition is required:** Two elements with aligned, same-sign
+denominators are in the same space — combining them adds within that
+space but does not create a new grade of structure. To build a composite
+that represents a genuinely new structural level, the two children must
+carry orthogonal tension between them: the recessive provides the
+reference frame, and the dominant provides the measurement against it.
+This tension between context and content is what makes a composite more
+than the sum of its children.
+
 This is the only way to build higher-grade structure. A grade-1 element
 has two atomic children. A grade-2 element has two grade-1 children
 (four atomic leaves). Grade N has 2^N atomic leaves.
 
-### Axiom 4 — Ordering and Direction
+### Axiom 5 — Ordering and Direction
 
 Every composite has inherent direction: recessive → dominant.
 This is not a convention. The recessive provides context for the dominant.
@@ -132,7 +193,7 @@ Swapping them (SwapOrder) changes the physical meaning.
 
 Direction gives every composite a natural "before" and "after."
 Traversal from recessive to dominant is the most primitive form of time
-(see Part VII). No external clock is needed, just the tendancy to flow
+(see Part VIII). No external clock is needed, just the tendancy to flow
 from beginning to end.
 
 ---
@@ -151,7 +212,7 @@ Any event in the system is one of:
 2. **A complete lifecycle** instance
 3. **A composite event** built from multiple lifecycles
 
-### Axiom 5 — The Four Phases
+### Axiom 6 — The Four Phases
 
 Each phase is described from both perspectives. The structural view
 names the mechanical event; the observer view names the experiential
@@ -286,7 +347,7 @@ but has no ongoing dependency on the specific values that formed it.
 A different value can attach to the unit and be measured by it. The symbol
 can travel to other parts of the structure and serve as a reference there.
 
-### Axiom 6 — Abilities Accumulate
+### Axiom 7 — Abilities Accumulate
 
 Abilities unlocked at any phase remain available in all subsequent phases
 and in all subsequent lifecycle instances at higher grades. Nothing is lost.
@@ -323,7 +384,7 @@ After **Independence**: symbol, portability, calibration of others.
 Everything from prior phases is available *and* the symbol carries a
 compressed version of all of it.
 
-### Axiom 7 — The Reverse Lifecycle
+### Axiom 8 — The Reverse Lifecycle
 
 The lifecycle runs backward for decomposition:
 
@@ -351,7 +412,7 @@ can be captured and run in reverse through a circle generating machine,
 and result in a the component/s needed to generate a circle. A symbol 
 does not retain its provenance, so symbol creation is lossy and decomposing
 is context dependent.
-### Axiom 8 — Aligned and Opposed Directions
+### Axiom 9 — Aligned and Opposed Directions
 
 When two extents join at a point, their directions from that point are
 either **aligned** (same direction) or **opposed** (opposite directions).
@@ -384,7 +445,7 @@ promotion. It is discovering a direction that neither extent alone contained.
 
 ## Part III: The Three Aspects
 
-### Axiom 9 — Unit Sign Determines Aspect
+### Axiom 10 — Unit Sign Determines Aspect
 
 The sign of an atomic element's unit determines its **aspect** — its
 physical role in any encounter:
@@ -398,7 +459,7 @@ physical role in any encounter:
 These are not labels applied externally. They are readable from the element
 itself — observable in Phase 1, before any experience or manipulation.
 
-### Axiom 10 — Aspects Are Relational
+### Axiom 11 — Aspects Are Relational
 
 An element's aspect is not intrinsic — it depends on the frame through which
 it is read. The same element can be value in one context, structure in another,
@@ -410,7 +471,7 @@ contributes its own aspect independently. A single frame can simultaneously
 calibrate values (positive leaves), organize structure (negative leaves),
 and demand generation (zero leaves) at different positions in its tree.
 
-### Axiom 11 — The Multiplication Table of Aspects
+### Axiom 12 — The Multiplication Table of Aspects
 
 When two elements interact through multiplication or scaling, their unit
 signs multiply. This determines the aspect of the result:
@@ -435,7 +496,7 @@ Key physical implications:
 
 The number system is the first complete run of the lifecycle.
 
-### Axiom 12 — Ratios from Extents (Observe Phase)
+### Axiom 13 — Ratios from Extents (Observe Phase)
 
 Take two uncalibrated extents and **join** them in a composite:
 
@@ -455,7 +516,7 @@ between the two extents, and comparison (their relative sizes). An element
 sitting at this ratio can see both extents and their relative magnitudes.
 It has not yet experienced traversal through either.
 
-### Axiom 13 — Unit Formation (Experience + Manipulate + Resolve)
+### Axiom 14 — Unit Formation (Experience + Manipulate + Resolve)
 
 The ratio can **fold**: the Experience, Manipulate, and Resolve phases
 run in sequence.
@@ -505,7 +566,7 @@ that lives on in the unit nondestructively, but the value field is then
 free for other use. All units — at every grade — form through these same
 steps.
 
-### Axiom 14 — Numbers from Alignment (Others Observe the Resolved Unit)
+### Axiom 15 — Numbers from Alignment (Others Observe the Resolved Unit)
 
 Once a unit exists and is independent, other elements can be **aligned**
 to it:
@@ -522,11 +583,11 @@ alignment is what happens when another element attaches to that symbol
 and uses it as a frame of reference. The lifecycle feeds forward.
 
 The complete bootstrap lifecycle:
-1. **Observe:** Pin two extents → a ratio (Axiom 12)
-2. **Experience:** Traverse to discover direction (Axiom 13, Step 1)
-3. **Manipulate:** Negotiate a shared "one" (Axiom 13, Step 2)
-4. **Resolve:** Lock denominator, unit becomes independent symbol (Axiom 13, Step 3)
-5. Others observe the symbol → numbers (Axiom 14)
+1. **Observe:** Pin two extents → a ratio (Axiom 13)
+2. **Experience:** Traverse to discover direction (Axiom 14, Step 1)
+3. **Manipulate:** Negotiate a shared "one" (Axiom 14, Step 2)
+4. **Resolve:** Lock denominator, unit becomes independent symbol (Axiom 14, Step 3)
+5. Others observe the symbol → numbers (Axiom 15)
 
 From "ordered magnitudes exist" alone, the entire number system is constructed.
 
@@ -540,7 +601,7 @@ But the objects are richer (directed segments, not bare extents),
 so the negotiation produces richer structures (area, complex numbers,
 higher dimensions).
 
-### Axiom 15 — The Denominator Is "What Is One"
+### Axiom 16 — The Denominator Is "What Is One"
 
 The unit field of an atomic element is literally "what one is."
 When two elements sit in a composite with independent units, each retains
@@ -563,7 +624,7 @@ manipulated (compare and adjust their "ones"), and resolved (lock a
 shared denominator). The fused entity becomes independent — area as a
 concept, not just width-times-height.
 
-### Axiom 16 — The 1×1 Requirement and Degrees of Freedom
+### Axiom 17 — The 1×1 Requirement and Degrees of Freedom
 
 For dimensional fusion to produce a coherent space, the unit cell must be
 **1×1**: each axis contributes exactly one of its own measure.
@@ -620,7 +681,7 @@ In the engine: `Scale` multiplies `Unit × factor.Unit`. The product is the
 resolution of the fused space. Each input contributes its full resolution
 as its "one." The 1×1 cell emerges from ordinary arithmetic.
 
-### Axiom 17 — Tension as Incomplete Fusion
+### Axiom 18 — Tension as Incomplete Fusion
 
 When two elements attempt to fuse (through fold or multiply) and cannot
 agree on a shared "one," the result carries **tension**:
@@ -640,7 +701,7 @@ Tension is never discarded. It propagates through operations via
 `CombineTension`. The unresolved relationship remains inspectable and
 available for later resolution.
 
-### Axiom 18 — Directed Segments (Grade 1 Unit Cell)
+### Axiom 19 — Directed Segments (Grade 1 Unit Cell)
 
 At grade 0, all elements are atomic. To create grade-1 structure with
 genuine **dimensional tension**, you need one aligned (+) and one
@@ -665,9 +726,9 @@ represent the same physical quantity.
 
 **A directed segment is not yet a complex number.** A directed segment has
 two positions (start and end). A complex number has magnitude and angle
-from a privileged origin. The distinction matters (see Axiom 21).
+from a privileged origin. The distinction matters (see Axiom 22).
 
-### Axiom 19 — The Four-Term Kernel (Grade 2)
+### Axiom 20 — The Four-Term Kernel (Grade 2)
 
 When two grade-1 elements (directed segments) multiply, the four-term
 kernel appears. Each composite has a recessive (r) and dominant (d) child.
@@ -717,7 +778,7 @@ The four-term kernel is what the observer experiences when two directed
 segments are multiplied: four distinct interactions, each with its own
 physical character, resolving into area and direction.
 
-### Axiom 20 — Dimensional Promotion Through Symmetry Breaking
+### Axiom 21 — Dimensional Promotion Through Symmetry Breaking
 
 New dimensions are not stated. They **emerge** from tension that cannot
 be expressed at the current dimensionality. The recipe is recursive and
@@ -758,7 +819,7 @@ resolution. The only new dimensions that appear are those demanded by
 unresolvable tension at the current grade. Dimensions are consequences,
 not assumptions.
 
-### Axiom 21 — Corner Resolution and Complex Numbers
+### Axiom 22 — Corner Resolution and Complex Numbers
 
 When an orthogonal value and an aligned value meet at a corner, the corner
 carries tension. Resolution depends on the dominance combination:
@@ -795,7 +856,7 @@ A network of pins and segments is a network of lifecycle instances
 interleaving and feeding into each other — each resolved symbol becoming
 the observed extent of the next lifecycle.
 
-### Axiom 22 — The Pin
+### Axiom 23 — The Pin
 
 Every structural transition happens at a **pin**. A pin is a lifecycle
 site: the place where observation, experience, manipulation, or resolution
@@ -815,7 +876,7 @@ A pin at the intermediate (zero-denominator) state is in the Manipulate
 phase — the old units have dissolved and the new unit hasn't resolved yet.
 This is where the law acts.
 
-### Axiom 23 — Merge and Branch
+### Axiom 24 — Merge and Branch
 
 There are exactly two topological events. Everything else is traversal
 along a segment between pins.
@@ -832,11 +893,11 @@ the **reverse lifecycle**: one thing is captured, cleaved, separated,
 and disconnected into two. Division, square roots, factoring, and every
 splitting operation are branches.
 
-The bootstrap (Axioms 12-14) is a merge: two uncalibrated extents merge
+The bootstrap (Axioms 13-15) is a merge: two uncalibrated extents merge
 through a pin to create one unit. Decomposition (e.g., square root)
 is the reverse: one value branches into two components at an anti-merge pin.
 
-### Axiom 24 — Segments and Flow
+### Axiom 25 — Segments and Flow
 
 A **segment** is a grade-1 composite: `(start, end)`. It has direction
 (recessive → dominant), extent, and is traversable. A segment is the
@@ -853,11 +914,11 @@ physical character of the encounter:
 | **Parallel** | → → | Co-directional. Co-traveling. The space between them is structure (offset, gap, channel). |
 | **Anti-parallel** | → over ← | Same line, opposite direction. Loop or standing wave. Reflection or interference. |
 
-These are the same aligned/opposed distinction from Axiom 8, now
+These are the same aligned/opposed distinction from Axiom 9, now
 manifested at the structural level between segments rather than between
 bare extents.
 
-### Axiom 25 — Loops
+### Axiom 26 — Loops
 
 A **loop** is a segment whose dominant end is identified with a recessive
 end earlier in the structure: "this end IS that beginning."
@@ -876,7 +937,7 @@ perspective, a loop means: experience → resolve → re-observe → experience
 again, endlessly. The observer never reaches true independence; it
 re-enters observation.
 
-### Axiom 26 — Boundary Conditions from Structure
+### Axiom 27 — Boundary Conditions from Structure
 
 When traversal reaches the end of an axis, it creates tension.
 **The orthogonal structure absorbs or fails to absorb that tension.**
@@ -889,7 +950,7 @@ not by an external rule:
 | Mirror | **Reflect.** Tension reverses traversal direction. |
 | Expand | **Extend.** The boundary moves outward to accommodate. |
 | Nothing | **Clamp.** Tension stays at the boundary. Accumulates. |
-| Unresolved (u = 0) | **Promote.** Tension cannot be absorbed. May become a new dimensional direction (Axiom 20). |
+| Unresolved (u = 0) | **Promote.** Tension cannot be absorbed. May become a new dimensional direction (Axiom 21). |
 
 This is physical: the mover doesn't check a boundary flag. It creates
 tension, and the surrounding structure either absorbs it or doesn't.
@@ -902,7 +963,7 @@ structure carries, and either **resolved** into a boundary behavior
 (wrap, reflect, extend, clamp) or fails to resolve (**promote** — a new
 lifecycle begins at a higher dimension).
 
-### Axiom 27 — Dimensional Transition (Rivers and Lakes)
+### Axiom 28 — Dimensional Transition (Rivers and Lakes)
 
 Structure can vary in dimensionality along traversal. A pin can connect
 segments of different structural freedom:
@@ -923,7 +984,7 @@ and available exit pins determine which path is taken. This models:
 
 ## Part VII: Traversal and Time
 
-### Axiom 28 — Traversal
+### Axiom 29 — Traversal
 
 A **mover** is an atomic element used as a cursor: `(currentTick, endTick)`.
 The value is the current position. The unit is the route's extent.
@@ -940,7 +1001,7 @@ that may be physics or time, in code it will be a computational tick based
 on some kind of increment machine. The key is this push isn't directing 
 anything, just like time itself isn't deciding outcomes.
 
-### Axiom 29 — Time Is Traversal
+### Axiom 30 — Time Is Traversal
 
 Time is not external. It is what you get when you traverse any ordered
 structure.
@@ -957,7 +1018,7 @@ But "before" and "after" are physically real. Causation follows from
 ordering: what happens at tick N can depend on what happened at tick N-1,
 but not on tick N+1.
 
-### Axiom 30 — Operations as Pinned Events
+### Axiom 31 — Operations as Pinned Events
 
 Operations are **pins on the traversal route**. An operation attachment
 specifies:
@@ -979,10 +1040,10 @@ where it will be observed by the next lifecycle.
 
 ## Part VIII: Laws
 
-### Axiom 31 — Laws Are Abilities from the Manipulate Phase
+### Axiom 32 — Laws Are Abilities from the Manipulate Phase
 
 Laws are not external rules applied to the system. They are the abilities
-that emerge during the Manipulate phase (Axiom 5), formalized and named.
+that emerge during the Manipulate phase (Axiom 6), formalized and named.
 Every law derives from capabilities already present when two extents are
 joined and experienced:
 
@@ -1005,7 +1066,7 @@ to abilities that exist by the Manipulate phase — abilities that were
 first *observed* as potential, then *experienced* through traversal, and
 finally exercised as *manipulation*.
 
-### Axiom 32 — Two-Level Law System
+### Axiom 33 — Two-Level Law System
 
 Laws operate at two levels:
 
@@ -1020,9 +1081,9 @@ But when the explicit law conflicts with what the axes naturally support,
 **tension arises**. The system produces the best result it can, plus
 tension recording the conflict.
 
-### Axiom 33 — The Kernel as Natural Law
+### Axiom 34 — The Kernel as Natural Law
 
-At grade 2+, the four-term multiply kernel (Axiom 19) is the **natural
+At grade 2+, the four-term multiply kernel (Axiom 20) is the **natural
 law** for combining two directed structures. The pin computes all four
 terms; the dominance pattern determines interpretation:
 
@@ -1038,7 +1099,7 @@ the kernel's output. The kernel is universal; the explicit law is chosen.
 
 ## Part IX: Views, Frames, and Collections
 
-### Axiom 34 — A View Is Measurement Without Ownership
+### Axiom 35 — A View Is Measurement Without Ownership
 
 A **view** relates a subject to a frame:
 
@@ -1058,7 +1119,7 @@ structure), the frame **manipulates** the subject into its terms
 (negotiates expression), and the result **resolves** to a measured
 value independent of both the original subject and the frame.
 
-### Axiom 35 — Frame-Driven Dispatch
+### Axiom 36 — Frame-Driven Dispatch
 
 When reading through a composite frame, each atomic leaf in the frame
 tree determines its own behavior via unit sign:
@@ -1071,7 +1132,7 @@ A grade-3 frame has 8 atomic leaves. Some may calibrate, some organize,
 some demand generation. The view doesn't choose a mode — it reads through
 the frame, and the structure determines what happens everywhere.
 
-### Axiom 36 — Families
+### Axiom 37 — Families
 
 A **family** is an ordered collection of elements read in one frame:
 
@@ -1087,7 +1148,7 @@ Family operations map to the trichotomy:
 
 **Focusing** shifts what counts as structure vs value: a member becomes
 the new frame, and the remaining members are reorganized within it.
-The same element changes role. Aspects are relational (Axiom 10).
+The same element changes role. Aspects are relational (Axiom 11).
 
 ---
 
@@ -1095,7 +1156,7 @@ The same element changes role. Aspects are relational (Axiom 10).
 
 ### Theorem 1 — Construction Completeness
 
-From the bootstrap lifecycle (Axioms 12-14), the entire number system
+From the bootstrap lifecycle (Axioms 13-15), the entire number system
 is constructed:
 - Extents → ratios → units → numbers
 - No real numbers assumed. All arithmetic is exact integer operations on
@@ -1103,7 +1164,7 @@ is constructed:
 
 ### Theorem 2 — Dimensional Completeness
 
-From the dimensional lifecycle (Axioms 18-21), all dimensions emerge:
+From the dimensional lifecycle (Axioms 19-22), all dimensions emerge:
 - Grade 1: directed segments (1D with direction)
 - Grade 2: the four-term kernel separates into area (2D) and complex
   lines (1D with rotation)
@@ -1113,7 +1174,7 @@ From the dimensional lifecycle (Axioms 18-21), all dimensions emerge:
 
 ### Theorem 3 — Structural Completeness
 
-From lifecycle composition (Axioms 22-27), all topology is constructed:
+From lifecycle composition (Axioms 23-28), all topology is constructed:
 - Merge and branch are the only two topological events (forward and
   reverse lifecycle)
 - All structures are networks of segments connected at pins (lifecycle
@@ -1126,7 +1187,7 @@ From lifecycle composition (Axioms 22-27), all topology is constructed:
 
 ### Theorem 4 — Temporal Completeness
 
-From traversal (Axioms 28-30), time emerges:
+From traversal (Axioms 29-31), time emerges:
 - Every ordered structure contains "before" and "after"
 - Traversal actualizes the Experience phase into sequence
 - Causation follows from ordering
@@ -1138,20 +1199,20 @@ From traversal (Axioms 28-30), time emerges:
 Every element in the system, in every context, plays exactly one of
 three roles determined by its unit sign. Every operation is classifiable
 as value-work, structural-work, or generative-work based on what it
-preserves and what it produces. The multiplication table (Axiom 11)
+preserves and what it produces. The multiplication table (Axiom 12)
 governs all aspect transitions and is closed under composition.
 
 ### Theorem 6 — Lifecycle Universality
 
 Every event in the system is an instance of the four-phase lifecycle
-(Axiom 5) or a composition of such instances:
-- The bootstrap is a lifecycle (Axioms 12-14)
-- Dimensional emergence is a lifecycle per dimension (Axiom 20)
-- Every merge is a forward lifecycle, every branch a reverse (Axiom 23)
-- Every operation is a lifecycle at a pin (Axiom 30)
-- Every view/measurement is a lifecycle (Axiom 34)
-- Every boundary resolution is a lifecycle (Axiom 26)
-- Loops are self-feeding lifecycles (Axiom 25)
+(Axiom 6) or a composition of such instances:
+- The bootstrap is a lifecycle (Axioms 13-15)
+- Dimensional emergence is a lifecycle per dimension (Axiom 21)
+- Every merge is a forward lifecycle, every branch a reverse (Axiom 24)
+- Every operation is a lifecycle at a pin (Axiom 31)
+- Every view/measurement is a lifecycle (Axiom 35)
+- Every boundary resolution is a lifecycle (Axiom 27)
+- Loops are self-feeding lifecycles (Axiom 26)
 
 The lifecycle is the universal pattern because its phases correspond
 to the only things that *can* happen between an observer and structure:
@@ -1192,22 +1253,23 @@ the structural result matters.
 - Ordered comparable extents exist (Axiom 1)
 
 **Constructed (in order of emergence):**
-1. Atomic elements with value/unit pairs (Axiom 2)
-2. Composite structure via ordered pairing (Axiom 3)
-3. Direction from ordering (Axiom 4)
-4. The four-phase lifecycle from the possibilities between observers
-   and structure (Axiom 5)
-5. Three aspects from unit sign (Axiom 9)
-6. Ratios from observing extents together (Axiom 12)
-7. Units from the experience/manipulate/resolve lifecycle (Axiom 13)
-8. Numbers from others observing the resolved unit (Axiom 14)
-9. Directed segments from orthogonal tension (Axiom 18)
-10. Area, complex numbers from the four-term kernel (Axioms 19, 21)
-11. Higher dimensions from symmetry breaking (Axiom 20)
-12. Topology from pins, merges, branches (Axioms 22-25)
-13. Boundary behavior from structural absorption (Axiom 26)
-14. Time from traversal of ordered structure (Axiom 29)
-15. Laws from Manipulate-phase abilities (Axiom 31)
+1. Signs from endpoint attachment (Axiom 2)
+2. Atomic elements with value/unit pairs (Axiom 3)
+3. Composite structure via opposition (Axiom 4)
+4. Direction from ordering (Axiom 5)
+5. The four-phase lifecycle from the possibilities between observers
+   and structure (Axiom 6)
+6. Three aspects from unit sign (Axiom 10)
+7. Ratios from observing extents together (Axiom 13)
+8. Units from the experience/manipulate/resolve lifecycle (Axiom 14)
+9. Numbers from others observing the resolved unit (Axiom 15)
+10. Directed segments from orthogonal tension (Axiom 19)
+11. Area, complex numbers from the four-term kernel (Axioms 20, 22)
+12. Higher dimensions from symmetry breaking (Axiom 21)
+13. Topology from pins, merges, branches (Axioms 23-26)
+14. Boundary behavior from structural absorption (Axiom 27)
+15. Time from traversal of ordered structure (Axiom 30)
+16. Laws from Manipulate-phase abilities (Axiom 32)
 
 Nothing is assumed except that ordered extents exist (and that not
 everything is ordered). Everything else — numbers, dimensions, topology,
