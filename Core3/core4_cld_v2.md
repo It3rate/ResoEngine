@@ -1,65 +1,10 @@
 # Core4 Axiom System — Version 2
 
-A physical mathematics bootstrapped from uncalibrated extents.
+A mathematics bootstrapped from uncalibrated extents and 
+their ability to react to each other.
 No real numbers, no stated axes, no assumed dimensions.
-Everything constructed from ordered magnitudes through a universal lifecycle
-of observation, experience, manipulation, and resolution.
-
----
-
-## Part I: Ground
-
-### Axiom 1 — Extents and Chaos
-
-There exist **extents**: ordered, comparable magnitudes. An extent has
-no unit, no resolution, no sign. It is simply "some amount" that can be
-compared to another extent by size. This is the sole assumption.
-
-Not everything is an extent. Some phenomena are **chaotic** — not orderable,
-not comparable. The system can only observe these; it cannot operate on them.
-They appear as irreducible tension, background noise within the resolution
-of whatever structure is present. One purpose of the system is to discover
-frames that render previously chaotic phenomena orderable — but that is
-never guaranteed, and some residual chaos is always acceptable.
-
-We write an extent as a bare value: `a`, `b`, `c`.
-
-### Axiom 2 — The Atomic Element
-
-An **atomic element** is a pair `(v, u)` where:
-- `v` is a signed integer: the **value** (how many)
-- `u` is a signed integer: the **unit** (what "one" is)
-
-The unit sign carries physical meaning (Axiom 9). The unit magnitude
-`|u|` is the **resolution**: how many ticks compose one unit. When `u = 0`,
-the element has magnitude but no established "one" — it is **unresolved**.
-
-An atomic element is **grade 0**: the leaf of all structure.
-
-### Axiom 3 — The Composite Element
-
-A **composite element** is an ordered pair of two equal-grade elements:
-
-    Composite(recessive, dominant)    where recessive.grade == dominant.grade
-
-The composite's grade is `children's grade + 1`.
-
-- **Recessive**: the reference side, the context, the "before"
-- **Dominant**: the applied side, the measured, the "after"
-
-This is the only way to build higher-grade structure. A grade-1 element
-has two atomic children. A grade-2 element has two grade-1 children
-(four atomic leaves). Grade N has 2^N atomic leaves.
-
-### Axiom 4 — Ordering and Direction
-
-Every composite has inherent direction: recessive → dominant.
-This is not a convention. The recessive provides context for the dominant.
-Swapping them (SwapOrder) changes the physical meaning.
-
-Direction gives every composite a natural "before" and "after."
-Traversal from recessive to dominant is the most primitive form of time
-(see Part VII). No external clock is needed.
+Everything is constructed from these ordered magnitudes 
+and a physical interpretation of them.
 
 ---
 
@@ -113,6 +58,82 @@ information it cannot account for within its current dimensions. That
 orthogonal direction can be *anything* until a different element is
 discovered that accounts for it. The geometric picture is a scaffold,
 not the territory.
+
+**Note on the Engine:** This assumes an engine that is reacting to 
+these numeric structures in some consistant way. The main assumption 
+is if we define a direction, the flow tendency will be along that 
+direction. There is a natural order defined, and we assume elements
+can react to it. It still will be driven by amechanical increment 
+force that will be modeled in the system, but that won't be directing.
+
+A key aspect is 
+*tension*, which this 'engine' tries to solve. In the real world 
+the engine is often physics, causing rocks to roll, or whirlpools
+to swirl to reduce their tension. As we move to intelligence 
+problem solving becomes more abstract, but the goal is the same - to 
+reduce tension. The system here is mathematical, so it uses structure,
+values, and laws to solve tension. These are not created in the abstract
+however, they are derived from the same forces that create the tension 
+in the first place. There is a gradient from entents to numbers to 
+dimensions and with data and scale, it starts to resemble behavior.
+
+---
+
+
+## Part I: Ground
+
+### Axiom 1 — Extents and Chaos
+
+There exist **extents**: ordered, comparable magnitudes. An extent has
+no unit, no resolution, no sign. It is simply "some amount" that can be
+compared to another extent by size. This is the sole assumption.
+
+Not everything is an extent. Some phenomena are **chaotic** — not orderable,
+not comparable. The system can only observe these; it cannot operate on them.
+They appear as irreducible tension, background noise within the resolution
+of whatever structure is present. One purpose of the system is to discover
+frames that render previously chaotic phenomena orderable — but that is
+never guaranteed, and some residual chaos is always acceptable.
+
+We write an extent as a bare value: `a`, `b`, `c`.
+
+### Axiom 2 — The Atomic Element
+
+An **atomic element** is a pair `(v, u)` where:
+- `v` is a signed integer: the **value** (how many)
+- `u` is a signed integer: the **unit** (what "one" is)
+
+The unit sign carries physical meaning (Axiom 9). The unit magnitude
+`|u|` is the **resolution**: how many ticks compose one unit. When `u = 0`,
+the element has magnitude but no established "one" — it is **unresolved**.
+
+An atomic element is **grade 0**: the leaf of all structure.
+
+### Axiom 3 — The Composite Element
+
+A **composite element** is an pair of two equal-grade elements (assume grade 0 for now):
+
+    Composite(recessive, dominant)    where recessive.grade == dominant.grade
+
+The composite's grade is `children's grade + 1`.
+
+- **Recessive**: the reference side, the context, the "before"
+- **Dominant**: the applied side, the measured, the "after"
+
+This is the only way to build higher-grade structure. A grade-1 element
+has two atomic children. A grade-2 element has two grade-1 children
+(four atomic leaves). Grade N has 2^N atomic leaves.
+
+### Axiom 4 — Ordering and Direction
+
+Every composite has inherent direction: recessive → dominant.
+This is not a convention. The recessive provides context for the dominant.
+Swapping them (SwapOrder) changes the physical meaning.
+
+Direction gives every composite a natural "before" and "after."
+Traversal from recessive to dominant is the most primitive form of time
+(see Part VII). No external clock is needed, just the tendancy to flow
+from beginning to end.
 
 ---
 
@@ -347,11 +368,13 @@ either, or both simultaneously, learning about the space between them.
 
 **Opposed directions** create orthogonal potential. From the join point,
 there is a *third* interpolation path that didn't exist in either extent
-alone: through the join point from one extent's endpoint to the other's.
-This path crosses both extents and requires acknowledging both directions
-simultaneously. This is why orthogonal forces create new dimensions —
-the tension between opposed directions opens a path that neither extent
-contains by itself.
+alone: starting at the recessive endpoint (which pulls towards the origin), 
+and interpolating through the origin the the dominant endpoint (which is 
+pushed away from the origin). 
+This path crosses both extents and requires acknowledging both directions.
+This is an example orthogonal forces create new dimensions that can explore 
+spaces that were previously unavailable. The tension between 
+opposed directions generates a path that neither extent contains by itself.
 
 An element at the join point of opposed extents, if it chooses to
 experience the third path, is performing the most primitive dimensional
@@ -655,6 +678,13 @@ The multiplication produces four terms:
     dr = left.Dominant  × right.Recessive
     dd = left.Dominant  × right.Dominant
 
+It's worth reiterating exactly what a unit promises with two axes. They are 
+mechanically bound in their formation, so they 'follow' each other by extending
+into each other's space. That is most obvious in area, but if area isn't possible
+they will still try to align to each other, resulting in a line that extends into
+both spaces. They follow both value and structure, which may be positive or negative,
+and dominant or recessive,
+
 Each term has a physically distinct character determined by the dominance
 pattern of its components:
 
@@ -905,7 +935,10 @@ the previous tick. Each step is a generative act.
 Traversal IS the Experience phase made structural. The mover is an
 observer being driven through a route by its internal or external
 structure. At each tick, the mover experiences what is at that position.
-The drive to advance — the "clock" — is structure, not will.
+The drive to advance — the "clock" — is structure, not will. In reality
+that may be physics or time, in code it will be a computational tick based
+on some kind of increment machine. The key is this push isn't directing 
+anything, just like time itself isn't deciding outcomes.
 
 ### Axiom 29 — Time Is Traversal
 
