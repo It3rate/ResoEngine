@@ -137,6 +137,11 @@ the aspect trichotomy (Axiom 10), the distinction between value and
 structure, and ultimately to dimensional emergence.
 
 ### Axiom 3 — The Atomic Element
+The conversion of the denominator to a unit (Axiom 13) changes the ratio 
+into a number. It is a rational number where the denominator determines
+the resolution, and the numerator can be positve or negative. They are 
+built using 'ticks' which are extents, now with direction. We call them
+signed integers here for brevity.
 
 An **atomic element** is a pair `(v, u)` where:
 - `v` is a signed integer: the **value** (how many)
@@ -542,7 +547,13 @@ happens and direction is discovered.
 calibration: *where* the attachment point sits, and its own natural
 direction. The unit-to-be provides resolution: what "one" will mean, the
 tick structure. Together they manipulate — actively adjusting — until they
-agree on a shared version of 1. The laws used in this negotiation are
+agree on a shared version of 1. 
+
+>In reality this may be enacted by physics or biology.
+>In this system it is future machines made of these values, 
+structures and laws. 'Averaging' may be a good first aproximation. 
+
+The laws used in this negotiation are
 the abilities already available: comparison, ratio, direction, plus
 the feedback gained from experience.
 
@@ -744,7 +755,7 @@ mechanically bound in their formation, so they 'follow' each other by extending
 into each other's space. That is most obvious in area, but if area isn't possible
 they will still try to align to each other, resulting in a line that extends into
 both spaces. They follow both value and structure, which may be positive or negative,
-and dominant or recessive,
+and dominant or recessive.
 
 Each term has a physically distinct character determined by the dominance
 pattern of its components:
@@ -765,7 +776,11 @@ The engine resolves this kernel into two components:
 `rr - dd` because conventional mathematics only acknowledges positive
 area — it needs an explicit subtraction to account for cancellation.
 In this system, `rr` IS anti-area: structurally negative, the opposite
-of `dd`. Adding anti-area to area cancels naturally, the same way
+of `dd`. Note: This may seem like a strange concept, but it can be as simple 
+as previous area and future area. If you mow a lawn, start at the recessive 
+end point, get to present, and plan to finish at the dominant end point.
+The total area is the lawn, and it has completed (anti-area) and todo (future area).
+Adding anti-area to area cancels naturally, the same way
 adding a negative number to a positive one does. The subtraction is
 in the structure of `rr` itself, not in the equation. The operation
 is always addition; the signs are carried by the terms.
