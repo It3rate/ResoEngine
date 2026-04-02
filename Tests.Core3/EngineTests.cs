@@ -5,6 +5,39 @@ namespace Tests.Core3;
 
 public sealed class EngineTests
 {
+    [Theory]
+    [InlineData(false, false, -1, -1)]
+    [InlineData(false, true, -1, 1)]
+    [InlineData(true, false, 1, -1)]
+    [InlineData(true, true, 1, 1)]
+    public void AtomicElement_CanBeConstructedFromRawRatioAttachmentSigns(
+        bool pPinsStart,
+        bool qPinsStart,
+        int expectedPSign,
+        int expectedQSign)
+    {
+        var ratio = new Ratio(3, 5, pPinsStart, qPinsStart);
+
+        var pAsDenominator = new AtomicElement(ratio, RatioTerm.P);
+        var qAsDenominator = new AtomicElement(ratio, RatioTerm.Q);
+
+        Assert.Equal(
+            new AtomicElement(checked(expectedQSign * 5), checked(expectedPSign * 3)),
+            pAsDenominator);
+        Assert.Equal(
+            new AtomicElement(checked(expectedPSign * 3), checked(expectedQSign * 5)),
+            qAsDenominator);
+    }
+
+    [Fact]
+    public void Ratio_ToFloat_UsesChosenDenominatorWithoutApplyingAttachmentSigns()
+    {
+        var ratio = new Ratio(4, 10, pPinsStart: false, qPinsStart: true);
+
+        Assert.Equal(2.5f, ratio.ToFloat(RatioTerm.P), 5);
+        Assert.Equal(0.4f, ratio.ToFloat(RatioTerm.Q), 5);
+    }
+
     [Fact]
     public void CompositeFold_PreservesCarrierPolarityFromAtomicResult()
     {

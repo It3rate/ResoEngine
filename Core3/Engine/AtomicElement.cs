@@ -9,6 +9,13 @@ namespace Core3.Engine;
 /// </summary>
 public sealed record AtomicElement(long Value, long Unit) : GradedElement
 {
+    public AtomicElement(Ratio ratio, RatioTerm denominatorTerm)
+        : this(
+            ratio.GetSignedExtent(ratio.GetOtherTerm(denominatorTerm)),
+            ratio.GetSignedExtent(denominatorTerm))
+    {
+    }
+
     public override int Grade => 0;
     public override bool HasResolvedUnits => Unit != 0;
     public bool IsAlignedUnit => Unit > 0;
