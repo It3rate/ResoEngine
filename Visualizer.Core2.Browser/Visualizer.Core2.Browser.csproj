@@ -1,0 +1,42 @@
+<Project Sdk="Microsoft.NET.Sdk.WebAssembly">
+  <PropertyGroup>
+    <TargetFramework>net10.0-browser</TargetFramework>
+    <OutputType>Exe</OutputType>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <WasmBuildNative>true</WasmBuildNative>
+    <DefineConstants>$(DefineConstants);VISUALIZER_BROWSER</DefineConstants>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Avalonia.Browser" Version="11.3.17" />
+    <PackageReference Include="Avalonia.Fonts.Inter" Version="11.3.17" />
+    <PackageReference Include="Avalonia.Skia" Version="11.3.17" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Applied\Applied.csproj" />
+    <ProjectReference Include="..\Core2\Core2.csproj" />
+    <ProjectReference Include="..\Core2.Symbolics\Core2.Symbolics.csproj" />
+    <ProjectReference Include="..\Core2.Interpretation\Core2.Interpretation.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="..\Visualizer.WinForms.Core2\Adapt\*.cs" Link="Shared\Adapt\%(Filename)%(Extension)" />
+    <Compile Include="..\Visualizer.WinForms.Core2\Core\*.cs" Link="Shared\Core\%(Filename)%(Extension)" />
+    <Compile Include="..\Visualizer.WinForms.Core2\Input\DragTarget.cs" Link="Shared\Input\DragTarget.cs" />
+    <Compile Include="..\Visualizer.WinForms.Core2\Input\DragZone.cs" Link="Shared\Input\DragZone.cs" />
+    <Compile Include="..\Visualizer.WinForms.Core2\Input\HitTestEngine.cs" Link="Shared\Input\HitTestEngine.cs" />
+    <Compile Include="..\Visualizer.WinForms.Core2\Rendering\*.cs" Link="Shared\Rendering\%(Filename)%(Extension)" />
+    <Compile Include="..\Visualizer.WinForms.Core2\Pages\BooleanOperationCatalog.cs" Link="Shared\Pages\BooleanOperationCatalog.cs" />
+    <Compile Include="..\Visualizer.WinForms.Core2\Pages\BooleanOpsPage.cs" Link="Shared\Pages\BooleanOpsPage.cs" />
+    <Compile Include="..\Visualizer.WinForms.Core2\Pages\IVisualizerPage.cs" Link="Shared\Pages\IVisualizerPage.cs" />
+    <Compile Include="..\Visualizer.WinForms.Core2\Pages\LetterFormationDynamicsPage.cs" Link="Shared\Pages\LetterFormationDynamicsPage.cs" />
+    <Compile Include="..\Visualizer.WinForms.Core2\Pages\LetterGoalPinsPage.cs" Link="Shared\Pages\LetterGoalPinsPage.cs" />
+    <Compile Include="..\Visualizer.WinForms.Core2\Pages\OrthogonalBooleanGalleryPage.cs" Link="Shared\Pages\OrthogonalBooleanGalleryPage.cs" />
+    <Compile Include="..\Visualizer.WinForms.Core2\Pages\PageChrome.cs" Link="Shared\Pages\PageChrome.cs" />
+    <Compile Include="..\Visualizer.WinForms.Core2\Pages\ParallelBooleanGalleryPage.cs" Link="Shared\Pages\ParallelBooleanGalleryPage.cs" />
+    <Compile Include="..\Visualizer.WinForms.Core2\Pages\ResolutionModesPage.cs" Link="Shared\Pages\ResolutionModesPage.cs" />
+  </ItemGroup>
+</Project>

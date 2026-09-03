@@ -4,8 +4,10 @@ using ResoEngine.Visualizer.Controls;
 using ResoEngine.Visualizer.Core;
 using ResoEngine.Visualizer.Input;
 using SkiaSharp;
+#if !VISUALIZER_BROWSER
 using System.Drawing;
 using System.Windows.Forms;
+#endif
 
 namespace ResoEngine.Visualizer.Pages;
 
@@ -178,16 +180,21 @@ public sealed class LetterFormationDynamicsPage : IVisualizerPage
     ];
 
     private SkiaCanvas? _canvasHost;
+#if !VISUALIZER_BROWSER
     private Panel? _controlsPanel;
     private CheckBox? _animateCheck;
     private Button? _stepButton;
     private Button? _resetButton;
     private System.Windows.Forms.Timer? _timer;
+#endif
     private LetterFormationState? _state;
     private IReadOnlyList<LetterFormationProposal> _proposals = [];
     private int _resetCount;
     private LetterFormationPresetKind _selectedPreset = LetterFormationPresetKind.LetterA;
+#if !VISUALIZER_BROWSER
     private readonly Dictionary<LetterFormationPresetKind, Button> _presetButtons = new();
+#endif
+    private bool _isAnimating = true;
     private readonly List<SiteHandleLayout> _siteHandles = [];
     private string[]? _draggedSiteIds;
     private SKRect _lastLetterboxRect;
@@ -196,17 +203,62 @@ public sealed class LetterFormationDynamicsPage : IVisualizerPage
 
     public string Title => "Letter Formation Dynamics";
 
+    internal bool IsAnimating
+    {
+        get
+        {
+#if VISUALIZER_BROWSER
+            return _isAnimating;
+#else
+            return _animateCheck?.Checked ?? _isAnimating;
+#endif
+        }
+    }
+
+    internal IReadOnlyList<LetterFormationPresetKind> Presets => GetOrderedPresets();
+
+    internal LetterFormationPresetKind SelectedPreset => _selectedPreset;
+
+    internal void SetAnimating(bool isAnimating)
+    {
+        _isAnimating = isAnimating;
+#if !VISUALIZER_BROWSER
+        if (_animateCheck is not null)
+        {
+            _animateCheck.Checked = isAnimating;
+        }
+#endif
+        _canvasHost?.InvalidateCanvas();
+    }
+
+    internal void SelectPreset(LetterFormationPresetKind preset)
+    {
+        _selectedPreset = preset;
+#if !VISUALIZER_BROWSER
+        UpdatePresetButtons();
+#endif
+        ResetState();
+    }
+
+    internal void Step() => AdvanceOneStep();
+
+    internal void Reset() => ResetState();
+
     public void Init(CoordinateSystem coords, HitTestEngine hitTest, SkiaCanvas canvas)
     {
         _canvasHost = canvas;
+#if !VISUALIZER_BROWSER
         EnsureControls();
         EnsureTimer();
+#endif
         ResetState();
     }
 
     public void Render(SKCanvas canvas)
     {
+#if !VISUALIZER_BROWSER
         PageChrome.PositionTopRightPanel(_canvasHost, _controlsPanel);
+#endif
         _siteHandles.Clear();
 
         float width = _canvasHost?.ClientSize.Width ?? 1400f;
@@ -238,7 +290,9 @@ public sealed class LetterFormationDynamicsPage : IVisualizerPage
         DrawCard(canvas, tensionCard);
         DrawCard(canvas, proposalCard);
 
+#if !VISUALIZER_BROWSER
         PositionPresetButtons(graphCard);
+#endif
         DrawGraph(canvas, graphCard);
         DrawStatus(canvas, statusCard);
         DrawTopTensions(canvas, tensionCard);
@@ -247,6 +301,7 @@ public sealed class LetterFormationDynamicsPage : IVisualizerPage
 
     public void Destroy()
     {
+#if !VISUALIZER_BROWSER
         foreach (Button button in _presetButtons.Values)
         {
             _canvasHost?.Controls.Remove(button);
@@ -267,6 +322,7 @@ public sealed class LetterFormationDynamicsPage : IVisualizerPage
             _timer.Dispose();
             _timer = null;
         }
+#endif
     }
 
     public void Dispose()
@@ -295,6 +351,7 @@ public sealed class LetterFormationDynamicsPage : IVisualizerPage
         _tensionHaloStrokePaint.Dispose();
     }
 
+#if !VISUALIZER_BROWSER
     private void EnsureControls()
     {
         if (_canvasHost is null || _controlsPanel is not null)
@@ -397,13 +454,14 @@ public sealed class LetterFormationDynamicsPage : IVisualizerPage
         };
         _timer.Tick += (_, _) =>
         {
-            if (_animateCheck?.Checked == true)
+            if (IsAnimating)
             {
                 AdvanceOneStep();
             }
         };
         _timer.Start();
     }
+#endif
 
     private void ResetState()
     {
@@ -414,10 +472,7 @@ public sealed class LetterFormationDynamicsPage : IVisualizerPage
             randomMotionWeight: new Core2.Elements.Proportion(1, 2));
         _state = LetterFormationTensionEvaluator.Evaluate(
             LetterFormationPresetFactory.CreateSeed(_selectedPreset, random, environment));
-        if (_animateCheck is not null)
-        {
-            _animateCheck.Checked = true;
-        }
+        SetAnimating(true);
         RefreshProposals();
         _canvasHost?.InvalidateCanvas();
     }
@@ -468,24 +523,36 @@ public sealed class LetterFormationDynamicsPage : IVisualizerPage
         if (_draggedSiteIds is not null)
         {
             DragSites(pixelPoint);
+#if !VISUALIZER_BROWSER
             _canvasHost.Cursor = Cursors.SizeAll;
+#endif
             return;
         }
 
+#if !VISUALIZER_BROWSER
         _canvasHost.Cursor = HitSiteHandle(pixelPoint) is not null
             ? Cursors.SizeAll
             : Cursors.Default;
+#endif
     }
 
     public void OnPointerUp(SKPoint pixelPoint)
     {
         _draggedSiteIds = null;
+#if !VISUALIZER_BROWSER
         if (_canvasHost is not null)
         {
             _canvasHost.Cursor = Cursors.Default;
         }
+#endif
     }
 
+    private static IReadOnlyList<LetterFormationPresetKind> GetOrderedPresets() =>
+        Enum.GetValues<LetterFormationPresetKind>()
+            .OrderBy(LetterFormationPresetFactory.GetShortLabel)
+            .ToArray();
+
+#if !VISUALIZER_BROWSER
     private void UpdatePresetButtons()
     {
         foreach ((LetterFormationPresetKind preset, Button button) in _presetButtons)
@@ -499,11 +566,6 @@ public sealed class LetterFormationDynamicsPage : IVisualizerPage
                 : Color.FromArgb(214, 214, 214);
         }
     }
-
-    private static IReadOnlyList<LetterFormationPresetKind> GetOrderedPresets() =>
-        Enum.GetValues<LetterFormationPresetKind>()
-            .OrderBy(LetterFormationPresetFactory.GetShortLabel)
-            .ToArray();
 
     private float ResolvePresetButtonBlockHeight()
     {
@@ -550,6 +612,9 @@ public sealed class LetterFormationDynamicsPage : IVisualizerPage
             index++;
         }
     }
+#else
+    private static float ResolvePresetButtonBlockHeight() => 0f;
+#endif
 
     private void DrawCard(SKCanvas canvas, SKRect rect)
     {
@@ -677,7 +742,7 @@ public sealed class LetterFormationDynamicsPage : IVisualizerPage
         DrawInfoLine(canvas, cardRect.Left + 18f, ref y, $"tensions => {_state.Tensions.Count}");
         DrawInfoLine(canvas, cardRect.Left + 18f, ref y, $"proposals => {_proposals.Count}");
         DrawInfoLine(canvas, cardRect.Left + 18f, ref y, $"total => {SumTension(_state.Tensions):0.###}");
-        DrawInfoLine(canvas, cardRect.Left + 18f, ref y, $"mode => {(_animateCheck?.Checked == true ? "running" : "paused")}");
+        DrawInfoLine(canvas, cardRect.Left + 18f, ref y, $"mode => {(IsAnimating ? "running" : "paused")}");
     }
 
     private void DrawTopTensions(SKCanvas canvas, SKRect cardRect)
@@ -1175,10 +1240,7 @@ public sealed class LetterFormationDynamicsPage : IVisualizerPage
             Sites = updatedSites,
             Tensions = [],
         });
-        if (_animateCheck is not null)
-        {
-            _animateCheck.Checked = true;
-        }
+        SetAnimating(true);
 
         RefreshProposals();
         _canvasHost?.InvalidateCanvas();

@@ -1,0 +1,31 @@
+html,
+body,
+#out {
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    overflow: hidden;
+}
+
+body {
+    background:
+        radial-gradient(circle at 16% 12%, rgba(214, 184, 112, 0.18), transparent 32%),
+        linear-gradient(145deg, #f8f6ef, #efede5);
+}
+
+.avalonia-splash {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #28323a;
+    font: 600 15px/1.4 Georgia, serif;
+    letter-spacing: 0.04em;
+    pointer-events: none;
+}
+
+.avalonia-splash.splash-close {
+    display: none;
+    opacity: 0;
+}

@@ -367,3 +367,4 @@ MigrationBackup/
 FodyWeavers.xsd
 /.codex_pdf_render
 /.codex_tmp_segment_math.txt
+/Visualizer.Core2.Browser/publish*/

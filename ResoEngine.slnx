@@ -7,4 +7,5 @@
   <Project Path="Tests.Core2/Tests.Core2.csproj" />
   <Project Path="Tests.Core3/Tests.Core3.csproj" />
   <Project Path="Visualizer.WinForms.Core2/Visualizer.WinForms.Core2.csproj" />
+  <Project Path="Visualizer.Core2.Browser/Visualizer.Core2.Browser.csproj" />
 </Solution>

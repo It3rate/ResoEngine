@@ -6,6 +6,7 @@ namespace ResoEngine.Visualizer.Pages;
 
 internal static class PageChrome
 {
+#if !VISUALIZER_BROWSER
     public static void PositionTopRightPanel(SkiaCanvas? canvasHost, Panel? panel, int margin = 18)
     {
         if (canvasHost == null || panel == null)
@@ -19,6 +20,7 @@ internal static class PageChrome
             margin);
         panel.BringToFront();
     }
+#endif
 
     public static void DrawWrappedText(SKCanvas canvas, string text, float x, ref float y, float width, SKPaint paint)
     {

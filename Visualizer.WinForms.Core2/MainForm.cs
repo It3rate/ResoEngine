@@ -122,6 +122,7 @@ public class MainForm : Form
         _pageManager.AddPage(new ParallelBooleanGalleryPage());
         _pageManager.AddPage(new FractionalPowerPage());
         _pageManager.AddPage(new UnitsQuantityPage());
+        _pageManager.GoTo(1);
     }
 
     protected override void Dispose(bool disposing)
